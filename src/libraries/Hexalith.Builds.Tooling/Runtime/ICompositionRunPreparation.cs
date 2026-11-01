@@ -8,6 +8,9 @@ namespace Hexalith.Builds.Tooling.Runtime;
 /// <summary>Owner preparation required after writer activation and before publishing native-test readiness.</summary>
 public interface ICompositionRunPreparation
 {
+    /// <summary>Gets a value indicating whether this prepared native profile requires held public routing proofs.</summary>
+    bool RoutingCatalogObservationsRequired => false;
+
     /// <summary>Gets the owner-derived native scope after successful preparation, or null when this composition supplies none.</summary>
     CompositionNativeTestScope? NativeTestScope => null;
 

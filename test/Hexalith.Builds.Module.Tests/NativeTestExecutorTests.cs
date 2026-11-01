@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -310,6 +311,268 @@ public sealed class NativeTestExecutorTests
         }
     }
 
+    /// <summary>Malformed public routing observations return the existing pre-child refusal instead of escaping the executor.</summary>
+    /// <param name="fault">The malformed proof, or the launched control.</param>
+    /// <returns>The refusal, never-launched child and removable owned workspace assertions.</returns>
+    [Theory]
+    [InlineData("valid")]
+    [InlineData("not-required")]
+    [InlineData("metadata-missing-status")]
+    [InlineData("metadata-wrong-kind")]
+    [InlineData("metadata-overflow")]
+    [InlineData("closure-missing-hosts")]
+    [InlineData("closure-wrong-kind")]
+    [InlineData("preparation-missing-flag")]
+    [InlineData("preparation-wrong-kind")]
+    [InlineData("malformed-json")]
+    public async Task RoutingProofShapeGatesChildExecutionAsync(string fault)
+    {
+        string ownedRoot;
+        using (PlatformManifestTestWorkspace workspace = new())
+        {
+            ownedRoot = workspace.Root;
+            string marker = Path.Combine(workspace.Root, "child-executed");
+            (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, _markerRunner).ConfigureAwait(true);
+            string directory = Path.Combine(plan.Workspace, "platform-components", plan.EnvironmentId + "-catalog");
+            _ = Directory.CreateDirectory(directory);
+            foreach (string name in new[] { "catalog.json", "receipt.json", "activation.json", "owner.committed.json" })
+            {
+                await File.WriteAllTextAsync(Path.Combine(directory, name), "{}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+
+            // These offline fields qualify only the pre-child handoff contract, never an active owner cohort.
+            JsonObject closure = new() { ["RunId"] = plan.RunId, ["hosts"] = new JsonArray(new JsonObject { ["ResourceId"] = "owner" }) };
+            JsonObject preparation = new() { ["RunId"] = plan.RunId, ["routingCatalogMetadataObserved"] = true };
+            JsonObject metadata = new() { ["method"] = "GET", ["path"] = "/api/v1/routing/catalog", ["status"] = 200 };
+            if (fault == "metadata-missing-status")
+            {
+                _ = metadata.Remove("status");
+            }
+
+            if (fault == "metadata-wrong-kind")
+            {
+                metadata["status"] = "200";
+            }
+
+            if (fault == "metadata-overflow")
+            {
+                metadata["status"] = long.MaxValue;
+            }
+
+            if (fault == "closure-missing-hosts")
+            {
+                _ = closure.Remove("hosts");
+            }
+
+            if (fault == "closure-wrong-kind")
+            {
+                closure["hosts"] = new JsonObject();
+            }
+
+            if (fault == "preparation-missing-flag")
+            {
+                _ = preparation.Remove("routingCatalogMetadataObserved");
+            }
+
+            if (fault == "preparation-wrong-kind")
+            {
+                preparation["routingCatalogMetadataObserved"] = "true";
+            }
+
+            await File.WriteAllTextAsync(Path.Combine(directory, "selected-closure.json"), closure.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await File.WriteAllTextAsync(Path.Combine(directory, "preparation.json"), preparation.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await File.WriteAllTextAsync(Path.Combine(directory, "metadata-http.json"), fault == "malformed-json" ? "{" : metadata.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string assets = Path.Combine(plan.Workspace, "platform-components", "catalog-reader", "obj");
+            _ = Directory.CreateDirectory(assets);
+            await File.WriteAllTextAsync(Path.Combine(assets, "project.assets.json"), "{}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            using Process process = new();
+            CompositionReadiness readiness = HealthyReadiness(plan) with { RoutingCatalogObservationsRequired = fault != "not-required" };
+            if (fault == "not-required")
+            {
+                File.Delete(Path.Combine(directory, "metadata-http.json"));
+            }
+
+            NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, readiness, "private-signing-key-value", process), new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection).ConfigureAwait(true);
+            if (fault is "valid" or "not-required")
+            {
+                File.Exists(marker).ShouldBeTrue();
+                result.Result.Outcome.RuleId.ShouldBe("HXT002", "The marker-only control launches without writing a native report.");
+            }
+            else
+            {
+                AssertNotPassing(result, "HXT009", ToolExitCode.ProductOrTest);
+                File.Exists(marker).ShouldBeFalse();
+            }
+        }
+
+        Directory.Exists(ownedRoot).ShouldBeFalse("Malformed proof reads must release every owned file before cleanup.");
+    }
+
+    /// <summary>The selected executor archives its own original capture after the real child mutates and removes all input proofs.</summary>
+    /// <returns>The passing execution and exact bytes in every archive destination.</returns>
+    [Fact]
+    public async Task NativeExecutionArchivesThePreChildRoutingSnapshotAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        const string runner = """
+            import json, os, pathlib, shutil
+            plan = json.loads(pathlib.Path(os.environ['HEXALITH_G4_PLAN_PATH']).read_text())
+            root = pathlib.Path(plan['workspace'])
+            catalog = root / 'platform-components' / (plan['environmentId'] + '-catalog')
+            for proof in catalog.glob('*.json'):
+                proof.write_text('{"changedByChild":true}')
+            shutil.rmtree(catalog)
+            for name in ['mapping.json', 'catalog-versions.json']:
+                (root / 'source-mapping' / name).write_text('{"changedByChild":true}')
+            (root / 'platform-components' / 'catalog-reader' / 'obj' / 'project.assets.json').unlink()
+            pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome="Completed"><Counters total="1" passed="1" failed="0" /></ResultSummary></TestRun>')
+            """;
+        (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, runner).ConfigureAwait(true);
+        IReadOnlyDictionary<string, byte[]> originals = await WriteRequiredRoutingEvidenceAsync(plan).ConfigureAwait(true);
+        string archive = Path.Combine(workspace.Root, "durable");
+        using Process process = new();
+        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(
+            new CompositionRunSession(plan, HealthyReadiness(plan) with { RoutingCatalogObservationsRequired = true }, "private-signing-key-value", process),
+            new PersistedProfileNativeTests("runner.py", "python3"),
+            manifest,
+            TestContext.Current.CancellationToken,
+            selection: selection,
+            archiveDirectory: archive).ConfigureAwait(true);
+
+        result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+        result.RoutingCatalogSnapshot.ShouldNotBeNull().Count.ShouldBe(originals.Count);
+        Directory.Exists(Path.Combine(plan.Workspace, "platform-components", plan.EnvironmentId + "-catalog")).ShouldBeFalse();
+        string identity = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(selection.Name)));
+        foreach (KeyValuePair<string, byte[]> file in originals)
+        {
+            foreach (string destination in new[] { archive, Path.Combine(archive, "entries", identity), Path.Combine(plan.Workspace, "native-tests", identity) })
+            {
+                (await File.ReadAllBytesAsync(Path.Combine(destination, "routing-catalog", file.Key), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(file.Value);
+            }
+        }
+    }
+
+    /// <summary>Opaque actual handoff values must not survive as decoded routing keys or string values before child launch.</summary>
+    /// <param name="source">The handoff credential channel, or none for the launched control.</param>
+    /// <param name="asKey">Whether the opaque value appears in a JSON property name.</param>
+    /// <returns>The credential exclusion and child admission assertions.</returns>
+    [Theory]
+    [InlineData("none", false)]
+    [InlineData("signing", false)]
+    [InlineData("signing", true)]
+    [InlineData("endpoint", false)]
+    [InlineData("endpoint", true)]
+    [InlineData("access-app", false)]
+    [InlineData("access-app", true)]
+    [InlineData("access-dapr", false)]
+    [InlineData("access-dapr", true)]
+    public async Task OpaqueHandoffCredentialsCannotEnterRoutingSnapshotsAsync(string source, bool asKey)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, _markerRunner).ConfigureAwait(true);
+        _ = await WriteRequiredRoutingEvidenceAsync(plan).ConfigureAwait(true);
+        string signing = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
+        string endpointToken = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
+        string[] accessTokens = [.. Enumerable.Range(0, 6).Select(_ => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32)))];
+        Uri invocation = new("http://127.0.0.1:20012/v1.0/invoke/sample/method/api/v1/");
+        string endpointPath = Path.Combine(plan.Workspace, NativeTestHandoff.EndpointCredentialsFileName);
+        string endpointContent = JsonSerializer.Serialize(new
+        {
+            schema = NativeTestHandoff.EndpointCredentialsSchema,
+            runId = plan.RunId,
+            syntheticTenantId = plan.TenantNamespace,
+            dataIsolationId = plan.ResourceNamespace,
+            endpoints = new[] { new { resourceId = "owned-resource", moduleId = "sample", endpointName = "dapr-invocation", uri = invocation.AbsoluteUri, headerName = "dapr-api-token", value = endpointToken } },
+        });
+        await File.WriteAllTextAsync(endpointPath, endpointContent, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(endpointPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+
+        string accessPath = Path.Combine(plan.Workspace, "platform-components", "retention", "access.json");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(accessPath)!);
+        string accessContent = JsonSerializer.Serialize(Enumerable.Range(0, 3).ToDictionary(index => "service-" + index, index => new { APP_API_TOKEN = accessTokens[index * 2], DAPR_API_TOKEN = accessTokens[(index * 2) + 1] }));
+        await File.WriteAllTextAsync(accessPath, accessContent, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionReadiness readiness = HealthyReadiness(plan);
+        readiness = readiness with
+        {
+            RoutingCatalogObservationsRequired = true,
+            NativeEndpointCredentialsPath = endpointPath,
+            NativeHttpEndpoints = [new("owned-resource", "sample", "dapr-invocation", invocation, "owned-sidecar")],
+            Resources = [.. readiness.Resources.Select(resource => resource with { Endpoints = [.. resource.Endpoints, new("dapr-invocation", "http", invocation)] })],
+            TestObservation = new() { RunId = plan.RunId, ModuleId = "sample", ProfileHash = new string('a', 64), ProfileJson = "{}", AccessPath = accessPath },
+        };
+        string opaque = source switch
+        {
+            "signing" => signing,
+            "endpoint" => endpointToken,
+            "access-app" => accessTokens[0],
+            "access-dapr" => accessTokens[1],
+            _ => "ordinary-public-observation",
+        };
+        string payload = asKey
+            ? JsonSerializer.Serialize(new Dictionary<string, bool> { [opaque] = true })
+            : JsonSerializer.Serialize(new { observation = "prefix-" + opaque + "-suffix" });
+        using JsonDocument unrecognized = JsonDocument.Parse(payload);
+        SelectedMetadataSafety.IsSafe(unrecognized.RootElement).ShouldBeTrue();
+        await File.WriteAllTextAsync(Path.Combine(plan.Workspace, "platform-components", plan.EnvironmentId + "-catalog", "receipt.json"), payload, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string archive = Path.Combine(workspace.Root, "durable");
+        using Process process = new();
+        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, readiness, signing, process), new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection, archiveDirectory: archive).ConfigureAwait(true);
+        if (source == "none")
+        {
+            File.Exists(Path.Combine(workspace.Root, "child-executed")).ShouldBeTrue();
+            result.Result.Outcome.RuleId.ShouldBe("HXT002");
+        }
+        else
+        {
+            AssertNotPassing(result, "HXT009", ToolExitCode.ProductOrTest);
+            result.RoutingCatalogSnapshot.ShouldBeNull();
+            File.Exists(Path.Combine(workspace.Root, "child-executed")).ShouldBeFalse();
+            Directory.Exists(Path.Combine(archive, "routing-catalog")).ShouldBeFalse();
+        }
+    }
+
+    private static async Task<IReadOnlyDictionary<string, byte[]>> WriteRequiredRoutingEvidenceAsync(CompositionRunPlan plan)
+    {
+        string directory = Path.Combine(plan.Workspace, "platform-components", plan.EnvironmentId + "-catalog");
+        _ = Directory.CreateDirectory(directory);
+        Dictionary<string, byte[]> originals = new(StringComparer.Ordinal);
+        foreach (string name in new[] { "catalog.json", "receipt.json", "activation.json", "owner.committed.json" })
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes("{ \"heldOriginal\" : \"" + name + "\" }\n");
+            await File.WriteAllBytesAsync(Path.Combine(directory, name), bytes, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            originals.Add(name, bytes);
+        }
+
+        foreach ((string name, byte[] bytes) in new[]
+        {
+            ("selected-closure.json", JsonSerializer.SerializeToUtf8Bytes(new { plan.RunId, hosts = new[] { new { ResourceId = "owner" } } })),
+            ("preparation.json", JsonSerializer.SerializeToUtf8Bytes(new { plan.RunId, routingCatalogMetadataObserved = true })),
+            ("metadata-http.json", JsonSerializer.SerializeToUtf8Bytes(new { method = "GET", path = "/api/v1/routing/catalog", status = 200 })),
+        })
+        {
+            await File.WriteAllBytesAsync(Path.Combine(directory, name), bytes, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            originals.Add(name, bytes);
+        }
+
+        string assets = Path.Combine(plan.Workspace, "platform-components", "catalog-reader", "obj", "project.assets.json");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(assets)!);
+        await File.WriteAllTextAsync(assets, "{\"heldOriginal\":true}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        foreach ((string source, string name) in new[]
+        {
+            (Path.Combine(plan.Workspace, "source-mapping", "mapping.json"), "mapping.json"),
+            (Path.Combine(plan.Workspace, "source-mapping", "catalog-versions.json"), "catalog-versions.json"),
+            (assets, "reader-assets.json"),
+        })
+        {
+            originals.Add(name, await File.ReadAllBytesAsync(source, TestContext.Current.CancellationToken).ConfigureAwait(true));
+        }
+
+        return originals;
+    }
+
     private static async Task<(CompositionRunPlan Plan, ModuleTestSelection Selection, string Manifest)> PrepareSelectedRunAsync(PlatformManifestTestWorkspace workspace, string runner)
     {
         workspace.Document["modules"]![0]!["tests"] = JsonNode.Parse("""
@@ -337,4 +600,4 @@ public sealed class NativeTestExecutorTests
         result.Report.ShouldBeNull();
         result.ReportBytes.ShouldBeNull();
     }
-}
+}

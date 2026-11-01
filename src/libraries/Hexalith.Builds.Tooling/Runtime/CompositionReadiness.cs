@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
+using System.Text.Json.Serialization;
+
 /// <summary>
 /// The metadata-only readiness document written by the AppHost once every resource is healthy.
 /// </summary>
@@ -30,6 +32,10 @@ public sealed record CompositionReadiness(
 
     /// <summary>Gets actual selected-composition test measurements and scoped access, when supported.</summary>
     public CompositionTestObservation? TestObservation { get; init; }
+
+    /// <summary>Gets a value indicating whether successful native owner preparation requires public routing proofs.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool RoutingCatalogObservationsRequired { get; init; }
 
     /// <summary>Gets actual owner-derived consumer scopes after startup preparation; this never grants an administrator role.</summary>
     public CompositionNativeTestScope? NativeTestScope { get; init; }

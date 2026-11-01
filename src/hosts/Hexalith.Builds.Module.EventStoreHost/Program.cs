@@ -44,9 +44,19 @@ app.UseEventStoreHttpHostSecurity();
 app.UseAuthorization();
 if (!string.IsNullOrEmpty(app.Configuration["EventStore:RouteCatalog:DevelopmentBootstrap:CatalogPath"]))
 {
+#if HEXALITH_BUILD_TECHNICAL_CATALOG_SDK
+    _ = Hexalith.EventStore.ServiceDefaults.Routing.TechnicalHttpRouteCatalogReceiver.IsEnabled(app.Configuration)
+        ? Hexalith.EventStore.ServiceDefaults.Routing.TechnicalHttpRouteCatalogReceiver.UseDevelopmentTechnicalHttpCatalogReceiver(
+            app,
+            Hexalith.EventStore.Server.Routing.RunScopedRouteCatalogGateway.Operation)
+        : Hexalith.EventStore.ServiceDefaults.Routing.FiniteRouteCatalogReceiver.UseFiniteDevelopmentRouteCatalogReceiver(
+            app,
+            Hexalith.EventStore.Server.Routing.RunScopedRouteCatalogGateway.Operation);
+#else
     _ = Hexalith.EventStore.ServiceDefaults.Routing.FiniteRouteCatalogReceiver.UseFiniteDevelopmentRouteCatalogReceiver(
         app,
         Hexalith.EventStore.Server.Routing.RunScopedRouteCatalogGateway.Operation);
+#endif
 }
 
 app.UseCloudEvents();

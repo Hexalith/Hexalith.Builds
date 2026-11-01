@@ -11,8 +11,12 @@ using Hexalith.Builds.Tooling.Runtime;
 /// <param name="scope">The owner-derived native scope.</param>
 /// <param name="endpoints">The metadata-only invocation endpoints.</param>
 /// <param name="credentialsPath">The private endpoint credential channel path, or null when none is prepared.</param>
-internal sealed class PreparedOutputsRunPreparation(CompositionNativeTestScope? scope, IReadOnlyList<CompositionNativeHttpEndpoint> endpoints, string? credentialsPath) : ICompositionRunPreparation
+/// <param name="requiresRoutingObservations">Whether this owner requires routing observations.</param>
+internal sealed class PreparedOutputsRunPreparation(CompositionNativeTestScope? scope, IReadOnlyList<CompositionNativeHttpEndpoint> endpoints, string? credentialsPath, bool requiresRoutingObservations = false) : ICompositionRunPreparation
 {
+    /// <inheritdoc/>
+    public bool RoutingCatalogObservationsRequired => requiresRoutingObservations;
+
     /// <inheritdoc/>
     public CompositionNativeTestScope? NativeTestScope => scope;
 

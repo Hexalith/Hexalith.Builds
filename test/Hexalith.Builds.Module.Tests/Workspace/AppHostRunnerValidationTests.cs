@@ -520,12 +520,13 @@ public sealed class AppHostRunnerValidationTests
     /// <returns>The published or refused readiness assertions.</returns>
     [Theory]
     [InlineData("none")]
+    [InlineData("required")]
     [InlineData("endpoints-without-path")]
     [InlineData("path-without-endpoints")]
     [InlineData("path-outside-workspace")]
     public async Task HealthyReadinessPublishesOwnerPreparationOutputsAsync(string fault)
     {
-        fault.ShouldBeOneOf("none", "endpoints-without-path", "path-without-endpoints", "path-outside-workspace");
+        fault.ShouldBeOneOf("none", "required", "endpoints-without-path", "path-without-endpoints", "path-outside-workspace");
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
@@ -550,7 +551,8 @@ public sealed class AppHostRunnerValidationTests
             _ = builder.Services.AddSingleton<ICompositionRunPreparation>(new PreparedOutputsRunPreparation(
                 scope,
                 fault == "path-without-endpoints" ? [] : [prepared],
-                fault == "endpoints-without-path" ? null : credentialPath));
+                fault == "endpoints-without-path" ? null : credentialPath,
+                requiresRoutingObservations: fault == "required"));
             await using DistributedApplication app = builder.Build();
             ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
             await PublishAsync(notifications, eventStore, HealthStatus.Healthy, 4244).ConfigureAwait(true);
@@ -559,7 +561,7 @@ public sealed class AppHostRunnerValidationTests
             using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
             bound.CancelAfter(TimeSpan.FromSeconds(5));
 
-            if (fault != "none")
+            if (fault is not ("none" or "required"))
             {
                 _ = await Should.ThrowAsync<InvalidDataException>(() => RunReadiness.WaitAndWriteAsync(app, plan, bound.Token)).ConfigureAwait(true);
                 File.Exists(plan.ReadinessPath).ShouldBeFalse();
@@ -580,6 +582,16 @@ public sealed class AppHostRunnerValidationTests
             ownerEndpoint.Protocol.ShouldBe("http");
             ownerEndpoint.Uri.ShouldBe(invocation);
             readiness.NativeEndpointCredentialsPath.ShouldBe(credentialPath);
+            readiness.RoutingCatalogObservationsRequired.ShouldBe(fault == "required");
+            using JsonDocument persisted = JsonDocument.Parse(await File.ReadAllTextAsync(plan.ReadinessPath, TestContext.Current.CancellationToken).ConfigureAwait(true));
+            if (fault == "required")
+            {
+                persisted.RootElement.GetProperty("routingCatalogObservationsRequired").GetBoolean().ShouldBeTrue();
+            }
+            else
+            {
+                persisted.RootElement.TryGetProperty("routingCatalogObservationsRequired", out _).ShouldBeFalse();
+            }
         }
         finally
         {

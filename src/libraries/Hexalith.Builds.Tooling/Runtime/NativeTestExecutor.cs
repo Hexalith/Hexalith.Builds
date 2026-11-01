@@ -260,6 +260,7 @@ internal static class NativeTestExecutor
                 await ArchiveAsync(durableEntry, archiveDirectory).ConfigureAwait(false);
                 await WriteSnapshotAsync(Path.Combine(archiveDirectory, "test-environment.json"), archiveDirectory, descriptorSnapshot, processingToken).ConfigureAwait(false);
                 await WriteSnapshotAsync(Path.Combine(archiveDirectory, "execution-timing.json"), archiveDirectory, timingBytes, processingToken).ConfigureAwait(false);
+                await ArchiveRoutingAsync(archiveDirectory, archiveDirectory).ConfigureAwait(false);
             }
 
             await WriteSnapshotAsync(Path.Combine(session.Plan.Workspace, "execution-timing.json"), session.Plan.Workspace, timingBytes, processingToken).ConfigureAwait(false);
@@ -277,6 +278,16 @@ internal static class NativeTestExecutor
                 if (inspected.ObservationBytes is { } observationBytes)
                 {
                     await WriteSnapshotAsync(Path.Combine(directory, "functional-observations.json"), ownedRoot, observationBytes, processingToken).ConfigureAwait(false);
+                }
+
+                await ArchiveRoutingAsync(directory, ownedRoot).ConfigureAwait(false);
+            }
+
+            async Task ArchiveRoutingAsync(string directory, string ownedRoot)
+            {
+                foreach (KeyValuePair<string, byte[]> file in inspected.RoutingCatalogSnapshot ?? new Dictionary<string, byte[]>())
+                {
+                    await WriteSnapshotAsync(Path.Combine(directory, "routing-catalog", file.Key), ownedRoot, file.Value, processingToken).ConfigureAwait(false);
                 }
             }
         }
@@ -373,6 +384,7 @@ internal static class NativeTestExecutor
         await CompositionDocumentStore.WriteAsync(session.Plan.ReadinessPath, session.Readiness, cancellationToken).ConfigureAwait(false);
         string descriptorPath;
         byte[] descriptorSnapshot;
+        IReadOnlyDictionary<string, byte[]> routingCatalogSnapshot;
         try
         {
             descriptorPath = await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAsync(session, archiveDirectory, cancellationToken).ConfigureAwait(false);
@@ -438,6 +450,19 @@ internal static class NativeTestExecutor
             }
 
             handoffSecrets.AddRange(accessSecrets);
+        }
+
+        try
+        {
+            routingCatalogSnapshot = await SelectedRoutingCatalogSnapshot.ReadAsync(session.Plan, descriptorSnapshot, cancellationToken, session.Readiness.RoutingCatalogObservationsRequired, handoffSecrets).ConfigureAwait(false);
+        }
+        catch (InvalidDataException exception)
+        {
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest, exception.Message);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
         }
 
         Dictionary<string, string> environment = new(NativeTestHandoff.Create(session.Plan, session.Readiness, token), StringComparer.Ordinal)
@@ -563,7 +588,7 @@ internal static class NativeTestExecutor
 
         timing = timing with { ActualDurationSeconds = Math.Max(0, (DateTimeOffset.UtcNow - timing.StartedAtUtc).TotalSeconds - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp).TotalSeconds) };
         session.Plan = session.Plan with { ExecutionTiming = timing };
-        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
+        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, RoutingCatalogSnapshot = routingCatalogSnapshot, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
         if (onOutcome is not null)
         {
             inspected = inspected with { MetadataRecordingTimestamp = System.Diagnostics.Stopwatch.GetTimestamp() };

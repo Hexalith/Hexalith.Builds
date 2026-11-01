@@ -23,10 +23,16 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["eventstore/3.120.0"] = "9b26956f9e825fd6771b62a79c7b81323ba856cf",
         ["tenants/5.8.0"] = "032573384d3df4bc7a5bc0e69945ecca4e00967f",
         ["memories/2.27.1"] = "d54dba5be30a3626e871b4fc56dd78e76a7acf71",
+        ["eventstore/3.129.0"] = "c02afa0fce310ccdb696232f18829df96cba088e",
+        ["memories/3.0.12"] = "ef5c134bbee7ec708f354ce1bc3e508ee6105ab7",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Gets the shared released declaration hashes; absent entries have no released v2 declaration.</summary>
-    public static IReadOnlyDictionary<string, string> DefaultReleaseSnapshotHashes { get; } = new Dictionary<string, string>(StringComparer.Ordinal).ToFrozenDictionary(StringComparer.Ordinal);
+    public static IReadOnlyDictionary<string, string> DefaultReleaseSnapshotHashes { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["eventstore/3.129.0"] = "a56951dcc4a8c53f22e449a2399516e51c4d2569bec1357f8197593a8d9e44a2",
+        ["memories/3.0.12"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
+    }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Gets the selected Platform checkout.</summary>
     public string PlatformRoot { get; init; } = Mapping.PlatformIdentity?.PlatformPath
