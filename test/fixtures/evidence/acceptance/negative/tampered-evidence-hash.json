@@ -3,7 +3,7 @@
   "status": "accepted",
   "sourceRevision": "0123456789abcdef0123456789abcdef01234567",
   "platformPins": {
-    "eventStoreVersion": "3.132.2",
+    "eventStoreVersion": "3.133.0",
     "daprRuntimeVersion": "1.18.7",
     "daprSdkVersion": "1.19.0",
     "frontComposerVersion": "4.7.5"
@@ -50,7 +50,7 @@
       "exitCode": 0,
       "finalStatus": "completed",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.json",
-      "evidenceSha256": "748734A11C1615E2CBDA07EE71CCFE2AFEB74A432B984EE68FBF2CCE3F16322B",
+      "evidenceSha256": "957C2D4375A944F718CB20FBD2E378F13FF4473E4DED520A627994091E99916A",
       "reportPath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.mtp.trx",
       "reportSha256": "7A81E16B31D9D46B875DD225F4783F671E956EA0F7E694EF1E539917111760AE",
       "reportPlatform": "mtp"
@@ -61,7 +61,7 @@
       "exitCode": 2,
       "finalStatus": "unavailable",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-prerequisite-unavailable.json",
-      "evidenceSha256": "F5FBEE70804B6801433F2170F85E1818615F6D976911F083D557DCC6859B1F60",
+      "evidenceSha256": "EA0FD47202BA6BBF32120CF23616A13361E0EA9D24D0A93BDD67EC5AC053D4A1",
       "reportPath": null,
       "reportSha256": null,
       "reportPlatform": null
@@ -72,7 +72,7 @@
       "exitCode": 130,
       "finalStatus": "cancelled",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-cancelled.json",
-      "evidenceSha256": "E620FC06D3C207C38C8955E6BAA337C67E71BED4F35CF08E34DB65C98B2BF0F9",
+      "evidenceSha256": "F681D562FA1D0DD3752BE8FBEF6048FD2577969700FD25AA7A8B684DDF8116CA",
       "reportPath": null,
       "reportSha256": null,
       "reportPlatform": null
@@ -82,7 +82,7 @@
     "status": "passed",
     "command": "dotnet tool run hexalith-module down --manifest test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json --run-id 0123456789abcdef0123456789abcd01",
     "artifactPath": "test/fixtures/evidence/acceptance/bound/cleanup-down.json",
-    "artifactSha256": "97521F29A2EFB9A2C0B0DAB7345931A3E7C71E61D626EE5B1C4709DE6ADCAE83"
+    "artifactSha256": "18A557BCBCE8DCAA6F0512473759620DF924A8AF9904C1DAF072796EE0614501"
   },
   "rollback": {
     "status": "passed",
