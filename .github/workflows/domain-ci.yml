@@ -257,8 +257,6 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout-minutes }}
-    env:
-      ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
     outputs:
       governed-candidate: ${{ steps.governed-provenance.outputs.candidate }}
       governed-provenance-json: ${{ steps.governed-provenance.outputs.provenance-json }}
@@ -448,6 +446,7 @@ jobs:
         shell: bash
         env:
           UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
+          ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
         run: |
           set -euo pipefail
           failures=0
@@ -551,6 +550,7 @@ jobs:
         shell: bash
         env:
           UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
+          ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
           RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}
         run: |
           set -euo pipefail
@@ -677,6 +677,7 @@ jobs:
         shell: bash
         env:
           INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
+          ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
         run: |
           set -euo pipefail
           failures=0
@@ -780,6 +781,7 @@ jobs:
         shell: bash
         env:
           INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
+          ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
           RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}
         run: |
           set -euo pipefail
