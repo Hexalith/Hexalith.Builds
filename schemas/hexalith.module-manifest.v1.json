@@ -62,10 +62,10 @@
       "additionalProperties": false,
       "required": ["eventStoreVersion", "daprRuntimeVersion", "daprSdkVersion", "frontComposerVersion"],
       "properties": {
-        "eventStoreVersion": { "const": "3.131.0" },
+        "eventStoreVersion": { "const": "3.132.0" },
         "daprRuntimeVersion": { "const": "1.18.7" },
         "daprSdkVersion": { "const": "1.19.0" },
-        "frontComposerVersion": { "const": "4.7.4" }
+        "frontComposerVersion": { "const": "4.7.5" }
       }
     },
     "profile": {
