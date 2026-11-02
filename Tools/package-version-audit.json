@@ -1,15 +1,14 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "0c21339c063abfd5003e573b482e12a07d14568e",
+  "generatedFromRevision": "190568c5b046a325ef5a65a053e99ba65cc2b338",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "b590e451bbc65f3b162092cf6bd22bd2ae49013f9785a31f03f995f10c7d0416",
-  "catalogRawSha256": "8d238f32d050e7319cae559bb7fcd9433c1b17afaa81818b817e12f1ed57b0ea",
+  "catalogSha256": "bade7f129df947377a7527c31f2fdc335e310700924c6acf2c88f79ea53fd1a1",
+  "catalogRawSha256": "34fb05fb16fb480fde2d427f75210329d159190fb52c5c8e156ff83e2a456dd3",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-02T19:37:25.6606190+00:00",
+    "auditedAtUtc": "2026-11-02T19:46:13.6430145+00:00",
     "refreshedFamilies": [
-      "hexalith-eventstore",
-      "hexalith-memories"
+      "hexalith-mcpcli"
     ],
     "preservedFamilies": [
       "aspire",
@@ -23,11 +22,12 @@
       "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
+      "hexalith-eventstore",
       "hexalith-folders",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
       "hexalith-keyvaluestorages",
-      "hexalith-mcpcli",
+      "hexalith-memories",
       "hexalith-netaspire",
       "hexalith-parties",
       "hexalith-polymorphicserializations",
@@ -179,7 +179,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "0c21339c063abfd5003e573b482e12a07d14568e",
+    "repositoryRevision": "190568c5b046a325ef5a65a053e99ba65cc2b338",
     "sha256": "c419088f40670c681d00d8367ec50fcd1d1391346c5c34ce04b3e0632539a80e",
     "entries": [
       {
@@ -12418,11 +12418,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
-        "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
-        "familySelectionSha256": "da857a402c8d1957342d5ae79ebfd06b949c619d5b7b25b5e56d5bc590cdebb1",
+        "auditedAtUtc": "2026-11-02T19:46:13.6430145+00:00",
+        "generatedFromRevision": "190568c5b046a325ef5a65a053e99ba65cc2b338",
+        "familySelectionSha256": "d820dfaa3a0b981666df1f242a8731abecbb334f5401987a01062be6355beb37",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "e6826b776598a53ec6f85d6636c78469a34f84b34a08a49bf00fecbde6496ff0",
+        "packageMetadataSha256": "377a375c06eb81a14f3a94e8c80b15bf8eedd5468d2c9515f3c27e5792daaca4",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -12447,6 +12447,31 @@
             "familySelectionSha256": "dbcf57b6a0391314ca4b4bf9648a5e489e3fec3d52522e85399930782ece5590",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ec9ae4f6028582b038c1182be081afad110c946491c1ca2e7e379987fdfddfca",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "family": "hexalith-mcpcli",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-mcpcli",
+          "packageIds": [
+            "Hexalith.McpCli.Abstractions"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "da857a402c8d1957342d5ae79ebfd06b949c619d5b7b25b5e56d5bc590cdebb1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "e6826b776598a53ec6f85d6636c78469a34f84b34a08a49bf00fecbde6496ff0",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -158264,22 +158289,22 @@
     },
     {
       "id": "Hexalith.McpCli.Abstractions",
-      "auditedVersion": "1.1.0",
-      "selectedVersion": "1.1.0",
-      "latestStable": "1.1.0",
+      "auditedVersion": "2.0.0",
+      "selectedVersion": "2.0.0",
+      "latestStable": "2.0.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-mcpcli",
       "disposition": "retained",
       "rollbackGroup": "hexalith-mcpcli",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.1.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "1.1.0",
+          "latestStable": "2.0.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -158317,6 +158342,42 @@
             "familySelectionSha256": "dbcf57b6a0391314ca4b4bf9648a5e489e3fec3d52522e85399930782ece5590",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ec9ae4f6028582b038c1182be081afad110c946491c1ca2e7e379987fdfddfca",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "id": "Hexalith.McpCli.Abstractions",
+          "auditedVersion": "1.1.0",
+          "selectedVersion": "1.1.0",
+          "latestStable": "1.1.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-mcpcli",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-mcpcli",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.1.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "1.1.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "da857a402c8d1957342d5ae79ebfd06b949c619d5b7b25b5e56d5bc590cdebb1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "e6826b776598a53ec6f85d6636c78469a34f84b34a08a49bf00fecbde6496ff0",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
