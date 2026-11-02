@@ -12,6 +12,8 @@ $evaluationText = [string]::Join(
             -getProperty:CentralPackageVersionOverrideEnabled `
             -getProperty:HexalithCommonsVersion `
             -getProperty:HexalithEventStoreVersion `
+            -getProperty:HexalithMcpCliVersion `
+            -getProperty:HexalithTenantsVersion `
             -getProperty:HexalithFrontComposerVersion `
             -getItem:PackageVersion 2>&1 |
             ForEach-Object { [string] $_ }
@@ -72,6 +74,23 @@ $requiredPackages = @(
     'Hexalith.EventStore.Contracts'
     'Hexalith.EventStore.Gateway'
     'Hexalith.FrontComposer.Contracts.UI'
+    'Hexalith.EventStore.Admin.Abstractions'
+    'Hexalith.EventStore.Admin.Server'
+    'Hexalith.EventStore.Aspire'
+    'Hexalith.EventStore.Client'
+    'Hexalith.EventStore.DomainService'
+    'Hexalith.EventStore.RestApi.Generators'
+    'Hexalith.EventStore.Server'
+    'Hexalith.EventStore.ServiceDefaults'
+    'Hexalith.EventStore.SignalR'
+    'Hexalith.EventStore.Testing'
+    'Hexalith.EventStore.Testing.Integration'
+    'Hexalith.McpCli.Abstractions'
+    'Hexalith.Tenants.Aspire'
+    'Hexalith.Tenants.Client'
+    'Hexalith.Tenants.Contracts'
+    'Hexalith.Tenants.Server'
+    'Hexalith.Tenants.Testing'
     'OpenTelemetry.Instrumentation.AspNetCore'
     'OpenTelemetry.Instrumentation.Http'
     'OpenTelemetry.Instrumentation.Runtime'
@@ -119,6 +138,53 @@ if ($overrideEnabled -cne 'false') {
     )
 }
 
+# Each canonical family must use its one authoritative property, including new members.
+$cohortFamilies = [ordered] @{
+    'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '4.0.0' }
+    'Hexalith.McpCli.' = @{ Property = 'HexalithMcpCliVersion'; Version = '2.0.0' }
+    'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '7.0.0' }
+}
+[xml] $catalog = Get-Content -LiteralPath $catalogPath -Raw
+foreach ($family in $cohortFamilies.GetEnumerator()) {
+    $propertyName = $family.Value.Property
+    $expectedVersion = $family.Value.Version
+    if ([string] $evaluation.Properties.$propertyName -cne $expectedVersion) {
+        $failures.Add("Canonical family '$($family.Key)' must default to '$expectedVersion'.")
+    }
+
+    $members = @($catalog.SelectNodes('//PackageVersion') | Where-Object { $_.Include.StartsWith($family.Key, [StringComparison]::Ordinal) })
+    if ($members.Count -eq 0) {
+        $failures.Add("Canonical family '$($family.Key)' has no package bindings.")
+    }
+
+    foreach ($member in $members) {
+        if ($member.Version -cne ('$' + '(' + $propertyName + ')') -or $evaluatedPackages[$member.Include] -cne $expectedVersion) {
+            $failures.Add("Package '$($member.Include)' must bind directly to '$propertyName' at '$expectedVersion'.")
+        }
+    }
+}
+
+# Prove NuGet refuses per-package overrides before any source is contacted.
+$probeDirectory = Join-Path ([IO.Path]::GetTempPath()) "canonical-cohort-$([Guid]::NewGuid().ToString('N'))"
+try {
+    [void] [IO.Directory]::CreateDirectory($probeDirectory)
+    $escapedCatalog = [Security.SecurityElement]::Escape([IO.Path]::GetFullPath($catalogPath))
+    [IO.File]::WriteAllText((Join-Path $probeDirectory 'Directory.Packages.props'),
+        "<Project><Import Project=""$escapedCatalog"" /></Project>")
+    foreach ($package in @('Hexalith.EventStore.Contracts', 'Hexalith.McpCli.Abstractions', 'Hexalith.Tenants.Contracts')) {
+        $probePath = Join-Path $probeDirectory 'Override.csproj'
+        [IO.File]::WriteAllText($probePath,
+            "<Project Sdk=""Microsoft.NET.Sdk""><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=""$package"" VersionOverride=""0.0.1"" /></ItemGroup></Project>")
+        $overrideOutput = @(& dotnet restore $probePath --force --source $probeDirectory --packages (Join-Path $probeDirectory 'packages') 2>&1)
+        if ($LASTEXITCODE -eq 0 -or [string]::Join("`n", $overrideOutput) -notmatch 'NU1013') {
+            $failures.Add("NuGet must reject VersionOverride for '$package' with NU1013.")
+        }
+    }
+}
+finally {
+    if (Test-Path -LiteralPath $probeDirectory) { [IO.Directory]::Delete($probeDirectory, $true) }
+}
+
 # The approved stable selection belongs exclusively to Builds and retains one package identity.
 $stableOutput = @(& (Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })) `
         -NoLogo -NoProfile -File (Join-Path $PSScriptRoot 'validate-central-package-versions.ps1') `
@@ -150,5 +216,5 @@ if ($failures.Count -gt 0) {
 }
 
 [Console]::Out.WriteLine(
-    "Authoritative package catalog tests passed for $($requiredPackages.Count) approved package identities and $($sharedPackageVersions.Count) shared package versions."
+    "Authoritative package catalog tests passed for $($requiredPackages.Count) approved package identities, $($sharedPackageVersions.Count) shared package versions, and $($cohortFamilies.Count) canonical families with overrides prohibited."
 )
