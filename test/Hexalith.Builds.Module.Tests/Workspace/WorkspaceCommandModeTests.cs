@@ -496,6 +496,7 @@ public sealed class WorkspaceCommandModeTests
             ProfileExecutorOverride = (_, _, _) => Task.FromResult(new ToolCommandResult("completed", ToolOutcome.Passed(), [])),
             StateDirectory = Path.Combine(fixture.Directory, "state"),
             WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+
             // Package-mode native startup can exceed five seconds on a loaded hosted runner.
             ReadinessTimeout = TimeSpan.FromSeconds(30),
         };
