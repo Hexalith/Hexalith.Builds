@@ -1,18 +1,19 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "818ed23508234e298d662e9285a1525f1dad38c5",
+  "generatedFromRevision": "0112662625b9f87f56bec51da408adb2246f8f86",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "b37374d26fae9c85053866d1b62f6f3b0bfa569baac343d8f743a55b1d4771a0",
-  "catalogRawSha256": "095a22f448e7bf43d092a58d5e240f29b3c5cde385afc9a7e01d2720c1d6a806",
+  "catalogSha256": "c47fb3d9f98c3d4f0c135cda668c9d153e0348b574c38da2fa444684aa529dfb",
+  "catalogRawSha256": "73770133abc4dea0fabd1a0e549bb7ecca46a46df88ce08b2588e8e81b340707",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-02T13:02:14.7195470+00:00",
+    "auditedAtUtc": "2026-11-02T17:21:42.4999547+00:00",
     "refreshedFamilies": [
-      "hexalith-eventstore"
+      "bunit-html",
+      "package:radzen.blazor",
+      "package:stackexchange.redis"
     ],
     "preservedFamilies": [
       "aspire",
-      "bunit-html",
       "dapr",
       "dotnet-10",
       "fluent-ui",
@@ -22,6 +23,7 @@
       "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
+      "hexalith-eventstore",
       "hexalith-folders",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
@@ -131,7 +133,6 @@
       "package:octokit",
       "package:orchardcore.localization.core",
       "package:pactnet",
-      "package:radzen.blazor",
       "package:roslynator.analyzers",
       "package:roslynator.formatting.analyzers",
       "package:scriban",
@@ -148,7 +149,6 @@
       "package:serilog.sinks.file",
       "package:shouldly",
       "package:sonaranalyzer.csharp",
-      "package:stackexchange.redis",
       "package:stylecop.analyzers",
       "package:swashbuckle.aspnetcore",
       "package:swashbuckle.aspnetcore.swaggerui",
@@ -179,7 +179,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "818ed23508234e298d662e9285a1525f1dad38c5",
+    "repositoryRevision": "0112662625b9f87f56bec51da408adb2246f8f86",
     "sha256": "c419088f40670c681d00d8367ec50fcd1d1391346c5c34ce04b3e0632539a80e",
     "entries": [
       {
@@ -1367,11 +1367,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
-        "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
-        "familySelectionSha256": "e99bf01e18b3f59f9ec68e476a5d98dc844dfedef5b38a2f1c047ea61d629604",
+        "auditedAtUtc": "2026-11-02T17:21:42.4999547+00:00",
+        "generatedFromRevision": "0112662625b9f87f56bec51da408adb2246f8f86",
+        "familySelectionSha256": "ddb8e272085b40afbbfcb4d6f37aa493df166a3a713d1d8f7e94a2adb004b6d5",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "00176011f5e62ec6ebcbd03ceafdefa8081a0da5bc4f347e7f09ec921a399777",
+        "packageMetadataSha256": "bd4d14895e26c284085289068cf2c1398449befa218277a9022d90d0df7f8e6e",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -2288,6 +2288,32 @@
             "familySelectionSha256": "e99bf01e18b3f59f9ec68e476a5d98dc844dfedef5b38a2f1c047ea61d629604",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "b600e7b4a0cddb25868c4ee11a8a3cc22c5d7dbfe8476889df136924e1a1a1dc",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "family": "bunit-html",
+          "disposition": "retained",
+          "rollbackGroup": "bunit-html",
+          "packageIds": [
+            "AngleSharp",
+            "bunit"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "e99bf01e18b3f59f9ec68e476a5d98dc844dfedef5b38a2f1c047ea61d629604",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "00176011f5e62ec6ebcbd03ceafdefa8081a0da5bc4f347e7f09ec921a399777",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -54751,11 +54777,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
-        "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
-        "familySelectionSha256": "3388e815074847ac24ef72a48b5b8cd82e85e2aba7b7f0388ceda720aa1f0060",
+        "auditedAtUtc": "2026-11-02T17:21:42.4999547+00:00",
+        "generatedFromRevision": "0112662625b9f87f56bec51da408adb2246f8f86",
+        "familySelectionSha256": "de24f38493c2a9ffc6f5821207e31575f105fc157be30455a138ae43b037c52f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "0602b220879608343b07354632f11c6107b6de35899c13c5302fdb29054f9a5b",
+        "packageMetadataSha256": "5008212c09783b4317aa1e32b2669bc3ee51f99001b222fdbad034d2bbc02059",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -55612,6 +55638,31 @@
             "familySelectionSha256": "84ee3e8542d255b7c03797fbf83576e84ddd7781301a25b18294af1b4f69911b",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "28f30f7443a59f285fa88fcdb89c6c3a95d330c71238aa8523e84b89dccf9c34",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "family": "package:radzen.blazor",
+          "disposition": "retained",
+          "rollbackGroup": "package:radzen.blazor",
+          "packageIds": [
+            "Radzen.Blazor"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "3388e815074847ac24ef72a48b5b8cd82e85e2aba7b7f0388ceda720aa1f0060",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "0602b220879608343b07354632f11c6107b6de35899c13c5302fdb29054f9a5b",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -62318,11 +62369,11 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
-        "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
-        "familySelectionSha256": "4ad7b6415db1a934aef6724a051385266ca0847c790c70764b0da9f0b5dd9dee",
+        "auditedAtUtc": "2026-11-02T17:21:42.4999547+00:00",
+        "generatedFromRevision": "0112662625b9f87f56bec51da408adb2246f8f86",
+        "familySelectionSha256": "b08c05e676af5c0b35e0434d6ca333becd595279dc4d1300a12939488af7eff9",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "bec817fa7dab0f199cfb5c77a401bc0e0f3c44312ec09e7ca3a0644d87d1cfb0",
+        "packageMetadataSha256": "5fc21345ae7cd6c4997b82b7aa25e52ac62572ce0964c61081bf2b0971991c34",
         "consumerEvidenceSha256": "60fb1efa9e95526c60c779eeb19db2471d24ddfb9556a48bf848442e1a2ef42f"
       },
       "historicalContext": [
@@ -63056,6 +63107,34 @@
             "familySelectionSha256": "4ad7b6415db1a934aef6724a051385266ca0847c790c70764b0da9f0b5dd9dee",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "20c6544c548a38ae27590e5888f621cf4970c63bd394a5333c1db7422c6c7817",
+            "consumerEvidenceSha256": "60fb1efa9e95526c60c779eeb19db2471d24ddfb9556a48bf848442e1a2ef42f"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "family": "package:stackexchange.redis",
+          "disposition": "retained",
+          "rollbackGroup": "package:stackexchange.redis",
+          "packageIds": [
+            "StackExchange.Redis"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [
+            "src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj",
+            "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "4ad7b6415db1a934aef6724a051385266ca0847c790c70764b0da9f0b5dd9dee",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "bec817fa7dab0f199cfb5c77a401bc0e0f3c44312ec09e7ca3a0644d87d1cfb0",
             "consumerEvidenceSha256": "60fb1efa9e95526c60c779eeb19db2471d24ddfb9556a48bf848442e1a2ef42f"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -70230,23 +70309,23 @@
     },
     {
       "id": "AngleSharp",
-      "auditedVersion": "1.9.0",
-      "selectedVersion": "1.9.0",
-      "latestStable": "1.9.0",
-      "latestPrerelease": "1.9.1-beta.903",
+      "auditedVersion": "1.9.1",
+      "selectedVersion": "1.9.1",
+      "latestStable": "1.9.1",
+      "latestPrerelease": "1.9.1-beta.913",
       "listingState": "listed",
       "family": "bunit-html",
       "disposition": "retained",
       "rollbackGroup": "bunit-html",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.9.0, prerelease=1.9.1-beta.903",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.9.1, prerelease=1.9.1-beta.913",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "1.9.0",
-          "latestPrerelease": "1.9.1-beta.903",
+          "latestStable": "1.9.1",
+          "latestPrerelease": "1.9.1-beta.913",
           "diagnostic": "Registration metadata resolved."
         }
       ],
@@ -71387,6 +71466,42 @@
             "familySelectionSha256": "e99bf01e18b3f59f9ec68e476a5d98dc844dfedef5b38a2f1c047ea61d629604",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "b600e7b4a0cddb25868c4ee11a8a3cc22c5d7dbfe8476889df136924e1a1a1dc",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "id": "AngleSharp",
+          "auditedVersion": "1.9.0",
+          "selectedVersion": "1.9.0",
+          "latestStable": "1.9.0",
+          "latestPrerelease": "1.9.1-beta.903",
+          "listingState": "listed",
+          "family": "bunit-html",
+          "disposition": "retained",
+          "rollbackGroup": "bunit-html",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.9.0, prerelease=1.9.1-beta.903",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "1.9.0",
+              "latestPrerelease": "1.9.1-beta.903",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "e99bf01e18b3f59f9ec68e476a5d98dc844dfedef5b38a2f1c047ea61d629604",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "00176011f5e62ec6ebcbd03ceafdefa8081a0da5bc4f347e7f09ec921a399777",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -93159,6 +93274,42 @@
             "familySelectionSha256": "e99bf01e18b3f59f9ec68e476a5d98dc844dfedef5b38a2f1c047ea61d629604",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "b600e7b4a0cddb25868c4ee11a8a3cc22c5d7dbfe8476889df136924e1a1a1dc",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "id": "bunit",
+          "auditedVersion": "2.13.3",
+          "selectedVersion": "2.13.3",
+          "latestStable": "2.13.3",
+          "latestPrerelease": "2.8.4-preview",
+          "listingState": "listed",
+          "family": "bunit-html",
+          "disposition": "retained",
+          "rollbackGroup": "bunit-html",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.13.3, prerelease=2.8.4-preview",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "2.13.3",
+              "latestPrerelease": "2.8.4-preview",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "e99bf01e18b3f59f9ec68e476a5d98dc844dfedef5b38a2f1c047ea61d629604",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "00176011f5e62ec6ebcbd03ceafdefa8081a0da5bc4f347e7f09ec921a399777",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -242960,22 +243111,22 @@
     },
     {
       "id": "Radzen.Blazor",
-      "auditedVersion": "12.1.9",
-      "selectedVersion": "12.1.9",
-      "latestStable": "12.1.9",
+      "auditedVersion": "12.1.10",
+      "selectedVersion": "12.1.10",
+      "latestStable": "12.1.10",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "package:radzen.blazor",
       "disposition": "retained",
       "rollbackGroup": "package:radzen.blazor",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=12.1.9, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=12.1.10, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "12.1.9",
+          "latestStable": "12.1.10",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -244081,6 +244232,42 @@
             "familySelectionSha256": "84ee3e8542d255b7c03797fbf83576e84ddd7781301a25b18294af1b4f69911b",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "28f30f7443a59f285fa88fcdb89c6c3a95d330c71238aa8523e84b89dccf9c34",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "id": "Radzen.Blazor",
+          "auditedVersion": "12.1.9",
+          "selectedVersion": "12.1.9",
+          "latestStable": "12.1.9",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "package:radzen.blazor",
+          "disposition": "retained",
+          "rollbackGroup": "package:radzen.blazor",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=12.1.9, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "12.1.9",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "3388e815074847ac24ef72a48b5b8cd82e85e2aba7b7f0388ceda720aa1f0060",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "0602b220879608343b07354632f11c6107b6de35899c13c5302fdb29054f9a5b",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -251421,22 +251608,22 @@
     },
     {
       "id": "StackExchange.Redis",
-      "auditedVersion": "3.4.29",
-      "selectedVersion": "3.4.29",
-      "latestStable": "3.4.29",
+      "auditedVersion": "3.4.31",
+      "selectedVersion": "3.4.31",
+      "latestStable": "3.4.31",
       "latestPrerelease": "4.0.155-alpha",
       "listingState": "listed",
       "family": "package:stackexchange.redis",
       "disposition": "retained",
       "rollbackGroup": "package:stackexchange.redis",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.4.29, prerelease=4.0.155-alpha",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.4.31, prerelease=4.0.155-alpha",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.4.29",
+          "latestStable": "3.4.31",
           "latestPrerelease": "4.0.155-alpha",
           "diagnostic": "Registration metadata resolved."
         }
@@ -252326,6 +252513,42 @@
             "familySelectionSha256": "4ad7b6415db1a934aef6724a051385266ca0847c790c70764b0da9f0b5dd9dee",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "20c6544c548a38ae27590e5888f621cf4970c63bd394a5333c1db7422c6c7817",
+            "consumerEvidenceSha256": "60fb1efa9e95526c60c779eeb19db2471d24ddfb9556a48bf848442e1a2ef42f"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+          "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+          "id": "StackExchange.Redis",
+          "auditedVersion": "3.4.29",
+          "selectedVersion": "3.4.29",
+          "latestStable": "3.4.29",
+          "latestPrerelease": "4.0.155-alpha",
+          "listingState": "listed",
+          "family": "package:stackexchange.redis",
+          "disposition": "retained",
+          "rollbackGroup": "package:stackexchange.redis",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.4.29, prerelease=4.0.155-alpha",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.4.29",
+              "latestPrerelease": "4.0.155-alpha",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
+            "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+            "familySelectionSha256": "4ad7b6415db1a934aef6724a051385266ca0847c790c70764b0da9f0b5dd9dee",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "bec817fa7dab0f199cfb5c77a401bc0e0f3c44312ec09e7ca3a0644d87d1cfb0",
             "consumerEvidenceSha256": "60fb1efa9e95526c60c779eeb19db2471d24ddfb9556a48bf848442e1a2ef42f"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
