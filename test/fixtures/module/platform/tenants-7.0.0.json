@@ -1,0 +1,596 @@
+{
+  "schema": "hexalith.module-manifest.v2",
+  "modules": [
+    {
+      "identity": {
+        "moduleId": "tenants",
+        "servers": [
+          {
+            "id": "domain",
+            "appId": "tenants",
+            "resourceId": "tenants",
+            "enabled": true,
+            "required": true
+          },
+          {
+            "id": "api",
+            "appId": "tenants-api",
+            "resourceId": "tenants-api",
+            "enabled": true,
+            "required": true
+          }
+        ],
+        "dependencies": [
+          "eventstore"
+        ]
+      },
+      "runtime": {
+        "dapr": [
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:CommandStatus:StateStoreName",
+            "servers": [
+              "domain",
+              "api"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:DataProtection:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "EventStore:ProjectionChanges:PubSubName",
+            "servers": [
+              "domain"
+            ]
+          }
+        ],
+        "extensions": [
+          {
+            "packageId": "Hexalith.Tenants.Aspire",
+            "configurationInputs": [
+              {
+                "key": "Tenants:DaprConfigPath",
+                "source": "configuration",
+                "reference": "daprconfigpath"
+              },
+              {
+                "key": "Oidc:Authority",
+                "source": "configuration",
+                "reference": "authority"
+              },
+              {
+                "key": "Jwt:SigningKey",
+                "source": "secret",
+                "reference": "api-signing-key"
+              },
+              {
+                "key": "Tenants:BootstrapGlobalAdminEnabled",
+                "source": "configuration",
+                "reference": "bootstrapglobaladminenabled"
+              },
+              {
+                "key": "Tenants:BootstrapGlobalAdminUserId",
+                "source": "configuration",
+                "reference": "bootstrapglobaladminuserid"
+              },
+              {
+                "key": "EventStore:Authentication:Authority",
+                "source": "configuration",
+                "reference": "authority"
+              },
+              {
+                "key": "EventStore:Authentication:ClientId",
+                "source": "configuration",
+                "reference": "clientid"
+              },
+              {
+                "key": "EventStore:Authentication:Username",
+                "source": "configuration",
+                "reference": "username"
+              },
+              {
+                "key": "EventStore:Authentication:Issuer",
+                "source": "configuration",
+                "reference": "issuer"
+              },
+              {
+                "key": "EventStore:Authentication:Audience",
+                "source": "configuration",
+                "reference": "audience"
+              },
+              {
+                "key": "EventStore:Authentication:RequireHttpsMetadata",
+                "source": "configuration",
+                "reference": "requirehttpsmetadata"
+              },
+              {
+                "key": "Authentication:JwtBearer:Authority",
+                "source": "configuration",
+                "reference": "authority"
+              },
+              {
+                "key": "Authentication:JwtBearer:Issuer",
+                "source": "configuration",
+                "reference": "issuer"
+              },
+              {
+                "key": "Authentication:JwtBearer:Audience",
+                "source": "configuration",
+                "reference": "audience"
+              },
+              {
+                "key": "Authentication:JwtBearer:ValidAudiences",
+                "source": "configuration",
+                "reference": "validaudiences"
+              },
+              {
+                "key": "Authentication:JwtBearer:AllowedAlgorithms",
+                "source": "configuration",
+                "reference": "allowedalgorithms"
+              },
+              {
+                "key": "Authentication:JwtBearer:RequireHttpsMetadata",
+                "source": "configuration",
+                "reference": "requirehttpsmetadata"
+              },
+              {
+                "key": "Authentication:JwtBearer:AllowInsecureSymmetricKey",
+                "source": "configuration",
+                "reference": "allowinsecuresymmetrickey"
+              },
+              {
+                "key": "Authentication:Workload:Audience",
+                "source": "configuration",
+                "reference": "audience"
+              },
+              {
+                "key": "Authentication:Workload:AllowedCallers",
+                "source": "configuration",
+                "reference": "allowedcallers"
+              },
+              {
+                "key": "Authentication:Workload:MaximumLifetimeSeconds",
+                "source": "configuration",
+                "reference": "maximumlifetimeseconds"
+              },
+              {
+                "key": "EventStore:DataProtection:PersistToStateStore",
+                "source": "configuration",
+                "reference": "persisttostatestore"
+              },
+              {
+                "key": "EventStore:Authentication:Password",
+                "source": "secret",
+                "reference": "bootstrap-delegated-password"
+              },
+              {
+                "key": "EventStore:Authentication:SigningKey",
+                "source": "secret",
+                "reference": "api-eventstore-signing-key"
+              },
+              {
+                "key": "Authentication:JwtBearer:SigningKey",
+                "source": "secret",
+                "reference": "domain-jwt-signing-key"
+              },
+              {
+                "key": "Tenants:AppChannelToken",
+                "source": "secret",
+                "reference": "domain-app-channel-token"
+              },
+              {
+                "key": "Tenants:ApiDaprToken",
+                "source": "secret",
+                "reference": "api-dapr-token"
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "server": "domain",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          },
+          {
+            "server": "api",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          }
+        ]
+      },
+      "surfaces": {
+        "interfaces": [
+          {
+            "name": "tenant-api",
+            "server": "api",
+            "protocol": "http",
+            "routePrefix": "/api/tenants",
+            "exposure": "public",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [],
+            "operations": [
+              {
+                "name": "create-tenant",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "list-tenants",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "get-tenant",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "update-tenant",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "enable-tenant",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "disable-tenant",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "add-user-to-tenant",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "remove-user-from-tenant",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "change-user-role",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "get-tenant-users",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "set-tenant-configuration",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "remove-tenant-configuration",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "get-tenant-audit",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              }
+            ]
+          },
+          {
+            "name": "global-administrators-api",
+            "server": "api",
+            "protocol": "http",
+            "routePrefix": "/api/global-administrators",
+            "exposure": "public",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated-current-global-administrator",
+              "permissions": []
+            },
+            "callers": [],
+            "operations": [
+              {
+                "name": "list-global-administrators",
+                "kind": "query",
+                "authorizationPolicy": "authenticated-current-global-administrator"
+              },
+              {
+                "name": "set-global-administrator",
+                "kind": "command",
+                "authorizationPolicy": "authenticated-current-global-administrator"
+              },
+              {
+                "name": "remove-global-administrator",
+                "kind": "command",
+                "authorizationPolicy": "authenticated-current-global-administrator"
+              }
+            ]
+          },
+          {
+            "name": "user-tenants-api",
+            "server": "api",
+            "protocol": "http",
+            "routePrefix": "/api/users/{userId}/tenants",
+            "exposure": "public",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [],
+            "operations": [
+              {
+                "name": "get-user-tenants",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              }
+            ]
+          },
+          {
+            "name": "tenant-domain",
+            "server": "domain",
+            "protocol": "http",
+            "routePrefix": "/",
+            "exposure": "internal-only",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [
+              "eventstore",
+              "parties"
+            ],
+            "operations": [
+              {
+                "name": "process",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "query",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "project",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "replay-state",
+                "kind": "administration",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "admin-operational-index-metadata",
+                "kind": "administration",
+                "authorizationPolicy": "authenticated"
+              }
+            ],
+            "invocationRules": [
+              {
+                "caller": "eventstore",
+                "path": "/process",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/query",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/replay-state",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/admin/operational-index-metadata",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "parties",
+                "path": "/ready",
+                "verbs": [
+                  "GET"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "integration": {
+        "topics": [
+          {
+            "name": "tenants-events",
+            "role": "events",
+            "deadLetter": {
+              "strategy": "none"
+            }
+          }
+        ],
+        "secrets": [
+          {
+            "name": "api-signing-key",
+            "configurationKey": "Jwt:SigningKey"
+          },
+          {
+            "name": "bootstrap-delegated-password",
+            "configurationKey": "EventStore:Authentication:Password"
+          },
+          {
+            "name": "api-eventstore-signing-key",
+            "configurationKey": "EventStore:Authentication:SigningKey"
+          },
+          {
+            "name": "domain-jwt-signing-key",
+            "configurationKey": "Authentication:JwtBearer:SigningKey"
+          },
+          {
+            "name": "domain-app-channel-token",
+            "configurationKey": "Tenants:AppChannelToken"
+          },
+          {
+            "name": "api-dapr-token",
+            "configurationKey": "Tenants:ApiDaprToken"
+          }
+        ],
+        "dynamicSecretNamespaces": [],
+        "identityNeeds": [],
+        "egress": [
+          {
+            "name": "bootstrap-oidc-token",
+            "protocol": "oidc",
+            "destination": "EventStore:Authentication:Authority/protocol/openid-connect/token"
+          },
+          {
+            "name": "domain-oidc-metadata",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority/.well-known/openid-configuration"
+          },
+          {
+            "name": "domain-oidc-jwks",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority -> metadata.jwks_uri"
+          },
+          {
+            "name": "public-api-oidc-metadata",
+            "protocol": "https",
+            "destination": "Oidc:Authority/.well-known/openid-configuration"
+          },
+          {
+            "name": "public-api-oidc-jwks",
+            "protocol": "https",
+            "destination": "Oidc:Authority -> metadata.jwks_uri"
+          },
+          {
+            "name": "public-api-eventstore-oidc-metadata",
+            "protocol": "https",
+            "destination": "EventStore:Authentication:Authority/.well-known/openid-configuration"
+          },
+          {
+            "name": "public-api-eventstore-oidc-jwks",
+            "protocol": "https",
+            "destination": "EventStore:Authentication:Authority -> metadata.jwks_uri"
+          }
+        ],
+        "providers": [],
+        "workers": [
+          {
+            "name": "global-administrator-bootstrap",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "Tenants:BootstrapGlobalAdminEnabled",
+              "disabledValue": false
+            }
+          }
+        ]
+      },
+      "lifecycle": {
+        "readiness": [
+          {
+            "server": "domain",
+            "kind": "http",
+            "endpoint": "/ready"
+          },
+          {
+            "server": "api",
+            "kind": "http",
+            "endpoint": "/ready"
+          }
+        ],
+        "tasks": [],
+        "recoveryHooks": [],
+        "fenceHooks": [],
+        "replay": {
+          "reopenBeforeReplay": false
+        },
+        "startup": {},
+        "criticalFlows": [
+          {
+            "name": "tenant-management",
+            "surface": "tenant-api",
+            "operations": [
+              "create-tenant",
+              "get-tenant"
+            ]
+          },
+          {
+            "name": "global-administrator-management",
+            "surface": "global-administrators-api",
+            "operations": [
+              "list-global-administrators",
+              "set-global-administrator",
+              "remove-global-administrator"
+            ]
+          }
+        ],
+        "smokeSurfaces": [],
+        "classification": {
+          "changeClass": "additive",
+          "reason": "Declare existing Tenants domain and public API services; readiness does not prove bootstrap completion."
+        },
+        "recoveryInventory": [
+          {
+            "name": "global-administrator-authority",
+            "recoveryClass": "rebuild-only",
+            "owner": "tenants",
+            "dependencies": [
+              "eventstore"
+            ]
+          },
+          {
+            "name": "global-administrator-audit",
+            "recoveryClass": "rebuild-only",
+            "owner": "tenants",
+            "dependencies": [
+              "eventstore"
+            ]
+          },
+          {
+            "name": "system-tenant-audit",
+            "recoveryClass": "rebuild-only",
+            "owner": "tenants",
+            "dependencies": [
+              "eventstore"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
