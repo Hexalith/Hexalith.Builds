@@ -33,16 +33,7 @@ public sealed class QualificationOwnerPlanLoaderTests
     {
         using PlatformManifestTestWorkspace workspace = new();
         string key = CompositionSigningKey.Create();
-        CompositionRunPlan plan = CompositionQualificationOwners.Bind(QualificationOwnerBindingTests.CreatePlan(workspace.Root), key);
-        plan = fault switch
-        {
-            "none" or "foreign-key" or "no-marker-with-binding" => plan,
-            "drop-owners" => plan with { QualificationOwners = null },
-            "drop-binding" => plan with { QualificationOwnersBinding = null },
-            "drop-both" => plan with { QualificationOwners = null, QualificationOwnersBinding = null },
-            "change-owners" => plan with { QualificationOwners = ["memories"] },
-            _ => throw new ArgumentOutOfRangeException(nameof(fault)),
-        };
+        CompositionRunPlan plan = CreateFaultedPlan(workspace.Root, key, fault);
         string path = Path.Combine(workspace.Root, "parent-plan.json");
         await CompositionDocumentStore.WriteAsync(path, plan, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string suppliedKey = fault == "foreign-key" ? CompositionSigningKey.Create() : key;
@@ -62,16 +53,14 @@ public sealed class QualificationOwnerPlanLoaderTests
             }
 
             Type loader = Assembly.Load("Hexalith.Builds.Module.AppHost").GetType("Hexalith.Builds.ModuleHosts.AppHost.RunPlanSource", throwOnError: true)!;
-            MethodInfo load = loader.GetMethod("LoadAsync", BindingFlags.Public | BindingFlags.Static)!;
-            Task<CompositionRunPlan> LoadAsync() => (Task<CompositionRunPlan>)load.Invoke(null, [TestContext.Current.CancellationToken])!;
             if (fault is "none" or "no-marker-with-binding")
             {
-                CompositionRunPlan received = await LoadAsync().ConfigureAwait(true);
+                CompositionRunPlan received = await LoadPlanAsync(loader).ConfigureAwait(true);
                 received.QualificationOwners.ShouldBe(["tenants"]);
             }
             else
             {
-                _ = await Should.ThrowAsync<InvalidDataException>(async () => await LoadAsync().ConfigureAwait(true)).ConfigureAwait(true);
+                _ = await Should.ThrowAsync<InvalidDataException>(async () => await LoadPlanAsync(loader).ConfigureAwait(true)).ConfigureAwait(true);
             }
 
             MethodInfo take = loader.GetMethod("TakeSigningKey", BindingFlags.Public | BindingFlags.Static)!;
@@ -88,5 +77,31 @@ public sealed class QualificationOwnerPlanLoaderTests
                 Environment.SetEnvironmentVariable(name, value);
             }
         }
+    }
+
+    /// <summary>Invokes the actual private AppHost loader through the existing assembly reference.</summary>
+    /// <param name="loader">The actual AppHost loader type.</param>
+    /// <returns>The loader's work started for this invocation.</returns>
+    private static Task<CompositionRunPlan> LoadPlanAsync(Type loader) =>
+        (Task<CompositionRunPlan>)loader.GetMethod("LoadAsync", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, [TestContext.Current.CancellationToken])!;
+
+    /// <summary>Creates the authenticated parent metadata before applying one explicit transport fault.</summary>
+    /// <param name="root">The isolated workspace.</param>
+    /// <param name="key">The private parent key; never retained in metadata or diagnostics.</param>
+    /// <param name="fault">The finite transport fault.</param>
+    /// <returns>The serialized request fixture.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The fixture fault is unknown.</exception>
+    private static CompositionRunPlan CreateFaultedPlan(string root, string key, string fault)
+    {
+        CompositionRunPlan plan = CompositionQualificationOwners.Bind(QualificationOwnerBindingTests.CreatePlan(root), key);
+        return fault switch
+        {
+            "none" or "foreign-key" or "no-marker-with-binding" => plan,
+            "drop-owners" => plan with { QualificationOwners = null },
+            "drop-binding" => plan with { QualificationOwnersBinding = null },
+            "drop-both" => plan with { QualificationOwners = null, QualificationOwnersBinding = null },
+            "change-owners" => plan with { QualificationOwners = ["memories"] },
+            _ => throw new ArgumentOutOfRangeException(nameof(fault)),
+        };
     }
 }

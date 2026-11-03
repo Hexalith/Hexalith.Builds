@@ -16,9 +16,6 @@ public static class CompositionEnvironment
     /// <summary>The AppHost environment variable carrying the per-run signing key.</summary>
     public const string SigningKey = "HEXALITH_G4_SIGNING_KEY";
 
-    /// <summary>The parent marker requiring verification of an expanded qualification owner request.</summary>
-    public const string QualificationOwnersRequired = "HEXALITH_G4_QUALIFICATION_OWNERS_REQUIRED";
-
     /// <summary>The environment variable that tags every run process with its run identity.</summary>
     public const string RunId = "HEXALITH_G4_RUN_ID";
 
@@ -49,4 +46,7 @@ public static class CompositionEnvironment
 
     /// <summary>The AppHost environment variable naming the run-private Aspire store root.</summary>
     public const string AspireStorePath = "HEXALITH_G4_ASPIRE_STORE_PATH";
+
+    /// <summary>Gets the parent marker requiring verification of an expanded qualification owner request.</summary>
+    public static string QualificationOwnersRequired => "HEXALITH_G4_QUALIFICATION_OWNERS_REQUIRED";
 }
