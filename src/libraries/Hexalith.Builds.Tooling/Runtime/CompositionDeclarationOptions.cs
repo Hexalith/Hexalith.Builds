@@ -96,7 +96,10 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
                 : throw new InvalidDataException($"{source}: {module}: {package}: image version is missing from the Builds catalog.");
         }
 
-        string catalogPath = Path.Combine(PlatformRoot, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
+        // A module's resolved identity already verifies its direct Builds checkout against Platform's pin.
+        // Platform's own nested references remain uninitialized in a direct-only module workspace.
+        string catalogRoot = Mapping.PlatformIdentity is { IsPlatformRepository: false } ? Mapping.Root : PlatformRoot;
+        string catalogPath = Path.Combine(catalogRoot, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
         if (!File.Exists(catalogPath))
         {
             throw new InvalidDataException($"{source}: {module}: {catalogPath}: Builds catalog is unavailable.");
