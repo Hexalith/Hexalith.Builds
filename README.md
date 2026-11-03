@@ -1155,6 +1155,12 @@ Release jobs analyze commits, calculate the next version, create a Git tag and
 GitHub release, and publish the configured tool or NuGet packages. They do not
 commit generated release files back to protected branches.
 
+This repository's `commitlint.config.mjs` accepts `build`, `ci`, `docs`, `feat`,
+`fix`, `perf`, `refactor`, `revert`, `style`, and `test` as commit types. Use
+`build(deps)` for dependency catalog and package audit maintenance. Before
+committing, validate the complete message from this repository with its pinned
+CLI: `npx --no-install commitlint --edit /path/to/message.txt --verbose`.
+
 Domain modules release intentionally through a manually dispatched caller and
 the protected-environment reusable
 [`domain-release.yml`](.github/workflows/domain-release.md) workflow with a
