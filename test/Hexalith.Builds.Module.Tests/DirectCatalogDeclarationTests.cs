@@ -116,27 +116,7 @@ public sealed class DirectCatalogDeclarationTests
             string catalogCommit = (await WorkspaceGitFixture.RunGitAsync(builds, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
             string platform = Path.Combine(fixture.Directory, "platform");
             await SelectAsync(Path.Combine(platform, "references", "Hexalith.Builds"), catalogCommit).ConfigureAwait(true);
-            string declarations = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "Declarations");
-            _ = Directory.CreateDirectory(declarations);
-            JsonObject provenance = [];
-            foreach ((string owner, string version) in new[] { ("eventstore", "4.0.4"), ("tenants", "7.0.0"), ("memories", "3.0.18") })
-            {
-                byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", owner + "-" + version + ".json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-                string key = owner + "/" + version;
-                string hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
-                hash.ShouldBe(CompositionDeclarationOptions.DefaultReleaseSnapshotHashes[key]);
-                await File.WriteAllBytesAsync(Path.Combine(declarations, owner + ".json"), bytes, TestContext.Current.CancellationToken).ConfigureAwait(true);
-                provenance[owner] = new JsonObject
-                {
-                    ["repository"] = CompositionDeclarationClosure.Repository(owner),
-                    ["version"] = version,
-                    ["commit"] = CompositionDeclarationOptions.DefaultReleaseCommits[key],
-                    ["source"] = "module/hexalith.module-manifest.v2.json",
-                    ["sha256"] = hash,
-                };
-            }
-
-            await File.WriteAllTextAsync(Path.Combine(declarations, "provenance.json"), provenance.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await WriteReleasedDeclarationsAsync(platform).ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(platform, "add", "src", "references/Hexalith.Builds").ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(platform, "commit", "-m", "test: bind catalog fixture").ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(platform, "tag", "v1.0.1").ConfigureAwait(true);
@@ -153,6 +133,31 @@ public sealed class DirectCatalogDeclarationTests
             fixture.Dispose();
             throw;
         }
+    }
+
+    private static async Task WriteReleasedDeclarationsAsync(string platform)
+    {
+        string declarations = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "Declarations");
+        _ = Directory.CreateDirectory(declarations);
+        JsonObject provenance = [];
+        foreach ((string owner, string version) in new[] { ("eventstore", "4.0.4"), ("tenants", "7.0.0"), ("memories", "3.0.18") })
+        {
+            byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", owner + "-" + version + ".json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string key = owner + "/" + version;
+            string hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
+            hash.ShouldBe(CompositionDeclarationOptions.DefaultReleaseSnapshotHashes[key]);
+            await File.WriteAllBytesAsync(Path.Combine(declarations, owner + ".json"), bytes, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            provenance[owner] = new JsonObject
+            {
+                ["repository"] = CompositionDeclarationClosure.Repository(owner),
+                ["version"] = version,
+                ["commit"] = CompositionDeclarationOptions.DefaultReleaseCommits[key],
+                ["source"] = "module/hexalith.module-manifest.v2.json",
+                ["sha256"] = hash,
+            };
+        }
+
+        await File.WriteAllTextAsync(Path.Combine(declarations, "provenance.json"), provenance.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 
     private static async Task SelectAsync(string repository, string commit)
