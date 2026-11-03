@@ -39,12 +39,29 @@ public static partial class PlatformManifestValidator
     /// Validates all files as one declaration set using the shipped, embedded schema.
     /// </summary>
     /// <param name="manifestPaths">The manifest file paths.</param>
+    /// <returns>An atomic validation result.</returns>
+    public static PlatformManifestValidationResult Validate(IEnumerable<string> manifestPaths) =>
+        Validate(manifestPaths, CancellationToken.None);
+
+    /// <summary>
+    /// Validates all files as one declaration set using the shipped, embedded schema.
+    /// </summary>
+    /// <param name="manifestPaths">The manifest file paths.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>An atomic validation result.</returns>
     public static PlatformManifestValidationResult Validate(
         IEnumerable<string> manifestPaths,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken) =>
         Validate(manifestPaths, new Dictionary<string, string>(StringComparer.Ordinal), cancellationToken);
+
+    /// <summary>Validates authenticated release snapshots without selecting their dependency test entries.</summary>
+    /// <param name="manifestPaths">The complete declaration set.</param>
+    /// <param name="authenticatedReleaseHashes">Exact snapshot paths and hashes already verified against owner release authority.</param>
+    /// <returns>The atomically validated declarations; supplied executable manifests retain full filesystem checks.</returns>
+    internal static PlatformManifestValidationResult Validate(
+        IEnumerable<string> manifestPaths,
+        IReadOnlyDictionary<string, string> authenticatedReleaseHashes) =>
+        Validate(manifestPaths, authenticatedReleaseHashes, CancellationToken.None);
 
     /// <summary>Validates authenticated release snapshots without selecting their dependency test entries.</summary>
     /// <param name="manifestPaths">The complete declaration set.</param>
@@ -54,7 +71,7 @@ public static partial class PlatformManifestValidator
     internal static PlatformManifestValidationResult Validate(
         IEnumerable<string> manifestPaths,
         IReadOnlyDictionary<string, string> authenticatedReleaseHashes,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(manifestPaths);
         ArgumentNullException.ThrowIfNull(authenticatedReleaseHashes);
