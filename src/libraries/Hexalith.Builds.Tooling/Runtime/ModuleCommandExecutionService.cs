@@ -111,6 +111,25 @@ public static class ModuleCommandExecutionService
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                IReadOnlyList<string> owners = CompositionQualificationOwners.Normalize(compositionOptions?.QualificationOwners);
+                if (owners.Count > 0)
+                {
+                    if (command != ModuleInvocationCommand.Test || !PlatformManifestCommand.IsV2(manifestPath) || candidateRequestPath is not null || compositionOptions is null)
+                    {
+                        throw new InvalidDataException("Additional qualification owners require a fresh declared v2 test without candidate reuse.");
+                    }
+
+                    compositionOptions = compositionOptions with { QualificationOwners = owners };
+                }
+            }
+            catch (InvalidDataException invalid)
+            {
+                ToolCommandResult refusal = PlatformRefusal("HXC002", invalid.Message, ToolExitCode.UsageOrManifest);
+                return await WriteResultAsync(refusal.Status, refusal.Outcome, refusal.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None).ConfigureAwait(false);
+            }
+
             if (candidateRequestPath is not null && (command != ModuleInvocationCommand.Test || !PlatformManifestCommand.IsV2(manifestPath)))
             {
                 ToolCommandResult refusal = PlatformRefusal("HXP301", "Candidate policy refused: declared-candidate-suite-required", ToolExitCode.UsageOrManifest);
@@ -1183,6 +1202,7 @@ public static class ModuleCommandExecutionService
                     {
                         AttemptId = session.Plan.AttemptId,
                         CandidatePolicy = session.Plan.CandidatePolicy,
+                        QualificationOwners = session.Plan.QualificationOwners ?? (options.QualificationOwners.Count == 0 ? null : options.QualificationOwners),
                         EnvironmentId = session.Plan.EnvironmentId,
                         SelectedTest = selected,
                         RetainOnFailure = retain,

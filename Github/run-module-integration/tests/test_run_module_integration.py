@@ -80,6 +80,42 @@ class IntegrationTests(unittest.TestCase):
             "",
         )
 
+    def test_additive_owners_use_canonical_literal_arguments_and_are_recorded(self):
+        with patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
+            helper, "execute_integration", return_value=0
+        ) as execute:
+            self.assertEqual(helper.run_integration(
+                self.root, "module.json", ["real"], self.receipt, self.evidence,
+                owners=["tenants", "eventstore"],
+            ), 0)
+        command = execute.call_args.args[0]
+        self.assertEqual(command[-2:], ["--with-owner=eventstore", "--with-owner=tenants"])
+        self.assertIn("--mode=package", command)
+        invocation = json.loads((self.evidence / "invocation.json").read_text())
+        self.assertEqual(invocation["qualificationOwners"], ["eventstore", "tenants"])
+        self.assertEqual(invocation["classification"], "baseline-only")
+
+    def test_invalid_owners_refuse_before_context_paths_tool_or_evidence_effects(self):
+        for owners in (["tenants", "tenants"], ["Tenants"], ["../tenants"], ["--mode=source"], ["future"], [""]):
+            with self.subTest(owners=owners), patch.object(helper, "ci_context") as context, patch.object(
+                helper, "checked_paths"
+            ) as paths, patch.object(helper, "execute_integration") as execute:
+                with self.assertRaises(ValueError):
+                    helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence, owners=owners)
+                context.assert_not_called()
+                paths.assert_not_called()
+                execute.assert_not_called()
+                self.assertFalse(self.evidence.exists())
+                self.assertFalse(self.receipt.exists())
+
+    def test_default_invocation_has_no_owner_request_or_arguments(self):
+        with patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
+            helper, "execute_integration", return_value=0
+        ) as execute:
+            self.assertEqual(helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence), 0)
+        self.assertFalse(any(value.startswith("--with-owner") for value in execute.call_args.args[0]))
+        self.assertNotIn("qualificationOwners", json.loads((self.evidence / "invocation.json").read_text()))
+
     def test_no_receipt_means_no_allocation_and_does_not_invoke_tool(self):
         with patch.object(helper.subprocess, "run") as run:
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)

@@ -85,14 +85,14 @@ public static class TestEnvironmentDescriptorWriter
 
         try
         {
-            closure = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, plan.PlatformDeclarationPaths) { ActiveModule = plan.PlatformActiveModule });
+            closure = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, plan.PlatformDeclarationPaths) { ActiveModule = plan.PlatformActiveModule, QualificationOwners = plan.QualificationOwners ?? [] });
         }
         catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException)
         {
             throw new InvalidDataException("Composition or suite sources changed before handoff.");
         }
 
-        string composition = CompositionIdentity(closure, selected);
+        string composition = CompositionIdentity(closure, selected, plan.QualificationOwners);
         if (composition != plan.CompositionContentIdentity || !selected.MatchesSource(plan.PlatformDeclarationPaths[0]))
         {
             throw new InvalidDataException("Composition or suite sources changed before handoff.");
@@ -152,15 +152,22 @@ public static class TestEnvironmentDescriptorWriter
     /// <summary>Hashes the actual authoritative closure and selected resource/runtime requirements.</summary>
     /// <param name="declarations">The authoritative declaration closure.</param>
     /// <param name="selected">The optional selected suite.</param>
+    /// <param name="qualificationOwners">The explicit additional owners, when requested.</param>
     /// <returns>The deterministic composition content identity.</returns>
-    internal static string CompositionIdentity(IReadOnlyList<PlatformModuleDeclaration> declarations, ModuleTestSelection? selected) =>
-        "sha256:" + Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
+    internal static string CompositionIdentity(IReadOnlyList<PlatformModuleDeclaration> declarations, ModuleTestSelection? selected, IReadOnlyList<string>? qualificationOwners = null)
+    {
+        IReadOnlyList<string> owners = CompositionQualificationOwners.Normalize(qualificationOwners);
+        string original = "sha256:" + Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
         {
             modules = declarations.OrderBy(declaration => declaration.Declaration.GetProperty("identity").GetProperty("moduleId").GetString(), StringComparer.Ordinal).Select(declaration => new { declaration.Declaration, declaration.SourceHash }),
             selected?.Mode,
             selected?.DaprRuntimeVersion,
             retention = selected is { ModuleId: "memories", Name: "functional-retention" },
         })));
+        return owners.Count == 0
+            ? original
+            : "sha256:" + Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new { purpose = "hexalith.qualification-owners-composition.v1", original, owners })));
+    }
 
     /// <summary>Refuses handoff configurations the v1 producer cannot represent before provisioning.</summary>
     /// <param name="deadline">The resolved actual startup policy.</param>

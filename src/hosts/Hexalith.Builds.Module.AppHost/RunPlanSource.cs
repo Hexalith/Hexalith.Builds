@@ -27,7 +27,18 @@ internal static class RunPlanSource
         }
 
         CompositionRunPlan? plan = await CompositionDocumentStore.TryReadAsync<CompositionRunPlan>(path, cancellationToken).ConfigureAwait(false);
-        return plan is not null && string.Equals(plan.Schema, CompositionRunPlan.SupportedSchema, StringComparison.Ordinal) && string.Equals(plan.RunId, Environment.GetEnvironmentVariable(CompositionEnvironment.RunId), StringComparison.Ordinal) && CompositionRunPlanFactory.IsRunId(plan.RunId) ? plan : throw new InvalidOperationException("The run plan is malformed or does not describe this run.");
+        if (plan is null || !string.Equals(plan.Schema, CompositionRunPlan.SupportedSchema, StringComparison.Ordinal)
+            || !string.Equals(plan.RunId, Environment.GetEnvironmentVariable(CompositionEnvironment.RunId), StringComparison.Ordinal)
+            || !CompositionRunPlanFactory.IsRunId(plan.RunId))
+        {
+            throw new InvalidOperationException("The run plan is malformed or does not describe this run.");
+        }
+
+        CompositionQualificationOwners.Verify(
+            plan,
+            Environment.GetEnvironmentVariable(CompositionEnvironment.SigningKey),
+            Environment.GetEnvironmentVariable(CompositionEnvironment.QualificationOwnersRequired) is not null);
+        return plan;
     }
 
     /// <summary>
@@ -40,6 +51,7 @@ internal static class RunPlanSource
     {
         string? key = Environment.GetEnvironmentVariable(CompositionEnvironment.SigningKey);
         Environment.SetEnvironmentVariable(CompositionEnvironment.SigningKey, null);
+        Environment.SetEnvironmentVariable(CompositionEnvironment.QualificationOwnersRequired, null);
         return string.IsNullOrWhiteSpace(key)
             ? throw new InvalidOperationException("The runner did not supply the per-run signing key.")
             : key;

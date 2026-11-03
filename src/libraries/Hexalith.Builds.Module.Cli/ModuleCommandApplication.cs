@@ -363,6 +363,12 @@ internal static class ModuleCommandApplication
             Arity = ArgumentArity.OneOrMore,
             AllowMultipleArgumentsPerToken = false,
         };
+        Option<string[]> ownersOption = new("--with-owner")
+        {
+            Description = "Add an authenticated reference owner and its declared dependencies to a fresh qualification run.",
+            Arity = ArgumentArity.OneOrMore,
+            AllowMultipleArgumentsPerToken = false,
+        };
         Option<string> filterOption = new("--filter");
         Option<string> evidenceOption = new("--evidence");
         Option<string> candidateOption = new("--candidate-request") { Description = "Signed GitHub gate issuance; requires independently enrolled host authority." };
@@ -382,6 +388,7 @@ internal static class ModuleCommandApplication
         commandDefinition.Options.Add(evidenceOption);
         if (command == ModuleInvocationCommand.Test)
         {
+            commandDefinition.Options.Add(ownersOption);
             commandDefinition.Options.Add(candidateOption);
             commandDefinition.Options.Add(ciReceiptOption);
         }
@@ -416,6 +423,11 @@ internal static class ModuleCommandApplication
             if (command == ModuleInvocationCommand.Test && parseResult.GetValue(ciReceiptOption) is { } receiptPath)
             {
                 executionOptions = (executionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath!)) with { CiOwnerReceiptPath = receiptPath };
+            }
+
+            if (command == ModuleInvocationCommand.Test && parseResult.GetValue(ownersOption) is { Length: > 0 } owners)
+            {
+                executionOptions = (executionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath!)) with { QualificationOwners = owners };
             }
 
             Task<int> execution = ModuleCommandExecutionService.ExecuteAsync(

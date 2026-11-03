@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests;
 
+using System.Reflection;
 using System.Text.Json;
 
 using Hexalith.Builds.ModuleTool.Cli;
@@ -20,6 +21,47 @@ using Xunit;
 public sealed class AttachAdmissionTests
 {
     private static readonly JsonElement _local = JsonSerializer.SerializeToElement(new { kind = "local" });
+
+    /// <summary>Expanded qualification owner sessions cannot acquire new attachments or reuse an old request.</summary>
+    /// <param name="retry">Whether the request presents a previous attachment identity.</param>
+    /// <returns>The explicit refusal and absence of attachment state.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExpandedQualificationOwnerRefusesAttachmentAndReuseAsync(bool retry)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { QualificationOwners = ["tenants"] }).ConfigureAwait(true);
+        CompositionAttachRequest request = Request(owner, composition) with { PresentedRequestId = retry ? CompositionRunPlanFactory.NewRunId() : null };
+        ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, request, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Diagnostics.Single().Message.ShouldContain("Expanded qualification owners");
+        result.Attachment.ShouldBeNull();
+        File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(store.Directory, "diagnostics", owner.RunId))).ShouldBeFalse();
+    }
+
+    /// <summary>The actual lifecycle writer preserves expansion through Starting, Ready and failure transitions.</summary>
+    /// <returns>The durable scope and subsequent attachment refusal assertions.</returns>
+    [Fact]
+    public async Task ExpandedQualificationOwnerSurvivesStateTransitionsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { QualificationOwners = ["tenants"] }).ConfigureAwait(true);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, owner.SelectedTest!));
+        MethodInfo write = typeof(CompositionEngine).GetMethod("WriteStateAsync", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        CompositionRunRecord record = new(1, [new CompositionResourceReadiness("owned", "process", "Healthy")], new CompositionEffectiveDeadline(600, false, null, null), null, []);
+        foreach (CompositionRunStatus status in new[] { CompositionRunStatus.Starting, CompositionRunStatus.Ready, CompositionRunStatus.Failed })
+        {
+            await ((Task)write.Invoke(engine, [owner.RunId, status, owner.ManifestHash, null, null, TestContext.Current.CancellationToken, null, record, null, null])!).ConfigureAwait(true);
+            CompositionRunState persisted = (await store.TryReadAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            persisted.Status.ShouldBe(status);
+            persisted.QualificationOwners.ShouldBe(["tenants"]);
+            ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(persisted, composition), DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            result.Diagnostics.Single().Message.ShouldContain("Expanded qualification owners");
+            result.Attachment.ShouldBeNull();
+        }
+
+        File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(store.Directory, "diagnostics", owner.RunId))).ShouldBeFalse();
+    }
 
     /// <summary>An omitted hold is accepted for 1800 seconds, recorded with its absolute expiry, and listed.</summary>
     /// <returns>The recorded hold and listing assertions.</returns>

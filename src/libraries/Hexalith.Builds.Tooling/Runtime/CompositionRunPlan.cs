@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
+using System.Text.Json.Serialization;
+
 using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
@@ -52,6 +54,14 @@ public sealed record CompositionRunPlan(
     /// The supported run-plan schema identity.
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-plan.v1";
+
+    /// <summary>Gets the explicit additional owners, absent for unchanged default compositions.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? QualificationOwners { get; init; }
+
+    /// <summary>Gets the purpose-bound authentication tag for an expanded qualification request.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? QualificationOwnersBinding { get; init; }
 
     /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
     public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }

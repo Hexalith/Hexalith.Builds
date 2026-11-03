@@ -12,4 +12,15 @@
     <ProjectReference Include="$(HexalithEventStoreRoot)/src/Hexalith.EventStore.Gateway/Hexalith.EventStore.Gateway.csproj" Condition="'$(BuildsCatalogFromMappedSource)' == 'true'" />
     <InternalsVisibleTo Include="Hexalith.Platform.Composition.Tests" />
   </ItemGroup>
+  <!-- Resolve the actual Gateway package, including central and direct overrides, before enabling this public API. -->
+  <Target Name="SelectPublicTechnicalHttpReceiver" BeforeTargets="CoreCompile" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <_BuildsResolvedGateway Include="@(ReferencePath->WithMetadataValue('NuGetPackageId', 'Hexalith.EventStore.Gateway'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <BuildsPublicTechnicalHttpReceiver>false</BuildsPublicTechnicalHttpReceiver>
+      <BuildsPublicTechnicalHttpReceiver Condition="'$(BuildsCatalogFromMappedSource)' != 'true' and '@(_BuildsResolvedGateway->Count())' == '1' and '%(_BuildsResolvedGateway.NuGetPackageVersion)' == '4.0.4'">true</BuildsPublicTechnicalHttpReceiver>
+      <DefineConstants Condition="'$(BuildsPublicTechnicalHttpReceiver)' == 'true'">$(DefineConstants);HEXALITH_EVENTSTORE_PUBLIC_TECHNICAL_RECEIVER</DefineConstants>
+    </PropertyGroup>
+  </Target>
 </Project>

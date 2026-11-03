@@ -36,6 +36,10 @@ public sealed record CompositionRunState(
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-state.v1";
 
+    /// <summary>Gets the explicit additional owners, absent for unchanged default compositions.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? QualificationOwners { get; init; }
+
     /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
     public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }
 

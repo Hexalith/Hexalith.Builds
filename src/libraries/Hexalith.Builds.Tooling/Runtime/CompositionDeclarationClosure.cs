@@ -65,6 +65,7 @@ public static class CompositionDeclarationClosure
 
     private static IReadOnlyList<PlatformModuleDeclaration> LoadDeclarations(CompositionDeclarationOptions options)
     {
+        IReadOnlyList<string> qualificationOwners = CompositionQualificationOwners.Normalize(options.QualificationOwners);
         if (options.DeclarationPaths.Count > 0)
         {
             PlatformManifestValidationResult supplied = PlatformManifestValidator.Validate(options.DeclarationPaths);
@@ -222,6 +223,11 @@ public static class CompositionDeclarationClosure
         if (options.ActiveModule is not null)
         {
             Select(options.ActiveModule);
+        }
+
+        foreach (string owner in qualificationOwners)
+        {
+            Select(owner);
         }
 
         if (options.TimesheetsEnabled)

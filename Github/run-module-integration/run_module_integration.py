@@ -333,9 +333,20 @@ def execute_integration(command: list[str], root: Path, receipt: Path, evidence:
     return 130 if cancelled else outcome or cleanup
 
 
+def qualification_owners(owners: list[str]) -> list[str]:
+    """Canonicalize the explicit additive reference-owner set before any effects."""
+    if len(owners) > 3 or len(set(owners)) != len(owners) or any(
+        owner not in {"eventstore", "tenants", "memories"} for owner in owners
+    ):
+        raise ValueError("qualification owners must be unique supported reference identities")
+    return sorted(owners)
+
+
 def run_integration(
-    root: Path, manifest: str, profiles: list[str], receipt: Path, evidence: Path, timeout: int = 3600
+    root: Path, manifest: str, profiles: list[str], receipt: Path, evidence: Path, timeout: int = 3600,
+    owners: list[str] | None = None,
 ) -> int:
+    owners = qualification_owners(owners or [])
     context = ci_context()
     root, receipt, evidence = checked_paths(root, receipt, evidence)
     manifest_path = selected_manifest(root, manifest, profiles)
@@ -348,7 +359,8 @@ def run_integration(
     write_evidence(
         evidence,
         "invocation.json",
-        {"executionContext": context, "profiles": profiles, "classification": "baseline-only"},
+        {"executionContext": context, "profiles": profiles, "classification": "baseline-only",
+         **({"qualificationOwners": owners} if owners else {})},
     )
     command = TOOL + [
         "test",
@@ -358,6 +370,7 @@ def run_integration(
         "--output=json",
     ]
     command += ["--profile=" + profile for profile in profiles]
+    command += ["--with-owner=" + owner for owner in owners]
     return execute_integration(command, root, receipt, evidence, timeout)
 
 
@@ -367,13 +380,16 @@ def main() -> int:
     parser.add_argument("--job-status", choices=("", "success", "failure", "cancelled"), default="")
     parser.add_argument("--manifest", default="")
     parser.add_argument("--profiles", default="")
+    parser.add_argument("--owners", default="")
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.operation == "finalize":
+            if args.owners:
+                raise ValueError("qualification owners apply only to a fresh test invocation")
             return finalize(Path.cwd(), args.receipt, args.evidence, job_status=args.job_status)
-        return run_integration(Path.cwd(), args.manifest, args.profiles.split(), args.receipt, args.evidence)
+        return run_integration(Path.cwd(), args.manifest, args.profiles.split(), args.receipt, args.evidence, owners=args.owners.split())
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(f"run-module-integration: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
