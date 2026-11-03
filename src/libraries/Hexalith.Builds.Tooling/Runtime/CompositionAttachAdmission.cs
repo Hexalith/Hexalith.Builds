@@ -68,6 +68,11 @@ public static class CompositionAttachAdmission
             return Refuse("HXR033", "owner-unknown", "No runner-owned environment is tracked for this owner run.");
         }
 
+        if (owner.QualificationOwners is not null)
+        {
+            return Refuse("HXR033", "qualification-owner-expansion", "Expanded qualification owners do not support attachment or reuse.");
+        }
+
         if (owner.EnvironmentId is null || owner.AttemptId is null || owner.CreatedAt is null || owner.SelectedTest is null || owner.ExecutionContext is null)
         {
             return Refuse("HXR033", "owner-not-attachable", "The owner state lacks the issued identities needed to verify an attachment.");

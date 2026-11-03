@@ -50,6 +50,9 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     /// <summary>Gets the uniquely selected active module, or null for the reference composition.</summary>
     public string? ActiveModule { get; init; }
 
+    /// <summary>Gets the explicit additive reference owners requested for a fresh qualification run.</summary>
+    public IReadOnlyList<string> QualificationOwners { get; init; } = [];
+
     /// <summary>Gets the explicitly selected module class, when present.</summary>
     public bool? DomainModule { get; init; }
 

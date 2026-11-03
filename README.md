@@ -575,6 +575,23 @@ blocking package integration and refuses direct/advisory fallbacks. The existing
 acceptance. See [domain-ci-v2.md](.github/workflows/domain-ci-v2.md) for migration,
 explicit pull-only secrets and separate publication/hosted-qualification gates.
 
+A fresh v2 qualification may explicitly add authenticated reference owners with
+`test --with-owner tenants` (repeat the option for distinct `eventstore`, `tenants`
+or `memories` owners). Selection is additive: each selected owner's declared
+transitive dependencies remain included, and default/domain closure is unchanged.
+Unknown, malformed and duplicate identities refuse before workspace resolution.
+Expanded-owner runs bind the canonical request to their issued run, attempt,
+source and composition identities with a purpose-separated authentication tag;
+the per-run key stays in memory and the private AppHost environment. The parent
+requires verification before either preflight or startup. Candidate reuse and
+attachments are refused for this opt-in until they have a matching scope contract.
+The shared v2 workflow exposes the same request as the optional
+`integration-test-reference-owners` input. Selection grants no package capability:
+Platform must independently admit the exact published cohort. In particular,
+Memories package catalog runtime remains unqualified. The package EventStore seed
+enables its technical catalog receiver only for the actual resolved public Gateway
+4.0.4 assembly; unknown and near-miss versions retain the existing finite receiver.
+
 Withdrawal records outcomes; termination of attached processes at expiry is deferred to
 the Platform follow-up `attached-test-execution-and-expiry-enforcement`.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the

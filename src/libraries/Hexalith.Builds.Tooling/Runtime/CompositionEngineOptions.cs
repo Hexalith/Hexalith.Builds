@@ -92,6 +92,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// </summary>
     public bool EnableSecondEventStoreInstance { get; init; }
 
+    /// <summary>Gets the explicit additive reference owners requested for a fresh qualification run.</summary>
+    public IReadOnlyList<string> QualificationOwners { get; init; } = [];
+
     /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
     public ModuleTestSelection? SelectedTest { get; init; }
 

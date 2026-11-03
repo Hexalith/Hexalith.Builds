@@ -61,6 +61,55 @@ public sealed class ModuleCommandApplicationTests
         }
         """;
 
+    /// <summary>Invalid or reusable owner expansion refuses before source mapping, state allocation or startup.</summary>
+    /// <param name="selection">The requested owner set.</param>
+    /// <param name="candidate">Whether unsupported candidate reuse is requested.</param>
+    /// <returns>The usage refusal and zero-effect assertions.</returns>
+    [Theory]
+    [InlineData("unknown", false)]
+    [InlineData("Tenants", false)]
+    [InlineData("../tenants", false)]
+    [InlineData("tenants tenants", false)]
+    [InlineData("tenants", true)]
+    public async Task QualificationOwnerRefusalPrecedesEffectsAsync(string selection, bool candidate)
+    {
+        ArgumentNullException.ThrowIfNull(selection);
+        using PlatformManifestTestWorkspace workspace = new();
+        string manifest = workspace.Save();
+        int mappings = 0;
+        CompositionEngineOptions options = new("unused.dll", typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            StateDirectory = Path.Combine(workspace.Root, "state"),
+            WorkspaceRoot = Path.Combine(workspace.Root, "runs"),
+            MappingResolverOverride = (_, _, _) =>
+            {
+                mappings++;
+                throw new InvalidOperationException("Invalid owner selection resolved source mapping.");
+            },
+        };
+        List<string> arguments = ["test", "--manifest", manifest, "--profile", "fixture", "--output", "json"];
+        foreach (string owner in selection.Split(' '))
+        {
+            arguments.Add("--with-owner=" + owner);
+        }
+
+        if (candidate)
+        {
+            arguments.Add("--candidate-request=not-read.json");
+        }
+
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
+        StringWriter error = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable errorLifetime = error.ConfigureAwait(true);
+        int exit = await ModuleCommandApplication.InvokeAsync([.. arguments], output, error, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest, output.ToString());
+        output.ToString().ShouldContain("HXC002");
+        mappings.ShouldBe(0);
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
     /// <summary>Repeated profiles outside a v2 test refuse before allocating services.</summary>
     /// <param name="command">The requested command.</param>
     /// <param name="v2">Whether to use a v2 declaration.</param>

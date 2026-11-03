@@ -33,6 +33,42 @@ public sealed class DeclarationClosureTests
         Path.GetFullPath(declarations.Single(declaration => CompositionDeclarationClosure.Id(declaration.Declaration) == "memories").Source).ShouldBe(Path.Combine(workspace.Root, "references", "Hexalith.Memories", "module", "hexalith.module-manifest.v2.json"));
     }
 
+    /// <summary>Explicit reference owners add their dependencies without changing the active owner's closure.</summary>
+    /// <param name="package">Whether authenticated released declarations supply the closure.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExplicitQualificationOwnerIsAdditive(bool package)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionDeclarationOptions options = package
+            ? PackageOptions(workspace.Root) with { ActiveModule = "eventstore", DomainModule = false }
+            : new CompositionDeclarationOptions(CompositionTestFiles.CreatePlatformMapping(workspace.Root), [workspace.Save()]) { ActiveModule = "eventstore" };
+        IReadOnlyList<PlatformModuleDeclaration> original = CompositionDeclarationClosure.Load(options);
+        original.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).ShouldBe(["eventstore"]);
+        IReadOnlyList<PlatformModuleDeclaration> expanded = CompositionDeclarationClosure.Load(options with { QualificationOwners = ["tenants"] });
+        expanded.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["eventstore", "tenants"]);
+        CompositionDeclarationClosure.Load(options).Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).ShouldBe(["eventstore"]);
+        IReadOnlyList<PlatformModuleDeclaration> all = CompositionDeclarationClosure.Load(options with { ActiveModule = null, QualificationOwners = ["tenants"] });
+        all.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["eventstore", "memories", "tenants"]);
+    }
+
+    /// <summary>An explicit owner preserves every declared transitive dependency of both selected owners.</summary>
+    [Fact]
+    public void ExplicitQualificationOwnerPreservesTransitiveDependencies()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        SourceMapping mapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root);
+        workspace.Change("modules.0.identity.moduleId", "\"mcpcli\"");
+        workspace.Change("modules.0.identity.dependencies", "[\"memories\"]");
+        string path = Path.Combine(workspace.Root, "references", "Hexalith.Tenants", "module", "hexalith.module-manifest.v2.json");
+        JsonNode tenant = JsonNode.Parse(File.ReadAllText(path))!;
+        tenant["modules"]![0]!["identity"]!["dependencies"] = new JsonArray("eventstore");
+        File.WriteAllText(path, tenant.ToJsonString());
+        IReadOnlyList<PlatformModuleDeclaration> expanded = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, [workspace.Save()]) { ActiveModule = "mcpcli", QualificationOwners = ["tenants"] });
+        expanded.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["eventstore", "mcpcli", "memories", "tenants"]);
+    }
+
     /// <summary>Verifies the shared package closure retains every source/catalog/release provenance check.</summary>
     /// <param name="fault">The provenance input to alter, or none for valid release metadata.</param>
     /// <exception cref="ArgumentOutOfRangeException">The fixture fault is unknown.</exception>

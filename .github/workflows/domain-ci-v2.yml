@@ -46,6 +46,11 @@ on:
         description: 'Required nonempty declared package-mode suite names.'
         required: true
         type: string
+      integration-test-reference-owners:
+        description: 'Optional additive authenticated reference owners for fresh package qualification; preserves declared transitive dependencies.'
+        required: false
+        type: string
+        default: ''
       aspire-test-project:
         description: 'Retired advisory AppHost input; use declared package integration suites.'
         required: false
@@ -654,8 +659,9 @@ jobs:
         env:
           MODULE_MANIFEST: ${{ inputs.module-manifest }}
           INTEGRATION_PROFILES: ${{ inputs.integration-test-profiles }}
+          INTEGRATION_REFERENCE_OWNERS: ${{ inputs.integration-test-reference-owners }}
         run: |
-          python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py run --manifest "$MODULE_MANIFEST" --profiles "$INTEGRATION_PROFILES" --receipt "$RUNNER_TEMP/hexalith-ci-owner.json" --evidence TestResults/module-integration
+          python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py run --manifest "$MODULE_MANIFEST" --profiles "$INTEGRATION_PROFILES" --owners "$INTEGRATION_REFERENCE_OWNERS" --receipt "$RUNNER_TEMP/hexalith-ci-owner.json" --evidence TestResults/module-integration
       - name: Finalize exact CI owner
         if: ${{ always() && inputs.module-manifest != '' }}
         timeout-minutes: 4

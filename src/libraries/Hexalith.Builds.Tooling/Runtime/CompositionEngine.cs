@@ -98,7 +98,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ModuleManifest manifest = manifestResult.Manifest!;
             string? activeModule = PlatformManifestCommand.ActiveModule(platformDeclarations?.Declarations);
             CompositionDeclarationOptions? declarationOptions = platformComposition
-                ? new CompositionDeclarationOptions(_options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."), [Path.GetFullPath(manifestPath)]) { ActiveModule = activeModule }
+                ? new CompositionDeclarationOptions(_options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."), [Path.GetFullPath(manifestPath)]) { ActiveModule = activeModule, QualificationOwners = _options.QualificationOwners }
                 : null;
             IReadOnlyList<PlatformModuleDeclaration>? closure = declarationOptions is null
                 ? null
@@ -343,14 +343,16 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 DebugAttach = _options.DebugAttach,
                 StartupTasks = platformComposition ? CompositionStartupTasks.Select(manifestPath, closure, _options.SourceMapping) : [],
                 PlatformDeclarationHash = platformComposition ? manifestHash : plan.PlatformDeclarationHash,
-                CompositionContentIdentity = closure is null ? null : TestEnvironment.TestEnvironmentDescriptorWriter.CompositionIdentity(closure, _options.SelectedTest),
+                QualificationOwners = _options.QualificationOwners.Count == 0 ? null : _options.QualificationOwners,
+                CompositionContentIdentity = closure is null ? null : TestEnvironment.TestEnvironmentDescriptorWriter.CompositionIdentity(closure, _options.SelectedTest, _options.QualificationOwners),
                 McpCliToolPath = mcpCliTool,
             };
 
+            string signingKey = CompositionSigningKey.Create();
+            plan = CompositionQualificationOwners.Bind(plan, signingKey);
             await CompositionDaprComponentRenderer.WriteAsync(plan, startupBound.Token).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, startupBound.Token).ConfigureAwait(false);
-            string signingKey = CompositionSigningKey.Create();
             IReadOnlyDictionary<string, string> aspireHostEnvironment = aspireHost!.CreateEnvironment(workspace);
             if (platformComposition)
             {
@@ -362,6 +364,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     [CompositionEnvironment.DaprRuntimePath] = plan.DaprHome,
                     ["DOTNET_ENVIRONMENT"] = "Development",
                 };
+                if (plan.QualificationOwners is { Count: > 0 })
+                {
+                    preflightEnvironment[CompositionEnvironment.QualificationOwnersRequired] = "1";
+                }
+
                 CompositionProcessResult preflight = await CompositionProcess.RunAsync(
                     CompositionProcess.CreateStartInfo(
                         DotnetHostPath(),
@@ -787,6 +794,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 state ??= CompositionRunPlanFactory.CreateInitialState(runId, WorkspaceFor(runId), selection.ManifestHash, selection.RequestedAtUtc) with
                 {
                     CandidatePolicy = _options.CandidatePolicy,
+                    QualificationOwners = _options.QualificationOwners.Count == 0 ? null : _options.QualificationOwners,
                     SelectedTest = selection,
                     AttemptId = BindingIdentity(environmentBindings, "attemptId") ?? CompositionRunPlanFactory.NewRunId(),
                     EnvironmentId = BindingIdentity(environmentBindings, "environmentId") ?? CompositionRunPlanFactory.NewRunId(),
@@ -959,10 +967,13 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <summary>Limits failure retention to local owners regardless of caller-supplied retention options.</summary>
     /// <param name="settings">The requested engine settings.</param>
     /// <returns>The settings with CI failure retention disabled.</returns>
-    private static CompositionEngineOptions ApplyRetentionPolicy(CompositionEngineOptions settings) =>
-        (settings.ContinuousIntegrationOverride ?? !TestEnvironment.TestEnvironmentDescriptorWriter.IsLocalExecution())
-            ? settings with { RetainOnFailure = false }
-            : settings;
+    private static CompositionEngineOptions ApplyRetentionPolicy(CompositionEngineOptions settings)
+    {
+        CompositionEngineOptions canonical = settings with { QualificationOwners = CompositionQualificationOwners.Normalize(settings.QualificationOwners) };
+        return (settings.ContinuousIntegrationOverride ?? !TestEnvironment.TestEnvironmentDescriptorWriter.IsLocalExecution())
+            ? canonical with { RetainOnFailure = false }
+            : canonical;
+    }
 
     /// <summary>Mirrors admission for selected local and same-job CI owners.</summary>
     /// <param name="session">The owned session.</param>
@@ -2197,6 +2208,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ["ASPIRE_ALLOW_UNSECURED_TRANSPORT"] = "true",
             ["DOTNET_ENVIRONMENT"] = "Development",
         };
+        if (plan.QualificationOwners is { Count: > 0 })
+        {
+            environment[CompositionEnvironment.QualificationOwnersRequired] = "1";
+        }
+
         if (plan.SourceMapping is not null)
         {
             foreach (KeyValuePair<string, string> pair in SourceMappingMaterializer.Environment(plan.SourceMapping, plan.Workspace))
@@ -2454,6 +2470,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CompositionRunState initial = CompositionRunPlanFactory.CreateInitialState(runId, WorkspaceFor(runId), manifestHash, requestedAt) with
         {
             SelectedTest = _options.SelectedTest,
+            QualificationOwners = _options.QualificationOwners.Count == 0 ? null : _options.QualificationOwners,
             CandidatePolicy = _options.CandidatePolicy,
             AttemptId = _options.CandidatePolicy?.AttemptId ?? CompositionRunPlanFactory.NewRunId(),
             RetainOnFailure = _options.RetainOnFailure,
@@ -2510,6 +2527,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 CreatedAt = previous?.CreatedAt,
                 AttemptId = previous?.AttemptId,
                 CandidatePolicy = previous?.CandidatePolicy,
+                QualificationOwners = previous?.QualificationOwners ?? (_options.QualificationOwners.Count == 0 ? null : _options.QualificationOwners),
                 EnvironmentId = previous?.EnvironmentId,
                 ExecutionContext = previous?.ExecutionContext,
                 StartupDeadlineUtc = previous?.StartupDeadlineUtc,
