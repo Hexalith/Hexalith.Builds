@@ -23,8 +23,9 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
   workflow and avoiding Docker Hub image pulls where possible.
 - Cleans partial Dapr installs before each retry so a failed first attempt does
   not leave `~/.dapr/bin/daprd` or Dapr containers behind.
-- Waits for Dapr init ports `58080`, `58081`, and `50005` to become free before
-  calling `dapr init`, matching the Dapr CLI test harness.
+- Waits for Dapr init ports `58080`, `58081`, `50005`, and `50006` to become free
+  on every interface before calling `dapr init`. The scheduler port `50006` can
+  overlap Linux ephemeral connections, so each retry waits for it to clear.
 
 ## Usage
 

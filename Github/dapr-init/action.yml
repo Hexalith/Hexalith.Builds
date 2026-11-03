@@ -56,9 +56,9 @@ runs:
 
           port = int(sys.argv[1])
           with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
-              listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
               try:
-                  listener.bind(("127.0.0.1", port))
+                  # Docker publishes these ports on every interface.
+                  listener.bind(("0.0.0.0", port))
               except OSError:
                   sys.exit(1)
           PY
@@ -93,7 +93,7 @@ runs:
           }
 
           cleanup_dapr
-          wait_for_ports_free 60 58080 58081 50005
+          wait_for_ports_free 60 58080 58081 50005 50006
 
           dapr init --runtime-version "$runtime_version"
           dapr --version
