@@ -75,6 +75,7 @@ public static class CompositionDeclarationClosure
         }
 
         List<string> paths = [];
+        Dictionary<string, string> authenticatedReleaseHashes = new(StringComparer.Ordinal);
         Dictionary<string, (string Path, JsonElement Declaration)> snapshots = new(StringComparer.Ordinal);
         foreach (string owner in new[] { "eventstore", "tenants", "memories" })
         {
@@ -130,6 +131,7 @@ public static class CompositionDeclarationClosure
                 using JsonDocument released = JsonDocument.Parse(File.ReadAllText(snapshot));
                 snapshots[owner] = (snapshot, released.RootElement.GetProperty("modules").EnumerateArray().Single().Clone());
                 paths.Add(snapshot);
+                authenticatedReleaseHashes.Add(Path.GetFullPath(snapshot), hash);
             }
         }
 
@@ -181,7 +183,7 @@ public static class CompositionDeclarationClosure
             }
         }
 
-        PlatformManifestValidationResult result = PlatformManifestValidator.Validate(paths);
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate(paths, authenticatedReleaseHashes);
         if (!result.IsValid)
         {
             throw new InvalidDataException(string.Join(Environment.NewLine, result.Diagnostics.Select(d => $"{d.Source}: {d.Field}: {d.Message}")));

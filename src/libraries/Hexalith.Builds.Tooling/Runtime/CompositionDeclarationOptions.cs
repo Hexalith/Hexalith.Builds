@@ -25,6 +25,10 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/2.27.1"] = "d54dba5be30a3626e871b4fc56dd78e76a7acf71",
         ["eventstore/3.129.0"] = "c02afa0fce310ccdb696232f18829df96cba088e",
         ["memories/3.0.12"] = "ef5c134bbee7ec708f354ce1bc3e508ee6105ab7",
+        ["eventstore/4.0.4"] = "326bfef884543cdbcaf96de7f4c4ad378dbad6d7",
+        ["tenants/6.0.0"] = "9e5a991d0ba304bac7b1a5809cd71797b47d78ed",
+        ["tenants/7.0.0"] = "1b2c71b0e3cc5b16745f87aa7f1bc2c0ac8ffc27",
+        ["memories/3.0.18"] = "66822bc5bc4858c824f17b7d093f5f0f676b03ea",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Gets the shared released declaration hashes; absent entries have no released v2 declaration.</summary>
@@ -32,6 +36,10 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     {
         ["eventstore/3.129.0"] = "a56951dcc4a8c53f22e449a2399516e51c4d2569bec1357f8197593a8d9e44a2",
         ["memories/3.0.12"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
+        ["eventstore/4.0.4"] = "21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495",
+        ["tenants/6.0.0"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
+        ["tenants/7.0.0"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
+        ["memories/3.0.18"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Gets the selected Platform checkout.</summary>
@@ -88,7 +96,10 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
                 : throw new InvalidDataException($"{source}: {module}: {package}: image version is missing from the Builds catalog.");
         }
 
-        string catalogPath = Path.Combine(PlatformRoot, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
+        // A module's resolved identity already verifies its direct Builds checkout against Platform's pin.
+        // Platform's own nested references remain uninitialized in a direct-only module workspace.
+        string catalogRoot = Mapping.PlatformIdentity is { IsPlatformRepository: false } ? Mapping.Root : PlatformRoot;
+        string catalogPath = Path.Combine(catalogRoot, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
         if (!File.Exists(catalogPath))
         {
             throw new InvalidDataException($"{source}: {module}: {catalogPath}: Builds catalog is unavailable.");

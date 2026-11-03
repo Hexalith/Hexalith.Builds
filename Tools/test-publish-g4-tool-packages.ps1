@@ -679,6 +679,11 @@ try {
         -Destination (Join-Path $sourceRepositoryRoot 'Tools/G4PackageQualification.functions.ps1') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../test/fixtures') `
         -Destination (Join-Path $sourceRepositoryRoot 'test') -Recurse -Force
+    $sourceEvidenceFixturePath = Join-Path $sourceRepositoryRoot 'test/fixtures/evidence/positive/evidence/release-passed.json'
+    $sourceEvidenceFixture = [IO.File]::ReadAllText($sourceEvidenceFixturePath) | ConvertFrom-Json -DateKind String
+    $sourceEvidenceFixture.topology.platform.eventStoreVersion = $eventStoreVersion
+    [IO.File]::WriteAllText($sourceEvidenceFixturePath,
+        ($sourceEvidenceFixture | ConvertTo-Json -Depth 20 -Compress) + "`n", [Text.UTF8Encoding]::new($false))
 
     & git -C $sourceRepositoryRoot init --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Could not initialize the isolated publisher-test repository.' }

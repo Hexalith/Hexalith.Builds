@@ -90,6 +90,13 @@ infrastructure exit code 10 also fails its shard immediately, even when a report
 exists. Test and coverage evidence remains uploaded through the existing
 always-run upload.
 
+`allowed-not-runnable-tests` names facts that a caller runs in a separate
+explicit proof gate. The TRX validator accepts `NotRunnable` only for those exact
+case-sensitive names, checks its counter against the reported results, and
+still requires at least one executed test in each shard. An unlisted
+`NotRunnable` result fails the shard. Callers must keep the list in sync with
+their explicit proof gate.
+
 ## Scheduled Performance Evidence
 
 The scheduled performance step sets both

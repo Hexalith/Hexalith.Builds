@@ -6,4 +6,4 @@ runs:
   steps:
     - name: Initialize root-declared submodules
       shell: bash
-      run: git -c submodule.recurse=false submodule update --init
+      run: git -c submodule.recurse=false submodule update --init --depth 1

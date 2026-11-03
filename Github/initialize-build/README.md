@@ -12,9 +12,9 @@ references, and scripts.
 The action performs the following step:
 
 1. **Initialize Root-Declared Submodules**:
-   - Executes `git -c submodule.recurse=false submodule update --init` to
+   - Executes `git -c submodule.recurse=false submodule update --init --depth 1` to
      initialize and update only the submodules declared in the root
-     `.gitmodules` file
+     `.gitmodules` file at their recorded commits with shallow fetches
 
 The action does not use `--recursive` or `--remote`, and it leaves submodules nested inside other submodules uninitialized.
 

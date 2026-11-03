@@ -43,6 +43,13 @@ on:
         required: false
         type: string
         default: 'vstest'
+      allowed-not-runnable-tests:
+        description: >-
+          Newline-separated exact test names intentionally run in a separate explicit proof gate.
+          Every other NotRunnable TRX result remains a blocking failure.
+        required: false
+        type: string
+        default: ''
       unit-test-projects:
         description: 'Newline-separated Tier 1 test project paths (no Dapr).'
         required: false
@@ -439,6 +446,7 @@ jobs:
         shell: bash
         env:
           UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
+          ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
         run: |
           set -euo pipefail
           failures=0
@@ -482,6 +490,7 @@ jobs:
             # A zero child exit is insufficient: require this invocation's nonzero TRX.
             # The heredoc also keeps the verifier from consuming the project-list stdin.
             if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import os
           import pathlib
           import sys
           import xml.etree.ElementTree as ET
@@ -501,18 +510,22 @@ jobs:
               total = int(counters.get("total", "-1"))
               executed = int(counters.get("executed", "-1"))
               outcomes = [result.get("outcome") for result in results]
-              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+              allowed_not_runnable = {name.strip() for name in os.environ.get("ALLOWED_NOT_RUNNABLE_TESTS", "").splitlines() if name.strip()}
+              not_runnable = [result.get("testName") for result in results if result.get("outcome") == "NotRunnable"]
+              if len(not_runnable) != len(set(not_runnable)) or any(name not in allowed_not_runnable for name in not_runnable):
+                  raise ValueError("unexpected not-runnable test")
+              if total != len(results) or executed <= 0 or executed != sum(outcome not in {"NotExecuted", "NotRunnable"} for outcome in outcomes):
                   raise ValueError("missing or inconsistent test results")
-              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+              if any(outcome not in {"Passed", "Failed", "NotExecuted", "NotRunnable"} for outcome in outcomes):
                   raise ValueError("invalid result outcome")
               summary = root.find(f"{ns}ResultSummary")
               if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
                   raise ValueError("invalid result summary")
-              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted"), ("notRunnable", "NotRunnable")):
                   if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
                       raise ValueError("contradictory outcome counters")
               failures = [int(counters.get(name, "0")) for name in
-                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "disconnected")]
               if any(value < 0 for value in failures):
                   raise ValueError("invalid failure counters")
               if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
@@ -537,6 +550,7 @@ jobs:
         shell: bash
         env:
           UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
+          ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
           RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}
         run: |
           set -euo pipefail
@@ -591,6 +605,7 @@ jobs:
             # A zero child exit is insufficient: require this invocation's nonzero TRX.
             # The heredoc also keeps the verifier from consuming the project-list stdin.
             if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import os
           import pathlib
           import sys
           import xml.etree.ElementTree as ET
@@ -610,18 +625,22 @@ jobs:
               total = int(counters.get("total", "-1"))
               executed = int(counters.get("executed", "-1"))
               outcomes = [result.get("outcome") for result in results]
-              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+              allowed_not_runnable = {name.strip() for name in os.environ.get("ALLOWED_NOT_RUNNABLE_TESTS", "").splitlines() if name.strip()}
+              not_runnable = [result.get("testName") for result in results if result.get("outcome") == "NotRunnable"]
+              if len(not_runnable) != len(set(not_runnable)) or any(name not in allowed_not_runnable for name in not_runnable):
+                  raise ValueError("unexpected not-runnable test")
+              if total != len(results) or executed <= 0 or executed != sum(outcome not in {"NotExecuted", "NotRunnable"} for outcome in outcomes):
                   raise ValueError("missing or inconsistent test results")
-              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+              if any(outcome not in {"Passed", "Failed", "NotExecuted", "NotRunnable"} for outcome in outcomes):
                   raise ValueError("invalid result outcome")
               summary = root.find(f"{ns}ResultSummary")
               if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
                   raise ValueError("invalid result summary")
-              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted"), ("notRunnable", "NotRunnable")):
                   if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
                       raise ValueError("contradictory outcome counters")
               failures = [int(counters.get(name, "0")) for name in
-                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "disconnected")]
               if any(value < 0 for value in failures):
                   raise ValueError("invalid failure counters")
               if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
@@ -658,6 +677,7 @@ jobs:
         shell: bash
         env:
           INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
+          ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
         run: |
           set -euo pipefail
           failures=0
@@ -701,6 +721,7 @@ jobs:
             # A zero child exit is insufficient: require this invocation's nonzero TRX.
             # The heredoc also keeps the verifier from consuming the project-list stdin.
             if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import os
           import pathlib
           import sys
           import xml.etree.ElementTree as ET
@@ -720,18 +741,22 @@ jobs:
               total = int(counters.get("total", "-1"))
               executed = int(counters.get("executed", "-1"))
               outcomes = [result.get("outcome") for result in results]
-              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+              allowed_not_runnable = {name.strip() for name in os.environ.get("ALLOWED_NOT_RUNNABLE_TESTS", "").splitlines() if name.strip()}
+              not_runnable = [result.get("testName") for result in results if result.get("outcome") == "NotRunnable"]
+              if len(not_runnable) != len(set(not_runnable)) or any(name not in allowed_not_runnable for name in not_runnable):
+                  raise ValueError("unexpected not-runnable test")
+              if total != len(results) or executed <= 0 or executed != sum(outcome not in {"NotExecuted", "NotRunnable"} for outcome in outcomes):
                   raise ValueError("missing or inconsistent test results")
-              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+              if any(outcome not in {"Passed", "Failed", "NotExecuted", "NotRunnable"} for outcome in outcomes):
                   raise ValueError("invalid result outcome")
               summary = root.find(f"{ns}ResultSummary")
               if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
                   raise ValueError("invalid result summary")
-              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted"), ("notRunnable", "NotRunnable")):
                   if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
                       raise ValueError("contradictory outcome counters")
               failures = [int(counters.get(name, "0")) for name in
-                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "disconnected")]
               if any(value < 0 for value in failures):
                   raise ValueError("invalid failure counters")
               if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
@@ -756,6 +781,7 @@ jobs:
         shell: bash
         env:
           INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
+          ALLOWED_NOT_RUNNABLE_TESTS: ${{ inputs.allowed-not-runnable-tests }}
           RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}
         run: |
           set -euo pipefail
@@ -810,6 +836,7 @@ jobs:
             # A zero child exit is insufficient: require this invocation's nonzero TRX.
             # The heredoc also keeps the verifier from consuming the project-list stdin.
             if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import os
           import pathlib
           import sys
           import xml.etree.ElementTree as ET
@@ -829,18 +856,22 @@ jobs:
               total = int(counters.get("total", "-1"))
               executed = int(counters.get("executed", "-1"))
               outcomes = [result.get("outcome") for result in results]
-              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+              allowed_not_runnable = {name.strip() for name in os.environ.get("ALLOWED_NOT_RUNNABLE_TESTS", "").splitlines() if name.strip()}
+              not_runnable = [result.get("testName") for result in results if result.get("outcome") == "NotRunnable"]
+              if len(not_runnable) != len(set(not_runnable)) or any(name not in allowed_not_runnable for name in not_runnable):
+                  raise ValueError("unexpected not-runnable test")
+              if total != len(results) or executed <= 0 or executed != sum(outcome not in {"NotExecuted", "NotRunnable"} for outcome in outcomes):
                   raise ValueError("missing or inconsistent test results")
-              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+              if any(outcome not in {"Passed", "Failed", "NotExecuted", "NotRunnable"} for outcome in outcomes):
                   raise ValueError("invalid result outcome")
               summary = root.find(f"{ns}ResultSummary")
               if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
                   raise ValueError("invalid result summary")
-              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted"), ("notRunnable", "NotRunnable")):
                   if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
                       raise ValueError("contradictory outcome counters")
               failures = [int(counters.get(name, "0")) for name in
-                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "disconnected")]
               if any(value < 0 for value in failures):
                   raise ValueError("invalid failure counters")
               if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):

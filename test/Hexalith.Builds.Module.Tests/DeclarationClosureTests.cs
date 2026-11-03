@@ -94,6 +94,91 @@ public sealed class DeclarationClosureTests
         }
     }
 
+    /// <summary>Qualifies the exact released Tenants declaration against the production release authorities.</summary>
+    /// <param name="fault">The released provenance or snapshot fault, or none for the valid release.</param>
+    /// <param name="refusalText">The expected refusal diagnostic, or empty for a valid closure.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The fixture fault is unknown.</exception>
+    [Theory]
+    [InlineData("none", "")]
+    [InlineData("wrong-commit", "does not match Builds catalog version '7.0.0'")]
+    [InlineData("missing-commit", "commit: source provenance is unavailable")]
+    [InlineData("wrong-hash", "differs from its source provenance")]
+    [InlineData("missing-hash", "sha256: source provenance is unavailable")]
+    [InlineData("unreleased-snapshot", "does not match Builds catalog version '7.0.0'")]
+    public void ReleasedTenantsPackageClosureUsesProductionAuthorities(string fault, string refusalText)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionDeclarationOptions options = PackageOptions(workspace.Root);
+        Dictionary<string, string> commits = new(CompositionDeclarationOptions.DefaultReleaseCommits, StringComparer.Ordinal);
+        Dictionary<string, string> hashes = new(CompositionDeclarationOptions.DefaultReleaseSnapshotHashes, StringComparer.Ordinal);
+        foreach (string owner in new[] { "eventstore", "memories" })
+        {
+            // Only the unrelated owners use fixture authorities; Tenants retains the production defaults.
+            commits[owner + "/1.0.0"] = options.ReleaseCommits[owner + "/1.0.0"];
+            hashes[owner + "/1.0.0"] = options.ReleaseSnapshotHashes[owner + "/1.0.0"];
+        }
+
+        options = options with { ActiveModule = "tenants", ReleaseCommits = commits, ReleaseSnapshotHashes = hashes };
+        string catalog = Path.Combine(workspace.Root, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
+        File.WriteAllText(catalog, File.ReadAllText(catalog).Replace("<HexalithTenantsVersion>1.0.0", "<HexalithTenantsVersion>7.0.0", StringComparison.Ordinal));
+        string directory = Path.Combine(workspace.Root, "src", "Hexalith.Platform.Composition", "Declarations");
+        string snapshot = Path.Combine(directory, "tenants.json");
+        byte[] released = File.ReadAllBytes(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "tenants-7.0.0.json"));
+        const string releasedHash = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522";
+        Convert.ToHexStringLower(SHA256.HashData(released)).ShouldBe(releasedHash);
+        File.WriteAllBytes(snapshot, released);
+        string provenancePath = Path.Combine(directory, "provenance.json");
+        JsonNode provenance = JsonNode.Parse(File.ReadAllText(provenancePath))!;
+
+        // Exact owner v7.0.0 tag; the offline fixture preserves its manifest bytes.
+        JsonObject tenantProvenance = new()
+        {
+            ["repository"] = "Hexalith.Tenants",
+            ["commit"] = "1b2c71b0e3cc5b16745f87aa7f1bc2c0ac8ffc27",
+            ["version"] = "7.0.0",
+            ["source"] = "module/hexalith.module-manifest.v2.json",
+            ["sha256"] = releasedHash,
+        };
+        provenance["tenants"] = tenantProvenance;
+        switch (fault)
+        {
+            case "none":
+                break;
+            case "wrong-commit":
+                tenantProvenance["commit"] = new string('b', 40);
+                break;
+            case "missing-commit":
+                _ = tenantProvenance.Remove("commit");
+                break;
+            case "wrong-hash":
+                tenantProvenance["sha256"] = new string('0', 64);
+                break;
+            case "missing-hash":
+                _ = tenantProvenance.Remove("sha256");
+                break;
+            case "unreleased-snapshot":
+                File.AppendAllText(snapshot, "\n");
+                tenantProvenance["sha256"] = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(snapshot)));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(fault));
+        }
+
+        File.WriteAllText(provenancePath, provenance.ToJsonString());
+        if (fault == "none")
+        {
+            IReadOnlyList<PlatformModuleDeclaration> declarations = CompositionDeclarationClosure.Load(options);
+            declarations.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["eventstore", "memories", "tenants"]);
+            Path.GetFullPath(declarations.Single(declaration => CompositionDeclarationClosure.Id(declaration.Declaration) == "tenants").Source).ShouldBe(snapshot);
+        }
+        else
+        {
+            InvalidDataException refusal = Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(options));
+            refusal.Message.ShouldContain("Hexalith.Tenants");
+            refusal.Message.ShouldContain(refusalText);
+        }
+    }
+
     /// <summary>Verifies malformed release inputs become diagnostics-compatible declaration refusals.</summary>
     /// <param name="fault">The malformed input.</param>
     [Theory]
