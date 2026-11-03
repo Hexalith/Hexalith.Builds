@@ -165,7 +165,6 @@
     <PackageVersion Include="Azure.Bicep.Core" Version="0.48.1" />
     <PackageVersion Include="Azure.Core" Version="1.64.0" />
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
-    <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.10.2" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
     <PackageVersion Include="Azure.ResourceManager" Version="1.14.0" />
     <PackageVersion Include="Azure.ResourceManager.CognitiveServices" Version="1.6.0" />
