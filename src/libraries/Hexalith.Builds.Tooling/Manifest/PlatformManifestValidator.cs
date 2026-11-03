@@ -43,9 +43,21 @@ public static partial class PlatformManifestValidator
     /// <returns>An atomic validation result.</returns>
     public static PlatformManifestValidationResult Validate(
         IEnumerable<string> manifestPaths,
+        CancellationToken cancellationToken = default) =>
+        Validate(manifestPaths, new Dictionary<string, string>(StringComparer.Ordinal), cancellationToken);
+
+    /// <summary>Validates authenticated release snapshots without selecting their dependency test entries.</summary>
+    /// <param name="manifestPaths">The complete declaration set.</param>
+    /// <param name="authenticatedReleaseHashes">Exact snapshot paths and hashes already verified against owner release authority.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The atomically validated declarations; supplied executable manifests retain full filesystem checks.</returns>
+    internal static PlatformManifestValidationResult Validate(
+        IEnumerable<string> manifestPaths,
+        IReadOnlyDictionary<string, string> authenticatedReleaseHashes,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(manifestPaths);
+        ArgumentNullException.ThrowIfNull(authenticatedReleaseHashes);
         List<ToolDiagnostic> diagnostics = [];
         List<PlatformModuleDeclaration> declarations = [];
         Dictionary<string, List<(string Source, string Field)>> identities = new(StringComparer.Ordinal);
@@ -59,7 +71,7 @@ public static partial class PlatformManifestValidator
                 break;
             }
 
-            ValidateFile(path, declarations, identities, diagnostics, cancellationToken);
+            ValidateFile(path, declarations, identities, diagnostics, authenticatedReleaseHashes, cancellationToken);
         }
 
         if (fileCount == 0)
@@ -102,6 +114,7 @@ public static partial class PlatformManifestValidator
         List<PlatformModuleDeclaration> declarations,
         Dictionary<string, List<(string Source, string Field)>> identities,
         List<ToolDiagnostic> diagnostics,
+        IReadOnlyDictionary<string, string> authenticatedReleaseHashes,
         CancellationToken cancellationToken)
     {
         string fullPath;
@@ -153,6 +166,13 @@ public static partial class PlatformManifestValidator
                 return;
             }
 
+            bool releasedSnapshot = authenticatedReleaseHashes.TryGetValue(fullPath, out string? expectedHash);
+            if (releasedSnapshot && !string.Equals(expectedHash, Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(buffer.AsSpan(0, count))), StringComparison.OrdinalIgnoreCase))
+            {
+                Add(diagnostics, "HXP020", source, "$", "The released declaration changed after its source/hash verification.");
+                return;
+            }
+
             // Reject malformed UTF-8 before JSON parsing; a UTF-8 BOM is permitted.
             int offset = count >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF ? 3 : 0;
             string content = new UTF8Encoding(false, true).GetString(buffer, offset, count - offset);
@@ -191,7 +211,7 @@ public static partial class PlatformManifestValidator
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string prefix = $"modules[{moduleIndex++}]";
-                ValidateModule(module, prefix, source, fullPath, identities, diagnostics);
+                ValidateModule(module, prefix, source, fullPath, identities, diagnostics, requireTestFiles: !releasedSnapshot);
                 if (module.ValueKind == JsonValueKind.Object && initialDiagnosticCount == diagnostics.Count)
                 {
                     declarations.Add(new PlatformModuleDeclaration(source, ApplyDefaults(module))
@@ -511,7 +531,8 @@ public static partial class PlatformManifestValidator
         string source,
         string fullPath,
         Dictionary<string, List<(string Source, string Field)>> identities,
-        List<ToolDiagnostic> diagnostics)
+        List<ToolDiagnostic> diagnostics,
+        bool requireTestFiles)
     {
         JsonElement identity = ObjectValue(module, "identity");
         RegisterIdentity(StringValue(identity, "moduleId"), "module", source, $"{prefix}.identity.moduleId", identities);
@@ -581,7 +602,9 @@ public static partial class PlatformManifestValidator
 
             string? entry = StringValue(test, "entry");
             string? executor = StringValue(test, "executor");
-            if (entry is not null && (!ModuleTestSelection.IsOwnedEntry(ManifestPathValidator.FindRepositoryRoot(fullPath), entry)
+            if (entry is not null && (ManifestPathValidator.ContainsPlaceholder(entry)
+                || string.Equals(entry.Split('/')[0], "references", StringComparison.OrdinalIgnoreCase)
+                || (requireTestFiles && !ModuleTestSelection.IsOwnedEntry(ManifestPathValidator.FindRepositoryRoot(fullPath), entry))
                 || !entry.EndsWith(executor == "python3" ? ".py" : ".csproj", StringComparison.Ordinal)))
             {
                 Add(diagnostics, "HXP020", source, field + ".entry", "Use an existing module-owned entry of the executor's file type, without symlinks or dependency paths.");
