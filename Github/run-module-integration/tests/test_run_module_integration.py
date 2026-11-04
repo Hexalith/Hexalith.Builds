@@ -72,7 +72,10 @@ class IntegrationTests(unittest.TestCase):
                 "cleanup": "complete", "discoveryUnverified": False, "discoveryFailures": [],
                 "ruleIds": ["HXT001"], "terminalRuleIds": ["HXT001"],
             }, indent=2).encode() + b"\n"),
-            "native-report": ("native", ".trx", b'<?xml version="1.0"?><TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results><UnitTestResult testName="RequiredNativeFact" outcome="Passed" /></Results></TestRun>\n'),
+            "native-report": ("native", ".trx", (
+                b'<?xml version="1.0"?><TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+                b'<Results><UnitTestResult testName="RequiredNativeFact" outcome="Passed" /></Results></TestRun>\n'
+            )),
             "functional-observations": ("functional-observations", ".json", json.dumps({
                 "runId": self.owner["runId"], "status": "functional-observations-passed",
                 "qualificationCredit": False, "observations": {"persisted": True},
@@ -120,41 +123,65 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(before, {name: (self.evidence / name).stat().st_mtime_ns for name in before})
         self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
 
-    def test_unclassified_unsafe_or_foreign_diagnostic_references_refuse_after_exact_cleanup(self):
+    def assert_declared_result_refuses_after_exact_cleanup(self, directory, result, terminal):
+        self.publish_result(directory, result)
+        with patch.object(helper, "verify_tool"), patch.object(
+            helper.subprocess, "run", return_value=self.down_result()
+        ) as cleanup:
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+            cleanup.assert_called_once()
+            self.assertIn("--run-id=" + self.owner["runId"], cleanup.call_args.args[0])
+            self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+            self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], terminal)
+
+    def test_unclassified_or_unsafe_diagnostic_references_refuse_after_exact_cleanup(self):
         self.write_receipt()
         directory, baseline, _ = self.published_diagnostics()
-        for fault in ("id", "name", "hash", "digest-case", "redacted", "classification", "duplicate", "count",
-                      "traversal", "absolute", "suffix", "foreign-run", "foreign-attempt", "foreign-environment",
-                      "foreign-context", "bindings", "policy", "fields"):
+        filename = baseline["diagnostics"][0]["reference"]
+        mutations = {
+            "id": {"id": "native-endpoint-credentials"},
+            "name": {"reference": "native-endpoint-credentials.json"},
+            "hash": {"contentIdentity": "sha256:" + "0" * 64},
+            "digest-case": {"reference": filename.upper()},
+            "redacted": {"redacted": "true"},
+            "classification": {"classification": "secret"},
+            "traversal": {"reference": "../" + filename},
+            "absolute": {"reference": str(directory / filename)},
+            "suffix": {"reference": filename + ".json"},
+            "fields": {"path": "owner.json"},
+        }
+        for fault, changes in mutations.items():
             result = copy.deepcopy(baseline)
-            reference = result["diagnostics"][0]
-            if fault == "id": reference["id"] = "native-endpoint-credentials"
-            elif fault == "name": reference["reference"] = "native-endpoint-credentials.json"
-            elif fault == "hash": reference["contentIdentity"] = "sha256:" + "0" * 64
-            elif fault == "digest-case": reference["reference"] = reference["reference"].upper()
-            elif fault == "redacted": reference["redacted"] = "true"
-            elif fault == "classification": reference["classification"] = "secret"
-            elif fault == "duplicate": result["diagnostics"] = [reference, reference]
-            elif fault == "count": result["diagnostics"] = [reference] * 4
-            elif fault == "traversal": reference["reference"] = "../" + reference["reference"]
-            elif fault == "absolute": reference["reference"] = str(directory / reference["reference"])
-            elif fault == "suffix": reference["reference"] += ".json"
-            elif fault.startswith("foreign-") and fault != "foreign-context":
-                key = {"foreign-run": "runId", "foreign-attempt": "attemptId", "foreign-environment": "environmentId"}[fault]
+            result["diagnostics"][0].update(changes)
+            with self.subTest(fault=fault):
+                self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+
+    def test_duplicate_or_excess_diagnostic_references_refuse_after_exact_cleanup(self):
+        self.write_receipt()
+        directory, baseline, _ = self.published_diagnostics()
+        for fault, count in (("duplicate", 2), ("count", 4)):
+            result = copy.deepcopy(baseline)
+            result["diagnostics"] = [result["diagnostics"][0]] * count
+            with self.subTest(fault=fault):
+                self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+
+    def test_foreign_diagnostic_owner_bindings_refuse_after_exact_cleanup(self):
+        self.write_receipt()
+        directory, baseline, _ = self.published_diagnostics()
+        for fault, key in (("foreign-run", "runId"), ("foreign-attempt", "attemptId"), ("foreign-environment", "environmentId")):
+            result = copy.deepcopy(baseline)
+            with self.subTest(fault=fault):
                 result["bindings"]["run"][key] = "f" * 32
-            elif fault == "foreign-context": result["bindings"]["environment"]["executionContext"] = {"kind": "local"}
-            elif fault == "bindings": result["bindings"] = []
-            elif fault == "policy": result["policyId"] = "foreign"
-            elif fault == "fields": reference["path"] = "owner.json"
-            self.publish_result(directory, result)
-            with self.subTest(fault=fault), patch.object(helper, "verify_tool"), patch.object(
-                helper.subprocess, "run", return_value=self.down_result()
-            ) as cleanup:
-                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
-                cleanup.assert_called_once()
-                self.assertIn("--run-id=" + self.owner["runId"], cleanup.call_args.args[0])
-                self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
-                self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], baseline["terminal"])
+                self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+        result = copy.deepcopy(baseline)
+        result["bindings"]["environment"]["executionContext"] = {"kind": "local"}
+        with self.subTest(fault="foreign-context"):
+            self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+        for field, value in (("bindings", []), ("policyId", "foreign")):
+            result = copy.deepcopy(baseline)
+            result[field] = value
+            with self.subTest(field=field):
+                self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
 
     def test_missing_changed_foreign_oversized_or_nonprivate_diagnostic_bytes_refuse(self):
         self.write_receipt()
@@ -163,14 +190,21 @@ class IntegrationTests(unittest.TestCase):
         original = files[reference["reference"]]
         for fault in ("missing", "changed", "foreign", "size", "symlink", "hardlink", "permissions", "fifo"):
             path = directory / reference["reference"]
-            if path.exists() or path.is_symlink(): path.unlink()
+            if path.exists() or path.is_symlink():
+                path.unlink()
             body = original
-            if fault == "changed": body += b" "
-            if fault == "foreign": body = original.replace(self.owner["runId"].encode(), b"f" * 32)
-            if fault == "size": body = original + b" " * (1024 * 1024)
-            if fault == "symlink": path.symlink_to(directory / result["diagnostics"][1]["reference"])
-            elif fault == "hardlink": os.link(directory / result["diagnostics"][1]["reference"], path)
-            elif fault == "fifo": os.mkfifo(path, 0o600)
+            if fault == "changed":
+                body += b" "
+            if fault == "foreign":
+                body = original.replace(self.owner["runId"].encode(), b"f" * 32)
+            if fault == "size":
+                body = original + b" " * (1024 * 1024)
+            if fault == "symlink":
+                path.symlink_to(directory / result["diagnostics"][1]["reference"])
+            elif fault == "hardlink":
+                os.link(directory / result["diagnostics"][1]["reference"], path)
+            elif fault == "fifo":
+                os.mkfifo(path, 0o600)
             elif fault != "missing":
                 path.write_bytes(body)
                 path.chmod(0o644 if fault == "permissions" else 0o600)
@@ -219,9 +253,12 @@ class IntegrationTests(unittest.TestCase):
         sentinel.chmod(0o600)
         target = self.evidence / filename
         for fault in ("changed", "symlink", "hardlink", "permissions"):
-            if target.exists() or target.is_symlink(): target.unlink()
-            if fault == "symlink": target.symlink_to(sentinel)
-            elif fault == "hardlink": os.link(sentinel, target)
+            if target.exists() or target.is_symlink():
+                target.unlink()
+            if fault == "symlink":
+                target.symlink_to(sentinel)
+            elif fault == "hardlink":
+                os.link(sentinel, target)
             else:
                 target.write_bytes(b"changed" if fault == "changed" else body)
                 target.chmod(0o644 if fault == "permissions" else 0o600)
@@ -240,8 +277,10 @@ class IntegrationTests(unittest.TestCase):
         self.write_receipt()
         directory, result, _ = self.published_diagnostics()
         (directory / result["diagnostics"][0]["reference"]).unlink()
+
         class Child:
             returncode = 17
+
             def communicate(child, timeout):
                 return '{"outcome":{"exitCode":"TestFailure"}}', None
         with patch.object(helper.subprocess, "Popen", return_value=Child()), patch.object(
@@ -259,10 +298,12 @@ class IntegrationTests(unittest.TestCase):
             (directory / name).write_text("private-endpoint-sentinel")
         (directory / "owner.json").write_text(json.dumps(self.owner))
         held = directory.with_name("held-owner")
+
         def replace_after_owner_validation(*args, **kwargs):
             directory.rename(held)
             directory.symlink_to(held, target_is_directory=True)
             return self.down_result()
+
         with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", side_effect=replace_after_owner_validation) as cleanup:
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
             cleanup.assert_called_once()
@@ -288,18 +329,29 @@ class IntegrationTests(unittest.TestCase):
 
     def test_partial_diagnostic_write_never_strands_a_final_name_and_identical_retry_succeeds(self):
         real_open = os.fdopen
+
         class InterruptedWrite:
-            def __init__(self, stream): self.stream = stream
-            def __enter__(self): return self
-            def __exit__(self, *args): self.stream.close()
-            def fileno(self): return self.stream.fileno()
+            def __init__(self, stream):
+                self.stream = stream
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                self.stream.close()
+
+            def fileno(self):
+                return self.stream.fileno()
+
             def write(self, body):
                 self.stream.write(body[:11])
                 self.stream.flush()
                 raise OSError("simulated interrupted diagnostic write")
+
         def interrupted_open(descriptor, mode, *args, **kwargs):
             stream = real_open(descriptor, mode, *args, **kwargs)
             return InterruptedWrite(stream) if mode == "wb" else stream
+
         self.assert_collection_failure_can_retry(patch.object(helper.os, "fdopen", side_effect=interrupted_open))
 
     def test_failed_diagnostic_flush_never_publishes_a_final_name_and_identical_retry_succeeds(self):
@@ -338,10 +390,13 @@ class IntegrationTests(unittest.TestCase):
         self.write_receipt()
         _, result, files = self.published_diagnostics()
         real_publication = helper.promote_diagnostic
+
         def concurrent_publication(directory, source, destination):
             descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=directory)
-            with os.fdopen(descriptor, "wb") as stream: stream.write(b"concurrent immutable bytes")
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(b"concurrent immutable bytes")
             real_publication(directory, source, destination)
+
         with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()), patch.object(
             helper, "promote_diagnostic", side_effect=concurrent_publication
         ):

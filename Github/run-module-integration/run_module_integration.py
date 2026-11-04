@@ -250,6 +250,18 @@ def promote_diagnostic(directory: int, temporary: str, filename: str) -> None:
         raise OSError(ctypes.get_errno(), "atomic diagnostic publication refused")
 
 
+def write_complete_diagnostic(descriptor: int, body: bytes) -> None:
+    """Finish and fsync a new private snapshot before its name can become final."""
+    with os.fdopen(descriptor, "wb") as output:
+        observed = os.fstat(output.fileno())
+        if not stat.S_ISREG(observed.st_mode) or observed.st_nlink != 1 or observed.st_mode & 0o077:
+            raise ValueError("retained diagnostic is not a private regular file")
+        if output.write(body) != len(body):
+            raise ValueError("diagnostic write was incomplete")
+        output.flush()
+        os.fsync(output.fileno())
+
+
 def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -> None:
     """Publish immutable sanitized bytes; an existing identical private file is a retry."""
     if not any(re.fullmatch(prefix + r"-[a-f0-9]{64}" + re.escape(suffix), filename, re.ASCII)
@@ -274,14 +286,7 @@ def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -
         descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,
                              mode=0o600, dir_fd=held)
         created = True
-        with os.fdopen(descriptor, "wb") as output:
-            observed = os.fstat(output.fileno())
-            if not stat.S_ISREG(observed.st_mode) or observed.st_nlink != 1 or observed.st_mode & 0o077:
-                raise ValueError("retained diagnostic is not a private regular file")
-            if output.write(body) != len(body):
-                raise ValueError("diagnostic write was incomplete")
-            output.flush()
-            os.fsync(output.fileno())
+        write_complete_diagnostic(descriptor, body)
         try:
             promote_diagnostic(held, temporary, filename)
         except FileExistsError:
@@ -298,13 +303,8 @@ def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -
             os.close(held)
 
 
-def declared_diagnostics(result: dict, owner: dict) -> list[tuple[str, str, int, str]]:
-    """Accept only the published redacted diagnostic IDs bound to this receipt's owner."""
-    references = result.get("diagnostics", [])
-    if not isinstance(references, list) or len(references) > len(DIAGNOSTICS):
-        raise ValueError("declared diagnostic count is invalid")
-    if not references:
-        return []
+def validate_diagnostic_owner(result: dict, owner: dict) -> None:
+    """Require the published result's exact receipt-bound package owner."""
     bindings = result.get("bindings", {})
     if not isinstance(bindings, dict) or any(not isinstance(bindings.get(key), dict) for key in ("run", "environment")):
         raise ValueError("declared diagnostic bindings are unavailable")
@@ -317,26 +317,42 @@ def declared_diagnostics(result: dict, owner: dict) -> list[tuple[str, str, int,
         or bindings.get("environment", {}).get("executionContext") != owner["executionContext"]
     ):
         raise ValueError("declared diagnostics belong to a foreign result")
+
+
+def declared_diagnostic_reference(reference: dict, identities: set[str], filenames: set[str]) -> tuple[str, str, int, str]:
+    """Validate one unique published redacted content-addressed reference."""
+    if not isinstance(reference, dict) or set(reference) != {"id", "classification", "redacted", "reference", "contentIdentity"}:
+        raise ValueError("declared diagnostic does not match the published fields")
+    identity = reference["id"]
+    if not isinstance(identity, str) or identity not in DIAGNOSTICS or identity in identities:
+        raise ValueError("declared diagnostic identity is unsupported or duplicated")
+    prefix, suffix, maximum = DIAGNOSTICS[identity]
+    filename = reference["reference"]
+    match = re.fullmatch(prefix + r"-([a-f0-9]{64})" + re.escape(suffix), filename, re.ASCII) if isinstance(filename, str) else None
+    if (
+        reference["classification"] != "internal" or reference["redacted"] is not True
+        or match is None or reference["contentIdentity"] != "sha256:" + match[1] or filename in filenames
+    ):
+        raise ValueError("declared diagnostic classification, filename or digest is invalid")
+    return identity, filename, maximum, match[1]
+
+
+def declared_diagnostics(result: dict, owner: dict) -> list[tuple[str, str, int, str]]:
+    """Accept only the published redacted diagnostic IDs bound to this receipt's owner."""
+    references = result.get("diagnostics", [])
+    if not isinstance(references, list) or len(references) > len(DIAGNOSTICS):
+        raise ValueError("declared diagnostic count is invalid")
+    if not references:
+        return []
+    validate_diagnostic_owner(result, owner)
     selected = []
     identities = set()
     filenames = set()
     for reference in references:
-        if not isinstance(reference, dict) or set(reference) != {"id", "classification", "redacted", "reference", "contentIdentity"}:
-            raise ValueError("declared diagnostic does not match the published fields")
-        identity = reference["id"]
-        if not isinstance(identity, str) or identity not in DIAGNOSTICS or identity in identities:
-            raise ValueError("declared diagnostic identity is unsupported or duplicated")
-        prefix, suffix, maximum = DIAGNOSTICS[identity]
-        filename = reference["reference"]
-        match = re.fullmatch(prefix + r"-([a-f0-9]{64})" + re.escape(suffix), filename, re.ASCII) if isinstance(filename, str) else None
-        if (
-            reference["classification"] != "internal" or reference["redacted"] is not True
-            or match is None or reference["contentIdentity"] != "sha256:" + match[1] or filename in filenames
-        ):
-            raise ValueError("declared diagnostic classification, filename or digest is invalid")
+        identity, filename, maximum, digest = declared_diagnostic_reference(reference, identities, filenames)
         identities.add(identity)
         filenames.add(filename)
-        selected.append((identity, filename, maximum, match[1]))
+        selected.append((identity, filename, maximum, digest))
     return selected
 
 
