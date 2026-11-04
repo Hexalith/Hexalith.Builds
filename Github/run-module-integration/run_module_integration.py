@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
+import errno
+import hashlib
 import importlib.util
 import json
 import os
@@ -29,6 +32,13 @@ TOOL = ["dotnet", "tool", "run", "hexalith-module", "--"]
 ARTIFACTS = ("test-result.json", "attachments.json", "attachment-withdrawals.json")
 CLEANUP_FILE = "cleanup.json"
 EVIDENCE_FILES = frozenset((*ARTIFACTS, "invocation.json", "execution.json", CLEANUP_FILE))
+FIXED_METADATA_BYTES = 4 * 1024 * 1024
+JSON_DIAGNOSTIC_BYTES = 1024 * 1024
+DIAGNOSTICS = {
+    "lifecycle": ("lifecycle", ".json", JSON_DIAGNOSTIC_BYTES),
+    "native-report": ("native", ".trx", 4 * 1024 * 1024),
+    "functional-observations": ("functional-observations", ".json", JSON_DIAGNOSTIC_BYTES),
+}
 
 
 def ci_context() -> dict:
@@ -94,16 +104,17 @@ def checked_paths(root: Path, receipt: Path, evidence: Path) -> tuple[Path, Path
     return root, receipt, evidence
 
 
-def open_directory(anchor: Path, directory: Path) -> int:
+def open_directory(anchor: Path, directory: Path, *, create: bool = True) -> int:
     """Create/open each component relative to a held root without following links."""
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     held = os.open(anchor, flags)
     try:
         for part in directory.relative_to(anchor).parts:
-            try:
-                os.mkdir(part, mode=0o700, dir_fd=held)
-            except FileExistsError:
-                pass
+            if create:
+                try:
+                    os.mkdir(part, mode=0o700, dir_fd=held)
+                except FileExistsError:
+                    pass
             child = os.open(part, flags, dir_fd=held)
             os.close(held)
             held = child
@@ -204,12 +215,176 @@ def write_evidence(directory: Path, filename: str, value: dict) -> None:
         os.close(held)
 
 
+def read_private_artifact(directory: int, filename: str, maximum: int) -> bytes:
+    """Read a bounded private regular file relative to an already held owner directory."""
+    descriptor = os.open(filename, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+    with os.fdopen(descriptor, "rb") as stream:
+        before = os.fstat(stream.fileno())
+        if (
+            not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_uid != os.geteuid()
+            or before.st_mode & 0o077 or not 0 < before.st_size <= maximum
+        ):
+            raise ValueError("declared diagnostic is not a bounded private regular file")
+        body = stream.read(maximum + 1)
+        after = os.fstat(stream.fileno())
+        if len(body) != before.st_size or any(
+            getattr(before, key) != getattr(after, key)
+            for key in ("st_dev", "st_ino", "st_mode", "st_nlink", "st_uid", "st_size", "st_mtime_ns", "st_ctime_ns")
+        ):
+            raise ValueError("declared diagnostic changed during collection")
+        return body
+
+
+def promote_diagnostic(directory: int, temporary: str, filename: str) -> None:
+    """Atomically move complete bytes without replacement or a two-hard-link interruption window."""
+    if sys.platform != "linux":
+        raise OSError(errno.ENOSYS, "atomic diagnostic publication requires the supported Linux runner")
+    try:
+        rename = ctypes.CDLL(None, use_errno=True).renameat2
+    except AttributeError:
+        raise OSError(errno.ENOSYS, "atomic diagnostic publication is unavailable") from None
+    rename.argtypes = (ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint)
+    rename.restype = ctypes.c_int
+    # Linux RENAME_NOREPLACE=1: https://man7.org/linux/man-pages/man2/rename.2.html
+    if rename(directory, temporary.encode("ascii"), directory, filename.encode("ascii"), 1) != 0:
+        raise OSError(ctypes.get_errno(), "atomic diagnostic publication refused")
+
+
+def write_complete_diagnostic(descriptor: int, body: bytes) -> None:
+    """Finish and fsync a new private snapshot before its name can become final."""
+    with os.fdopen(descriptor, "wb") as output:
+        observed = os.fstat(output.fileno())
+        if not stat.S_ISREG(observed.st_mode) or observed.st_nlink != 1 or observed.st_mode & 0o077:
+            raise ValueError("retained diagnostic is not a private regular file")
+        if output.write(body) != len(body):
+            raise ValueError("diagnostic write was incomplete")
+        output.flush()
+        os.fsync(output.fileno())
+
+
+def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -> None:
+    """Publish immutable sanitized bytes; an existing identical private file is a retry."""
+    if not any(re.fullmatch(prefix + r"-[a-f0-9]{64}" + re.escape(suffix), filename, re.ASCII)
+               for prefix, suffix, _ in DIAGNOSTICS.values()):
+        raise ValueError("diagnostic filename is not a published content-addressed form")
+    workspace = job_root("GITHUB_WORKSPACE")
+    evidence = bounded_path(evidence, workspace)
+    if not evidence.is_relative_to(workspace / "TestResults"):
+        raise ValueError("integration evidence must stay under workspace/TestResults")
+    held = open_directory(workspace, evidence)
+    temporary = ".diagnostic-" + uuid.uuid4().hex + ".tmp"
+    created = False
+    try:
+        try:
+            existing = read_private_artifact(held, filename, maximum)
+        except FileNotFoundError:
+            pass
+        else:
+            if existing != body:
+                raise ValueError("retained diagnostic differs from its immutable content")
+            return
+        descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,
+                             mode=0o600, dir_fd=held)
+        created = True
+        write_complete_diagnostic(descriptor, body)
+        try:
+            promote_diagnostic(held, temporary, filename)
+        except FileExistsError:
+            if read_private_artifact(held, filename, maximum) != body:
+                raise ValueError("concurrent diagnostic publication differs from its immutable content")
+    finally:
+        try:
+            try:
+                if created:
+                    os.unlink(temporary, dir_fd=held)
+            except FileNotFoundError:
+                pass
+        finally:
+            os.close(held)
+
+
+def validate_diagnostic_owner(result: dict, owner: dict) -> None:
+    """Require the published result's exact receipt-bound package owner."""
+    bindings = result.get("bindings", {})
+    if not isinstance(bindings, dict) or any(not isinstance(bindings.get(key), dict) for key in ("run", "environment")):
+        raise ValueError("declared diagnostic bindings are unavailable")
+    if (
+        result.get("schema") != "hexalith.test-result.v1"
+        or result.get("policyId") != "hexalith.platform.candidate-and-attachment-policy.v1"
+        or any(bindings.get("run", {}).get(key) != owner[key] for key in ("runId", "attemptId", "environmentId"))
+        or bindings["run"].get("ownerRunId") != owner["runId"] or bindings["run"].get("role") != "owner"
+        or bindings["environment"].get("mode") != "package"
+        or bindings.get("environment", {}).get("executionContext") != owner["executionContext"]
+    ):
+        raise ValueError("declared diagnostics belong to a foreign result")
+
+
+def declared_diagnostic_reference(reference: dict, identities: set[str], filenames: set[str]) -> tuple[str, str, int, str]:
+    """Validate one unique published redacted content-addressed reference."""
+    if not isinstance(reference, dict) or set(reference) != {"id", "classification", "redacted", "reference", "contentIdentity"}:
+        raise ValueError("declared diagnostic does not match the published fields")
+    identity = reference["id"]
+    if not isinstance(identity, str) or identity not in DIAGNOSTICS or identity in identities:
+        raise ValueError("declared diagnostic identity is unsupported or duplicated")
+    prefix, suffix, maximum = DIAGNOSTICS[identity]
+    filename = reference["reference"]
+    match = re.fullmatch(prefix + r"-([a-f0-9]{64})" + re.escape(suffix), filename, re.ASCII) if isinstance(filename, str) else None
+    if (
+        reference["classification"] != "internal" or reference["redacted"] is not True
+        or match is None or reference["contentIdentity"] != "sha256:" + match[1] or filename in filenames
+    ):
+        raise ValueError("declared diagnostic classification, filename or digest is invalid")
+    return identity, filename, maximum, match[1]
+
+
+def declared_diagnostics(result: dict, owner: dict) -> list[tuple[str, str, int, str]]:
+    """Accept only the published redacted diagnostic IDs bound to this receipt's owner."""
+    references = result.get("diagnostics", [])
+    if not isinstance(references, list) or len(references) > len(DIAGNOSTICS):
+        raise ValueError("declared diagnostic count is invalid")
+    if not references:
+        return []
+    validate_diagnostic_owner(result, owner)
+    selected = []
+    identities = set()
+    filenames = set()
+    for reference in references:
+        identity, filename, maximum, digest = declared_diagnostic_reference(reference, identities, filenames)
+        identities.add(identity)
+        filenames.add(filename)
+        selected.append((identity, filename, maximum, digest))
+    return selected
+
+
 def retain_artifacts(owner: dict, evidence: Path) -> None:
     directory = Path(owner["stateDirectory"]) / "diagnostics" / owner["runId"]
-    for filename in ARTIFACTS:
-        path = directory / filename
-        if path.exists():
-            write_evidence(evidence, filename, read_json(real_path(path).read_text(encoding="utf-8")))
+    try:
+        held = open_directory(Path(directory.anchor), directory, create=False)
+    except FileNotFoundError:
+        return
+    try:
+        result = None
+        for filename in ARTIFACTS:
+            try:
+                body = read_private_artifact(held, filename, FIXED_METADATA_BYTES)
+            except FileNotFoundError:
+                continue
+            value = read_json(body.decode("utf-8"))
+            write_evidence(evidence, filename, value)
+            if filename == "test-result.json":
+                result = value
+        retained = []
+        for identity, filename, maximum, digest in declared_diagnostics(result or {}, owner):
+            body = read_private_artifact(held, filename, maximum)
+            if hashlib.sha256(body).hexdigest() != digest:
+                raise ValueError("declared diagnostic bytes differ from their content identity")
+            if identity != "native-report" and read_json(body.decode("utf-8")).get("runId") != owner["runId"]:
+                raise ValueError("declared diagnostic bytes belong to another owner")
+            retained.append((filename, body, maximum))
+        for filename, body, maximum in retained:
+            write_diagnostic(evidence, filename, body, maximum)
+    finally:
+        os.close(held)
 
 
 def cleanup_verified(completed: subprocess.CompletedProcess, result: dict, owner: dict) -> bool:
@@ -254,7 +429,12 @@ def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = 150, job_
     )
     result = read_json(completed.stdout)
     write_evidence(evidence, CLEANUP_FILE, result)
-    retain_artifacts(owner, evidence)
+    try:
+        retain_artifacts(owner, evidence)
+    except (OSError, ValueError, KeyError, TypeError, RecursionError) as error:
+        print("run-module-integration: declared diagnostic retention refused after exact cleanup ("
+              + type(error).__name__ + ")", file=sys.stderr)
+        return 1
     return 0 if cleanup_verified(completed, result, owner) else 1
 
 

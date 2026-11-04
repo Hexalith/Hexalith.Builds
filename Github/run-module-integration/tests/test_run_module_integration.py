@@ -1,6 +1,8 @@
 """Executable controls for exact ownership, blocking integration and finalization."""
 
 import importlib.util
+import hashlib
+import copy
 import json
 import os
 from pathlib import Path
@@ -60,6 +62,379 @@ class IntegrationTests(unittest.TestCase):
 
     def write_receipt(self):
         self.receipt.write_text(json.dumps(self.owner))
+
+    def published_diagnostics(self):
+        directory = self.state / "diagnostics" / self.owner["runId"]
+        directory.mkdir(parents=True, exist_ok=True)
+        bodies = {
+            "lifecycle": ("lifecycle", ".json", json.dumps({
+                "runId": self.owner["runId"], "outcome": "failed", "cause": "test-failure",
+                "cleanup": "complete", "discoveryUnverified": False, "discoveryFailures": [],
+                "ruleIds": ["HXT001"], "terminalRuleIds": ["HXT001"],
+            }, indent=2).encode() + b"\n"),
+            "native-report": ("native", ".trx", (
+                b'<?xml version="1.0"?><TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+                b'<Results><UnitTestResult testName="RequiredNativeFact" outcome="Passed" /></Results></TestRun>\n'
+            )),
+            "functional-observations": ("functional-observations", ".json", json.dumps({
+                "runId": self.owner["runId"], "status": "functional-observations-passed",
+                "qualificationCredit": False, "observations": {"persisted": True},
+            }, indent=2).encode() + b"\n"),
+        }
+        references = []
+        files = {}
+        for identity, (prefix, suffix, body) in bodies.items():
+            digest = hashlib.sha256(body).hexdigest()
+            filename = prefix + "-" + digest + suffix
+            path = directory / filename
+            path.write_bytes(body)
+            path.chmod(0o600)
+            references.append({"id": identity, "classification": "internal", "redacted": True,
+                               "reference": filename, "contentIdentity": "sha256:" + digest})
+            files[filename] = body
+        fixture = Path(__file__).resolve().parents[3] / "test/fixtures/module/test-environment-v1/result.json"
+        result = json.loads(fixture.read_text())
+        result["bindings"]["run"].update({key: self.owner[key] for key in ("runId", "attemptId", "environmentId")})
+        result["bindings"]["run"]["ownerRunId"] = self.owner["runId"]
+        result["bindings"]["environment"].update(mode="package", executionContext=self.owner["executionContext"])
+        result["terminal"] = {"outcome": "failed", "recordedAt": "2026-11-04T05:28:06Z", "cause": "test-failure", "diagnosticIds": ["lifecycle"]}
+        result["diagnostics"] = references
+        self.publish_result(directory, result)
+        return directory, result, files
+
+    def publish_result(self, directory, result):
+        path = directory / "test-result.json"
+        path.write_text(json.dumps(result, indent=2))
+        path.chmod(0o600)
+
+    def test_published_redacted_diagnostics_survive_cleanup_byte_for_byte_and_retry(self):
+        self.write_receipt()
+        _, result, files = self.published_diagnostics()
+        with patch.object(helper, "verify_tool"), patch.object(
+            helper.subprocess, "run", return_value=self.down_result()
+        ):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+            for filename, body in files.items():
+                with self.subTest(reference=filename):
+                    self.assertTrue((self.evidence / filename).is_file(), "Published diagnostic must survive owned cleanup.")
+                    self.assertEqual((self.evidence / filename).read_bytes(), body)
+            before = {name: (self.evidence / name).stat().st_mtime_ns for name in files if (self.evidence / name).exists()}
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+        self.assertEqual(before, {name: (self.evidence / name).stat().st_mtime_ns for name in before})
+        self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
+
+    def assert_declared_result_refuses_after_exact_cleanup(self, directory, result, terminal):
+        self.publish_result(directory, result)
+        with patch.object(helper, "verify_tool"), patch.object(
+            helper.subprocess, "run", return_value=self.down_result()
+        ) as cleanup:
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+            cleanup.assert_called_once()
+            self.assertIn("--run-id=" + self.owner["runId"], cleanup.call_args.args[0])
+            self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+            self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], terminal)
+
+    def test_unclassified_or_unsafe_diagnostic_references_refuse_after_exact_cleanup(self):
+        self.write_receipt()
+        directory, baseline, _ = self.published_diagnostics()
+        filename = baseline["diagnostics"][0]["reference"]
+        mutations = {
+            "id": {"id": "native-endpoint-credentials"},
+            "name": {"reference": "native-endpoint-credentials.json"},
+            "hash": {"contentIdentity": "sha256:" + "0" * 64},
+            "digest-case": {"reference": filename.upper()},
+            "redacted": {"redacted": "true"},
+            "classification": {"classification": "secret"},
+            "traversal": {"reference": "../" + filename},
+            "absolute": {"reference": str(directory / filename)},
+            "suffix": {"reference": filename + ".json"},
+            "fields": {"path": "owner.json"},
+        }
+        for fault, changes in mutations.items():
+            result = copy.deepcopy(baseline)
+            result["diagnostics"][0].update(changes)
+            with self.subTest(fault=fault):
+                self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+
+    def test_duplicate_or_excess_diagnostic_references_refuse_after_exact_cleanup(self):
+        self.write_receipt()
+        directory, baseline, _ = self.published_diagnostics()
+        for fault, count in (("duplicate", 2), ("count", 4)):
+            result = copy.deepcopy(baseline)
+            result["diagnostics"] = [result["diagnostics"][0]] * count
+            with self.subTest(fault=fault):
+                self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+
+    def test_foreign_diagnostic_owner_bindings_refuse_after_exact_cleanup(self):
+        self.write_receipt()
+        directory, baseline, _ = self.published_diagnostics()
+        for fault, key in (("foreign-run", "runId"), ("foreign-attempt", "attemptId"), ("foreign-environment", "environmentId")):
+            result = copy.deepcopy(baseline)
+            with self.subTest(fault=fault):
+                result["bindings"]["run"][key] = "f" * 32
+                self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+        result = copy.deepcopy(baseline)
+        result["bindings"]["environment"]["executionContext"] = {"kind": "local"}
+        with self.subTest(fault="foreign-context"):
+            self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+        for field, value in (("bindings", []), ("policyId", "foreign")):
+            result = copy.deepcopy(baseline)
+            result[field] = value
+            with self.subTest(field=field):
+                self.assert_declared_result_refuses_after_exact_cleanup(directory, result, baseline["terminal"])
+
+    def test_missing_changed_foreign_oversized_or_nonprivate_diagnostic_bytes_refuse(self):
+        self.write_receipt()
+        directory, result, files = self.published_diagnostics()
+        reference = result["diagnostics"][0]
+        original = files[reference["reference"]]
+        for fault in ("missing", "changed", "foreign", "size", "symlink", "hardlink", "permissions", "fifo"):
+            path = directory / reference["reference"]
+            if path.exists() or path.is_symlink():
+                path.unlink()
+            body = original
+            if fault == "changed":
+                body += b" "
+            if fault == "foreign":
+                body = original.replace(self.owner["runId"].encode(), b"f" * 32)
+            if fault == "size":
+                body = original + b" " * (1024 * 1024)
+            if fault == "symlink":
+                path.symlink_to(directory / result["diagnostics"][1]["reference"])
+            elif fault == "hardlink":
+                os.link(directory / result["diagnostics"][1]["reference"], path)
+            elif fault == "fifo":
+                os.mkfifo(path, 0o600)
+            elif fault != "missing":
+                path.write_bytes(body)
+                path.chmod(0o644 if fault == "permissions" else 0o600)
+            updated = copy.deepcopy(result)
+            if fault in ("foreign", "size"):
+                digest = hashlib.sha256(body).hexdigest()
+                target = directory / ("lifecycle-" + digest + ".json")
+                path.rename(target)
+                updated["diagnostics"][0].update(reference=target.name, contentIdentity="sha256:" + digest)
+            self.publish_result(directory, updated)
+            with self.subTest(fault=fault), patch.object(helper, "verify_tool"), patch.object(
+                helper.subprocess, "run", return_value=self.down_result()
+            ) as cleanup:
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+                cleanup.assert_called_once()
+                self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+
+    def test_native_and_functional_report_size_bounds_follow_the_actual_writers(self):
+        self.write_receipt()
+        directory, baseline, _ = self.published_diagnostics()
+        for identity, limit in (("native-report", 4 * 1024 * 1024), ("functional-observations", 1024 * 1024)):
+            for overflow in (False, True):
+                result = copy.deepcopy(baseline)
+                reference = next(item for item in result["diagnostics"] if item["id"] == identity)
+                original = (directory / reference["reference"]).read_bytes()
+                body = original + b" " * (limit - len(original) + int(overflow))
+                digest = hashlib.sha256(body).hexdigest()
+                prefix, suffix = ("native", ".trx") if identity == "native-report" else ("functional-observations", ".json")
+                path = directory / (prefix + "-" + digest + suffix)
+                path.write_bytes(body)
+                path.chmod(0o600)
+                reference.update(reference=path.name, contentIdentity="sha256:" + digest)
+                self.publish_result(directory, result)
+                with self.subTest(identity=identity, overflow=overflow), patch.object(helper, "verify_tool"), patch.object(
+                    helper.subprocess, "run", return_value=self.down_result()
+                ):
+                    self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), int(overflow))
+
+    def test_diagnostic_destination_is_private_immutable_and_never_follows_links(self):
+        self.write_receipt()
+        _, _, files = self.published_diagnostics()
+        self.evidence.mkdir(parents=True)
+        filename, body = next(iter(files.items()))
+        sentinel = self.root / "sentinel"
+        sentinel.write_bytes(b"sentinel unchanged")
+        sentinel.chmod(0o600)
+        target = self.evidence / filename
+        for fault in ("changed", "symlink", "hardlink", "permissions"):
+            if target.exists() or target.is_symlink():
+                target.unlink()
+            if fault == "symlink":
+                target.symlink_to(sentinel)
+            elif fault == "hardlink":
+                os.link(sentinel, target)
+            else:
+                target.write_bytes(b"changed" if fault == "changed" else body)
+                target.chmod(0o644 if fault == "permissions" else 0o600)
+            with self.subTest(fault=fault), patch.object(helper, "verify_tool"), patch.object(
+                helper.subprocess, "run", return_value=self.down_result()
+            ):
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+                self.assertEqual(sentinel.read_bytes(), b"sentinel unchanged")
+        target.unlink()
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+        self.assertEqual(target.read_bytes(), body)
+        self.assertEqual(target.stat().st_mode & 0o777, 0o600)
+
+    def test_collection_refusal_preserves_native_failure_and_still_finishes_exact_cleanup(self):
+        self.write_receipt()
+        directory, result, _ = self.published_diagnostics()
+        (directory / result["diagnostics"][0]["reference"]).unlink()
+
+        class Child:
+            returncode = 17
+
+            def communicate(child, timeout):
+                return '{"outcome":{"exitCode":"TestFailure"}}', None
+        with patch.object(helper.subprocess, "Popen", return_value=Child()), patch.object(
+            helper, "verify_tool"
+        ), patch.object(helper.subprocess, "run", return_value=self.down_result()) as cleanup:
+            self.assertEqual(helper.execute_integration(helper.TOOL + ["test"], self.root, self.receipt, self.evidence, 1), 17)
+            cleanup.assert_called_once()
+        self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
+        self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+
+    def test_diagnostic_directory_symlinks_and_unrelated_metadata_never_escape_the_artifact_boundary(self):
+        self.write_receipt()
+        directory, _, files = self.published_diagnostics()
+        for name in ("plan.json", "source-mapping.json", "native-endpoint-credentials.json", "apphost.log"):
+            (directory / name).write_text("private-endpoint-sentinel")
+        (directory / "owner.json").write_text(json.dumps(self.owner))
+        held = directory.with_name("held-owner")
+
+        def replace_after_owner_validation(*args, **kwargs):
+            directory.rename(held)
+            directory.symlink_to(held, target_is_directory=True)
+            return self.down_result()
+
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", side_effect=replace_after_owner_validation) as cleanup:
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+            cleanup.assert_called_once()
+        directory.unlink()
+        held.rename(directory)
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+        self.assertEqual(set(path.name for path in self.evidence.iterdir()), {"cleanup.json", "test-result.json", *files})
+        self.assertNotIn("private-endpoint-sentinel", b"".join(path.read_bytes() for path in self.evidence.iterdir()).decode())
+
+    def assert_collection_failure_can_retry(self, fault):
+        self.write_receipt()
+        _, result, files = self.published_diagnostics()
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+            with fault:
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+            self.assertFalse(any((self.evidence / name).exists() for name in files), "Incomplete publication must not occupy an immutable final name.")
+            self.assertEqual(set(p.name for p in self.evidence.iterdir()), {"cleanup.json", "test-result.json"})
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+        self.assertEqual({name: (self.evidence / name).read_bytes() for name in files}, files)
+        self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
+        self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+
+    def test_partial_diagnostic_write_never_strands_a_final_name_and_identical_retry_succeeds(self):
+        real_open = os.fdopen
+
+        class InterruptedWrite:
+            def __init__(self, stream):
+                self.stream = stream
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                self.stream.close()
+
+            def fileno(self):
+                return self.stream.fileno()
+
+            def write(self, body):
+                self.stream.write(body[:11])
+                self.stream.flush()
+                raise OSError("simulated interrupted diagnostic write")
+
+        def interrupted_open(descriptor, mode, *args, **kwargs):
+            stream = real_open(descriptor, mode, *args, **kwargs)
+            return InterruptedWrite(stream) if mode == "wb" else stream
+
+        self.assert_collection_failure_can_retry(patch.object(helper.os, "fdopen", side_effect=interrupted_open))
+
+    def test_failed_diagnostic_flush_never_publishes_a_final_name_and_identical_retry_succeeds(self):
+        self.assert_collection_failure_can_retry(patch.object(helper.os, "fsync", side_effect=OSError("simulated durable flush failure")))
+
+    def test_actual_collector_kill_after_publication_keeps_one_link_and_allows_identical_retry(self):
+        body = b'{"runId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","outcome":"failed"}\n'
+        filename = "lifecycle-" + hashlib.sha256(body).hexdigest() + ".json"
+        # Exercise the real publication syscall; the fallback preserves this regression's old-helper red control.
+        boundary_owner = helper if hasattr(helper, "promote_diagnostic") else helper.os
+        boundary_name = "promote_diagnostic" if boundary_owner is helper else "link"
+        real_publication = getattr(boundary_owner, boundary_name)
+        child = os.fork()
+        if child == 0:
+            def killed_after_publication(*args, **kwargs):
+                real_publication(*args, **kwargs)
+                os.kill(os.getpid(), signal.SIGKILL)
+            with patch.object(boundary_owner, boundary_name, side_effect=killed_after_publication):
+                helper.write_diagnostic(self.evidence, filename, body, 1024 * 1024)
+            os._exit(99)
+        waited, status = os.waitpid(child, 0)
+        self.assertEqual(waited, child)
+        self.assertTrue(os.WIFSIGNALED(status))
+        self.assertEqual(os.WTERMSIG(status), signal.SIGKILL)
+        target = self.evidence / filename
+        self.assertEqual(target.read_bytes(), body)
+        self.assertEqual(target.stat().st_nlink, 1)
+        helper.write_diagnostic(self.evidence, filename, body, 1024 * 1024)
+        self.assertEqual(target.read_bytes(), body)
+        self.assertFalse(list(self.evidence.glob(".diagnostic-*.tmp")))
+
+    def test_failed_atomic_publication_cleans_temporary_bytes_and_identical_retry_succeeds(self):
+        self.assert_collection_failure_can_retry(patch.object(helper, "promote_diagnostic", side_effect=OSError("simulated publication failure")))
+
+    def test_concurrent_different_publication_is_never_overwritten(self):
+        self.write_receipt()
+        _, result, files = self.published_diagnostics()
+        real_publication = helper.promote_diagnostic
+
+        def concurrent_publication(directory, source, destination):
+            descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=directory)
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(b"concurrent immutable bytes")
+            real_publication(directory, source, destination)
+
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()), patch.object(
+            helper, "promote_diagnostic", side_effect=concurrent_publication
+        ):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+        self.assertEqual((self.evidence / next(iter(files))).read_bytes(), b"concurrent immutable bytes")
+        self.assertFalse(list(self.evidence.glob(".diagnostic-*.tmp")))
+        self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
+
+    def test_uncreated_temporary_name_is_never_removed(self):
+        self.evidence.mkdir(parents=True)
+        body = b'{"runId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}\n'
+        filename = "lifecycle-" + hashlib.sha256(body).hexdigest() + ".json"
+        nonce = helper.uuid.UUID(hex="0" * 32)
+        sentinel = self.evidence / (".diagnostic-" + nonce.hex + ".tmp")
+        sentinel.write_bytes(b"preexisting private bytes")
+        sentinel.chmod(0o600)
+        with patch.object(helper.uuid, "uuid4", return_value=nonce), self.assertRaises(FileExistsError):
+            helper.write_diagnostic(self.evidence, filename, body, 1024 * 1024)
+        self.assertEqual(sentinel.read_bytes(), b"preexisting private bytes")
+        self.assertFalse((self.evidence / filename).exists())
+
+    def test_fixed_metadata_above_one_mib_retains_the_owning_four_mib_bound(self):
+        self.write_receipt()
+        directory, _, _ = self.published_diagnostics()
+        large = {"attachments": [], "padding": "x" * (1024 * 1024 + 17)}
+        for name in ("attachments.json", "attachment-withdrawals.json"):
+            path = directory / name
+            path.write_text(json.dumps(large))
+            path.chmod(0o600)
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+        for name in ("attachments.json", "attachment-withdrawals.json"):
+            self.assertEqual(json.loads((self.evidence / name).read_text()), large)
+        path = directory / "attachments.json"
+        path.write_bytes(b" " * (4 * 1024 * 1024 + 1))
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()) as cleanup:
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+            cleanup.assert_called_once()
 
     def down_result(self, remaining=None, exit_code=0):
         resources = {
@@ -150,6 +525,7 @@ class IntegrationTests(unittest.TestCase):
         directory = self.state / "diagnostics" / self.owner["runId"]
         directory.mkdir(parents=True)
         (directory / "test-result.json").write_text('{"classification":"baseline-only"}')
+        (directory / "test-result.json").chmod(0o600)
         (directory / "native-endpoint-credentials.json").write_text("private-key-sentinel")
         with patch.object(helper, "verify_tool"), patch.object(
             helper.subprocess, "run", return_value=self.down_result()

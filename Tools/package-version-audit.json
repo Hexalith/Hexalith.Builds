@@ -1,13 +1,16 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+  "generatedFromRevision": "2bc5fff679e37318f6e18fc6b25047653faf3261",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "726e1e7669dd95650861fb19604c4b85451dd3df8175764a96f01f79e492ae22",
-  "catalogRawSha256": "e3f80e09f234da26baeb3a1a88687a98502f421a4971acbccf4ad8c8df0566e6",
+  "catalogSha256": "5990d7a68d93ed7266711dc3af58526a829ae546f16394b2aaa94a9e65cf34d7",
+  "catalogRawSha256": "d3b521fc6a8f8d17c8a07bc14dff6b9338c8a4fae35d26facb7a8618f4d8bd13",
   "snapshot": {
-    "mode": "complete",
-    "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+    "mode": "incremental",
+    "auditedAtUtc": "2026-11-04T05:49:15.9134458+00:00",
     "refreshedFamilies": [
+      "hexalith-memories"
+    ],
+    "preservedFamilies": [
       "aspire",
       "bunit-html",
       "dapr",
@@ -25,7 +28,6 @@
       "hexalith-identitystores",
       "hexalith-keyvaluestorages",
       "hexalith-mcpcli",
-      "hexalith-memories",
       "hexalith-netaspire",
       "hexalith-parties",
       "hexalith-polymorphicserializations",
@@ -164,8 +166,7 @@
       "roslyn",
       "verify",
       "xunit"
-    ],
-    "preservedFamilies": []
+    ]
   },
   "sources": [
     {
@@ -180,7 +181,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+    "repositoryRevision": "2bc5fff679e37318f6e18fc6b25047653faf3261",
     "sha256": "6b258eb8c65590fb053bd5450ba6fbecd132329e04e99823866fdeb4230426f8",
     "entries": [
       {
@@ -12748,11 +12749,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
-        "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
-        "familySelectionSha256": "c43c9c3ffbbb32b8ae17f2f2017a07524af2d823861afd32447d27924ec730a8",
+        "auditedAtUtc": "2026-11-04T05:49:15.9134458+00:00",
+        "generatedFromRevision": "2bc5fff679e37318f6e18fc6b25047653faf3261",
+        "familySelectionSha256": "2355b6addbd02711e969d37f7f9d118d2db5e94df2a3adae574fa28a1e79392a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "e8b950b554e03560250556c47cdc8be2910e2258cb97df230abbdc75a78d79f8",
+        "packageMetadataSha256": "26802617e770f0ed148176b345661c3febbd329a73148fa1306b84701fcc96d0",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -13800,6 +13801,35 @@
             "familySelectionSha256": "36f2220b651e5a41a331a831fa1eca7a1ad66152e19313a9d20104feffb80707",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "06359addd842bfefce0c74c4ab9ebce5cdd1af52833d3d1f38e50fced21ff2a3",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+          "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+          "family": "hexalith-memories",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-memories",
+          "packageIds": [
+            "Hexalith.Memories.Aspire",
+            "Hexalith.Memories.Client.Rest",
+            "Hexalith.Memories.Contracts",
+            "Hexalith.Memories.EventStore",
+            "Hexalith.Memories.EventStoreExtensions"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+            "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+            "familySelectionSha256": "c43c9c3ffbbb32b8ae17f2f2017a07524af2d823861afd32447d27924ec730a8",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "e8b950b554e03560250556c47cdc8be2910e2258cb97df230abbdc75a78d79f8",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -161099,22 +161129,22 @@
     },
     {
       "id": "Hexalith.Memories.Aspire",
-      "auditedVersion": "3.0.18",
-      "selectedVersion": "3.0.18",
-      "latestStable": "3.0.21",
+      "auditedVersion": "3.0.23",
+      "selectedVersion": "3.0.23",
+      "latestStable": "3.0.23",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-memories",
       "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
-      "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.23, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.21",
+          "latestStable": "3.0.23",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -162356,6 +162386,42 @@
             "familySelectionSha256": "36f2220b651e5a41a331a831fa1eca7a1ad66152e19313a9d20104feffb80707",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "06359addd842bfefce0c74c4ab9ebce5cdd1af52833d3d1f38e50fced21ff2a3",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+          "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+          "id": "Hexalith.Memories.Aspire",
+          "auditedVersion": "3.0.18",
+          "selectedVersion": "3.0.18",
+          "latestStable": "3.0.21",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-memories",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-memories",
+          "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.21",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+            "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+            "familySelectionSha256": "c43c9c3ffbbb32b8ae17f2f2017a07524af2d823861afd32447d27924ec730a8",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "e8b950b554e03560250556c47cdc8be2910e2258cb97df230abbdc75a78d79f8",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -162364,22 +162430,22 @@
     },
     {
       "id": "Hexalith.Memories.Client.Rest",
-      "auditedVersion": "3.0.18",
-      "selectedVersion": "3.0.18",
-      "latestStable": "3.0.21",
+      "auditedVersion": "3.0.23",
+      "selectedVersion": "3.0.23",
+      "latestStable": "3.0.23",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-memories",
       "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
-      "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.23, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.21",
+          "latestStable": "3.0.23",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -163624,27 +163690,63 @@
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+          "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+          "id": "Hexalith.Memories.Client.Rest",
+          "auditedVersion": "3.0.18",
+          "selectedVersion": "3.0.18",
+          "latestStable": "3.0.21",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-memories",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-memories",
+          "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.21",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+            "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+            "familySelectionSha256": "c43c9c3ffbbb32b8ae17f2f2017a07524af2d823861afd32447d27924ec730a8",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "e8b950b554e03560250556c47cdc8be2910e2258cb97df230abbdc75a78d79f8",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Hexalith.Memories.Contracts",
-      "auditedVersion": "3.0.18",
-      "selectedVersion": "3.0.18",
-      "latestStable": "3.0.21",
+      "auditedVersion": "3.0.23",
+      "selectedVersion": "3.0.23",
+      "latestStable": "3.0.23",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-memories",
       "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
-      "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.23, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.21",
+          "latestStable": "3.0.23",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -164889,27 +164991,63 @@
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+          "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+          "id": "Hexalith.Memories.Contracts",
+          "auditedVersion": "3.0.18",
+          "selectedVersion": "3.0.18",
+          "latestStable": "3.0.21",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-memories",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-memories",
+          "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.21",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+            "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+            "familySelectionSha256": "c43c9c3ffbbb32b8ae17f2f2017a07524af2d823861afd32447d27924ec730a8",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "e8b950b554e03560250556c47cdc8be2910e2258cb97df230abbdc75a78d79f8",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Hexalith.Memories.EventStore",
-      "auditedVersion": "3.0.18",
-      "selectedVersion": "3.0.18",
-      "latestStable": "3.0.21",
+      "auditedVersion": "3.0.23",
+      "selectedVersion": "3.0.23",
+      "latestStable": "3.0.23",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-memories",
       "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
-      "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.23, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.21",
+          "latestStable": "3.0.23",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -165166,27 +165304,63 @@
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+          "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+          "id": "Hexalith.Memories.EventStore",
+          "auditedVersion": "3.0.18",
+          "selectedVersion": "3.0.18",
+          "latestStable": "3.0.21",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-memories",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-memories",
+          "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.21",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+            "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+            "familySelectionSha256": "c43c9c3ffbbb32b8ae17f2f2017a07524af2d823861afd32447d27924ec730a8",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "e8b950b554e03560250556c47cdc8be2910e2258cb97df230abbdc75a78d79f8",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Hexalith.Memories.EventStoreExtensions",
-      "auditedVersion": "3.0.18",
-      "selectedVersion": "3.0.18",
-      "latestStable": "3.0.21",
+      "auditedVersion": "3.0.23",
+      "selectedVersion": "3.0.23",
+      "latestStable": "3.0.23",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-memories",
       "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
-      "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.23, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.21",
+          "latestStable": "3.0.23",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -165440,6 +165614,42 @@
             "familySelectionSha256": "36f2220b651e5a41a331a831fa1eca7a1ad66152e19313a9d20104feffb80707",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "06359addd842bfefce0c74c4ab9ebce5cdd1af52833d3d1f38e50fced21ff2a3",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+          "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+          "id": "Hexalith.Memories.EventStoreExtensions",
+          "auditedVersion": "3.0.18",
+          "selectedVersion": "3.0.18",
+          "latestStable": "3.0.21",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-memories",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-memories",
+          "rationale": "Retain 3.0.18 pending compatibility validation of listed stable candidate 3.0.21.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.21, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.21",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-04T01:44:34.7585425+00:00",
+            "generatedFromRevision": "3c5b9bf19f2aa6ae5b41062af9d06144fe55a84f",
+            "familySelectionSha256": "c43c9c3ffbbb32b8ae17f2f2017a07524af2d823861afd32447d27924ec730a8",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "e8b950b554e03560250556c47cdc8be2910e2258cb97df230abbdc75a78d79f8",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
