@@ -273,6 +273,74 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(set(path.name for path in self.evidence.iterdir()), {"cleanup.json", "test-result.json", *files})
         self.assertNotIn("private-endpoint-sentinel", b"".join(path.read_bytes() for path in self.evidence.iterdir()).decode())
 
+    def assert_collection_failure_can_retry(self, fault):
+        self.write_receipt()
+        _, result, files = self.published_diagnostics()
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+            with fault:
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+            self.assertFalse(any((self.evidence / name).exists() for name in files), "Incomplete publication must not occupy an immutable final name.")
+            self.assertEqual(set(p.name for p in self.evidence.iterdir()), {"cleanup.json", "test-result.json"})
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+        self.assertEqual({name: (self.evidence / name).read_bytes() for name in files}, files)
+        self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
+        self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+
+    def test_partial_diagnostic_write_never_strands_a_final_name_and_identical_retry_succeeds(self):
+        real_open = os.fdopen
+        class InterruptedWrite:
+            def __init__(self, stream): self.stream = stream
+            def __enter__(self): return self
+            def __exit__(self, *args): self.stream.close()
+            def fileno(self): return self.stream.fileno()
+            def write(self, body):
+                self.stream.write(body[:11])
+                self.stream.flush()
+                raise OSError("simulated interrupted diagnostic write")
+        def interrupted_open(descriptor, mode, *args, **kwargs):
+            stream = real_open(descriptor, mode, *args, **kwargs)
+            return InterruptedWrite(stream) if mode == "wb" else stream
+        self.assert_collection_failure_can_retry(patch.object(helper.os, "fdopen", side_effect=interrupted_open))
+
+    def test_failed_diagnostic_flush_never_publishes_a_final_name_and_identical_retry_succeeds(self):
+        self.assert_collection_failure_can_retry(patch.object(helper.os, "fsync", side_effect=OSError("simulated durable flush failure")))
+
+    def test_failed_atomic_publication_cleans_temporary_bytes_and_identical_retry_succeeds(self):
+        self.assert_collection_failure_can_retry(patch.object(helper.os, "link", side_effect=OSError("simulated publication failure")))
+
+    def test_concurrent_different_publication_is_never_overwritten(self):
+        self.write_receipt()
+        _, result, files = self.published_diagnostics()
+        def concurrent_publication(source, destination, **kwargs):
+            descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=kwargs["dst_dir_fd"])
+            with os.fdopen(descriptor, "wb") as stream: stream.write(b"concurrent immutable bytes")
+            raise FileExistsError("another collector published first")
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()), patch.object(
+            helper.os, "link", side_effect=concurrent_publication
+        ):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+        self.assertEqual((self.evidence / next(iter(files))).read_bytes(), b"concurrent immutable bytes")
+        self.assertFalse(list(self.evidence.glob(".diagnostic-*.tmp")))
+        self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
+
+    def test_fixed_metadata_above_one_mib_retains_the_owning_four_mib_bound(self):
+        self.write_receipt()
+        directory, _, _ = self.published_diagnostics()
+        large = {"attachments": [], "padding": "x" * (1024 * 1024 + 17)}
+        for name in ("attachments.json", "attachment-withdrawals.json"):
+            path = directory / name
+            path.write_text(json.dumps(large))
+            path.chmod(0o600)
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+        for name in ("attachments.json", "attachment-withdrawals.json"):
+            self.assertEqual(json.loads((self.evidence / name).read_text()), large)
+        path = directory / "attachments.json"
+        path.write_bytes(b" " * (4 * 1024 * 1024 + 1))
+        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()) as cleanup:
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+            cleanup.assert_called_once()
+
     def down_result(self, remaining=None, exit_code=0):
         resources = {
             key: [] for key in ("containerIds", "processIds", "workspaceIds", "claimIds", "discoveryFailures")

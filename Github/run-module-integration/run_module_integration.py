@@ -30,11 +30,12 @@ TOOL = ["dotnet", "tool", "run", "hexalith-module", "--"]
 ARTIFACTS = ("test-result.json", "attachments.json", "attachment-withdrawals.json")
 CLEANUP_FILE = "cleanup.json"
 EVIDENCE_FILES = frozenset((*ARTIFACTS, "invocation.json", "execution.json", CLEANUP_FILE))
-METADATA_BYTES = 1024 * 1024
+FIXED_METADATA_BYTES = 4 * 1024 * 1024
+JSON_DIAGNOSTIC_BYTES = 1024 * 1024
 DIAGNOSTICS = {
-    "lifecycle": ("lifecycle", ".json", METADATA_BYTES),
+    "lifecycle": ("lifecycle", ".json", JSON_DIAGNOSTIC_BYTES),
     "native-report": ("native", ".trx", 4 * 1024 * 1024),
-    "functional-observations": ("functional-observations", ".json", METADATA_BYTES),
+    "functional-observations": ("functional-observations", ".json", JSON_DIAGNOSTIC_BYTES),
 }
 
 
@@ -242,23 +243,40 @@ def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -
     if not evidence.is_relative_to(workspace / "TestResults"):
         raise ValueError("integration evidence must stay under workspace/TestResults")
     held = open_directory(workspace, evidence)
+    temporary = ".diagnostic-" + uuid.uuid4().hex + ".tmp"
     try:
         try:
-            descriptor = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,
-                                 mode=0o600, dir_fd=held)
-        except FileExistsError:
-            if read_private_artifact(held, filename, maximum) != body:
+            existing = read_private_artifact(held, filename, maximum)
+        except FileNotFoundError:
+            pass
+        else:
+            if existing != body:
                 raise ValueError("retained diagnostic differs from its immutable content")
             return
+        descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,
+                             mode=0o600, dir_fd=held)
         with os.fdopen(descriptor, "wb") as output:
             observed = os.fstat(output.fileno())
             if not stat.S_ISREG(observed.st_mode) or observed.st_nlink != 1 or observed.st_mode & 0o077:
                 raise ValueError("retained diagnostic is not a private regular file")
-            output.write(body)
+            if output.write(body) != len(body):
+                raise ValueError("diagnostic write was incomplete")
             output.flush()
             os.fsync(output.fileno())
+        try:
+            # A hard-link publication is atomic and refuses replacement of an existing final name.
+            os.link(temporary, filename, src_dir_fd=held, dst_dir_fd=held, follow_symlinks=False)
+        except FileExistsError:
+            if read_private_artifact(held, filename, maximum) != body:
+                raise ValueError("concurrent diagnostic publication differs from its immutable content")
     finally:
-        os.close(held)
+        try:
+            try:
+                os.unlink(temporary, dir_fd=held)
+            except FileNotFoundError:
+                pass
+        finally:
+            os.close(held)
 
 
 def declared_diagnostics(result: dict, owner: dict) -> list[tuple[str, str, int, str]]:
@@ -313,7 +331,7 @@ def retain_artifacts(owner: dict, evidence: Path) -> None:
         result = None
         for filename in ARTIFACTS:
             try:
-                body = read_private_artifact(held, filename, METADATA_BYTES)
+                body = read_private_artifact(held, filename, FIXED_METADATA_BYTES)
             except FileNotFoundError:
                 continue
             value = read_json(body.decode("utf-8"))
