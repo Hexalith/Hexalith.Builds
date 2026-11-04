@@ -305,23 +305,63 @@ class IntegrationTests(unittest.TestCase):
     def test_failed_diagnostic_flush_never_publishes_a_final_name_and_identical_retry_succeeds(self):
         self.assert_collection_failure_can_retry(patch.object(helper.os, "fsync", side_effect=OSError("simulated durable flush failure")))
 
+    def test_actual_collector_kill_after_publication_keeps_one_link_and_allows_identical_retry(self):
+        body = b'{"runId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","outcome":"failed"}\n'
+        filename = "lifecycle-" + hashlib.sha256(body).hexdigest() + ".json"
+        # Exercise the real publication syscall; the fallback preserves this regression's old-helper red control.
+        boundary_owner = helper if hasattr(helper, "promote_diagnostic") else helper.os
+        boundary_name = "promote_diagnostic" if boundary_owner is helper else "link"
+        real_publication = getattr(boundary_owner, boundary_name)
+        child = os.fork()
+        if child == 0:
+            def killed_after_publication(*args, **kwargs):
+                real_publication(*args, **kwargs)
+                os.kill(os.getpid(), signal.SIGKILL)
+            with patch.object(boundary_owner, boundary_name, side_effect=killed_after_publication):
+                helper.write_diagnostic(self.evidence, filename, body, 1024 * 1024)
+            os._exit(99)
+        waited, status = os.waitpid(child, 0)
+        self.assertEqual(waited, child)
+        self.assertTrue(os.WIFSIGNALED(status))
+        self.assertEqual(os.WTERMSIG(status), signal.SIGKILL)
+        target = self.evidence / filename
+        self.assertEqual(target.read_bytes(), body)
+        self.assertEqual(target.stat().st_nlink, 1)
+        helper.write_diagnostic(self.evidence, filename, body, 1024 * 1024)
+        self.assertEqual(target.read_bytes(), body)
+        self.assertFalse(list(self.evidence.glob(".diagnostic-*.tmp")))
+
     def test_failed_atomic_publication_cleans_temporary_bytes_and_identical_retry_succeeds(self):
-        self.assert_collection_failure_can_retry(patch.object(helper.os, "link", side_effect=OSError("simulated publication failure")))
+        self.assert_collection_failure_can_retry(patch.object(helper, "promote_diagnostic", side_effect=OSError("simulated publication failure")))
 
     def test_concurrent_different_publication_is_never_overwritten(self):
         self.write_receipt()
         _, result, files = self.published_diagnostics()
-        def concurrent_publication(source, destination, **kwargs):
-            descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=kwargs["dst_dir_fd"])
+        real_publication = helper.promote_diagnostic
+        def concurrent_publication(directory, source, destination):
+            descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=directory)
             with os.fdopen(descriptor, "wb") as stream: stream.write(b"concurrent immutable bytes")
-            raise FileExistsError("another collector published first")
+            real_publication(directory, source, destination)
         with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()), patch.object(
-            helper.os, "link", side_effect=concurrent_publication
+            helper, "promote_diagnostic", side_effect=concurrent_publication
         ):
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
         self.assertEqual((self.evidence / next(iter(files))).read_bytes(), b"concurrent immutable bytes")
         self.assertFalse(list(self.evidence.glob(".diagnostic-*.tmp")))
         self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
+
+    def test_uncreated_temporary_name_is_never_removed(self):
+        self.evidence.mkdir(parents=True)
+        body = b'{"runId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}\n'
+        filename = "lifecycle-" + hashlib.sha256(body).hexdigest() + ".json"
+        nonce = helper.uuid.UUID(hex="0" * 32)
+        sentinel = self.evidence / (".diagnostic-" + nonce.hex + ".tmp")
+        sentinel.write_bytes(b"preexisting private bytes")
+        sentinel.chmod(0o600)
+        with patch.object(helper.uuid, "uuid4", return_value=nonce), self.assertRaises(FileExistsError):
+            helper.write_diagnostic(self.evidence, filename, body, 1024 * 1024)
+        self.assertEqual(sentinel.read_bytes(), b"preexisting private bytes")
+        self.assertFalse((self.evidence / filename).exists())
 
     def test_fixed_metadata_above_one_mib_retains_the_owning_four_mib_bound(self):
         self.write_receipt()

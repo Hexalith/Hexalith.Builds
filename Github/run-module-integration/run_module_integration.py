@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
+import errno
 import hashlib
 import importlib.util
 import json
@@ -233,6 +235,21 @@ def read_private_artifact(directory: int, filename: str, maximum: int) -> bytes:
         return body
 
 
+def promote_diagnostic(directory: int, temporary: str, filename: str) -> None:
+    """Atomically move complete bytes without replacement or a two-hard-link interruption window."""
+    if sys.platform != "linux":
+        raise OSError(errno.ENOSYS, "atomic diagnostic publication requires the supported Linux runner")
+    try:
+        rename = ctypes.CDLL(None, use_errno=True).renameat2
+    except AttributeError:
+        raise OSError(errno.ENOSYS, "atomic diagnostic publication is unavailable") from None
+    rename.argtypes = (ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint)
+    rename.restype = ctypes.c_int
+    # Linux RENAME_NOREPLACE=1: https://man7.org/linux/man-pages/man2/rename.2.html
+    if rename(directory, temporary.encode("ascii"), directory, filename.encode("ascii"), 1) != 0:
+        raise OSError(ctypes.get_errno(), "atomic diagnostic publication refused")
+
+
 def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -> None:
     """Publish immutable sanitized bytes; an existing identical private file is a retry."""
     if not any(re.fullmatch(prefix + r"-[a-f0-9]{64}" + re.escape(suffix), filename, re.ASCII)
@@ -244,6 +261,7 @@ def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -
         raise ValueError("integration evidence must stay under workspace/TestResults")
     held = open_directory(workspace, evidence)
     temporary = ".diagnostic-" + uuid.uuid4().hex + ".tmp"
+    created = False
     try:
         try:
             existing = read_private_artifact(held, filename, maximum)
@@ -255,6 +273,7 @@ def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -
             return
         descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,
                              mode=0o600, dir_fd=held)
+        created = True
         with os.fdopen(descriptor, "wb") as output:
             observed = os.fstat(output.fileno())
             if not stat.S_ISREG(observed.st_mode) or observed.st_nlink != 1 or observed.st_mode & 0o077:
@@ -264,15 +283,15 @@ def write_diagnostic(evidence: Path, filename: str, body: bytes, maximum: int) -
             output.flush()
             os.fsync(output.fileno())
         try:
-            # A hard-link publication is atomic and refuses replacement of an existing final name.
-            os.link(temporary, filename, src_dir_fd=held, dst_dir_fd=held, follow_symlinks=False)
+            promote_diagnostic(held, temporary, filename)
         except FileExistsError:
             if read_private_artifact(held, filename, maximum) != body:
                 raise ValueError("concurrent diagnostic publication differs from its immutable content")
     finally:
         try:
             try:
-                os.unlink(temporary, dir_fd=held)
+                if created:
+                    os.unlink(temporary, dir_fd=held)
             except FileNotFoundError:
                 pass
         finally:
