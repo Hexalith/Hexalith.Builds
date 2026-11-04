@@ -19,7 +19,7 @@
     </ItemGroup>
     <PropertyGroup>
       <BuildsPublicTechnicalHttpReceiver>false</BuildsPublicTechnicalHttpReceiver>
-      <BuildsPublicTechnicalHttpReceiver Condition="'$(BuildsCatalogFromMappedSource)' != 'true' and '@(_BuildsResolvedGateway->Count())' == '1' and '%(_BuildsResolvedGateway.NuGetPackageVersion)' == '4.0.4'">true</BuildsPublicTechnicalHttpReceiver>
+      <BuildsPublicTechnicalHttpReceiver Condition="'$(BuildsCatalogFromMappedSource)' != 'true' and '@(_BuildsResolvedGateway->Count())' == '1' and ('%(_BuildsResolvedGateway.NuGetPackageVersion)' == '4.0.4' or '%(_BuildsResolvedGateway.NuGetPackageVersion)' == '4.1.0')">true</BuildsPublicTechnicalHttpReceiver>
       <DefineConstants Condition="'$(BuildsPublicTechnicalHttpReceiver)' == 'true'">$(DefineConstants);HEXALITH_EVENTSTORE_PUBLIC_TECHNICAL_RECEIVER</DefineConstants>
     </PropertyGroup>
   </Target>
