@@ -96,6 +96,13 @@ An `always()` artifact upload preserves only classified redacted result and
 attachment documents from durable diagnostics. Endpoint credentials, bearer tokens
 and raw resource logs are excluded. This evidence remains available after workspace
 deletion and records cleanup uncertainty independently of the first test outcome.
+The helper also retains the exact published redacted `lifecycle`, `native-report`
+and `functional-observations` references from that receipt-bound owner's result.
+It checks their content-addressed names, SHA-256, private non-link file custody and
+bounded count/size (native reports at most 4 MiB; JSON diagnostics at most 1 MiB).
+Bytes remain unchanged and identical retries do not overwrite them. Missing,
+changed or unsafe declared diagnostics fail collection after exact cleanup; the
+original native outcome/time and the actual cleanup result remain separate.
 
 ## Permissions and publication boundary
 

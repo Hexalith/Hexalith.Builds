@@ -588,7 +588,11 @@ attachments are refused for this opt-in until they have a matching scope contrac
 The shared v2 workflow exposes the same request as the optional
 `integration-test-reference-owners` input. Selection grants no package capability:
 Platform must independently admit the exact published cohort. In particular,
-Memories package catalog runtime remains unqualified. The package EventStore seed
+Memories package catalog runtime remains unqualified. The catalog now selects the
+published Memories 3.0.23/source `82c0aa0a7046d7bd91569ac1c9a38a3ed0386d0f`
+with its unchanged released declaration snapshot. This selection does not extend
+Platform's finite package admission or prove full Parties runtime compatibility.
+The package EventStore seed
 enables its technical catalog receiver only for the actual resolved public Gateway
 4.0.4 assembly; unknown and near-miss versions retain the existing finite receiver.
 

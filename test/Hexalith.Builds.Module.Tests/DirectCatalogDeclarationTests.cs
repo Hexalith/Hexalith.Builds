@@ -140,7 +140,7 @@ public sealed class DirectCatalogDeclarationTests
         string declarations = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "Declarations");
         _ = Directory.CreateDirectory(declarations);
         JsonObject provenance = [];
-        foreach ((string owner, string version) in new[] { ("eventstore", "4.0.4"), ("tenants", "7.0.0"), ("memories", "3.0.18") })
+        foreach ((string owner, string version) in new[] { ("eventstore", "4.0.4"), ("tenants", "7.0.0"), ("memories", "3.0.23") })
         {
             byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", owner + "-" + version + ".json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             string key = owner + "/" + version;
