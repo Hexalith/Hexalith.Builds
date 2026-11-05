@@ -30,6 +30,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["tenants/6.0.0"] = "9e5a991d0ba304bac7b1a5809cd71797b47d78ed",
         ["tenants/7.0.0"] = "1b2c71b0e3cc5b16745f87aa7f1bc2c0ac8ffc27",
         ["tenants/7.0.2"] = "143cec60a3f5bb1831fa57f35c510880ceb788d8",
+        ["tenants/7.0.4"] = "8e20524574901d71ad5f4876804c64c3c6c87b88",
         ["memories/3.0.18"] = "66822bc5bc4858c824f17b7d093f5f0f676b03ea",
         ["memories/3.0.23"] = "82c0aa0a7046d7bd91569ac1c9a38a3ed0386d0f",
     }.ToFrozenDictionary(StringComparer.Ordinal);
@@ -44,6 +45,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["tenants/6.0.0"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
         ["tenants/7.0.0"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
         ["tenants/7.0.2"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
+        ["tenants/7.0.4"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
         ["memories/3.0.18"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
         ["memories/3.0.23"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
     }.ToFrozenDictionary(StringComparer.Ordinal);
