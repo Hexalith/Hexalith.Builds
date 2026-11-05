@@ -50,9 +50,14 @@ function global:gh {
 
 function global:bash {
     param([string] $ScriptPath)
+    $proofMatches = if ($global:HexalithG4PublisherExpectedCiProof) {
+        $env:EXPECTED_CI_RUN_ID -ceq '456' -and $env:EXPECTED_CI_RUN_ATTEMPT -ceq '1'
+    } else {
+        [string]::IsNullOrEmpty($env:EXPECTED_CI_RUN_ID) -and [string]::IsNullOrEmpty($env:EXPECTED_CI_RUN_ATTEMPT)
+    }
     if ($ScriptPath -cne (Join-Path $global:HexalithG4PublisherSourceRoot 'Tools/verify-g4-release-source.sh') -or
         $env:REPOSITORY -cne $env:GITHUB_REPOSITORY -or $env:DISPATCH_REF -cne $env:GITHUB_REF -or
-        $env:DISPATCH_SHA -cne $env:GITHUB_SHA -or $env:EXPECTED_CI_RUN_ID -cne '456' -or $env:EXPECTED_CI_RUN_ATTEMPT -cne '1') {
+        $env:DISPATCH_SHA -cne $env:GITHUB_SHA -or -not $proofMatches) {
         throw 'Publisher late guard did not bind the exact qualified source.'
     }
     $global:HexalithG4PublisherLiveGuardCalls++
@@ -438,6 +443,7 @@ function New-PackageInventory {
         [Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($fixtureMaterial))
     ).ToLowerInvariant()
 
+    $global:HexalithG4PublisherExpectedCiProof = [bool]$SourceCi
     $qualifiedRevision = (& git -C $sourceRepositoryRoot rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0 -or $qualifiedRevision -cnotmatch '^[0-9a-f]{40}$') {
         throw 'Publisher test source revision could not be resolved.'
@@ -758,9 +764,9 @@ try {
     $env:NUGET_API_KEY = 'stable-test-token'
     $env:GITHUB_TOKEN = $null
     Invoke-PublisherCase -PublishedVersion '9.8.7' -ExpectedSource 'https://api.nuget.org/v3/index.json'
-    if ($global:HexalithG4PublisherLiveGuardCalls -ne 0) { throw 'Executed source fixture required live API authority.' }
+    if ($global:HexalithG4PublisherLiveGuardCalls -ne 1) { throw 'Protected executed-mode publication omitted live source verification.' }
     Invoke-PublisherCase -PublishedVersion '9.8.40' -ExpectedSource 'https://api.nuget.org/v3/index.json' -SourceCi
-    if ($global:HexalithG4PublisherLiveGuardCalls -ne 1) { throw 'CI-backed publisher did not recheck live source.' }
+    if ($global:HexalithG4PublisherLiveGuardCalls -ne 2) { throw 'CI-backed publisher did not recheck live source.' }
     $packageDirectory = New-PackageInventory -PublishedVersion '9.8.41' -SourceCi
     $global:HexalithG4PublisherTestInvocations.Clear()
     $global:HexalithG4PublisherLiveGuardExitCode = 1
@@ -771,6 +777,20 @@ try {
     catch {
         if (-not $_.Exception.Message.Contains('changed before publication', [StringComparison]::Ordinal)) { throw }
         if ($global:HexalithG4PublisherTestInvocations.Count -ne 0) { throw 'A package was pushed before live source refusal.' }
+    }
+    finally {
+        $global:HexalithG4PublisherLiveGuardExitCode = 0
+    }
+    $packageDirectory = New-PackageInventory -PublishedVersion '9.8.42'
+    $global:HexalithG4PublisherTestInvocations.Clear()
+    $global:HexalithG4PublisherLiveGuardExitCode = 1
+    try {
+        & $publisherPath -Version '9.8.42' -PackageDirectory $packageDirectory
+        throw 'Protected executed-mode publisher accepted source advancement.'
+    }
+    catch {
+        if (-not $_.Exception.Message.Contains('changed before publication', [StringComparison]::Ordinal)) { throw }
+        if ($global:HexalithG4PublisherTestInvocations.Count -ne 0) { throw 'A legacy package was pushed before live source refusal.' }
     }
     finally {
         $global:HexalithG4PublisherLiveGuardExitCode = 0
@@ -1084,6 +1104,7 @@ finally {
     Remove-Variable -Name HexalithG4PublisherRemoteMode -Scope Global -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherDelayedUris -Scope Global -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherSleepSeconds -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable -Name HexalithG4PublisherExpectedCiProof -Scope Global -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherUploadResponses -Scope Global -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

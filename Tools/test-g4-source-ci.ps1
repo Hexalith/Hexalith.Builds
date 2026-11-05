@@ -11,12 +11,18 @@ $revision = '0123456789abcdef0123456789abcdef01234567'
 $originalRepository = $env:GITHUB_REPOSITORY
 $originalRef = $env:GITHUB_REF
 $originalSha = $env:GITHUB_SHA
+$releaseEnvironmentNames = @('GITHUB_JOB', 'GITHUB_EVENT_NAME', 'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT')
+$originalReleaseEnvironment = @{}
+foreach ($name in $releaseEnvironmentNames) {
+    $originalReleaseEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
+}
 $scenarioCount = 0
 $apiExitCode = 0
 $apiErrorOutput = 'unclassified failure'
 $apiCalls = 0
 $liveGuardCalls = 0
 $liveGuardExitCode = 0
+$expectedCiProof = $true
 $inventoryPath = Join-Path ([IO.Path]::GetTempPath()) "g4-source-ci-$([Guid]::NewGuid().ToString('N')).json"
 
 function gh {
@@ -32,10 +38,14 @@ function gh {
 
 function bash {
     param([string] $ScriptPath)
+    $proofMatches = if ($script:expectedCiProof) {
+        $env:EXPECTED_CI_RUN_ID -ceq '123' -and $env:EXPECTED_CI_RUN_ATTEMPT -ceq '1'
+    } else {
+        [string]::IsNullOrEmpty($env:EXPECTED_CI_RUN_ID) -and [string]::IsNullOrEmpty($env:EXPECTED_CI_RUN_ATTEMPT)
+    }
     if ($ScriptPath -cne (Join-Path $PSScriptRoot 'verify-g4-release-source.sh') -or
         $env:REPOSITORY -cne $env:GITHUB_REPOSITORY -or $env:DISPATCH_REF -cne $env:GITHUB_REF -or
-        $env:DISPATCH_SHA -cne $script:revision -or $env:EXPECTED_CI_RUN_ID -cne '123' -or
-        $env:EXPECTED_CI_RUN_ATTEMPT -cne '1' -or -not [string]::IsNullOrEmpty($env:GITHUB_OUTPUT)) {
+        $env:DISPATCH_SHA -cne $script:revision -or -not $proofMatches -or -not [string]::IsNullOrEmpty($env:GITHUB_OUTPUT)) {
         throw 'Late guard did not receive the exact qualified source scope.'
     }
     $script:liveGuardCalls++
@@ -193,6 +203,38 @@ try {
         Assert-CurrentReleaseSource -Qualification $qualification
         if ($apiCalls -ne $before -or $liveGuardCalls -ne $beforeGuard) { throw 'Locally executed source validation unexpectedly required GitHub.' }
         $scenarioCount++
+
+        # Explicit release-context doubles test the production legacy path;
+        # ordinary local executed qualification above remains fully offline.
+        $expectedCiProof = $false
+        $env:GITHUB_JOB = 'release'
+        $env:GITHUB_EVENT_NAME = 'workflow_dispatch'
+        $env:GITHUB_WORKFLOW_REF = "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/$branch"
+        $env:GITHUB_WORKFLOW_SHA = $revision
+        $env:GITHUB_RUN_ID = '789'
+        $env:GITHUB_RUN_ATTEMPT = '1'
+        Assert-CurrentReleaseSource -Qualification $qualification
+        if ($apiCalls -ne $before -or $liveGuardCalls -ne $beforeGuard + 1) {
+            throw 'A production executed-mode release omitted its final live source check.'
+        }
+        $scenarioCount++
+        $liveGuardExitCode = 1
+        Assert-Rejected -Name 'Production legacy source advanced after qualification' -Message 'changed before publication' -Action {
+            Assert-CurrentReleaseSource -Qualification $qualification
+        }
+        $liveGuardExitCode = 0
+        foreach ($field in @('GITHUB_EVENT_NAME', 'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT')) {
+            $value = [Environment]::GetEnvironmentVariable($field)
+            [Environment]::SetEnvironmentVariable($field, 'foreign')
+            Assert-Rejected -Name "Foreign release scope $field" -Message 'complete protected release context' -Action {
+                Assert-CurrentReleaseSource -Qualification $qualification
+            }
+            [Environment]::SetEnvironmentVariable($field, $value)
+        }
+        foreach ($name in $releaseEnvironmentNames) {
+            [Environment]::SetEnvironmentVariable($name, $originalReleaseEnvironment[$name])
+        }
+        $expectedCiProof = $true
     }
 
     Assert-Rejected -Name 'Invalid CI run ID' -Message 'requires a valid run ID' -Action {
@@ -210,6 +252,9 @@ finally {
     $env:GITHUB_REPOSITORY = $originalRepository
     $env:GITHUB_REF = $originalRef
     $env:GITHUB_SHA = $originalSha
+    foreach ($name in $releaseEnvironmentNames) {
+        [Environment]::SetEnvironmentVariable($name, $originalReleaseEnvironment[$name])
+    }
     Remove-Item -LiteralPath $inventoryPath -Force -ErrorAction SilentlyContinue
 }
 

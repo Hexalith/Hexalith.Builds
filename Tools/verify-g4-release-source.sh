@@ -15,8 +15,13 @@ if [[ ! "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 
 branch="${DISPATCH_REF#refs/heads/}"
-live_sha="$(gh api "repos/${REPOSITORY}/git/ref/heads/${branch}" --jq '.object.sha')"
-if [[ ! "$live_sha" =~ ^[0-9a-f]{40}$ ]] || [ "$DISPATCH_SHA" != "$live_sha" ]; then
+live_ref="$(gh api "repos/${REPOSITORY}/git/ref/heads/${branch}")"
+if ! jq -e --arg repository "$REPOSITORY" --arg ref "$DISPATCH_REF" --arg sha "$DISPATCH_SHA" '
+  type == "object" and .ref == $ref
+  and .url == ("https://api.github.com/repos/" + $repository + "/git/" + $ref)
+  and .object.type == "commit" and .object.sha == $sha
+  and .object.url == ("https://api.github.com/repos/" + $repository + "/git/commits/" + $sha)
+' <<< "$live_ref" >/dev/null; then
   echo "Builds Release source is not the exact current ${branch} tip." >&2
   exit 1
 fi
