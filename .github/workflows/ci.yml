@@ -1,12 +1,9 @@
 name: CI
 
-# Self-CI for this repository. The shared actions, reusable workflows and
-# PowerShell/Python tooling here are consumed by every Hexalith module, but until
-# now their only execution was inside build-release.yml (workflow_dispatch), so a
-# regression stayed invisible until someone attempted a release.
-#
-# This runs the same non-publishing validation as build-release.yml, stopping
-# before the Create Release step.
+# Validate the shared actions, reusable workflows, and PowerShell/Python tooling
+# consumed by Hexalith modules.
+# Release consumes successful push CI for the exact source revision, then builds
+# and qualifies only the actual release version before publication.
 
 on:
   pull_request:
@@ -209,6 +206,10 @@ jobs:
       - name: Test G-4 release source guard
         shell: bash
         run: bash ./Tools/test-g4-release-source.sh
+
+      - name: Test G-4 source CI verification
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-source-ci.ps1
 
       # Each job owns a disposable runner. Keep build gates independent of a
       # missing or empty user NuGet.Config inherited from the runner image.

@@ -52,139 +52,14 @@ jobs:
       with:
         global-json-file: global.json
 
-    - name: Validate central package versions
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1
-
-    - name: Test authoritative package catalog
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1
-
-    - name: Test central package version validator
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1
-
-    - name: Validate package version audit
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1
-
-    - name: Test package version audit generator
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-package-version-audit-generator.ps1
-
-    - name: Test package version audit validator
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1
-
-    - name: Validate Builds consumer package authority
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/validate-consumer-package-authority.ps1 -RepositoryRoot . -CatalogPath ./Props/Directory.Packages.props
-
-    - name: Test consumer package authority validator
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-consumer-package-authority-validator.ps1
-
-    - name: Validate package version exception inventory
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/validate-package-version-exceptions.ps1 -InventoryPath ./Tools/package-version-exceptions.json -CatalogPath ./Props/Directory.Packages.props
-
-    - name: Test package version exception validator
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-package-version-exception-validator.ps1
-
-    - name: Validate Platform version catalog and hosting compatibility
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/validate-platform-version-catalog.ps1
-
-    - name: Test Platform version catalog contracts
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-platform-version-catalog.ps1
-
-    - name: Validate Dapr package versions
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1
-
-    - name: Test Dapr package validator
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1
-
-    - name: Test domain workflow test-platform contracts
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
-
-    - name: Test strict v2 workflow contracts
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1 -Contract v2
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v7.1.0
-      with:
-        # Pin the major line: 'node' (latest) would silently jump majors on a
-        # publication path. 24 is Active LTS, satisfies semantic-release 25's
-        # >=24.10.0, and ships the npm 11 that package-lock.json was built with.
-        node-version: '24'
-
-    # --ignore-scripts: nothing in this lockfile declares an install script, so
-    # skipping them changes no behavior and denies a compromised transitive
-    # dependency arbitrary code execution on the release runner.
-    - name: Install Node.js dependencies
-      run: npm ci --ignore-scripts
-
-    - name: Verify npm dependency provenance and signatures
-      run: npm audit signatures
-
-    - name: Test commitlint workflow contracts
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-commitlint-workflow.ps1
-
-    - name: Test legacy package publisher contracts
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-publish-packages.ps1
-
-    - name: Test G-4 tool package publisher contracts
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
-
-    - name: Test G-4 release lifecycle contracts
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-g4-release-contract.ps1
-
-    - name: Test G-4 release source guard
-      shell: bash
-      run: bash ./Tools/test-g4-release-source.sh
-
-    # Match CI's disposable-runner setup before invoking package build gates.
+    # Exact-SHA push CI owns source tests and regression suites. Only the actual
+    # release version is built and qualified by the semantic-release lifecycle.
     - name: Initialize runner NuGet configuration
       shell: bash
       run: install -D -m 600 test/fixtures/package-consumer/NuGet.Config "$HOME/.nuget/NuGet/NuGet.Config"
 
-    - name: Test G-4 tool package qualification gate
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1
-
-    - name: Test G-4 tool package artifact validator
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-artifact-validator.ps1
-
-    - name: Qualify G-4 tool source and Release packages
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -RequireControls
-
-    - name: Test multi-platform container publisher contracts
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1
-
-    - name: Test CI integration lifecycle helper
-      run: python3 -m unittest discover -s Github/run-module-integration/tests -v
-
-    - name: Test module build preparation helper
-      run: python3 -m unittest discover -s Github/prepare-module-build/tests -v
-
-    - name: Test governed workflow provenance
-      shell: pwsh
-      run: pwsh -NoProfile -File ./Tools/test-governed-provenance.ps1
-
     - name: Recheck approved release source and push CI
+      id: approved_source
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
@@ -203,6 +78,8 @@ jobs:
     - name: Create Release
       id: create_release
       uses: ./Github/create-release
+      env:
+        HEXALITH_G4_SOURCE_CI_RUN_ID: ${{ steps.approved_source.outputs.ci-run-id }}
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         nuget-api-key: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}

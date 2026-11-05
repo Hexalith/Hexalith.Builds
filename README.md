@@ -1176,6 +1176,14 @@ Release jobs analyze commits, calculate the next version, create a Git tag and
 GitHub release, and publish the configured tool or NuGet packages. They do not
 commit generated release files back to protected branches.
 
+For this repository, Release requires successful push CI for the exact current
+branch commit. CI owns source tests, catalog validation, and tooling regression
+suites. Release builds and qualifies the actual versioned packages once, records
+the verified CI run and attempt in the package inventory, and rechecks that run
+before tagging and publishing. Package controls, remote package verification,
+and qualification evidence retention remain part of Release. Node dependencies
+and signatures are initialized once by `Github/create-release`.
+
 This repository's `commitlint.config.mjs` accepts `build`, `ci`, `docs`, `feat`,
 `fix`, `perf`, `refactor`, `revert`, `style`, and `test` as commit types. Use
 `build(deps)` for dependency catalog and package audit maintenance. Before

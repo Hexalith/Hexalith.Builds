@@ -1284,7 +1284,7 @@ try {
     Assert-Equal -Scenario 'Catalog collision preserves bytes' `
         -Expected $catalogBefore -Actual (Get-Content -LiteralPath $catalogPath -Raw)
 
-    foreach ($workflowRelativePath in @('../.github/workflows/ci.yml', '../.github/workflows/build-release.yml')) {
+    foreach ($workflowRelativePath in @('../.github/workflows/ci.yml')) {
         $scenarioCount++
         $workflowPath = Join-Path $PSScriptRoot $workflowRelativePath
         $workflow = Get-Content -LiteralPath $workflowPath -Raw

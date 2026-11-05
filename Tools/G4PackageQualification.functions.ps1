@@ -9,6 +9,68 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Get-VerifiedSourceCiRun {
+    param(
+        [Parameter(Mandatory = $true)][string] $RunId,
+        [Parameter(Mandatory = $true)][string] $Revision
+    )
+
+    $repository = $env:GITHUB_REPOSITORY
+    $branch = $env:GITHUB_REF -creplace '^refs/heads/', ''
+    if ($RunId -cnotmatch '^[1-9][0-9]*$' -or $Revision -cnotmatch '^[0-9a-f]{40}$' -or
+        $repository -cnotmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' -or
+        $env:GITHUB_REF -cnotin @('refs/heads/main', 'refs/heads/prerelease')) {
+        throw 'Source CI verification requires a valid run ID, source revision, repository, and release branch.'
+    }
+
+    $output = @(& gh api "repos/$repository/actions/runs/$RunId" 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not verify source CI run '$RunId' with GitHub."
+    }
+    $run = ($output -join "`n") | ConvertFrom-Json
+    if ([string]$run.id -cne $RunId -or [string]$run.run_attempt -cnotmatch '^[1-9][0-9]*$' -or
+        [string]$run.repository.full_name -cne $repository -or
+        [string]$run.path -cne '.github/workflows/ci.yml' -or
+        [string]$run.head_sha -cne $Revision -or [string]$run.head_branch -cne $branch -or
+        [string]$run.event -cne 'push' -or [string]$run.status -cne 'completed' -or
+        [string]$run.conclusion -cne 'success' -or
+        [string]$run.html_url -cne "https://github.com/$repository/actions/runs/$RunId") {
+        throw "Source CI run '$RunId' is not successful push CI for exact $branch revision '$Revision'."
+    }
+
+    return [ordered] @{
+        id = $RunId
+        runAttempt = $run.run_attempt
+        repository = $repository
+        workflow = '.github/workflows/ci.yml'
+        sha = $Revision
+        branch = $branch
+        url = [string]$run.html_url
+    }
+}
+
+function Assert-SourceValidation {
+    param([Parameter(Mandatory = $true)][object] $Qualification)
+
+    $validation = $Qualification.sourceValidation
+    if ([string]$validation.result -ceq 'passed' -and [string]$validation.mode -ceq 'executed') {
+        return
+    }
+    if ([string]$validation.result -cne 'passed' -or [string]$validation.mode -cne 'ci') {
+        throw 'Package inventory is incomplete or bypassed; passed source validation is required.'
+    }
+
+    # Query GitHub again before tagging/publication; inventory claims alone are
+    # insufficient, and a rerun must not silently replace the recorded attempt.
+    $proof = $validation.ciRun
+    $verified = Get-VerifiedSourceCiRun -RunId ([string]$proof.id) -Revision ([string]$Qualification.sourceTree.revision)
+    foreach ($name in @('id', 'runAttempt', 'repository', 'workflow', 'sha', 'branch', 'url')) {
+        if ([string]$proof.$name -cne [string]$verified[$name]) {
+            throw "Source CI evidence field '$name' does not match the verified GitHub run."
+        }
+    }
+}
+
 function Assert-ReleaseEligibleInventory {
     # Keep an ineligible candidate from being tagged by semantic-release before
     # the publisher performs its independent inventory validation.
@@ -24,8 +86,6 @@ function Assert-ReleaseEligibleInventory {
         $null -eq $qualification -or
         [string] $qualification.packageBuild.mode -cne 'official' -or
         [string] $qualification.packageBuild.result -cne 'passed' -or
-        [string] $qualification.sourceValidation.mode -cne 'executed' -or
-        [string] $qualification.sourceValidation.result -cne 'passed' -or
         [string] $qualification.controls.mode -cne 'executed' -or
         [string] $qualification.controls.result -cne 'passed' -or
         $qualification.releaseEligible -isnot [bool] -or $qualification.releaseEligible -ne $true) {
@@ -39,6 +99,7 @@ function Assert-ReleaseEligibleInventory {
         throw "Pre-tag G-4 package qualification is not release eligible for '$Version': $reasons"
     }
 
+    Assert-SourceValidation -Qualification $qualification
     return $inventory
 }
 

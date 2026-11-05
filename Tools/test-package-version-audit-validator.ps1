@@ -1794,7 +1794,7 @@ $items = @(
     Test-Scenario -Name 'Owner collection JSON type is preserved exactly' -AuditPath $wrongCollectionTypePath -ExpectedExitCode 1 `
         -ExpectedOutput "Family 'fixture-family' field 'packageIds' must be a JSON array"
 
-    foreach ($workflowRelativePath in @('../.github/workflows/ci.yml', '../.github/workflows/build-release.yml')) {
+    foreach ($workflowRelativePath in @('../.github/workflows/ci.yml')) {
         $script:scenarioCount++
         $workflowPath = Join-Path $PSScriptRoot $workflowRelativePath
         $workflow = Get-Content -LiteralPath $workflowPath -Raw

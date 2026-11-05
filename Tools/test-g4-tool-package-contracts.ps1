@@ -11,6 +11,8 @@ param(
 
     [switch] $SkipSourceValidation,
 
+    [string] $SourceCiRunId,
+
     [switch] $RequireControls,
 
     [switch] $RetainPackageDirectory,
@@ -25,6 +27,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'G4PackageQualification.functions.ps1')
+
+if ($SkipSourceValidation -and -not [string]::IsNullOrWhiteSpace($SourceCiRunId)) {
+    throw 'Source CI verification cannot be combined with -SkipSourceValidation.'
+}
 
 $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 
@@ -744,6 +750,8 @@ function Complete-QualificationInventory {
         [Parameter(Mandatory = $true)]
         [string] $SourceValidationMode,
 
+        [object] $SourceCiRun,
+
         [Parameter(Mandatory = $true)]
         [string] $ControlsMode,
 
@@ -839,14 +847,14 @@ function Complete-QualificationInventory {
     }
 
     # releaseEligible binds together every gate above: it can be true only for a
-    # candidate that ran the official source-validating build (never
+    # candidate with executed source tests or verified exact-SHA push CI (never
     # -SkipSourceValidation), exercised every required control, proved its
     # fixtures repository-tracked, built through the official package script, and
     # was qualified against a clean, immutable source tree. Any external/untracked,
     # partial, or dirty-tree candidate remains non-eligible but still receives an
     # honest inventory recording exactly why.
     $ineligibilityReasons = [System.Collections.Generic.List[string]]::new()
-    if ($SourceValidationMode -cne 'executed') {
+    if ($SourceValidationMode -cnotin @('executed', 'ci')) {
         $ineligibilityReasons.Add('source validation was skipped (-SkipSourceValidation).')
     }
     if ($ControlsMode -cne 'executed') {
@@ -878,7 +886,7 @@ function Complete-QualificationInventory {
             }
             sourceValidation = [ordered] @{
                 mode = $SourceValidationMode
-                result = $(if ($SourceValidationMode -ceq 'executed') { 'passed' } else { 'not-run' })
+                result = $(if ($SourceValidationMode -cin @('executed', 'ci')) { 'passed' } else { 'not-run' })
             }
             controls = [ordered] @{
                 mode = $ControlsMode
@@ -893,6 +901,9 @@ function Complete-QualificationInventory {
             ineligibilityReasons = @($ineligibilityReasons)
         }
     }
+    if ($SourceValidationMode -ceq 'ci') {
+        $inventory.qualification.sourceValidation.ciRun = $SourceCiRun
+    }
     $inventory | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $inventoryPath -Encoding utf8
 
     if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_OUTPUT)) {
@@ -904,7 +915,8 @@ function Complete-QualificationInventory {
 }
 
 $consumerRoot = $null
-$sourceValidationMode = $(if ($SkipSourceValidation) { 'skipped' } else { 'executed' })
+$sourceValidationMode = $(if ($SkipSourceValidation) { 'skipped' } elseif (-not [string]::IsNullOrWhiteSpace($SourceCiRunId)) { 'ci' } else { 'executed' })
+$sourceCiRun = $null
 $controlsMode = $(if ($RequireControls) { 'executed' } else { 'skipped' })
 $packageBuildMode = $(if ([string]::IsNullOrWhiteSpace($PackageBuildScriptPath)) { 'official' } else { 'fixture' })
 $fixtureManifest = [ordered] @{
@@ -916,7 +928,7 @@ $fixtureManifest = [ordered] @{
 $fixtureByteProofFailures = [System.Collections.Generic.List[string]]::new()
 
 try {
-    if (-not $SkipSourceValidation) {
+    if ($sourceValidationMode -ceq 'executed') {
         $solutionPath = Join-Path $repositoryRoot 'Hexalith.Builds.slnx'
         Invoke-DotNet -Arguments @('restore', $solutionPath)
         Invoke-DotNet -Arguments @('build', $solutionPath, '--configuration', 'Release', '--no-restore', '-p:GeneratePackageOnBuild=false')
@@ -941,6 +953,10 @@ try {
     # package or control output could be attributed to it. A dirty tree does not
     # abort qualification; it permanently forecloses releaseEligible below.
     $sourceTreeState = Get-SourceTreeState -RepositoryRoot $repositoryRoot
+    if ($sourceValidationMode -ceq 'ci') {
+        $sourceCiRun = Get-VerifiedSourceCiRun -RunId $SourceCiRunId -Revision $sourceTreeState.Revision
+        $qualificationLog.Add("Source validation reused verified push CI: $($sourceCiRun.url), attempt $($sourceCiRun.runAttempt), revision $($sourceCiRun.sha).")
+    }
 
     $buildScript = if ([string]::IsNullOrWhiteSpace($PackageBuildScriptPath)) {
         Join-Path $PSScriptRoot 'build-g4-tool-packages.ps1'
@@ -1484,7 +1500,7 @@ try {
         $qualificationLog,
         [System.Text.UTF8Encoding]::new($false))
     $inventoryPath = Complete-QualificationInventory -Directory $packageDirectoryPath -PackageVersion $Version `
-        -SourceValidationMode $sourceValidationMode -ControlsMode $controlsMode -FixtureManifest $fixtureManifest `
+        -SourceValidationMode $sourceValidationMode -SourceCiRun $sourceCiRun -ControlsMode $controlsMode -FixtureManifest $fixtureManifest `
         -PackageBuildMode $packageBuildMode -SourceTreeState $sourceTreeState `
         -FixtureByteProofFailures @($fixtureByteProofFailures)
 

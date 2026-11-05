@@ -23,8 +23,16 @@ if ([string]::IsNullOrWhiteSpace($credential)) {
 }
 
 $packageDirectory = "artifacts/g4-tool-packages/$Version"
-& (Join-Path $PSScriptRoot 'test-g4-tool-package-contracts.ps1') -Version $Version `
-    -PackageDirectory $packageDirectory -RetainPackageDirectory -RequireControls
+$qualificationParameters = @{
+    Version = $Version
+    PackageDirectory = $packageDirectory
+    RetainPackageDirectory = $true
+    RequireControls = $true
+}
+if (-not [string]::IsNullOrWhiteSpace($env:HEXALITH_G4_SOURCE_CI_RUN_ID)) {
+    $qualificationParameters.SourceCiRunId = $env:HEXALITH_G4_SOURCE_CI_RUN_ID
+}
+& (Join-Path $PSScriptRoot 'test-g4-tool-package-contracts.ps1') @qualificationParameters
 if (-not $?) {
     throw "Pre-tag G-4 package qualification failed for '$Version'."
 }

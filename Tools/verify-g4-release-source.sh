@@ -22,8 +22,12 @@ if [[ ! "$live_sha" =~ ^[0-9a-f]{40}$ ]] || [ "$DISPATCH_SHA" != "$live_sha" ]; 
 fi
 
 runs="$(gh api "repos/${REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${DISPATCH_SHA}&event=push&status=completed&per_page=100")"
-if ! jq -e --arg sha "$DISPATCH_SHA" --arg branch "$branch" \
-  '[.workflow_runs[] | select(.head_sha == $sha and .head_branch == $branch and .event == "push" and .conclusion == "success")] | length > 0' <<< "$runs" >/dev/null; then
+if ! ci_run_id="$(jq -er --arg sha "$DISPATCH_SHA" --arg branch "$branch" \
+  '[.workflow_runs[] | select(.head_sha == $sha and .head_branch == $branch and .event == "push" and .conclusion == "success" and (.id | type == "number"))] | max_by(.id).id // empty' <<< "$runs")"; then
   echo "Builds Release requires successful push CI for exact ${branch} SHA ${DISPATCH_SHA}." >&2
   exit 1
+fi
+
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+  printf 'ci-run-id=%s\n' "$ci_run_id" >> "$GITHUB_OUTPUT"
 fi

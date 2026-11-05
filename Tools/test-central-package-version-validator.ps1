@@ -5,7 +5,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $validatorPath = Join-Path $PSScriptRoot 'validate-central-package-versions.ps1'
-$workflowPath = Join-Path $PSScriptRoot '../.github/workflows/build-release.yml'
+$workflowPath = Join-Path $PSScriptRoot '../.github/workflows/ci.yml'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) "central-package-validator-$([Guid]::NewGuid().ToString('N'))"
 $failures = [System.Collections.Generic.List[string]]::new()
@@ -233,7 +233,6 @@ try {
     $exceptionValidationIndex = $workflow.IndexOf('- name: Validate package version exception inventory', [StringComparison]::Ordinal)
     $exceptionTestIndex = $workflow.IndexOf('- name: Test package version exception validator', [StringComparison]::Ordinal)
     $daprIndex = $workflow.IndexOf('- name: Validate Dapr package versions', [StringComparison]::Ordinal)
-    $releaseIndex = $workflow.IndexOf('- name: Create Release', [StringComparison]::Ordinal)
     if (
         $validateIndex -lt 0 -or
         $catalogContractIndex -le $validateIndex -or
@@ -242,10 +241,9 @@ try {
         $consumerTestIndex -le $consumerValidationIndex -or
         $exceptionValidationIndex -le $consumerTestIndex -or
         $exceptionTestIndex -le $exceptionValidationIndex -or
-        $daprIndex -le $exceptionTestIndex -or
-        $releaseIndex -le $daprIndex
+        $daprIndex -le $exceptionTestIndex
     ) {
-        $failures.Add('Release workflow must run all package-authority validations and tests before Dapr validation and Create Release.')
+        $failures.Add('CI must run all package-authority validations and tests before Dapr validation.')
     }
 }
 finally {

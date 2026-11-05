@@ -15,7 +15,7 @@ $publisherPath = Join-Path $sourceRepositoryRoot 'Tools/publish-g4-tool-packages
 $packageIds = @('Hexalith.Builds.Evidence.Cli', 'Hexalith.Builds.Module.Cli')
 $originalGitHubToken = $env:GITHUB_TOKEN
 $originalNuGetApiKey = $env:NUGET_API_KEY
-$carrierEnvironmentNames = @('GITHUB_SHA', 'GITHUB_REPOSITORY', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT',
+$carrierEnvironmentNames = @('GITHUB_SHA', 'GITHUB_REF', 'GITHUB_REPOSITORY', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT',
     'GITHUB_JOB', 'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA', 'GITHUB_EVENT_NAME')
 $originalCarrierEnvironment = @{}
 foreach ($name in $carrierEnvironmentNames) {
@@ -28,6 +28,20 @@ $global:HexalithG4PublisherRemoteMode = 'exact'
 $global:HexalithG4PublisherDelayedUris = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 $global:HexalithG4PublisherSleepSeconds = 0
 $global:HexalithG4PublisherUploadResponses = [Collections.Generic.Queue[int]]::new()
+
+function global:gh {
+    param([string] $Command, [string] $Endpoint)
+    if ($Command -cne 'api' -or $Endpoint -cne 'repos/Hexalith/Hexalith.Builds/actions/runs/456') {
+        throw "Unexpected GitHub request: $Command $Endpoint"
+    }
+    $global:LASTEXITCODE = 0
+    @{
+        id = 456; run_attempt = 1; repository = @{ full_name = $env:GITHUB_REPOSITORY }
+        path = '.github/workflows/ci.yml'; head_sha = $env:GITHUB_SHA; head_branch = 'main'
+        event = 'push'; status = 'completed'; conclusion = 'success'
+        html_url = 'https://github.com/Hexalith/Hexalith.Builds/actions/runs/456'
+    } | ConvertTo-Json -Depth 4 -Compress
+}
 
 function global:dotnet {
     param(
@@ -357,7 +371,9 @@ function Get-RequiredEvidenceNames {
 function New-PackageInventory {
     param(
         [Parameter(Mandatory = $true)]
-        [string] $PublishedVersion
+        [string] $PublishedVersion,
+
+        [switch] $SourceCi
     )
 
     $packageDirectory = Join-Path $testRoot $PublishedVersion
@@ -544,6 +560,16 @@ function New-PackageInventory {
             ineligibilityReasons = @()
         }
     }
+    if ($SourceCi) {
+        $inventory.qualification.sourceValidation = [ordered] @{
+            mode = 'ci'; result = 'passed'
+            ciRun = [ordered] @{
+                id = '456'; runAttempt = 1; repository = 'Hexalith/Hexalith.Builds'
+                workflow = '.github/workflows/ci.yml'; sha = $qualifiedRevision; branch = 'main'
+                url = 'https://github.com/Hexalith/Hexalith.Builds/actions/runs/456'
+            }
+        }
+    }
     $inventoryPath = Join-Path $packageDirectory 'g4-tool-package-inventory.json'
     [System.IO.File]::WriteAllText($inventoryPath, ($inventory | ConvertTo-Json -Depth 5), [System.Text.UTF8Encoding]::new($false))
 
@@ -595,10 +621,12 @@ function Invoke-PublisherCase {
         [string] $ExpectedSource,
 
         [ValidateSet('exact', 'signed', 'tampered', 'delayed')]
-        [string] $RemoteMode = 'exact'
+        [string] $RemoteMode = 'exact',
+
+        [switch] $SourceCi
     )
 
-    $packageDirectory = New-PackageInventory -PublishedVersion $PublishedVersion
+    $packageDirectory = New-PackageInventory -PublishedVersion $PublishedVersion -SourceCi:$SourceCi
     $expectedPrimaryNames = @($packageIds | ForEach-Object { "$($_).$PublishedVersion.nupkg" } | Sort-Object)
     $global:HexalithG4PublisherTestInvocations.Clear()
     $global:HexalithG4PublisherRemoteDirectory = $packageDirectory
@@ -698,6 +726,7 @@ try {
 
     # Offline fixture identities only; no workflow is dispatched by these tests.
     $env:GITHUB_SHA = (& git -C $sourceRepositoryRoot rev-parse HEAD).Trim()
+    $env:GITHUB_REF = 'refs/heads/main'
     $env:GITHUB_REPOSITORY = 'Hexalith/Hexalith.Builds'
     $env:GITHUB_RUN_ID = '123'
     $env:GITHUB_RUN_ATTEMPT = '1'
@@ -709,6 +738,7 @@ try {
     $env:NUGET_API_KEY = 'stable-test-token'
     $env:GITHUB_TOKEN = $null
     Invoke-PublisherCase -PublishedVersion '9.8.7' -ExpectedSource 'https://api.nuget.org/v3/index.json'
+    Invoke-PublisherCase -PublishedVersion '9.8.40' -ExpectedSource 'https://api.nuget.org/v3/index.json' -SourceCi
     Invoke-PublisherCase -PublishedVersion '9.8.30' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode signed
     Invoke-PublisherCase -PublishedVersion '9.8.32' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode delayed
     $packageDirectory = New-PackageInventory -PublishedVersion '9.8.33'
@@ -981,6 +1011,7 @@ finally {
         [Environment]::SetEnvironmentVariable($name, $originalCarrierEnvironment[$name])
     }
     Remove-Item Function:\dotnet -Force -ErrorAction SilentlyContinue
+    Remove-Item Function:\gh -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Invoke-RestMethod -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Invoke-WebRequest -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Start-Sleep -Force -ErrorAction SilentlyContinue

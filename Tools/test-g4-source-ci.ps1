@@ -1,0 +1,152 @@
+#!/usr/bin/env pwsh
+
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'G4PackageQualification.functions.ps1')
+
+$revision = '0123456789abcdef0123456789abcdef01234567'
+$originalRepository = $env:GITHUB_REPOSITORY
+$originalRef = $env:GITHUB_REF
+$scenarioCount = 0
+$apiExitCode = 0
+$apiCalls = 0
+$inventoryPath = Join-Path ([IO.Path]::GetTempPath()) "g4-source-ci-$([Guid]::NewGuid().ToString('N')).json"
+
+function gh {
+    param([string] $Command, [string] $Endpoint)
+    if ($Command -cne 'api' -or $Endpoint -cne 'repos/Hexalith/Hexalith.Builds/actions/runs/123') {
+        throw "Unexpected GitHub request: $Command $Endpoint"
+    }
+    $script:apiCalls++
+    $global:LASTEXITCODE = $script:apiExitCode
+    $script:run | ConvertTo-Json -Depth 5 -Compress
+}
+
+function Assert-Rejected {
+    param([string] $Name, [scriptblock] $Action, [string] $Message)
+    $script:scenarioCount++
+    try {
+        & $Action
+    }
+    catch {
+        if (-not $_.Exception.Message.Contains($Message, [StringComparison]::Ordinal)) {
+            throw "$Name failed unexpectedly: $($_.Exception.Message)"
+        }
+        return
+    }
+    throw "$Name was accepted."
+}
+
+try {
+    $env:GITHUB_REPOSITORY = 'Hexalith/Hexalith.Builds'
+    foreach ($branch in @('main', 'prerelease')) {
+        $env:GITHUB_REF = "refs/heads/$branch"
+        $run = [ordered] @{
+            id = 123
+            run_attempt = 1
+            repository = @{ full_name = 'Hexalith/Hexalith.Builds' }
+            path = '.github/workflows/ci.yml'
+            head_sha = $revision
+            head_branch = $branch
+            event = 'push'
+            status = 'completed'
+            conclusion = 'success'
+            html_url = 'https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'
+        }
+        $proof = Get-VerifiedSourceCiRun -RunId '123' -Revision $revision
+        $qualification = [pscustomobject] @{
+            sourceValidation = [pscustomobject] @{ mode = 'ci'; result = 'passed'; ciRun = [pscustomobject]$proof }
+            sourceTree = [pscustomobject] @{ clean = $true; revision = $revision }
+        }
+        $before = $apiCalls
+        Assert-SourceValidation -Qualification $qualification
+        if ($apiCalls -ne $before + 1) { throw 'Source CI evidence was accepted without querying GitHub again.' }
+        $scenarioCount++
+
+        $qualification | Add-Member -NotePropertyName packageBuild -NotePropertyValue @{ mode = 'official'; result = 'passed' }
+        $qualification | Add-Member -NotePropertyName controls -NotePropertyValue @{ mode = 'executed'; result = 'passed' }
+        $qualification | Add-Member -NotePropertyName releaseEligible -NotePropertyValue $true
+        @{
+            schema = 'hexalith.g4-tool-package-inventory.v1'; version = '9.8.7'
+            configuration = 'Release'; qualification = $qualification
+        } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $inventoryPath -Encoding utf8
+        $null = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version '9.8.7'
+        $scenarioCount++
+
+        foreach ($field in @('id', 'run_attempt', 'path', 'head_sha', 'head_branch', 'event', 'status', 'conclusion', 'html_url')) {
+            $original = $run[$field]
+            $run[$field] = switch ($field) {
+                'id' { 456 }
+                'run_attempt' { 0 }
+                'path' { '.github/workflows/other.yml' }
+                'head_sha' { '0000000000000000000000000000000000000000' }
+                'head_branch' { 'feature' }
+                'event' { 'pull_request' }
+                'status' { 'in_progress' }
+                'conclusion' { 'failure' }
+                'html_url' { 'https://example.invalid/run/123' }
+            }
+            Assert-Rejected -Name "CI $field mismatch on $branch" -Message 'is not successful push CI' -Action {
+                Assert-SourceValidation -Qualification $qualification
+            }
+            $run[$field] = $original
+        }
+        $run.repository.full_name = 'Other/Repository'
+        Assert-Rejected -Name 'CI belongs to a different repository' -Message 'is not successful push CI' -Action {
+            Assert-SourceValidation -Qualification $qualification
+        }
+        $run.repository.full_name = 'Hexalith/Hexalith.Builds'
+
+        $run.run_attempt = 2
+        Assert-Rejected -Name 'A rerun replaced the recorded attempt' -Message "field 'runAttempt'" -Action {
+            $null = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version '9.8.7'
+        }
+        $run.run_attempt = 1
+        foreach ($field in @('repository', 'workflow', 'sha', 'branch', 'url')) {
+            $original = $qualification.sourceValidation.ciRun.$field
+            $qualification.sourceValidation.ciRun.$field = 'forged'
+            Assert-Rejected -Name "Forged CI proof $field" -Message "field '$field'" -Action {
+                Assert-SourceValidation -Qualification $qualification
+            }
+            $qualification.sourceValidation.ciRun.$field = $original
+        }
+        $apiExitCode = 1
+        Assert-Rejected -Name 'GitHub verification is unavailable' -Message 'Could not verify source CI run' -Action {
+            Assert-SourceValidation -Qualification $qualification
+        }
+        $apiExitCode = 0
+
+        foreach ($mode in @('skipped', 'unknown')) {
+            $qualification.sourceValidation.mode = $mode
+            Assert-Rejected -Name "Source validation $mode" -Message 'incomplete or bypassed' -Action {
+                Assert-SourceValidation -Qualification $qualification
+            }
+        }
+        $qualification.sourceValidation.mode = 'executed'
+        $before = $apiCalls
+        Assert-SourceValidation -Qualification $qualification
+        if ($apiCalls -ne $before) { throw 'Locally executed source validation unexpectedly required GitHub.' }
+        $scenarioCount++
+    }
+
+    Assert-Rejected -Name 'Invalid CI run ID' -Message 'requires a valid run ID' -Action {
+        $null = Get-VerifiedSourceCiRun -RunId '../other' -Revision $revision
+    }
+    $env:GITHUB_REF = 'refs/heads/feature'
+    Assert-Rejected -Name 'Unsupported release branch' -Message 'requires a valid run ID' -Action {
+        $null = Get-VerifiedSourceCiRun -RunId '123' -Revision $revision
+    }
+    Assert-Rejected -Name 'CI evidence cannot bypass skipped validation' -Message 'cannot be combined' -Action {
+        & (Join-Path $PSScriptRoot 'test-g4-tool-package-contracts.ps1') -Version '9.8.7' -SourceCiRunId '123' -SkipSourceValidation
+    }
+}
+finally {
+    $env:GITHUB_REPOSITORY = $originalRepository
+    $env:GITHUB_REF = $originalRef
+    Remove-Item -LiteralPath $inventoryPath -Force -ErrorAction SilentlyContinue
+}
+
+Write-Host "G-4 source CI verification passed: $scenarioCount scenarios."

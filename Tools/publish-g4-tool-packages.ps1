@@ -268,8 +268,6 @@ $qualification = $inventory.qualification
 if ($null -eq $qualification -or
     [string]$qualification.packageBuild.mode -cne 'official' -or
     [string]$qualification.packageBuild.result -cne 'passed' -or
-    [string]$qualification.sourceValidation.mode -cne 'executed' -or
-    [string]$qualification.sourceValidation.result -cne 'passed' -or
     [string]$qualification.controls.mode -cne 'executed' -or
     [string]$qualification.controls.result -cne 'passed' -or
     $qualification.releaseEligible -isnot [bool] -or
@@ -292,6 +290,7 @@ if ($currentSourceTree.Revision -cne [string]$qualifiedSourceTree.revision) {
     throw "Publication source revision '$($currentSourceTree.Revision)' does not match qualified revision '$($qualifiedSourceTree.revision)'."
 }
 $qualifiedSourceRevision = [string]$qualifiedSourceTree.revision
+Assert-SourceValidation -Qualification $qualification
 
 # The verified clean source is the SDK authority for the packages being published.
 # Never derive the expected SDK from the evidence artifact being validated.
