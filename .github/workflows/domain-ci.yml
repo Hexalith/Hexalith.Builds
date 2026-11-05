@@ -370,7 +370,7 @@ jobs:
         uses: ./.hexalith/builds-execution/Github/initialize-build
       - name: Initialize root-declared submodules
         if: ${{ !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@6585f5860e87c146c26aa066d3a52b94eb56f271 # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -993,7 +993,7 @@ jobs:
           path: .hexalith/builds-execution
           persist-credentials: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@6585f5860e87c146c26aa066d3a52b94eb56f271 # BUILD-REL-1
       - name: Validate Aspire hooks
         id: validate-aspire-hooks
         if: ${{ inputs.aspire-prepare-script != '' || inputs.aspire-runner-script != '' }}
@@ -1261,7 +1261,7 @@ jobs:
           path: .hexalith/builds-execution
           persist-credentials: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@6585f5860e87c146c26aa066d3a52b94eb56f271 # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
