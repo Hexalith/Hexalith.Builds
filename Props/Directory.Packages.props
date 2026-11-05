@@ -11,7 +11,7 @@
     <_HexalithSelectedPackageProps Condition="'$(DirectoryPackagesPropsPath)' != ''">$([MSBuild]::NormalizePath('$(DirectoryPackagesPropsPath)'))</_HexalithSelectedPackageProps>
     <_HexalithWorksOwnsMSBuildPackageVersions Condition="'$(DirectoryPackagesPropsPath)' != '' and '$(_HexalithSelectedPackageProps)' == '$(_HexalithNearestPackageProps)' and Exists('$(_HexalithNearestPackageOwner)/Hexalith.Works.slnx')">true</_HexalithWorksOwnsMSBuildPackageVersions>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.10</HexalithCommonsVersion>
-    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.4.0</HexalithConversationsVersion>
+    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.5.0</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.8</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">4.1.0</HexalithEventStoreVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.7.6</HexalithFrontComposerVersion>
@@ -19,7 +19,7 @@
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">2.0.0</HexalithMcpCliVersion>
     <!-- Keep the released v2 declaration and source provenance aligned with this catalog pin. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">3.0.23</HexalithMemoriesVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">7.0.0</HexalithTenantsVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">7.0.2</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">3.0.0</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.0.0</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.3</HexalithProjectsVersion>
@@ -287,7 +287,7 @@
     <PackageVersion Include="Microsoft.IdentityModel.Protocols" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.23.0" />
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.16.1" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.17.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <!-- Keep Microsoft.OpenApi on 2.x: Microsoft.AspNetCore.OpenApi 10.x is compiled against the 2.x API surface; v3 breaks runtime OpenAPI document generation. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="2.13.0" />
@@ -301,9 +301,9 @@
     <PackageVersion Include="Microsoft.TypeScript.MSBuild" Version="7.0.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1" />
     <PackageVersion Include="MinVer" Version="8.0.0" />
-    <PackageVersion Include="ModelContextProtocol" Version="2.3.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="2.3.1" />
     <!-- FrontComposer MCP server runtime. -->
-    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.3.0" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.3.1" />
     <PackageVersion Include="Moq" Version="4.21.0" />
     <PackageVersion Include="Moq.Contrib.HttpClient" Version="1.4.0" />
     <PackageVersion Include="NBomber" Version="6.7.1" />
@@ -333,7 +333,7 @@
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.1" />
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
-    <PackageVersion Include="Radzen.Blazor" Version="12.1.10" />
+    <PackageVersion Include="Radzen.Blazor" Version="12.1.11" />
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Scriban" Version="7.5.3" />
