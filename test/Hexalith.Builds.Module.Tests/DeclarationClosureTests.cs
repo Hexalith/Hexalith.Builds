@@ -136,11 +136,11 @@ public sealed class DeclarationClosureTests
     /// <exception cref="ArgumentOutOfRangeException">The fixture fault is unknown.</exception>
     [Theory]
     [InlineData("none", "")]
-    [InlineData("wrong-commit", "does not match Builds catalog version '7.0.0'")]
+    [InlineData("wrong-commit", "does not match Builds catalog version '7.0.2'")]
     [InlineData("missing-commit", "commit: source provenance is unavailable")]
     [InlineData("wrong-hash", "differs from its source provenance")]
     [InlineData("missing-hash", "sha256: source provenance is unavailable")]
-    [InlineData("unreleased-snapshot", "does not match Builds catalog version '7.0.0'")]
+    [InlineData("unreleased-snapshot", "does not match Builds catalog version '7.0.2'")]
     public void ReleasedTenantsPackageClosureUsesProductionAuthorities(string fault, string refusalText)
     {
         using PlatformManifestTestWorkspace workspace = new();
@@ -156,22 +156,22 @@ public sealed class DeclarationClosureTests
 
         options = options with { ActiveModule = "tenants", ReleaseCommits = commits, ReleaseSnapshotHashes = hashes };
         string catalog = Path.Combine(workspace.Root, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
-        File.WriteAllText(catalog, File.ReadAllText(catalog).Replace("<HexalithTenantsVersion>1.0.0", "<HexalithTenantsVersion>7.0.0", StringComparison.Ordinal));
+        File.WriteAllText(catalog, File.ReadAllText(catalog).Replace("<HexalithTenantsVersion>1.0.0", "<HexalithTenantsVersion>7.0.2", StringComparison.Ordinal));
         string directory = Path.Combine(workspace.Root, "src", "Hexalith.Platform.Composition", "Declarations");
         string snapshot = Path.Combine(directory, "tenants.json");
-        byte[] released = File.ReadAllBytes(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "tenants-7.0.0.json"));
+        byte[] released = File.ReadAllBytes(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "tenants-7.0.2.json"));
         const string releasedHash = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522";
         Convert.ToHexStringLower(SHA256.HashData(released)).ShouldBe(releasedHash);
         File.WriteAllBytes(snapshot, released);
         string provenancePath = Path.Combine(directory, "provenance.json");
         JsonNode provenance = JsonNode.Parse(File.ReadAllText(provenancePath))!;
 
-        // Exact owner v7.0.0 tag; the offline fixture preserves its manifest bytes.
+        // Exact owner v7.0.2 tag; the offline fixture preserves its manifest bytes.
         JsonObject tenantProvenance = new()
         {
             ["repository"] = "Hexalith.Tenants",
-            ["commit"] = "1b2c71b0e3cc5b16745f87aa7f1bc2c0ac8ffc27",
-            ["version"] = "7.0.0",
+            ["commit"] = "143cec60a3f5bb1831fa57f35c510880ceb788d8",
+            ["version"] = "7.0.2",
             ["source"] = "module/hexalith.module-manifest.v2.json",
             ["sha256"] = releasedHash,
         };
