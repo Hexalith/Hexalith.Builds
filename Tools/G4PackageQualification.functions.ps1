@@ -86,11 +86,22 @@ function Assert-SourceValidation {
 function Assert-CurrentReleaseSource {
     param([Parameter(Mandatory = $true)][object] $Qualification)
 
-    # Locally executed validation retains its offline contract. CI-backed release
-    # authority must still name the same successful attempt and live branch tip.
+    # Locally executed qualification remains offline. An actual release context,
+    # including legacy executed validation, must still name the live branch tip.
     Assert-SourceValidation -Qualification $Qualification
-    if ([string]$Qualification.sourceValidation.mode -ceq 'executed') {
+    $releaseContext = $env:GITHUB_JOB -ceq 'release'
+    if ([string]$Qualification.sourceValidation.mode -ceq 'executed' -and -not $releaseContext) {
         return
+    }
+    if ($releaseContext -and (
+        $env:GITHUB_REPOSITORY -cne 'Hexalith/Hexalith.Builds' -or
+        $env:GITHUB_REF -cnotin @('refs/heads/main', 'refs/heads/prerelease') -or
+        $env:GITHUB_EVENT_NAME -cne 'workflow_dispatch' -or
+        $env:GITHUB_WORKFLOW_REF -cne "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@$($env:GITHUB_REF)" -or
+        $env:GITHUB_WORKFLOW_SHA -cne [string]$Qualification.sourceTree.revision -or
+        $env:GITHUB_RUN_ID -cnotmatch '^[1-9][0-9]*$' -or
+        $env:GITHUB_RUN_ATTEMPT -cnotmatch '^[1-9][0-9]*$')) {
+        throw 'Current source verification requires the complete protected release context.'
     }
     if ($env:GITHUB_SHA -cne [string]$Qualification.sourceTree.revision) {
         throw 'Current release source does not match the qualified workflow revision.'
@@ -106,8 +117,14 @@ function Assert-CurrentReleaseSource {
         $env:DISPATCH_REF = $env:GITHUB_REF
         $env:DISPATCH_SHA = [string]$Qualification.sourceTree.revision
         $env:GITHUB_OUTPUT = $null
-        $env:EXPECTED_CI_RUN_ID = [string]$Qualification.sourceValidation.ciRun.id
-        $env:EXPECTED_CI_RUN_ATTEMPT = [string]$Qualification.sourceValidation.ciRun.runAttempt
+        if ([string]$Qualification.sourceValidation.mode -ceq 'ci') {
+            $env:EXPECTED_CI_RUN_ID = [string]$Qualification.sourceValidation.ciRun.id
+            $env:EXPECTED_CI_RUN_ATTEMPT = [string]$Qualification.sourceValidation.ciRun.runAttempt
+        }
+        else {
+            $env:EXPECTED_CI_RUN_ID = $null
+            $env:EXPECTED_CI_RUN_ATTEMPT = $null
+        }
         & bash (Join-Path $PSScriptRoot 'verify-g4-release-source.sh')
         if ($LASTEXITCODE -ne 0) {
             throw 'Current release source or successful push CI changed before publication.'

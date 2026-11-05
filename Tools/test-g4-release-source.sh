@@ -9,9 +9,16 @@ cat > "$test_dir/gh" <<'EOF'
 set -euo pipefail
 if [ "$1" != api ]; then exit 90; fi
 case "$2" in
-  */git/ref/heads/*) printf '%s\n' "$MOCK_LIVE_SHA" ;;
-  */actions/runs/*) printf '%s\n' "$MOCK_RUN" ;;
-  */actions/workflows/ci.yml/runs*) printf '%s\n' "$MOCK_RUNS" ;;
+  repos/Hexalith/Hexalith.Builds/git/ref/heads/main|repos/Hexalith/Hexalith.Builds/git/ref/heads/prerelease)
+    [ "$#" = 2 ] || exit 92
+    if [ "${MOCK_REF_EXIT:-0}" != 0 ]; then exit "$MOCK_REF_EXIT"; fi
+    printf '%s\n' "$MOCK_LIVE_REF" ;;
+  repos/Hexalith/Hexalith.Builds/actions/runs/123)
+    [ "$#" = 2 ] || exit 92
+    printf '%s\n' "$MOCK_RUN" ;;
+  "repos/Hexalith/Hexalith.Builds/actions/workflows/ci.yml/runs?head_sha=${DISPATCH_SHA}&event=push&status=completed&per_page=100")
+    [ "$#" = 2 ] || exit 92
+    printf '%s\n' "$MOCK_RUNS" ;;
   *) exit 91 ;;
 esac
 EOF
@@ -19,13 +26,19 @@ chmod +x "$test_dir/gh"
 export PATH="$test_dir:$PATH"
 export REPOSITORY=Hexalith/Hexalith.Builds
 export DISPATCH_SHA=0123456789abcdef0123456789abcdef01234567
-export MOCK_LIVE_SHA="$DISPATCH_SHA"
 export DISPATCH_REF=refs/heads/main
 export GITHUB_OUTPUT="$test_dir/github-output"
 export MOCK_RUNS='{"workflow_runs":[{"id":123,"head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","conclusion":"success"}]}'
-
 case_count=0
 unset EXPECTED_CI_RUN_ID EXPECTED_CI_RUN_ATTEMPT
+
+set_live_ref() {
+  MOCK_LIVE_REF=$(jq -n --arg sha "$1" --arg ref "$DISPATCH_REF" '{ref:$ref,
+    url:("https://api.github.com/repos/Hexalith/Hexalith.Builds/git/"+$ref),
+    object:{type:"commit",sha:$sha,url:("https://api.github.com/repos/Hexalith/Hexalith.Builds/git/commits/"+$sha)}}')
+  export MOCK_LIVE_REF
+}
+set_live_ref "$DISPATCH_SHA"
 
 expect_pass() {
   case_count=$((case_count + 1))
@@ -45,6 +58,23 @@ expect_fail() {
 }
 
 expect_pass
+
+# A correct digest on a foreign/malformed reference is never the current branch.
+valid_live_ref="$MOCK_LIVE_REF"
+for mutation in '.ref="refs/heads/other"' '.url="https://api.github.com/repos/Other/Repository/git/refs/heads/main"' \
+  '.object.type="tag"' '.object.url="https://api.github.com/repos/Other/Repository/git/commits/"+.object.sha' \
+  '.object.sha="not-a-commit"' 'del(.ref)' 'del(.object)' 'null'; do
+  MOCK_LIVE_REF=$(jq "$mutation" <<< "$valid_live_ref")
+  export MOCK_LIVE_REF
+  expect_fail "foreign-or-malformed-ref:$mutation"
+done
+MOCK_LIVE_REF='not-json'
+export MOCK_LIVE_REF
+expect_fail malformed-ref-json
+MOCK_LIVE_REF="$valid_live_ref"
+export MOCK_LIVE_REF MOCK_REF_EXIT=1
+expect_fail unavailable-ref
+export MOCK_REF_EXIT=0
 MOCK_RUNS='{"workflow_runs":[{"id":122,"head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","conclusion":"success"},{"id":124,"head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","conclusion":"failure"},{"id":123,"head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","conclusion":"success"}]}'
 export MOCK_RUNS
 expect_pass
@@ -57,13 +87,12 @@ expect_fail missing-run-id
 DISPATCH_REF=refs/heads/prerelease
 MOCK_RUNS='{"workflow_runs":[{"id":123,"head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"prerelease","event":"push","conclusion":"success"}]}'
 export DISPATCH_REF MOCK_RUNS
+set_live_ref "$DISPATCH_SHA"
 expect_pass
 
-MOCK_LIVE_SHA=0000000000000000000000000000000000000000
-export MOCK_LIVE_SHA
+set_live_ref 0000000000000000000000000000000000000000
 expect_fail stale
-MOCK_LIVE_SHA="$DISPATCH_SHA"
-export MOCK_LIVE_SHA
+set_live_ref "$DISPATCH_SHA"
 MOCK_RUNS='{"workflow_runs":[{"id":123,"head_sha":"0000000000000000000000000000000000000000","head_branch":"prerelease","event":"push","conclusion":"success"}]}'
 export MOCK_RUNS
 expect_fail wrong-ci-sha
@@ -78,6 +107,7 @@ export MOCK_RUNS
 expect_fail failed-ci
 DISPATCH_REF=refs/heads/main
 export DISPATCH_REF
+set_live_ref "$DISPATCH_SHA"
 export EXPECTED_CI_RUN_ID=123 EXPECTED_CI_RUN_ATTEMPT=1
 export MOCK_RUN='{"id":123,"run_attempt":1,"repository":{"full_name":"Hexalith/Hexalith.Builds"},"path":".github/workflows/ci.yml","head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","status":"completed","conclusion":"success"}'
 MOCK_RUNS="$(jq -cn --argjson run "$MOCK_RUN" '{workflow_runs:[$run]}')"
