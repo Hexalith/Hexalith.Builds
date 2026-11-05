@@ -71,6 +71,46 @@ function Assert-SourceValidation {
     }
 }
 
+function Assert-CurrentReleaseSource {
+    param([Parameter(Mandatory = $true)][object] $Qualification)
+
+    # Locally executed validation retains its offline contract. CI-backed release
+    # authority must still name the same successful attempt and live branch tip.
+    Assert-SourceValidation -Qualification $Qualification
+    if ([string]$Qualification.sourceValidation.mode -ceq 'executed') {
+        return
+    }
+    if ($env:GITHUB_SHA -cne [string]$Qualification.sourceTree.revision) {
+        throw 'Current release source does not match the qualified workflow revision.'
+    }
+
+    $names = @('REPOSITORY', 'DISPATCH_REF', 'DISPATCH_SHA', 'GITHUB_OUTPUT')
+    $previous = @{}
+    foreach ($name in $names) {
+        $previous[$name] = [Environment]::GetEnvironmentVariable($name)
+    }
+    try {
+        $env:REPOSITORY = $env:GITHUB_REPOSITORY
+        $env:DISPATCH_REF = $env:GITHUB_REF
+        $env:DISPATCH_SHA = [string]$Qualification.sourceTree.revision
+        $env:GITHUB_OUTPUT = $null
+        & bash (Join-Path $PSScriptRoot 'verify-g4-release-source.sh')
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Current release source or successful push CI changed before publication.'
+        }
+    }
+    finally {
+        foreach ($name in $names) {
+            if ($null -eq $previous[$name]) {
+                Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+            }
+            else {
+                [Environment]::SetEnvironmentVariable($name, $previous[$name])
+            }
+        }
+    }
+}
+
 function Assert-ReleaseEligibleInventory {
     # Keep an ineligible candidate from being tagged by semantic-release before
     # the publisher performs its independent inventory validation.

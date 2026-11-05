@@ -555,6 +555,9 @@ if ($Version.Contains('-', [System.StringComparison]::Ordinal)) {
     $requestHeaders.Authorization = "Basic $basic"
 }
 
+# Long-running qualification and evidence checks cannot authorize a stale tip.
+Assert-CurrentReleaseSource -Qualification $qualification
+
 Write-Host "Publishing the verified G-4 tool package inventory to $channel."
 # dotnet discovers and publishes the adjacent .snupkg automatically. Submitting
 # the symbol package again produces a duplicate-symbol 409 from NuGet.org.

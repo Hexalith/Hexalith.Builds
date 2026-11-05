@@ -10,9 +10,12 @@ $ErrorActionPreference = 'Stop'
 $revision = '0123456789abcdef0123456789abcdef01234567'
 $originalRepository = $env:GITHUB_REPOSITORY
 $originalRef = $env:GITHUB_REF
+$originalSha = $env:GITHUB_SHA
 $scenarioCount = 0
 $apiExitCode = 0
 $apiCalls = 0
+$liveGuardCalls = 0
+$liveGuardExitCode = 0
 $inventoryPath = Join-Path ([IO.Path]::GetTempPath()) "g4-source-ci-$([Guid]::NewGuid().ToString('N')).json"
 
 function gh {
@@ -23,6 +26,17 @@ function gh {
     $script:apiCalls++
     $global:LASTEXITCODE = $script:apiExitCode
     $script:run | ConvertTo-Json -Depth 5 -Compress
+}
+
+function bash {
+    param([string] $ScriptPath)
+    if ($ScriptPath -cne (Join-Path $PSScriptRoot 'verify-g4-release-source.sh') -or
+        $env:REPOSITORY -cne $env:GITHUB_REPOSITORY -or $env:DISPATCH_REF -cne $env:GITHUB_REF -or
+        $env:DISPATCH_SHA -cne $script:revision -or -not [string]::IsNullOrEmpty($env:GITHUB_OUTPUT)) {
+        throw 'Late guard did not receive the exact qualified source scope.'
+    }
+    $script:liveGuardCalls++
+    $global:LASTEXITCODE = $script:liveGuardExitCode
 }
 
 function Assert-Rejected {
@@ -42,6 +56,7 @@ function Assert-Rejected {
 
 try {
     $env:GITHUB_REPOSITORY = 'Hexalith/Hexalith.Builds'
+    $env:GITHUB_SHA = $revision
     foreach ($branch in @('main', 'prerelease')) {
         $env:GITHUB_REF = "refs/heads/$branch"
         $run = [ordered] @{
@@ -65,6 +80,25 @@ try {
         Assert-SourceValidation -Qualification $qualification
         if ($apiCalls -ne $before + 1) { throw 'Source CI evidence was accepted without querying GitHub again.' }
         $scenarioCount++
+
+        $before = $liveGuardCalls
+        $beforeApi = $apiCalls
+        $previousOutput = $env:GITHUB_OUTPUT
+        Assert-CurrentReleaseSource -Qualification $qualification
+        if ($liveGuardCalls -ne $before + 1 -or $apiCalls -ne $beforeApi + 1 -or $env:GITHUB_OUTPUT -cne $previousOutput) {
+            throw 'Late release check must revalidate the recorded CI attempt and live source without changing workflow outputs.'
+        }
+        $scenarioCount++
+        $liveGuardExitCode = 1
+        Assert-Rejected -Name 'Source advanced during qualification' -Message 'changed before publication' -Action {
+            Assert-CurrentReleaseSource -Qualification $qualification
+        }
+        $liveGuardExitCode = 0
+        $env:GITHUB_SHA = '0000000000000000000000000000000000000000'
+        Assert-Rejected -Name 'Qualified revision differs from workflow revision' -Message 'qualified workflow revision' -Action {
+            Assert-CurrentReleaseSource -Qualification $qualification
+        }
+        $env:GITHUB_SHA = $revision
 
         $qualification | Add-Member -NotePropertyName packageBuild -NotePropertyValue @{ mode = 'official'; result = 'passed' }
         $qualification | Add-Member -NotePropertyName controls -NotePropertyValue @{ mode = 'executed'; result = 'passed' }
@@ -127,8 +161,9 @@ try {
         }
         $qualification.sourceValidation.mode = 'executed'
         $before = $apiCalls
-        Assert-SourceValidation -Qualification $qualification
-        if ($apiCalls -ne $before) { throw 'Locally executed source validation unexpectedly required GitHub.' }
+        $beforeGuard = $liveGuardCalls
+        Assert-CurrentReleaseSource -Qualification $qualification
+        if ($apiCalls -ne $before -or $liveGuardCalls -ne $beforeGuard) { throw 'Locally executed source validation unexpectedly required GitHub.' }
         $scenarioCount++
     }
 
@@ -146,6 +181,7 @@ try {
 finally {
     $env:GITHUB_REPOSITORY = $originalRepository
     $env:GITHUB_REF = $originalRef
+    $env:GITHUB_SHA = $originalSha
     Remove-Item -LiteralPath $inventoryPath -Force -ErrorAction SilentlyContinue
 }
 

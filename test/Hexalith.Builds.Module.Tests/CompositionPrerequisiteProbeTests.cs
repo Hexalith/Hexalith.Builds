@@ -164,7 +164,17 @@ public sealed class CompositionPrerequisiteProbeTests
             CompositionTestFiles.WriteScript(aspire, $"[ \"$#\" -eq 1 ] && [ \"$1\" = '--version' ] || exit 64\necho '{CompositionToolchainPins.AspireAppHostSdkVersion.Split('+')[0]}{suffix}'");
             ToolDiagnostic? result = await CompositionPrerequisiteProbe.ProbeAspireAsync(
                 aspire, TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            (result is null).ShouldBe(accepted);
+            if (accepted)
+            {
+                result.ShouldBeNull($"Controlled Aspire fixture refused suffix '{suffix}': {result?.Message}");
+            }
+            else
+            {
+                _ = result.ShouldNotBeNull();
+                result.RuleId.ShouldBe("HXR015");
+                result.Phase.ShouldBe(ToolPhase.Prerequisite);
+                result.Category.ShouldBe(ToolFailureCategory.PrerequisiteUnavailable);
+            }
         }
         finally
         {

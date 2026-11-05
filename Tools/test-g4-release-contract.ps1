@@ -63,4 +63,16 @@ finally {
     $env:NUGET_API_KEY = $oldNuGetKey
 }
 
+$preTag = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'verify-g4-tool-release.ps1') -Raw
+$publication = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'publish-g4-tool-packages.ps1') -Raw
+if (-not $preTag.TrimEnd().EndsWith('Assert-CurrentReleaseSource -Qualification $inventory.qualification', [StringComparison]::Ordinal) -or
+    $preTag.IndexOf('Assert-CurrentReleaseSource', [StringComparison]::Ordinal) -lt
+        $preTag.IndexOf("'archive-g4-qualification-evidence.py'", [StringComparison]::Ordinal) -or
+    $publication.IndexOf('Assert-CurrentReleaseSource -Qualification $qualification', [StringComparison]::Ordinal) -lt
+        $publication.IndexOf('--kind release --verify', [StringComparison]::Ordinal) -or
+    $publication.IndexOf('Assert-CurrentReleaseSource -Qualification $qualification', [StringComparison]::Ordinal) -gt
+        $publication.IndexOf("Invoke-DotNet -Arguments @('nuget', 'push'", [StringComparison]::Ordinal)) {
+    throw 'Live source and exact CI must be rechecked after qualification and immediately before package publication.'
+}
+
 [Console]::Out.WriteLine('G-4 release lifecycle and pre-tag credential contracts passed.')

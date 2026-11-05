@@ -503,13 +503,20 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertLess(qemu_index, publisher_index)
         self.assertLess(qemu_index, semantic_release_index)
 
-    def test_builds_release_runs_publisher_contract_suite_before_release(self):
+    def test_builds_release_requires_exact_source_ci_publisher_contract_suite(self):
+        ci = BUILD_RELEASE.with_name("ci.yml").read_text(encoding="utf-8")
+        contracts = ci.split("\n  contracts:\n", 1)[1].split("\n  python-tests:\n", 1)[0]
+        self.assertIn("run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1", contracts)
+        self.assertIn("needs: [catalog, contracts, dotnet, python-tests]", ci)
         workflow = BUILD_RELEASE.read_text(encoding="utf-8")
-
-        publisher_gate = workflow.index("./Tools/test-publish-containers.ps1")
+        self.assertIn("    needs: verify-source\n", workflow)
+        guard_index = workflow.index("- name: Recheck approved release source and push CI")
         release_step = workflow.index("- name: Create Release")
-
-        self.assertLess(publisher_gate, release_step)
+        self.assertLess(guard_index, release_step)
+        self.assertIn("run: bash ./Tools/verify-g4-release-source.sh", workflow[guard_index:release_step])
+        self.assertIn("DISPATCH_SHA: ${{ github.sha }}", workflow[guard_index:release_step])
+        self.assertIn("GH_TOKEN: ${{ github.token }}", workflow[guard_index:release_step])
+        self.assertIn("HEXALITH_G4_SOURCE_CI_RUN_ID: ${{ steps.approved_source.outputs.ci-run-id }}", workflow[release_step:])
 
     def test_builds_release_is_manual_protected_and_does_not_push_git(self):
         workflow = BUILD_RELEASE.read_text(encoding="utf-8")

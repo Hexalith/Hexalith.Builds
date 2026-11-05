@@ -11,6 +11,7 @@ $eventStoreVersion = $catalog.SelectSingleNode('/Project/PropertyGroup/HexalithE
 
 $testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "hexalith-g4-publisher-$([System.Guid]::NewGuid().ToString('N'))"
 $sourceRepositoryRoot = Join-Path $testRoot 'source'
+$global:HexalithG4PublisherSourceRoot = $sourceRepositoryRoot
 $publisherPath = Join-Path $sourceRepositoryRoot 'Tools/publish-g4-tool-packages.ps1'
 $packageIds = @('Hexalith.Builds.Evidence.Cli', 'Hexalith.Builds.Module.Cli')
 $originalGitHubToken = $env:GITHUB_TOKEN
@@ -28,6 +29,8 @@ $global:HexalithG4PublisherRemoteMode = 'exact'
 $global:HexalithG4PublisherDelayedUris = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 $global:HexalithG4PublisherSleepSeconds = 0
 $global:HexalithG4PublisherUploadResponses = [Collections.Generic.Queue[int]]::new()
+$global:HexalithG4PublisherLiveGuardCalls = 0
+$global:HexalithG4PublisherLiveGuardExitCode = 0
 
 function global:gh {
     param([string] $Command, [string] $Endpoint)
@@ -41,6 +44,17 @@ function global:gh {
         event = 'push'; status = 'completed'; conclusion = 'success'
         html_url = 'https://github.com/Hexalith/Hexalith.Builds/actions/runs/456'
     } | ConvertTo-Json -Depth 4 -Compress
+}
+
+function global:bash {
+    param([string] $ScriptPath)
+    if ($ScriptPath -cne (Join-Path $global:HexalithG4PublisherSourceRoot 'Tools/verify-g4-release-source.sh') -or
+        $env:REPOSITORY -cne $env:GITHUB_REPOSITORY -or $env:DISPATCH_REF -cne $env:GITHUB_REF -or
+        $env:DISPATCH_SHA -cne $env:GITHUB_SHA) {
+        throw 'Publisher late guard did not bind the exact qualified source.'
+    }
+    $global:HexalithG4PublisherLiveGuardCalls++
+    $global:LASTEXITCODE = $global:HexalithG4PublisherLiveGuardExitCode
 }
 
 function global:dotnet {
@@ -738,7 +752,23 @@ try {
     $env:NUGET_API_KEY = 'stable-test-token'
     $env:GITHUB_TOKEN = $null
     Invoke-PublisherCase -PublishedVersion '9.8.7' -ExpectedSource 'https://api.nuget.org/v3/index.json'
+    if ($global:HexalithG4PublisherLiveGuardCalls -ne 0) { throw 'Executed source fixture required live API authority.' }
     Invoke-PublisherCase -PublishedVersion '9.8.40' -ExpectedSource 'https://api.nuget.org/v3/index.json' -SourceCi
+    if ($global:HexalithG4PublisherLiveGuardCalls -ne 1) { throw 'CI-backed publisher did not recheck live source.' }
+    $packageDirectory = New-PackageInventory -PublishedVersion '9.8.41' -SourceCi
+    $global:HexalithG4PublisherTestInvocations.Clear()
+    $global:HexalithG4PublisherLiveGuardExitCode = 1
+    try {
+        & $publisherPath -Version '9.8.41' -PackageDirectory $packageDirectory
+        throw 'Publisher accepted source advancement after qualification.'
+    }
+    catch {
+        if (-not $_.Exception.Message.Contains('changed before publication', [StringComparison]::Ordinal)) { throw }
+        if ($global:HexalithG4PublisherTestInvocations.Count -ne 0) { throw 'A package was pushed before live source refusal.' }
+    }
+    finally {
+        $global:HexalithG4PublisherLiveGuardExitCode = 0
+    }
     Invoke-PublisherCase -PublishedVersion '9.8.30' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode signed
     Invoke-PublisherCase -PublishedVersion '9.8.32' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode delayed
     $packageDirectory = New-PackageInventory -PublishedVersion '9.8.33'
@@ -1005,6 +1035,7 @@ try {
     }
 }
 finally {
+    Remove-Item Function:\bash -ErrorAction SilentlyContinue
     $env:GITHUB_TOKEN = $originalGitHubToken
     $env:NUGET_API_KEY = $originalNuGetApiKey
     foreach ($name in $carrierEnvironmentNames) {

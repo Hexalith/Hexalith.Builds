@@ -38,7 +38,7 @@ if (-not $?) {
 }
 
 $inventoryPath = Join-Path (Join-Path $PSScriptRoot '..') "$packageDirectory/g4-tool-package-inventory.json"
-$null = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version $Version
+$inventory = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version $Version
 
 # Prepare the carrier before tagging. The publisher consumes these same bytes;
 # a later publication failure can still retain them through Actions artifacts.
@@ -47,3 +47,6 @@ $null = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version $
 if ($LASTEXITCODE -ne 0) {
     throw "Pre-tag G-4 qualification evidence retention failed for '$Version'."
 }
+
+# This is the last qualification action before semantic-release creates its tag.
+Assert-CurrentReleaseSource -Qualification $inventory.qualification
