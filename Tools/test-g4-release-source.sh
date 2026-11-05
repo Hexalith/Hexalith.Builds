@@ -33,7 +33,8 @@ case_count=0
 unset EXPECTED_CI_RUN_ID EXPECTED_CI_RUN_ATTEMPT
 
 set_live_ref() {
-  MOCK_LIVE_REF=$(jq -n --arg sha "$1" --arg ref "$DISPATCH_REF" '{ref:$ref,
+  local source_sha="$1"
+  MOCK_LIVE_REF=$(jq -n --arg sha "$source_sha" --arg ref "$DISPATCH_REF" '{ref:$ref,
     url:("https://api.github.com/repos/Hexalith/Hexalith.Builds/git/"+$ref),
     object:{type:"commit",sha:$sha,url:("https://api.github.com/repos/Hexalith/Hexalith.Builds/git/commits/"+$sha)}}')
   export MOCK_LIVE_REF
