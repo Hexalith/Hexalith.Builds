@@ -201,6 +201,12 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
     if ($id -ceq 'Hexalith.Builds.Module.Cli') {
         $archive = [IO.Compression.ZipFile]::Open($packagePath, [IO.Compression.ZipArchiveMode]::Create)
         try {
+            foreach ($entryName in @('Hexalith.Builds.Module.Cli.nuspec', 'tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.dll', 'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll', 'tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.dll', 'tools/net10.0/any/g4-host/projects/EventStore/Host.csproj', 'tools/net10.0/any/g4-host/projects/EventStore/Placeholder.cs', 'tools/net10.0/any/g4-host/projects/Ui/Host.csproj', 'tools/net10.0/any/g4-host/projects/Ui/Placeholder.cs')) {
+                $entry = $archive.CreateEntry($entryName)
+                $writer = [IO.StreamWriter]::new($entry.Open())
+                try { $writer.Write($(if ($entryName.EndsWith('.nuspec')) { "<package><metadata><id>$id</id><version>$Version</version><packageTypes><packageType name='DotnetTool' /></packageTypes></metadata></package>" } else { 'controlled-fixture-host' })) }
+                finally { $writer.Dispose() }
+            }
             foreach ($schemaName in @('hexalith.module-manifest.v2.json', 'hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
                 $entry = $archive.CreateEntry("tools/net10.0/any/schemas/$schemaName")
                 $writer = [IO.StreamWriter]::new($entry.Open())
@@ -213,9 +219,21 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
         finally { $archive.Dispose() }
     }
     else {
-        [IO.File]::WriteAllText($packagePath, "package:$id")
+        $archive = [IO.Compression.ZipFile]::Open($packagePath, [IO.Compression.ZipArchiveMode]::Create)
+        try {
+            $writer = [IO.StreamWriter]::new($archive.CreateEntry("$id.nuspec").Open())
+            try { $writer.Write("<package><metadata><id>$id</id><version>$Version</version><packageTypes><packageType name='DotnetTool' /></packageTypes></metadata></package>") }
+            finally { $writer.Dispose() }
+        }
+        finally { $archive.Dispose() }
     }
-    [IO.File]::WriteAllText((Join-Path $OutputDirectory "$id.$Version.snupkg"), "symbols:$id")
+    $symbols = [IO.Compression.ZipFile]::Open((Join-Path $OutputDirectory "$id.$Version.snupkg"), [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        $writer = [IO.StreamWriter]::new($symbols.CreateEntry("$id.nuspec").Open())
+        try { $writer.Write("<package><metadata><id>$id</id><version>$Version</version><packageTypes><packageType name='SymbolsPackage' /></packageTypes></metadata></package>") }
+        finally { $writer.Dispose() }
+    }
+    finally { $symbols.Dispose() }
 }
 '@, [Text.UTF8Encoding]::new($false))
 
@@ -259,6 +277,62 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
             throw "Configuration-key fault '$($fault.mode)' exposed a complete inventory."
         }
         Write-Host "Configuration-key gate rejected $($fault.mode)."
+    }
+
+    # Run the real qualifier through its successful CI-backed inventory path.
+    # Package/CLI/seed dependencies are controlled fixtures, so publication
+    # eligibility MUST remain false (fixture build, unrequired controls).
+    $ciEnvironment = @{}
+    foreach ($name in @('GITHUB_REPOSITORY','GITHUB_REF')) { $ciEnvironment[$name] = [Environment]::GetEnvironmentVariable($name) }
+    $global:HexalithG4GateRevision = (& git -C (Join-Path $PSScriptRoot '..') rev-parse HEAD).Trim()
+    function global:gh {
+        param($Command,$Endpoint)
+        if ($Command -cne 'api' -or $Endpoint -cne 'repos/Hexalith/Hexalith.Builds/actions/runs/123') { throw 'Unexpected qualifier API dependency.' }
+        $global:LASTEXITCODE = 0
+        @{id=123;run_attempt=2;repository=@{full_name='Hexalith/Hexalith.Builds'};path='.github/workflows/ci.yml';head_sha=$global:HexalithG4GateRevision;head_branch='main';event='push';status='completed';conclusion='success';html_url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'} | ConvertTo-Json -Depth 4
+    }
+    function global:pwsh {
+        param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Arguments)
+        $scriptIndex = [Array]::IndexOf($Arguments,'-File') + 1
+        if ([IO.Path]::GetFileName($Arguments[$scriptIndex]) -cne 'test-g4-packaged-seed-subscriptions.ps1') { throw 'Unexpected controlled seed dependency.' }
+        $package = $Arguments[[Array]::IndexOf($Arguments,'-PackagePath') + 1]
+        $version = $Arguments[[Array]::IndexOf($Arguments,'-Version') + 1]
+        $output = $Arguments[[Array]::IndexOf($Arguments,'-OutputPath') + 1]
+        $entryName = 'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll'
+        $archive = [IO.Compression.ZipFile]::OpenRead($package)
+        try {
+            $stream = $archive.GetEntry($entryName).Open()
+            try { $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)) }
+            finally { $stream.Dispose() }
+        }
+        finally { $archive.Dispose() }
+        $checks = foreach ($declarative in @($false,$true)) {
+            @{declarative=$declarative;missingChannelStatusCode=401;invalidChannelStatusCode=401;discoveryStatusCode=$(if($declarative){404}else{200});projectionSubscriptionCount=$(if($declarative){0}else{1});subscriptionPubsubName=$(if($declarative){$null}else{'configured-seed-events'});receiverPresent=$true;receiverTopicMetadataCount=$(if($declarative){0}else{1});receiverPubsubName=$(if($declarative){$null}else{'configured-seed-events'});startupIndexWriterAliasRemoved=$true}
+        }
+        @{schema='hexalith.g4-packaged-seed-subscriptions.v1';status='passed';package=@{id='Hexalith.Builds.Module.Cli';version=$version;sha256=(Get-FileHash $package -Algorithm SHA256).Hash};seed=@{entry=$entryName;sha256=$hash;loadedSha256=$hash};checks=@($checks)} | ConvertTo-Json -Depth 6 | Set-Content $output
+        $global:LASTEXITCODE = 0
+    }
+    try {
+        $env:GITHUB_REPOSITORY = 'Hexalith/Hexalith.Builds'
+        $env:GITHUB_REF = 'refs/heads/main'
+        $global:HexalithG4GateDotNetMode = 'pass'
+        $ciOutput = Join-Path $testRoot 'ci-inventory'
+        & $qualificationPath -Version '0.0.0-gate.6' -PackageDirectory $ciOutput -SourceCiRunId '123' -RetainPackageDirectory -PackageBuildScriptPath $fixtureBuildPath
+        $inventory = Get-Content (Join-Path $ciOutput 'g4-tool-package-inventory.json') -Raw | ConvertFrom-Json
+        $validation = $inventory.qualification.sourceValidation
+        $expected = @{id='123';runAttempt='2';repository='Hexalith/Hexalith.Builds';workflow='.github/workflows/ci.yml';sha=$global:HexalithG4GateRevision;branch='main';url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'}
+        if ($validation.mode -cne 'ci' -or $validation.result -cne 'passed') { throw 'Actual qualifier did not retain CI source validation.' }
+        foreach ($name in $expected.Keys) {
+            if ([string]$validation.ciRun.$name -cne $expected[$name]) { throw "Actual qualifier lost CI evidence '$name'." }
+        }
+        if ($inventory.qualification.releaseEligible -ne $false -or $inventory.qualification.packageBuild.mode -cne 'fixture' -or
+            -not (($inventory.qualification.ineligibilityReasons -join ' ').Contains("package build mode was 'fixture'", [StringComparison]::Ordinal))) { throw 'Controlled producer fixture earned false publication credit.' }
+        Write-Host 'Actual CI qualifier inventory control passed: full CI proof retained; fixture remains release-ineligible.'
+    }
+    finally {
+        foreach ($name in $ciEnvironment.Keys) { [Environment]::SetEnvironmentVariable($name,$ciEnvironment[$name]) }
+        Remove-Item Function:gh,Function:pwsh -ErrorAction SilentlyContinue
+        Remove-Variable HexalithG4GateRevision -Scope Global -ErrorAction SilentlyContinue
     }
 
     $duplicateFixtureRoot = Join-Path $testRoot 'duplicate-fixtures'

@@ -13,6 +13,7 @@ $originalRef = $env:GITHUB_REF
 $originalSha = $env:GITHUB_SHA
 $scenarioCount = 0
 $apiExitCode = 0
+$apiErrorOutput = 'unclassified failure'
 $apiCalls = 0
 $liveGuardCalls = 0
 $liveGuardExitCode = 0
@@ -25,6 +26,7 @@ function gh {
     }
     $script:apiCalls++
     $global:LASTEXITCODE = $script:apiExitCode
+    if ($script:apiExitCode -ne 0) { $script:apiErrorOutput; return }
     $script:run | ConvertTo-Json -Depth 5 -Compress
 }
 
@@ -32,7 +34,8 @@ function bash {
     param([string] $ScriptPath)
     if ($ScriptPath -cne (Join-Path $PSScriptRoot 'verify-g4-release-source.sh') -or
         $env:REPOSITORY -cne $env:GITHUB_REPOSITORY -or $env:DISPATCH_REF -cne $env:GITHUB_REF -or
-        $env:DISPATCH_SHA -cne $script:revision -or -not [string]::IsNullOrEmpty($env:GITHUB_OUTPUT)) {
+        $env:DISPATCH_SHA -cne $script:revision -or $env:EXPECTED_CI_RUN_ID -cne '123' -or
+        $env:EXPECTED_CI_RUN_ATTEMPT -cne '1' -or -not [string]::IsNullOrEmpty($env:GITHUB_OUTPUT)) {
         throw 'Late guard did not receive the exact qualified source scope.'
     }
     $script:liveGuardCalls++
@@ -84,6 +87,10 @@ try {
         $before = $liveGuardCalls
         $beforeApi = $apiCalls
         $previousOutput = $env:GITHUB_OUTPUT
+        $lateEnvironment = @{}
+        foreach ($name in @('REPOSITORY','DISPATCH_REF','DISPATCH_SHA','EXPECTED_CI_RUN_ID','EXPECTED_CI_RUN_ATTEMPT')) {
+            $lateEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
+        }
         Assert-CurrentReleaseSource -Qualification $qualification
         if ($liveGuardCalls -ne $before + 1 -or $apiCalls -ne $beforeApi + 1 -or $env:GITHUB_OUTPUT -cne $previousOutput) {
             throw 'Late release check must revalidate the recorded CI attempt and live source without changing workflow outputs.'
@@ -94,6 +101,9 @@ try {
             Assert-CurrentReleaseSource -Qualification $qualification
         }
         $liveGuardExitCode = 0
+        foreach ($name in $lateEnvironment.Keys) {
+            if ([Environment]::GetEnvironmentVariable($name) -cne $lateEnvironment[$name]) { throw "Late guard changed caller environment '$name'." }
+        }
         $env:GITHUB_SHA = '0000000000000000000000000000000000000000'
         Assert-Rejected -Name 'Qualified revision differs from workflow revision' -Message 'qualified workflow revision' -Action {
             Assert-CurrentReleaseSource -Qualification $qualification
@@ -150,6 +160,24 @@ try {
         $apiExitCode = 1
         Assert-Rejected -Name 'GitHub verification is unavailable' -Message 'Could not verify source CI run' -Action {
             Assert-SourceValidation -Qualification $qualification
+        }
+        foreach ($case in @(
+            @{ text = 'HTTP 403'; category = 'authorization' }, @{ text = 'HTTP 404'; category = 'not-found' },
+            @{ text = 'HTTP 429'; category = 'rate-limit' }, @{ text = 'HTTP 503'; category = 'server' },
+            @{ text = 'connection timed out'; category = 'transport' }, @{ text = 'opaque'; category = 'unclassified' }
+        )) {
+            $apiErrorOutput = "$($case.text) Authorization: Bearer fixture-sensitive-token"
+            $scenarioCount++
+            try {
+                $null = Get-VerifiedSourceCiRun -RunId '123' -Revision $revision
+                throw 'Failed API was accepted.'
+            }
+            catch {
+                $message = $_.Exception.Message
+                if (-not $message.Contains("exit 1; category $($case.category)", [StringComparison]::Ordinal) -or
+                    $message.Contains('fixture-sensitive-token', [StringComparison]::Ordinal) -or
+                    $message.Contains('Bearer', [StringComparison]::Ordinal) -or $message.Length -gt 256) { throw }
+            }
         }
         $apiExitCode = 0
 

@@ -48,5 +48,5 @@ if ($LASTEXITCODE -ne 0) {
     throw "Pre-tag G-4 qualification evidence retention failed for '$Version'."
 }
 
-# This is the last qualification action before semantic-release creates its tag.
+# Recheck after qualification; the final prepare action checks again after notes.
 Assert-CurrentReleaseSource -Qualification $inventory.qualification

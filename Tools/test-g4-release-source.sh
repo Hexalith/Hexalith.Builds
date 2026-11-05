@@ -10,6 +10,7 @@ set -euo pipefail
 if [ "$1" != api ]; then exit 90; fi
 case "$2" in
   */git/ref/heads/*) printf '%s\n' "$MOCK_LIVE_SHA" ;;
+  */actions/runs/*) printf '%s\n' "$MOCK_RUN" ;;
   */actions/workflows/ci.yml/runs*) printf '%s\n' "$MOCK_RUNS" ;;
   *) exit 91 ;;
 esac
@@ -23,7 +24,11 @@ export DISPATCH_REF=refs/heads/main
 export GITHUB_OUTPUT="$test_dir/github-output"
 export MOCK_RUNS='{"workflow_runs":[{"id":123,"head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","conclusion":"success"}]}'
 
+case_count=0
+unset EXPECTED_CI_RUN_ID EXPECTED_CI_RUN_ATTEMPT
+
 expect_pass() {
+  case_count=$((case_count + 1))
   : > "$GITHUB_OUTPUT"
   bash "$script_dir/verify-g4-release-source.sh" >/dev/null
   if [[ "$(cat "$GITHUB_OUTPUT")" != 'ci-run-id=123' ]]; then
@@ -32,6 +37,7 @@ expect_pass() {
   fi
 }
 expect_fail() {
+  case_count=$((case_count + 1))
   if bash "$script_dir/verify-g4-release-source.sh" >"$test_dir/output" 2>&1; then
     echo "Release source guard accepted invalid case: $1" >&2
     exit 1
@@ -70,6 +76,33 @@ expect_fail non-push-ci
 MOCK_RUNS='{"workflow_runs":[{"id":123,"head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"prerelease","event":"push","conclusion":"failure"}]}'
 export MOCK_RUNS
 expect_fail failed-ci
+DISPATCH_REF=refs/heads/main
+export DISPATCH_REF
+export EXPECTED_CI_RUN_ID=123 EXPECTED_CI_RUN_ATTEMPT=1
+export MOCK_RUN='{"id":123,"run_attempt":1,"repository":{"full_name":"Hexalith/Hexalith.Builds"},"path":".github/workflows/ci.yml","head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","status":"completed","conclusion":"success"}'
+MOCK_RUNS="$(jq -cn --argjson run "$MOCK_RUN" '{workflow_runs:[$run]}')"
+export MOCK_RUNS
+expect_pass
+# The filtered list falls back to an older success while the recorded run reruns.
+MOCK_RUNS="$(jq -c '.workflow_runs[0].id=122' <<< "$MOCK_RUNS")"
+expect_fail older-success-fallback
+MOCK_RUNS="$(jq -cn --argjson run "$MOCK_RUN" '{workflow_runs:[$run]}')"
+for field in run_attempt status conclusion; do
+  original="$MOCK_RUN"
+  case "$field" in
+    run_attempt) MOCK_RUN="$(jq -c '.run_attempt=2' <<< "$MOCK_RUN")" ;;
+    status) MOCK_RUN="$(jq -c '.status="in_progress"' <<< "$MOCK_RUN")" ;;
+    conclusion) MOCK_RUN="$(jq -c '.conclusion="failure"' <<< "$MOCK_RUN")" ;;
+  esac
+  export MOCK_RUN
+  expect_fail "recorded-$field-changed"
+  MOCK_RUN="$original"
+  export MOCK_RUN
+ done
+EXPECTED_CI_RUN_ATTEMPT=''
+export EXPECTED_CI_RUN_ATTEMPT
+expect_fail missing-expected-attempt
+unset EXPECTED_CI_RUN_ID EXPECTED_CI_RUN_ATTEMPT
 DISPATCH_SHA=malformed
 export DISPATCH_SHA
 expect_fail malformed-sha
@@ -77,4 +110,4 @@ DISPATCH_REF=refs/heads/feature
 export DISPATCH_REF
 expect_fail unsupported-branch
 
-echo 'G-4 release source guard checks passed.'
+echo "G-4 release source guard checks passed: $case_count scenarios."

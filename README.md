@@ -1184,6 +1184,20 @@ before tagging and publishing. Package controls, remote package verification,
 and qualification evidence retention remain part of Release. Node dependencies
 and signatures are initialized once by `Github/create-release`.
 
+Actual-version qualification remains in `verifyRelease`. After release notes,
+the final `prepare` action validates that same qualified inventory and carrier
+and rechecks the current source and recorded CI attempt before tagging. The
+publisher independently repeats the source check. These checks close the known
+lifecycle window; they do not lock the remote branch atomically.
+
+If a genuine tag exists but package publication was rejected or only partly
+completed, inspect the tag's source, release evidence, and actual public package
+and symbol artifacts first. Preserve the tag and any partial registry history;
+do not infer that packages are absent from a failed workflow alone. If source
+has advanced, qualify the current tip through normal CI and release its next
+genuine semantic-release version. Never rewrite a tag, represent old-source
+qualification as current, or bypass gates through a same-version recovery path.
+
 This repository's `commitlint.config.mjs` accepts `build`, `ci`, `docs`, `feat`,
 `fix`, `perf`, `refactor`, `revert`, `style`, and `test` as commit types. Use
 `build(deps)` for dependency catalog and package audit maintenance. Before

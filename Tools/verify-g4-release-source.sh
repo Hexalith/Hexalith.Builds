@@ -28,6 +28,21 @@ if ! ci_run_id="$(jq -er --arg sha "$DISPATCH_SHA" --arg branch "$branch" \
   exit 1
 fi
 
+# Late lifecycle calls must retain the recorded attempt, even if the list API
+# filters out its now-running rerun and exposes an older successful run instead.
+if [[ -n "${EXPECTED_CI_RUN_ID:-}${EXPECTED_CI_RUN_ATTEMPT:-}" ]]; then
+  if [[ ! "${EXPECTED_CI_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || [[ ! "${EXPECTED_CI_RUN_ATTEMPT:-}" =~ ^[1-9][0-9]*$ ]] || [[ "$ci_run_id" != "$EXPECTED_CI_RUN_ID" ]]; then
+    echo 'Late release CI selection differs from its qualified run and attempt.' >&2
+    exit 1
+  fi
+  recorded_run="$(gh api "repos/${REPOSITORY}/actions/runs/${EXPECTED_CI_RUN_ID}")"
+  if ! jq -e --arg id "$EXPECTED_CI_RUN_ID" --arg attempt "$EXPECTED_CI_RUN_ATTEMPT" --arg sha "$DISPATCH_SHA" --arg branch "$branch" --arg repository "$REPOSITORY" \
+    '(.id | tostring) == $id and (.run_attempt | tostring) == $attempt and .head_sha == $sha and .head_branch == $branch and .repository.full_name == $repository and .path == ".github/workflows/ci.yml" and .event == "push" and .status == "completed" and .conclusion == "success"' <<< "$recorded_run" >/dev/null; then
+    echo 'Late release CI run is no longer the qualified successful attempt.' >&2
+    exit 1
+  fi
+fi
+
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   printf 'ci-run-id=%s\n' "$ci_run_id" >> "$GITHUB_OUTPUT"
 fi

@@ -25,7 +25,8 @@
         "@semantic-release/exec",
         {
           "verifyReleaseCmd": "pwsh -NoProfile -File ./Tools/verify-g4-tool-release.ps1 -Version ${nextRelease.version}",
-          "publishCmd": "pwsh -NoProfile -File ./Tools/publish-g4-tool-packages.ps1 -Version ${nextRelease.version}"
+          "publishCmd": "pwsh -NoProfile -File ./Tools/publish-g4-tool-packages.ps1 -Version ${nextRelease.version}",
+          "prepareCmd": "pwsh -NoProfile -File ./Tools/prepare-g4-tool-release.ps1 -Version ${nextRelease.version}"
         }
       ],
       [

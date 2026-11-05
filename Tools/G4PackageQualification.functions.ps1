@@ -25,7 +25,19 @@ function Get-VerifiedSourceCiRun {
 
     $output = @(& gh api "repos/$repository/actions/runs/$RunId" 2>&1)
     if ($LASTEXITCODE -ne 0) {
-        throw "Could not verify source CI run '$RunId' with GitHub."
+        $exitCode = $LASTEXITCODE
+        # Classify only known HTTP/transport markers; never echo CLI response text.
+        $safeInput = ($output -join "`n")
+        $safeInput = $safeInput.Substring(0, [Math]::Min($safeInput.Length, 8192))
+        $category = switch -Regex ($safeInput) {
+            'HTTP (401|403)\b' { 'authorization'; break }
+            'HTTP 404\b' { 'not-found'; break }
+            'HTTP 429\b' { 'rate-limit'; break }
+            'HTTP 5[0-9]{2}\b' { 'server'; break }
+            '(?i)timeout|timed out|connection|TLS' { 'transport'; break }
+            default { 'unclassified' }
+        }
+        throw "Could not verify source CI run '$RunId' with GitHub (exit $exitCode; category $category)."
     }
     $run = ($output -join "`n") | ConvertFrom-Json
     if ([string]$run.id -cne $RunId -or [string]$run.run_attempt -cnotmatch '^[1-9][0-9]*$' -or
@@ -84,7 +96,7 @@ function Assert-CurrentReleaseSource {
         throw 'Current release source does not match the qualified workflow revision.'
     }
 
-    $names = @('REPOSITORY', 'DISPATCH_REF', 'DISPATCH_SHA', 'GITHUB_OUTPUT')
+    $names = @('REPOSITORY', 'DISPATCH_REF', 'DISPATCH_SHA', 'GITHUB_OUTPUT', 'EXPECTED_CI_RUN_ID', 'EXPECTED_CI_RUN_ATTEMPT')
     $previous = @{}
     foreach ($name in $names) {
         $previous[$name] = [Environment]::GetEnvironmentVariable($name)
@@ -94,6 +106,8 @@ function Assert-CurrentReleaseSource {
         $env:DISPATCH_REF = $env:GITHUB_REF
         $env:DISPATCH_SHA = [string]$Qualification.sourceTree.revision
         $env:GITHUB_OUTPUT = $null
+        $env:EXPECTED_CI_RUN_ID = [string]$Qualification.sourceValidation.ciRun.id
+        $env:EXPECTED_CI_RUN_ATTEMPT = [string]$Qualification.sourceValidation.ciRun.runAttempt
         & bash (Join-Path $PSScriptRoot 'verify-g4-release-source.sh')
         if ($LASTEXITCODE -ne 0) {
             throw 'Current release source or successful push CI changed before publication.'

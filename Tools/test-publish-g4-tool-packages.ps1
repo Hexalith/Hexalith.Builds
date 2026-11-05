@@ -31,6 +31,8 @@ $global:HexalithG4PublisherSleepSeconds = 0
 $global:HexalithG4PublisherUploadResponses = [Collections.Generic.Queue[int]]::new()
 $global:HexalithG4PublisherLiveGuardCalls = 0
 $global:HexalithG4PublisherLiveGuardExitCode = 0
+$global:HexalithG4PublisherCiBranch = $null
+$global:HexalithG4PublisherCiAttempt = 1
 
 function global:gh {
     param([string] $Command, [string] $Endpoint)
@@ -39,8 +41,8 @@ function global:gh {
     }
     $global:LASTEXITCODE = 0
     @{
-        id = 456; run_attempt = 1; repository = @{ full_name = $env:GITHUB_REPOSITORY }
-        path = '.github/workflows/ci.yml'; head_sha = $env:GITHUB_SHA; head_branch = 'main'
+        id = 456; run_attempt = $global:HexalithG4PublisherCiAttempt; repository = @{ full_name = $env:GITHUB_REPOSITORY }
+        path = '.github/workflows/ci.yml'; head_sha = $env:GITHUB_SHA; head_branch = $(if ($null -ne $global:HexalithG4PublisherCiBranch) { $global:HexalithG4PublisherCiBranch } else { $env:GITHUB_REF -creplace '^refs/heads/', '' })
         event = 'push'; status = 'completed'; conclusion = 'success'
         html_url = 'https://github.com/Hexalith/Hexalith.Builds/actions/runs/456'
     } | ConvertTo-Json -Depth 4 -Compress
@@ -50,7 +52,7 @@ function global:bash {
     param([string] $ScriptPath)
     if ($ScriptPath -cne (Join-Path $global:HexalithG4PublisherSourceRoot 'Tools/verify-g4-release-source.sh') -or
         $env:REPOSITORY -cne $env:GITHUB_REPOSITORY -or $env:DISPATCH_REF -cne $env:GITHUB_REF -or
-        $env:DISPATCH_SHA -cne $env:GITHUB_SHA) {
+        $env:DISPATCH_SHA -cne $env:GITHUB_SHA -or $env:EXPECTED_CI_RUN_ID -cne '456' -or $env:EXPECTED_CI_RUN_ATTEMPT -cne '1') {
         throw 'Publisher late guard did not bind the exact qualified source.'
     }
     $global:HexalithG4PublisherLiveGuardCalls++
@@ -579,7 +581,7 @@ function New-PackageInventory {
             mode = 'ci'; result = 'passed'
             ciRun = [ordered] @{
                 id = '456'; runAttempt = 1; repository = 'Hexalith/Hexalith.Builds'
-                workflow = '.github/workflows/ci.yml'; sha = $qualifiedRevision; branch = 'main'
+                workflow = '.github/workflows/ci.yml'; sha = $qualifiedRevision; branch = ($env:GITHUB_REF -creplace '^refs/heads/', '')
                 url = 'https://github.com/Hexalith/Hexalith.Builds/actions/runs/456'
             }
         }
@@ -681,6 +683,10 @@ function Invoke-PublisherCase {
         }
 
         Assert-Equal -Actual $arguments[$sourceIndex + 1] -Expected $ExpectedSource -Because 'The publisher must route the version to the expected feed.'
+        $keyIndex = [Array]::IndexOf($arguments, '--api-key')
+        $expectedKey = if ($PublishedVersion.Contains('-', [StringComparison]::Ordinal)) { $env:GITHUB_TOKEN } else { $env:NUGET_API_KEY }
+        Assert-Equal -Actual $arguments[$keyIndex + 1] -Expected $expectedKey -Because 'The publisher must use the credential for its exact channel.'
+
     }
 
     Assert-Equal -Actual (($publishedNames | Sort-Object) -join '|') -Expected ($expectedPrimaryNames -join '|') -Because 'The publisher must submit exactly the two approved primary packages.'
@@ -797,6 +803,32 @@ try {
     $env:NUGET_API_KEY = $null
     $env:GITHUB_TOKEN = 'prerelease-test-token'
     Invoke-PublisherCase -PublishedVersion '9.8.7-preview.1' -ExpectedSource 'https://nuget.pkg.github.com/Hexalith/index.json'
+    $env:GITHUB_REF = 'refs/heads/prerelease'
+    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/prerelease'
+    Invoke-PublisherCase -PublishedVersion '9.8.7-preview.2' -ExpectedSource 'https://nuget.pkg.github.com/Hexalith/index.json' -SourceCi
+    $prereleaseDirectory = New-PackageInventory -PublishedVersion '9.8.7-preview.3' -SourceCi
+    foreach ($fault in @('branch','attempt')) {
+        $global:HexalithG4PublisherTestInvocations.Clear()
+        if ($fault -ceq 'branch') { $global:HexalithG4PublisherCiBranch = 'main' }
+        else { $global:HexalithG4PublisherCiAttempt = 2 }
+        try {
+            & $publisherPath -Version '9.8.7-preview.3' -PackageDirectory $prereleaseDirectory
+            throw "CI-backed prerelease accepted changed $fault."
+        }
+        catch {
+            $expected = if ($fault -ceq 'branch') { 'is not successful push CI' } else { "field 'runAttempt'" }
+            if (-not $_.Exception.Message.Contains($expected, [StringComparison]::Ordinal)) { throw }
+            if ($global:HexalithG4PublisherTestInvocations.Count -ne 0) { throw 'Refused prerelease pushed a package.' }
+        }
+        finally {
+            $global:HexalithG4PublisherCiBranch = $null
+            $global:HexalithG4PublisherCiAttempt = 1
+        }
+    }
+    $env:GITHUB_REF = 'refs/heads/main'
+    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/main'
+    Write-Host 'CI-backed prerelease controls passed: exact channel/credential and branch/attempt refusals.'
+
 
     $env:NUGET_API_KEY = 'stable-test-token'
     Invoke-RejectionCase -PublishedVersion '9.8.8' -ExpectedMessage 'incomplete or bypassed' -Mutate {
