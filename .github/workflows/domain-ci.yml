@@ -372,7 +372,7 @@ jobs:
         if: ${{ !inputs.governed-ci }}
         uses: Hexalith/Hexalith.Builds/Github/initialize-build@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
       - name: Initialize .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Checkout workflow-owned Builds preparation
@@ -1039,7 +1039,7 @@ jobs:
               raise SystemExit('Aspire job timeout must allow hook budgets plus at least five minutes for setup and evidence.')
           PYHOOKS
       - name: Initialize .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Checkout workflow-owned Builds preparation
@@ -1263,7 +1263,7 @@ jobs:
       - name: Initialize root-declared submodules
         uses: Hexalith/Hexalith.Builds/Github/initialize-build@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
       - name: Initialize .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Checkout workflow-owned Builds preparation

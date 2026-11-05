@@ -363,7 +363,7 @@ jobs:
       - name: Initialize root-declared submodules
         uses: ./.hexalith/builds-execution/Github/initialize-build
       - name: Initialize .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -774,7 +774,7 @@ jobs:
       # A frozen module skips all of it rather than paying for a build it will discard.
       - name: Initialize .NET
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Initialize Node.js
@@ -1373,7 +1373,7 @@ jobs:
       - name: Initialize root-declared submodules
         uses: ./.hexalith/builds-execution/Github/initialize-build
       - name: Initialize .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Restore candidate
