@@ -14,6 +14,9 @@ namespace Hexalith.Builds.Tooling.Runtime;
 /// <param name="TimedOut">A value indicating whether the bound elapsed.</param>
 public sealed record CompositionProcessResult(bool Started, int ExitCode, string Output, bool TimedOut)
 {
+    /// <summary>Gets the finite launch failure metadata when no process started.</summary>
+    public CompositionProcessStartFailure? StartFailure { get; init; }
+
     /// <summary>Gets a value indicating whether standard output exceeded the capture bound.</summary>
     public bool OutputTruncated { get; init; }
 
