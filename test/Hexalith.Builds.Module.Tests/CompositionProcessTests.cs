@@ -17,6 +17,126 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class CompositionProcessTests
 {
+    /// <summary>Verifies missing executables retain native metadata without sensitive process inputs.</summary>
+    /// <returns>The bounded launch refusal assertion.</returns>
+    [Fact]
+    public async Task MissingExecutableRetainsOnlySafeLaunchMetadataAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            const string sensitiveDetail = "private-launch-detail-must-not-leak";
+            CompositionProcessResult result = await CompositionProcess.RunAsync(
+                CompositionProcess.CreateStartInfo(
+                    Path.Combine(root, sensitiveDetail),
+                    [sensitiveDetail + "-argument"],
+                    root,
+                    new Dictionary<string, string>(StringComparer.Ordinal) { ["HEXALITH_PRIVATE_LAUNCH_DETAIL"] = sensitiveDetail + "-environment" }),
+                TimeSpan.FromSeconds(5),
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            result.Started.ShouldBeFalse();
+            result.ExitCode.ShouldBe(-1);
+            result.TimedOut.ShouldBeFalse();
+            result.Output.ShouldBeEmpty();
+            result.ErrorOutput.ShouldBeEmpty();
+            result.OutputTruncated.ShouldBeFalse();
+            CompositionProcessStartFailure failure = result.StartFailure.ShouldNotBeNull();
+            failure.Kind.ShouldBe(CompositionProcessStartFailureKind.Win32);
+            failure.NativeErrorCode.ShouldBe(2);
+            result.ToString().ShouldNotContain(root);
+            result.ToString().ShouldNotContain(sensitiveDetail);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies invalid start descriptions retain only their finite failure kind.</summary>
+    /// <returns>The invalid-operation launch refusal assertion.</returns>
+    [Fact]
+    public async Task InvalidStartDescriptionRetainsSafeFailureKindAsync()
+    {
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            new System.Diagnostics.ProcessStartInfo(),
+            TimeSpan.FromSeconds(5),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        result.Started.ShouldBeFalse();
+        result.ExitCode.ShouldBe(-1);
+        result.TimedOut.ShouldBeFalse();
+        result.Output.ShouldBeEmpty();
+        result.ErrorOutput.ShouldBeEmpty();
+        CompositionProcessStartFailure failure = result.StartFailure.ShouldNotBeNull();
+        failure.Kind.ShouldBe(CompositionProcessStartFailureKind.InvalidOperation);
+        failure.NativeErrorCode.ShouldBeNull();
+    }
+
+    /// <summary>Verifies the line-marker API preserves its missing-helper null result.</summary>
+    /// <returns>The bounded missing-helper assertion.</returns>
+    [Fact]
+    public async Task MissingExecutableHasNoFirstMatchingLineAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string? line = await CompositionProcess.ReadFirstLineContainingAsync(
+                CompositionProcess.CreateStartInfo(Path.Combine(root, "missing-helper"), [], null, null),
+                "marker",
+                TimeSpan.FromSeconds(5),
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            line.ShouldBeNull();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies a started executable's nonzero exit is not classified as a launch failure.</summary>
+    /// <returns>The actual controlled nonzero-exit assertion.</returns>
+    [Fact]
+    public async Task StartedNonzeroProcessHasNoLaunchFailureAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The nonzero-exit probe uses a POSIX shell.");
+        }
+
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            CompositionProcess.CreateStartInfo("/bin/sh", ["-c", "printf observed; exit 1"], null, null),
+            TimeSpan.FromSeconds(5),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        result.Started.ShouldBeTrue();
+        result.ExitCode.ShouldBe(1);
+        result.Output.ShouldBe("observed");
+        result.TimedOut.ShouldBeFalse();
+        result.StartFailure.ShouldBeNull();
+    }
+
+    /// <summary>Verifies a started executable's timeout is not classified as a launch failure.</summary>
+    /// <returns>The actual controlled timeout assertion.</returns>
+    [Fact]
+    public async Task TimedOutProcessHasNoLaunchFailureAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The timeout probe uses a POSIX shell.");
+        }
+
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            CompositionProcess.CreateStartInfo("/bin/sh", ["-c", "sleep 30"], null, null),
+            TimeSpan.FromMilliseconds(200),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        result.Started.ShouldBeTrue();
+        result.ExitCode.ShouldBe(-1);
+        result.TimedOut.ShouldBeTrue();
+        result.StartFailure.ShouldBeNull();
+    }
+
     /// <summary>Retains explicit nonsecret SDK prevention and cache controls only for dotnet children.</summary>
     [Fact]
     public void DotnetChildrenRetainSdkControlsWithoutBroadeningOtherHelpers()

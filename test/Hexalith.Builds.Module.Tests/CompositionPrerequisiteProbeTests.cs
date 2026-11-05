@@ -237,6 +237,55 @@ public sealed class CompositionPrerequisiteProbeTests
         }
     }
 
+    /// <summary>Verifies actual launch failures remain distinct without disclosing executable paths or exception details.</summary>
+    /// <param name="mode">The controlled filesystem launch condition.</param>
+    /// <param name="nativeCode">The expected native launch failure code.</param>
+    /// <returns>The bounded fail-closed probe assertion.</returns>
+    [Theory]
+    [InlineData("missing", 2)]
+    [InlineData("permission-denied", 13)]
+    [InlineData("held-writer", 26)]
+    public async Task AspireLaunchFailuresRetainSafeNativeCodeAsync(string mode, int nativeCode)
+    {
+        SkipOnWindows();
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            const string sensitiveDetail = "private-launch-detail-must-not-leak";
+            string aspire = Path.Combine(root, sensitiveDetail);
+            if (mode != "missing")
+            {
+                CompositionTestFiles.WriteScript(aspire, $"echo '{CompositionToolchainPins.AspireAppHostSdkVersion}'");
+            }
+
+            if (mode == "permission-denied" && !OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(aspire, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            }
+
+            using FileStream? writer = mode == "held-writer"
+                ? new(aspire, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)
+                : null;
+            ToolDiagnostic? result = await CompositionPrerequisiteProbe.ProbeAspireAsync(
+                aspire, TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            _ = result.ShouldNotBeNull();
+            result.RuleId.ShouldBe("HXR015");
+            result.Phase.ShouldBe(ToolPhase.Prerequisite);
+            result.Category.ShouldBe(ToolFailureCategory.PrerequisiteUnavailable);
+            result.Message.ShouldBe($"Aspire CLI observed 'missing' (start failure Win32, native error {nativeCode}); expected Aspire.AppHost.Sdk/{CompositionToolchainPins.AspireAppHostSdkVersion}.");
+            result.Message.Length.ShouldBeLessThan(512);
+            result.Message.ShouldNotContain(root);
+            result.Message.ShouldNotContain(sensitiveDetail);
+            result.Message.ShouldNotContain("(exit ");
+            result.Hint.ShouldBe($"Install Aspire CLI {CompositionToolchainPins.AspireAppHostSdkVersion} to match the catalog-selected Aspire.AppHost.Sdk/{CompositionToolchainPins.AspireAppHostSdkVersion}, then retry.");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     /// <summary>Verifies a caller cancellation propagates from the bounded Aspire probe.</summary>
     /// <returns>The asynchronous test.</returns>
     [Fact]

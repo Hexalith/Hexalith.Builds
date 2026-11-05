@@ -148,7 +148,7 @@ public static class CompositionProcess
         ArgumentNullException.ThrowIfNull(start);
         ArgumentException.ThrowIfNullOrWhiteSpace(marker);
         using Process process = new() { StartInfo = start };
-        if (!TryStart(process))
+        if (!TryStart(process, out _))
         {
             return null;
         }
@@ -236,9 +236,9 @@ public static class CompositionProcess
         ArgumentNullException.ThrowIfNull(start);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumOutputCharacters);
         using Process process = new() { StartInfo = start };
-        if (!TryStart(process))
+        if (!TryStart(process, out CompositionProcessStartFailure? startFailure))
         {
-            return new CompositionProcessResult(false, -1, string.Empty, false);
+            return new CompositionProcessResult(false, -1, string.Empty, false) { StartFailure = startFailure };
         }
 
         process.StandardInput.Close();
@@ -301,14 +301,28 @@ public static class CompositionProcess
         }
     }
 
-    private static bool TryStart(Process process)
+    private static bool TryStart(Process process, out CompositionProcessStartFailure? failure)
     {
+        failure = null;
         try
         {
-            return process.Start();
+            bool started = process.Start();
+            if (!started)
+            {
+                failure = new(CompositionProcessStartFailureKind.ReturnedFalse, null);
+            }
+
+            return started;
         }
         catch (Exception exception) when (exception is Win32Exception or IOException or InvalidOperationException or PlatformNotSupportedException)
         {
+            failure = exception switch
+            {
+                Win32Exception native => new(CompositionProcessStartFailureKind.Win32, native.NativeErrorCode),
+                IOException => new(CompositionProcessStartFailureKind.InputOutput, null),
+                InvalidOperationException => new(CompositionProcessStartFailureKind.InvalidOperation, null),
+                _ => new(CompositionProcessStartFailureKind.PlatformNotSupported, null),
+            };
             return false;
         }
     }
