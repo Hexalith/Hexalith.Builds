@@ -134,7 +134,7 @@
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.6" />
     <!-- FrontComposer bunit transitive floor pulls the vulnerable 1.4.0; pin the GHSA-pgww-w46g-26qg fix. -->
-    <PackageVersion Include="AngleSharp" Version="1.9.1" />
+    <PackageVersion Include="AngleSharp" Version="1.10.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="10.0.0" />
@@ -215,7 +215,7 @@
     <PackageVersion Include="Kreuzberg" Version="4.10.4" />
     <PackageVersion Include="LibGit2Sharp" Version="0.32.0" />
     <PackageVersion Include="MailKit" Version="4.18.2" />
-    <PackageVersion Include="MediatR" Version="14.2.0" />
+    <PackageVersion Include="MediatR" Version="14.3.0" />
     <PackageVersion Include="MessagePack" Version="3.1.12" />
     <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="10.0.14" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.14" />
@@ -241,7 +241,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.14" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.14" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
-    <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.63.3" />
+    <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.63.4" />
     <PackageVersion Include="Microsoft.Bot.Builder" Version="4.23.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
     <!-- Keep the .NET 10 MSBuild line: 18.10.1 and 18.11.0 ship net11.0/net472, causing NU1701 for the net10.0 architecture loader. -->
@@ -287,7 +287,7 @@
     <PackageVersion Include="Microsoft.IdentityModel.Protocols" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.23.0" />
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.17.0" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.18.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <!-- Keep Microsoft.OpenApi on 2.x: Microsoft.AspNetCore.OpenApi 10.x is compiled against the 2.x API surface; v3 breaks runtime OpenAPI document generation. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="2.13.0" />
@@ -326,14 +326,14 @@
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.20.1-beta.1" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.1" />
     <!-- Prerelease accepted explicitly per Hexalith.Memories ADR-8.5-001 (b); upgrade-on-GA trigger tracked in Memories deferred-work.md. -->
     <PackageVersion Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.20.1-beta.1" />
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.1" />
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
-    <PackageVersion Include="Radzen.Blazor" Version="12.1.11" />
+    <PackageVersion Include="Radzen.Blazor" Version="12.1.12" />
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Scriban" Version="7.5.3" />
