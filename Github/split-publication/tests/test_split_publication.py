@@ -507,7 +507,7 @@ class HostileWorkflowTests(unittest.TestCase):
         self.assertNotIn("semantic-release", publisher)
         self.assertNotIn("dotnet ", publisher)
         self.assertNotIn("npm ", publisher)
-        self.assertIn("actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6", publisher)
+        self.assertIn("actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6", publisher)
         self.assertIn("repository: Hexalith/Hexalith.Builds", publisher)
         self.assertNotIn("submodules: true", builder)
         self.assertNotIn("--recursive", (ROOT.parent / "initialize-build" / "action.yml").read_text(encoding="utf-8"))
