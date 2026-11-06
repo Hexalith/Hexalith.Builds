@@ -179,6 +179,9 @@ public sealed class CompositionRedactionTests
         payload.RootElement.EnumerateObject().Count(property => property.Name == "eventstore:surface").ShouldBe(1);
         payload.RootElement.TryGetProperty("role", out _).ShouldBeFalse();
         payload.RootElement.GetProperty("domains").GetString().ShouldBe("party tenants");
+        payload.RootElement.GetProperty("eventstore:tenant").EnumerateArray().Select(value => value.GetString()).ShouldBe(["synthetic", "system"]);
+        payload.RootElement.GetProperty("eventstore:domain").EnumerateArray().Select(value => value.GetString()).ShouldBe(["party", "tenants"]);
+        payload.RootElement.GetProperty("eventstore:permission").EnumerateArray().Select(value => value.GetString()).ShouldBe(["command:submit", "query:read"]);
     }
 
     /// <summary>Verifies unknown, ambiguous and wildcard surface requests cannot mint credentials.</summary>
@@ -223,8 +226,46 @@ public sealed class CompositionRedactionTests
         payload.RootElement.GetProperty("tenants").GetString().ShouldBe("tenant-a tenant-b");
         payload.RootElement.GetProperty("domains").GetString().ShouldBe("p0-orders");
         payload.RootElement.GetProperty("permissions").GetString().ShouldBe("command:submit query:read");
+        payload.RootElement.GetProperty("eventstore:tenant").EnumerateArray().Select(value => value.GetString()).ShouldBe(["tenant-a", "tenant-b"]);
+        payload.RootElement.GetProperty("eventstore:domain").EnumerateArray().Select(value => value.GetString()).ShouldBe(["p0-orders"]);
+        payload.RootElement.GetProperty("eventstore:permission").EnumerateArray().Select(value => value.GetString()).ShouldBe(["command:submit", "query:read"]);
         payload.RootElement.GetProperty("role").GetString().ShouldBe("GlobalAdministrator");
         payload.RootElement.GetProperty("exp").GetInt64().ShouldBe(now.AddMinutes(5).ToUnixTimeSeconds());
+    }
+
+    /// <summary>Empty caller grants never gain canonical or legacy authority through issuance.</summary>
+    [Fact]
+    public void EmptyGrantsDoNotAcquireAuthority()
+    {
+        string token = CompositionTokenFactory.Create(CompositionSigningKey.Create(), new("native", [], [], [], false, TimeSpan.FromMinutes(1)), DateTimeOffset.UtcNow);
+        using JsonDocument payload = JsonDocument.Parse(Decode(token.Split('.')[1]));
+        foreach (string claim in new[] { "tenants", "domains", "permissions", "eventstore:tenant", "eventstore:domain", "eventstore:permission", "role", "eventstore:surface" })
+        {
+            payload.RootElement.TryGetProperty(claim, out _).ShouldBeFalse();
+        }
+    }
+
+    /// <summary>Issuance preserves exact requested grants, including invalid entries that public consumers must refuse; it never normalizes or filters them into authority.</summary>
+    /// <param name="grant">The invalid or ambiguous public grant retained for the consumer's refusal.</param>
+    [Theory]
+    [InlineData("system")]
+    [InlineData("platform:tenants")]
+    [InlineData("tenant-a tenant-b")]
+    [InlineData("tenant/a")]
+    [InlineData("*")]
+    [InlineData("synthetic")]
+    public void CanonicalGrantsPreserveInputsWithoutBroadeningAuthority(string grant)
+    {
+        string token = CompositionTokenFactory.Create(
+            CompositionSigningKey.Create(),
+            new("native", ["synthetic", grant], ["party"], ["query:read"], false, TimeSpan.FromMinutes(1)) { Surface = "agent" },
+            DateTimeOffset.UtcNow);
+        using JsonDocument payload = JsonDocument.Parse(Decode(token.Split('.')[1]));
+        payload.RootElement.GetProperty("tenants").GetString().ShouldBe("synthetic " + grant);
+        payload.RootElement.GetProperty("eventstore:tenant").EnumerateArray().Select(value => value.GetString()).ShouldBe(["synthetic", grant]);
+        payload.RootElement.GetProperty("eventstore:domain").EnumerateArray().Select(value => value.GetString()).ShouldBe(["party"]);
+        payload.RootElement.GetProperty("eventstore:permission").EnumerateArray().Select(value => value.GetString()).ShouldBe(["query:read"]);
+        payload.RootElement.TryGetProperty("role", out _).ShouldBeFalse();
     }
 
     private static string Encode(byte[] value) =>

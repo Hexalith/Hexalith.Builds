@@ -15,7 +15,7 @@ using System.Text.Json;
 public static class CompositionTokenFactory
 {
     /// <summary>
-    /// Creates a signed token accepted by the run's EventStore host.
+    /// Creates a signed token retaining legacy aggregates and exact canonical grant sets; consumers authorize those grants.
     /// </summary>
     /// <param name="signingKey">The per-run signing key.</param>
     /// <param name="request">The identity.</param>
@@ -44,17 +44,23 @@ public static class CompositionTokenFactory
         };
         if (request.Tenants.Count > 0)
         {
-            claims["tenants"] = string.Join(' ', request.Tenants);
+            string[] tenants = [.. request.Tenants];
+            claims["tenants"] = string.Join(' ', tenants);
+            claims["eventstore:tenant"] = tenants;
         }
 
         if (request.Domains.Count > 0)
         {
-            claims["domains"] = string.Join(' ', request.Domains);
+            string[] domains = [.. request.Domains];
+            claims["domains"] = string.Join(' ', domains);
+            claims["eventstore:domain"] = domains;
         }
 
         if (request.Permissions.Count > 0)
         {
-            claims["permissions"] = string.Join(' ', request.Permissions);
+            string[] permissions = [.. request.Permissions];
+            claims["permissions"] = string.Join(' ', permissions);
+            claims["eventstore:permission"] = permissions;
         }
 
         if (request.GlobalAdministrator)
