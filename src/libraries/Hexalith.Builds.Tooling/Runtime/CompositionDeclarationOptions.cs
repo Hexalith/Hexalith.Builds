@@ -34,6 +34,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/3.0.18"] = "66822bc5bc4858c824f17b7d093f5f0f676b03ea",
         ["memories/3.0.23"] = "82c0aa0a7046d7bd91569ac1c9a38a3ed0386d0f",
         ["memories/3.0.24"] = "859680b38a77f04cc8f81ab7a5fe7f40a617cc2a",
+        ["memories/3.0.25"] = "246157a7ff8e2dcd8d356c833a77a02514490d2f",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Gets the shared released declaration hashes; absent entries have no released v2 declaration.</summary>
@@ -50,6 +51,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/3.0.18"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
         ["memories/3.0.23"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
         ["memories/3.0.24"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
+        ["memories/3.0.25"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Gets the selected Platform checkout.</summary>

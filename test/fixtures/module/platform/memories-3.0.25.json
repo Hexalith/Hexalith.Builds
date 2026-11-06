@@ -1,0 +1,931 @@
+{
+  "schema": "hexalith.module-manifest.v2",
+  "modules": [
+    {
+      "identity": {
+        "moduleId": "memories",
+        "servers": [
+          {
+            "id": "server",
+            "appId": "memories",
+            "resourceId": "memories",
+            "enabled": true,
+            "required": true
+          },
+          {
+            "id": "clock",
+            "appId": "memories-access-telemetry-clock",
+            "resourceId": "memories-access-telemetry-clock",
+            "enabled": true,
+            "required": true
+          },
+          {
+            "id": "telemetry",
+            "appId": "memories-access-telemetry",
+            "resourceId": "memories-access-telemetry",
+            "enabled": true,
+            "required": true
+          },
+          {
+            "id": "domain",
+            "appId": "memories-domain-service",
+            "resourceId": "memories-domain-service",
+            "enabled": true,
+            "required": true
+          }
+        ],
+        "dependencies": [
+          "eventstore"
+        ]
+      },
+      "runtime": {
+        "dapr": [
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStoreIntegration:StateStore:StateStoreName",
+            "servers": [
+              "server"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "Ingestion:WorkflowPayloadStore:StateStoreName",
+            "servers": [
+              "server"
+            ]
+          },
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "EventStoreIntegration:Routing:PubSubName",
+            "servers": [
+              "server"
+            ]
+          },
+          {
+            "role": "secrets",
+            "capability": "secret",
+            "recoveryClass": "live-authority-only",
+            "configurationKey": "Memories:SecretStoreName",
+            "servers": [
+              "server"
+            ]
+          },
+          {
+            "role": "telemetry-state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "AccessTelemetryLifecycle:StateStoreName",
+            "servers": [
+              "telemetry"
+            ]
+          },
+          {
+            "role": "telemetry-secrets",
+            "capability": "secret",
+            "recoveryClass": "live-authority-only",
+            "configurationKey": "AccessTelemetryLifecycle:SecretStoreName",
+            "servers": [
+              "server",
+              "telemetry"
+            ]
+          },
+          {
+            "role": "telemetry-secrets",
+            "capability": "secret",
+            "recoveryClass": "live-authority-only",
+            "configurationKey": "Clock:SecretStoreName",
+            "servers": [
+              "clock"
+            ]
+          },
+          {
+            "role": "telemetry-configuration",
+            "capability": "configuration",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "AccessTelemetryLifecycle:ConfigurationStoreName",
+            "servers": [
+              "server",
+              "telemetry"
+            ]
+          },
+          {
+            "role": "conversation",
+            "capability": "conversation",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "NaturalLanguage:DaprComponentName",
+            "servers": [
+              "server"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:ReadModelStore:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          }
+        ],
+        "extensions": [
+          {
+            "packageId": "Hexalith.Memories.Aspire",
+            "configurationInputs": [
+              {
+                "key": "Memories:LlmComponentPath",
+                "source": "configuration",
+                "reference": "llmcomponentpath"
+              },
+              {
+                "key": "ConnectionStrings:redis",
+                "source": "configuration",
+                "reference": "redis"
+              },
+              {
+                "key": "ConnectionStrings:falkordb",
+                "source": "configuration",
+                "reference": "falkordb"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:StateStoreComponentPath",
+                "source": "configuration",
+                "reference": "statestorecomponentpath"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:ConfigurationStoreComponentPath",
+                "source": "configuration",
+                "reference": "configurationstorecomponentpath"
+              },
+              {
+                "key": "Clock:SecretStoreName",
+                "source": "configuration",
+                "reference": "secretstorename"
+              },
+              {
+                "key": "Clock:SigningKeySecretName",
+                "source": "configuration",
+                "reference": "signingkeysecretname"
+              },
+              {
+                "key": "Clock:Sources",
+                "source": "configuration",
+                "reference": "sources"
+              },
+              {
+                "key": "Clock:AllowDevelopmentSources",
+                "source": "configuration",
+                "reference": "allowdevelopmentsources"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:MarkerKeyReference",
+                "source": "configuration",
+                "reference": "markerkeyreference"
+              },
+              {
+                "key": "NaturalLanguage:RetryWorkerEnabled",
+                "source": "configuration",
+                "reference": "retryworkerenabled"
+              },
+              {
+                "key": "Embedding:CredentialNamespace",
+                "source": "configuration",
+                "reference": "credentialnamespace"
+              },
+              {
+                "key": "OrphanSemanticIndex:Enabled",
+                "source": "configuration",
+                "reference": "orphan-semantic-index-reconciliation"
+              },
+              {
+                "key": "IsStubBackfill:Enabled",
+                "source": "configuration",
+                "reference": "is-stub-backfill"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:DeploymentId",
+                "source": "configuration",
+                "reference": "deploymentid"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:ConfigurationEpoch",
+                "source": "configuration",
+                "reference": "configurationepoch"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:ComponentProfileHash",
+                "source": "configuration",
+                "reference": "componentprofilehash"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:AttestationVerificationKey",
+                "source": "configuration",
+                "reference": "attestationverificationkey"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:MarkerKeyGeneration",
+                "source": "configuration",
+                "reference": "markerkeygeneration"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:CapacityEvidenceId",
+                "source": "configuration",
+                "reference": "capacityevidenceid"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:PhysicalReclamationEvidenceId",
+                "source": "configuration",
+                "reference": "physicalreclamationevidenceid"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:PhysicalReclamationReporterImageDigest",
+                "source": "configuration",
+                "reference": "physicalreclamationreporterimagedigest"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:RetentionSource",
+                "source": "configuration",
+                "reference": "retentionsource"
+              },
+              {
+                "key": "retentionSeconds",
+                "source": "configuration",
+                "reference": "access-telemetry-config"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:Enabled",
+                "source": "configuration",
+                "reference": "accesstelemetrylifecycle-enabled"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:CapabilityEvidence",
+                "source": "configuration",
+                "reference": "capabilityevidence"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:CapabilityEvidence:ExactVersionPinned",
+                "source": "configuration",
+                "reference": "exactversionpinned"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:CapabilityEvidence:ValidUntilUtc",
+                "source": "configuration",
+                "reference": "validuntilutc"
+              },
+              {
+                "key": "WorkflowReplaySafety:Enabled",
+                "source": "configuration",
+                "reference": "workflowreplaysafety-enabled"
+              },
+              {
+                "key": "AccessTelemetryLifecycle:ClockSignerKeyEpoch",
+                "source": "configuration",
+                "reference": "clocksignerkeyepoch"
+              },
+              {
+                "key": "Clock:SignerKeyEpoch",
+                "source": "configuration",
+                "reference": "signerkeyepoch"
+              },
+              {
+                "key": "TenantEventRouting:AutoProvisionRoutedTenants",
+                "source": "configuration",
+                "reference": "autoprovisionroutedtenants"
+              },
+              {
+                "key": "Clock:SourceAuthenticationTokens",
+                "source": "dynamic-secret",
+                "reference": "clock-source-authentication-tokens"
+              },
+              {
+                "key": "Conversation:ProviderApiKey",
+                "source": "secret",
+                "reference": "conversation-provider-api-key"
+              },
+              {
+                "key": "Authentication:JwtBearer:Authority",
+                "source": "configuration",
+                "reference": "authority"
+              },
+              {
+                "key": "Authentication:JwtBearer:Issuer",
+                "source": "configuration",
+                "reference": "issuer"
+              },
+              {
+                "key": "Authentication:JwtBearer:Audience",
+                "source": "configuration",
+                "reference": "audience"
+              },
+              {
+                "key": "Authentication:JwtBearer:RequireHttpsMetadata",
+                "source": "configuration",
+                "reference": "requirehttpsmetadata"
+              },
+              {
+                "key": "Authentication:JwtBearer:TenantClaimName",
+                "source": "configuration",
+                "reference": "tenantclaimname"
+              },
+              {
+                "key": "Authentication:JwtBearer:ValidAlgorithms",
+                "source": "configuration",
+                "reference": "validalgorithms"
+              },
+              {
+                "key": "Authentication:JwtBearer:SigningKey",
+                "source": "secret",
+                "reference": "server-jwt-signing-key"
+              },
+              {
+                "key": "Memories:AppChannelToken",
+                "source": "secret",
+                "reference": "app-channel-token"
+              },
+              {
+                "key": "Memories:DaprApiToken",
+                "source": "secret",
+                "reference": "dapr-api-token"
+              },
+              {
+                "key": "EmbeddingProviders:Google:ApiBaseUrl",
+                "source": "configuration",
+                "reference": "apibaseurl"
+              },
+              {
+                "key": "EmbeddingProviders:Ollama:BaseUrl",
+                "source": "configuration",
+                "reference": "baseurl"
+              },
+              {
+                "key": "EmbeddingProviders:Ollama:OidcTokenEndpoint",
+                "source": "configuration",
+                "reference": "oidctokenendpoint"
+              },
+              {
+                "key": "EmbeddingProviders:Ollama:OidcClientId",
+                "source": "configuration",
+                "reference": "oidcclientid"
+              },
+              {
+                "key": "EmbeddingProviders:Ollama:OidcScope",
+                "source": "configuration",
+                "reference": "oidcscope"
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "server": "server",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          },
+          {
+            "server": "domain",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          },
+          {
+            "server": "clock",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          },
+          {
+            "server": "telemetry",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          }
+        ],
+        "providerExceptions": [
+          {
+            "name": "memories-falkordb-graph",
+            "capability": "Graph indexing through the FalkorDB provider SDK",
+            "owner": "memories",
+            "surface": "memories-api",
+            "transitional": false
+          },
+          {
+            "name": "memories-redis-search-vector",
+            "capability": "Redis search and vector indexing through StackExchange.Redis",
+            "owner": "memories",
+            "surface": "memories-api",
+            "transitional": false
+          },
+          {
+            "name": "memories-set-nx-preflight-dedup",
+            "capability": "Redis SET NX preflight deduplication",
+            "owner": "memories",
+            "surface": "memories-api",
+            "transitional": false
+          },
+          {
+            "name": "memories-redis-coordination",
+            "capability": "Direct Redis queue and coordination state during migration",
+            "owner": "memories",
+            "surface": "memories-api",
+            "transitional": true
+          }
+        ]
+      },
+      "surfaces": {
+        "interfaces": [
+          {
+            "name": "memories-api",
+            "server": "server",
+            "protocol": "http",
+            "routePrefix": "/api/v1",
+            "exposure": "public",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [],
+            "operations": [
+              {
+                "name": "ingest",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "search",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "cases",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "tenant",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              }
+            ]
+          },
+          {
+            "name": "clock-attestation",
+            "server": "clock",
+            "protocol": "http",
+            "routePrefix": "/v1/time/attest",
+            "exposure": "internal-only",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [
+              "memories",
+              "memories-access-telemetry"
+            ],
+            "operations": [
+              {
+                "name": "attest",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              }
+            ],
+            "invocationRules": [
+              {
+                "caller": "memories",
+                "path": "/v1/time/attest",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "memories-access-telemetry",
+                "path": "/v1/time/attest",
+                "verbs": [
+                  "POST"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "telemetry-lifecycle",
+            "server": "telemetry",
+            "protocol": "http",
+            "routePrefix": "/v1/access-telemetry",
+            "exposure": "internal-only",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [
+              "memories"
+            ],
+            "operations": [
+              {
+                "name": "write",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "heartbeat",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "validate",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              }
+            ],
+            "invocationRules": [
+              {
+                "caller": "memories",
+                "path": "/v1/access-telemetry/write",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "memories",
+                "path": "/v1/access-telemetry/heartbeat",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "memories",
+                "path": "/v1/access-telemetry/validate",
+                "verbs": [
+                  "POST"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "telemetry-inspection",
+            "server": "telemetry",
+            "protocol": "http",
+            "routePrefix": "/v1/access-telemetry/inspect",
+            "exposure": "internal-only",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [
+              "memories-access-telemetry-inspector"
+            ],
+            "operations": [
+              {
+                "name": "inspect",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              }
+            ],
+            "invocationRules": [
+              {
+                "caller": "memories-access-telemetry-inspector",
+                "path": "/v1/access-telemetry/inspect",
+                "verbs": [
+                  "GET"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "telemetry-reclamation-evidence",
+            "server": "telemetry",
+            "protocol": "http",
+            "routePrefix": "/v1/access-telemetry/physical-reclamation-evidence",
+            "exposure": "internal-only",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [
+              "access-telemetry-adapter"
+            ],
+            "operations": [
+              {
+                "name": "physical-reclamation-evidence",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              }
+            ],
+            "invocationRules": [
+              {
+                "caller": "access-telemetry-adapter",
+                "path": "/v1/access-telemetry/physical-reclamation-evidence",
+                "verbs": [
+                  "POST"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "memories-domain",
+            "server": "domain",
+            "protocol": "http",
+            "routePrefix": "/",
+            "exposure": "internal-only",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [
+              "eventstore"
+            ],
+            "operations": [
+              {
+                "name": "process",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "admin-operational-index-metadata",
+                "kind": "administration",
+                "authorizationPolicy": "authenticated"
+              }
+            ],
+            "invocationRules": [
+              {
+                "caller": "eventstore",
+                "path": "/process",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/admin/operational-index-metadata",
+                "verbs": [
+                  "POST"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "integration": {
+        "topics": [
+          {
+            "name": "memories-events",
+            "role": "events",
+            "deadLetter": {
+              "strategy": "none"
+            },
+            "subscription": {
+              "server": "server",
+              "route": "/events/ingest"
+            }
+          }
+        ],
+        "secrets": [
+          {
+            "name": "clock-signing-key",
+            "configurationKey": "Clock:SigningKeySecretName"
+          },
+          {
+            "name": "telemetry-marker-key",
+            "configurationKey": "AccessTelemetryLifecycle:MarkerKeyReference"
+          },
+          {
+            "name": "conversation-provider-api-key",
+            "configurationKey": "Conversation:ProviderApiKey"
+          },
+          {
+            "name": "server-jwt-signing-key",
+            "configurationKey": "Authentication:JwtBearer:SigningKey"
+          },
+          {
+            "name": "app-channel-token",
+            "configurationKey": "Memories:AppChannelToken"
+          },
+          {
+            "name": "dapr-api-token",
+            "configurationKey": "Memories:DaprApiToken"
+          }
+        ],
+        "dynamicSecretNamespaces": [
+          {
+            "name": "embedding-credentials",
+            "owner": "memories",
+            "configurationKey": "Embedding:CredentialNamespace"
+          },
+          {
+            "name": "clock-source-authentication-tokens",
+            "owner": "memories",
+            "configurationKey": "Clock:SourceAuthenticationTokens"
+          }
+        ],
+        "identityNeeds": [],
+        "egress": [
+          {
+            "name": "authenticated-utc",
+            "protocol": "https",
+            "destination": "Clock:Sources:<index>:Endpoint"
+          },
+          {
+            "name": "server-oidc-metadata",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority/.well-known/openid-configuration"
+          },
+          {
+            "name": "server-oidc-jwks",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority -> metadata.jwks_uri"
+          },
+          {
+            "name": "conversation-provider",
+            "protocol": "https",
+            "destination": "Memories:LlmComponentPath -> conversation.openai provider endpoint"
+          },
+          {
+            "name": "embedding-google-provider",
+            "protocol": "tcp",
+            "destination": "EmbeddingProviders:Google:ApiBaseUrl"
+          },
+          {
+            "name": "embedding-ollama-provider",
+            "protocol": "tcp",
+            "destination": "EmbeddingProviders:Ollama:BaseUrl"
+          },
+          {
+            "name": "embedding-ollama-oidc-token",
+            "protocol": "https",
+            "destination": "EmbeddingProviders:Ollama:OidcTokenEndpoint (OIDC client-credential mode only)"
+          }
+        ],
+        "providers": [
+          {
+            "name": "redis-search",
+            "capability": "search and vector storage",
+            "tenancy": {
+              "mode": "per-environment",
+              "configurationKey": "ConnectionStrings:redis"
+            }
+          },
+          {
+            "name": "falkordb",
+            "capability": "graph storage",
+            "tenancy": {
+              "mode": "per-environment",
+              "configurationKey": "ConnectionStrings:falkordb"
+            }
+          }
+        ],
+        "workers": [
+          {
+            "name": "embedding-retry",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "NaturalLanguage:RetryWorkerEnabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "telemetry-delivery",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "AccessTelemetryLifecycle:Enabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "telemetry-heartbeat",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "AccessTelemetryLifecycle:Enabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "telemetry-retention",
+            "kind": "destructive-retention",
+            "disableControl": {
+              "configurationKey": "AccessTelemetryLifecycle:Enabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "telemetry-capability-probe",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "AccessTelemetryLifecycle:Enabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "workflow-replay-safety",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "WorkflowReplaySafety:Enabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "routed-tenant-provisioning",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "TenantEventRouting:AutoProvisionRoutedTenants",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "orphan-semantic-index-reconciliation",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "OrphanSemanticIndex:Enabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "is-stub-backfill",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "IsStubBackfill:Enabled",
+              "disabledValue": false
+            }
+          }
+        ]
+      },
+      "lifecycle": {
+        "readiness": [
+          {
+            "server": "server",
+            "kind": "http",
+            "endpoint": "/ready"
+          },
+          {
+            "server": "domain",
+            "kind": "http",
+            "endpoint": "/ready"
+          },
+          {
+            "server": "clock",
+            "kind": "http",
+            "endpoint": "/ready"
+          },
+          {
+            "server": "telemetry",
+            "kind": "http",
+            "endpoint": "/ready"
+          }
+        ],
+        "tasks": [],
+        "recoveryHooks": [],
+        "fenceHooks": [],
+        "replay": {
+          "reopenBeforeReplay": false
+        },
+        "startup": {},
+        "criticalFlows": [
+          {
+            "name": "ingest-and-search",
+            "surface": "memories-api",
+            "operations": [
+              "ingest",
+              "search"
+            ]
+          }
+        ],
+        "smokeSurfaces": [],
+        "classification": {
+          "changeClass": "additive",
+          "reason": "Declare Memories core and access telemetry services with explicit provider exceptions."
+        },
+        "recoveryInventory": []
+      },
+      "tests": [
+        {
+          "name": "functional-retention",
+          "executor": "python3",
+          "entry": "tools/verify-access-telemetry-lifecycle.py",
+          "reportFormat": "trx",
+          "executionTimeoutSeconds": 14400,
+          "stopTimeoutSeconds": 900,
+          "mode": "source",
+          "daprRuntimeVersion": "1.18.1"
+        }
+      ]
+    }
+  ]
+}
