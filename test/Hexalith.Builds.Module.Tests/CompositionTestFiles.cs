@@ -375,7 +375,7 @@ internal static class CompositionTestFiles
                     schema = "hexalith.g4-startup-failure.v1", runId = run.GetProperty("runId").GetString(), ruleId = "HXR031", resource = "resources", appId = "-", status = "exclusive-resource-held", blockingRunId = mode == "claim-conflict" ? new string('f', 32) : "invalid-owner",
                 }));
             }
-            if (mode.StartsWith("unsafe-", StringComparison.Ordinal) || mode == "diagnostics-io")
+            if (mode.StartsWith("unsafe-", StringComparison.Ordinal) || mode is "diagnostics-io" or "status-unready" or "foreign-failure")
             {
                 using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan));
                 var run = document.RootElement;
@@ -388,7 +388,8 @@ internal static class CompositionTestFiles
                 }
                 File.WriteAllText(Path.Combine(workspace, "startup-failure.json"), System.Text.Json.JsonSerializer.Serialize(new
                 {
-                    schema = "hexalith.g4-startup-failure.v1", runId = run.GetProperty("runId").GetString(), ruleId = "HXR027", resource = "eventstore", appId = "eventstore", status = "unhealthy",
+                    schema = "hexalith.g4-startup-failure.v1", runId = mode == "foreign-failure" ? new string('f', 32) : run.GetProperty("runId").GetString(), ruleId = "HXR027", resource = "eventstore", appId = "eventstore",
+                    status = mode == "unsafe-status" ? "<unsafe>" : mode == "status-unready" ? "fault-InvalidDataException;stage=owner-preparation" : "unhealthy",
                     unreadyResources = new[] { new { name = mode == "unsafe-name" ? "<unsafe>" : "eventstore", kind = "project", state = "Unhealthy", detail = mode == "unsafe-detail" ? "<unsafe>" : "HTTP 503" } },
                     failingTask = mode == "unsafe-task" ? "<unsafe>" : "verify",
                 }));
