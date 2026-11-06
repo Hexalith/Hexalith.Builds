@@ -13,7 +13,7 @@ runs:
       run: git -c submodule.recurse=false submodule update --init
 
     - name: Initialize .NET
-      uses: actions/setup-dotnet@v6.0.0
+      uses: actions/setup-dotnet@v6.1.0
 
     - name: Setup Node.js
       uses: actions/setup-node@v7.1.0
