@@ -142,7 +142,7 @@ if ($overrideEnabled -cne 'false') {
 $cohortFamilies = [ordered] @{
     'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '4.1.0' }
     'Hexalith.McpCli.' = @{ Property = 'HexalithMcpCliVersion'; Version = '2.0.1' }
-    'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '7.0.4' }
+    'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '7.0.5' }
 }
 [xml] $catalog = Get-Content -LiteralPath $catalogPath -Raw
 foreach ($family in $cohortFamilies.GetEnumerator()) {
