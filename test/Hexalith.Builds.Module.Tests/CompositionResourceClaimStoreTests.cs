@@ -219,20 +219,22 @@ public sealed class CompositionResourceClaimStoreTests
         try
         {
             string[] owners = [CompositionRunPlanFactory.NewRunId(), CompositionRunPlanFactory.NewRunId()];
-            Task<bool>[] attempts = [.. owners.Select(owner => Task.Run(
-                () =>
-                {
-                    try
+            Task<bool>[] attempts =
+            [
+                .. owners.Select(owner => Task.Run(
+                    () =>
                     {
-                        new CompositionResourceClaimStore(root).Acquire(owner, ["actual-exclusive-resource"]);
-                        return true;
-                    }
-                    catch (CompositionResourceClaimConflictException)
-                    {
-                        return false;
-                    }
-                },
-                TestContext.Current.CancellationToken)),
+                        try
+                        {
+                            new CompositionResourceClaimStore(root).Acquire(owner, ["actual-exclusive-resource"]);
+                            return true;
+                        }
+                        catch (CompositionResourceClaimConflictException)
+                        {
+                            return false;
+                        }
+                    },
+                    TestContext.Current.CancellationToken)),
             ];
             bool[] acquired = await Task.WhenAll(attempts).ConfigureAwait(true);
             acquired.Count(value => value).ShouldBe(1);

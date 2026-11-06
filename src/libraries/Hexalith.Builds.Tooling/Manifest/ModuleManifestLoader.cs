@@ -159,10 +159,11 @@ public static partial class ModuleManifestLoader
     private static ManifestLoadResult CreateResult(ModuleManifest? manifest, IEnumerable<ToolDiagnostic> diagnostics) =>
         new(
             manifest,
-            [.. diagnostics
-                .OrderBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
-                .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
-                .ThenBy(diagnostic => diagnostic.Hint, StringComparer.Ordinal),
+            [
+                .. diagnostics
+                    .OrderBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
+                    .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
+                    .ThenBy(diagnostic => diagnostic.Hint, StringComparer.Ordinal),
             ]);
 
     private static string MessageFor(string ruleId) => ruleId switch

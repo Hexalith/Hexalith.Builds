@@ -223,13 +223,15 @@ internal static class ReadinessEvidenceValidator
         IEnumerable<ToolDiagnostic> diagnostics,
         ToolFailureCategory category)
     {
-        IReadOnlyList<ToolDiagnostic> orderedDiagnostics = [.. diagnostics
-            .OrderBy(diagnostic => diagnostic.Source, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.Row, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.Location, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.Hint, StringComparer.Ordinal),
+        IReadOnlyList<ToolDiagnostic> orderedDiagnostics =
+        [
+            .. diagnostics
+                .OrderBy(diagnostic => diagnostic.Source, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.Row, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.Location, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.Hint, StringComparer.Ordinal),
         ];
         ToolDiagnostic firstDiagnostic = orderedDiagnostics.Count == 0
             ? new ToolDiagnostic(

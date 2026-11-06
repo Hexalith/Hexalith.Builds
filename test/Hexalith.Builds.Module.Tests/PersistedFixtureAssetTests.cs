@@ -62,10 +62,12 @@ public sealed class PersistedFixtureAssetTests
         using JsonDocument expected = JsonDocument.Parse(File.ReadAllText(expectedPath));
         int expectedExitCode = expected.RootElement.GetProperty("exitCode").GetInt32();
         string expectedOutcomeExitCode = expected.RootElement.GetProperty("outcomeExitCode").GetString() ?? string.Empty;
-        IReadOnlyList<string> expectedRuleIds = [.. expected.RootElement
-            .GetProperty("ruleIds")
-            .EnumerateArray()
-            .Select(ruleId => ruleId.GetString() ?? string.Empty),
+        IReadOnlyList<string> expectedRuleIds =
+        [
+            .. expected.RootElement
+                .GetProperty("ruleIds")
+                .EnumerateArray()
+                .Select(ruleId => ruleId.GetString() ?? string.Empty),
         ];
         bool expectedIsValid = expected.RootElement.GetProperty("isValid").GetBoolean();
 

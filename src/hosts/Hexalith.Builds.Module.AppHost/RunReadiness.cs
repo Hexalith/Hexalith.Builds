@@ -554,12 +554,13 @@ internal static class RunReadiness
                 || string.Equals(current.Snapshot.State?.Text, KnownResourceStates.Finished, StringComparison.Ordinal)));
 
     private static IResource[] RunnableResources(DistributedApplicationModel model) =>
-        [.. model.Resources
-            .Where(resource => resource is ProjectResource or ContainerResource or ExecutableResource
-                && !resource.Annotations.OfType<ExplicitStartupAnnotation>().Any()
-                && !string.Equals(resource.GetType().Name, "ProjectRebuilderResource", StringComparison.Ordinal))
-            .OrderBy(resource => StartupOrder(resource.Name))
-            .ThenBy(resource => resource.Name, StringComparer.Ordinal),
+        [
+            .. model.Resources
+                .Where(resource => resource is ProjectResource or ContainerResource or ExecutableResource
+                    && !resource.Annotations.OfType<ExplicitStartupAnnotation>().Any()
+                    && !string.Equals(resource.GetType().Name, "ProjectRebuilderResource", StringComparison.Ordinal))
+                .OrderBy(resource => StartupOrder(resource.Name))
+                .ThenBy(resource => resource.Name, StringComparer.Ordinal),
         ];
 
     private static int StartupOrder(string resourceName) => resourceName switch
@@ -571,10 +572,12 @@ internal static class RunReadiness
         _ => 4,
     };
 
-    private static string SafeStatus(string value) => new([.. value
-        .Where(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '/' or '.' or ':' or ';' or '=' or ' ')
-        .Take(120),
-    ]);
+    private static string SafeStatus(string value) => new(
+        [
+            .. value
+                .Where(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '/' or '.' or ':' or ';' or '=' or ' ')
+                .Take(120),
+        ]);
 
     private static string Status(ResourceNotificationService notifications, string resourceName) =>
         notifications.TryGetCurrentState(resourceName, out ResourceEvent? current)

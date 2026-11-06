@@ -18,9 +18,11 @@ internal sealed class DaprDirectEndpointSubscriber : IDistributedApplicationEven
     {
         _ = eventing.Subscribe<BeforeStartEvent>((startup, _) =>
         {
-            ExecutableResource[] sidecars = [.. startup.Model.Resources
-                .OfType<ExecutableResource>()
-                .Where(resource => resource.Name.EndsWith("-dapr-cli", StringComparison.Ordinal)),
+            ExecutableResource[] sidecars =
+            [
+                .. startup.Model.Resources
+                    .OfType<ExecutableResource>()
+                    .Where(resource => resource.Name.EndsWith("-dapr-cli", StringComparison.Ordinal)),
             ];
             if (sidecars.Length == 0)
             {

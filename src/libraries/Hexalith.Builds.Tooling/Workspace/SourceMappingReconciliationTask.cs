@@ -144,15 +144,21 @@ public sealed class SourceMappingReconciliationTask : ITask
             List<ITaskItem> selectedPackages = [];
             foreach ((string identity, string packagePath) in packageRoots)
             {
-                string[] absent = [.. Projects.Select(project => project.GetMetadata("FullPath"))
-                    .Where(path => IsInPackageRoot(packagePath, path) && (!File.Exists(path) || !HasGitMarker(packagePath)))
-                    .Distinct(FilesystemPathRules.Comparison(packagePath) == StringComparison.OrdinalIgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal),
-                    ];
-                string[] catalogIds = [.. PackageVersions.Select(version => version.ItemSpec)
-                    .Where(id => MatchesIdentity(id, identity)),
+                string[] absent =
+                [
+                    .. Projects.Select(project => project.GetMetadata("FullPath"))
+                        .Where(path => IsInPackageRoot(packagePath, path) && (!File.Exists(path) || !HasGitMarker(packagePath)))
+                        .Distinct(FilesystemPathRules.Comparison(packagePath) == StringComparison.OrdinalIgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal),
                 ];
-                string[] fallbackPaths = [.. absent.Where(path => !catalogIds.Any(id =>
-                    id.Equals(Path.GetFileNameWithoutExtension(path), StringComparison.OrdinalIgnoreCase))),
+                string[] catalogIds =
+                [
+                    .. PackageVersions.Select(version => version.ItemSpec)
+                        .Where(id => MatchesIdentity(id, identity)),
+                ];
+                string[] fallbackPaths =
+                [
+                    .. absent.Where(path => !catalogIds.Any(id =>
+                        id.Equals(Path.GetFileNameWithoutExtension(path), StringComparison.OrdinalIgnoreCase))),
                 ];
                 if (fallbackPaths.Length > 1)
                 {
@@ -200,9 +206,11 @@ public sealed class SourceMappingReconciliationTask : ITask
                 // Package mode chooses only from the central catalog. A working-tree
                 // project may be stale, and its PackageId cannot select a package.
                 string stem = Path.GetFileNameWithoutExtension(path);
-                string[] candidates = [.. PackageVersions.Select(version => version.ItemSpec)
-                    .Where(id => MatchesIdentity(id, packageRoot.Identity))
-                    .Distinct(StringComparer.OrdinalIgnoreCase),
+                string[] candidates =
+                [
+                    .. PackageVersions.Select(version => version.ItemSpec)
+                        .Where(id => MatchesIdentity(id, packageRoot.Identity))
+                        .Distinct(StringComparer.OrdinalIgnoreCase),
                 ];
                 string packageId = candidates.FirstOrDefault(id => id.Equals(stem, StringComparison.OrdinalIgnoreCase))
                     ?? (candidates.Length == 1 ? candidates[0] : string.Empty);

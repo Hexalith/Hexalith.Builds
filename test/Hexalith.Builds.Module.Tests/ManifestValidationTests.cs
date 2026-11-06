@@ -204,8 +204,10 @@ public sealed class ManifestValidationTests
         using JsonDocument schema = JsonDocument.Parse(File.ReadAllText(
             Path.Combine(FindRepositoryRoot(), "schemas", "hexalith.module-manifest.v1.json")));
         JsonElement platform = schema.RootElement.GetProperty("$defs").GetProperty("platform");
-        string[] required = [.. platform.GetProperty("required").EnumerateArray()
-            .Select(element => element.GetString() ?? string.Empty),
+        string[] required =
+        [
+            .. platform.GetProperty("required").EnumerateArray()
+                .Select(element => element.GetString() ?? string.Empty),
         ];
         required.ShouldBe([
             "eventStoreVersion",
@@ -506,16 +508,18 @@ public sealed class ManifestValidationTests
         string directory = CreateFixtureDirectory();
         try
         {
-            object[] modules = [.. Enumerable.Range(0, moduleCount)
-                .Select(index => (object)new
-                {
-                    id = $"module-{index}",
-                    descriptorAssembly = "assemblies/module-a.dll",
-                    dependencies = index == 0 ? Array.Empty<string>() : [$"module-{index - 1}"],
-                    domain = $"domain-{index}",
-                    applicationId = $"application-{index}",
-                    resourceId = $"resource-{index}",
-                }),
+            object[] modules =
+            [
+                .. Enumerable.Range(0, moduleCount)
+                    .Select(index => (object)new
+                    {
+                        id = $"module-{index}",
+                        descriptorAssembly = "assemblies/module-a.dll",
+                        dependencies = index == 0 ? Array.Empty<string>() : [$"module-{index - 1}"],
+                        domain = $"domain-{index}",
+                        applicationId = $"application-{index}",
+                        resourceId = $"resource-{index}",
+                    }),
             ];
             string json = JsonSerializer.Serialize(new
             {

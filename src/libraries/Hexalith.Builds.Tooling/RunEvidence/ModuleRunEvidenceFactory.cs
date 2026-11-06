@@ -322,12 +322,14 @@ public static partial class ModuleRunEvidenceFactory
             return new ModuleRunTopology([], null);
         }
 
-        IReadOnlyList<ModuleRunModule> modules = [.. manifest.Modules.Select(module => new ModuleRunModule(
-            module.Id,
-            module.Domain,
-            module.ApplicationId,
-            module.ResourceId,
-            module.DescriptorAssembly)),
+        IReadOnlyList<ModuleRunModule> modules =
+        [
+            .. manifest.Modules.Select(module => new ModuleRunModule(
+                module.Id,
+                module.Domain,
+                module.ApplicationId,
+                module.ResourceId,
+                module.DescriptorAssembly)),
         ];
         return new ModuleRunTopology(modules, manifest.Platform);
     }

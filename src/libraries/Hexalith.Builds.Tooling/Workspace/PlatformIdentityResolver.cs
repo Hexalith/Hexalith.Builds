@@ -54,13 +54,14 @@ internal static partial class PlatformIdentityResolver
     /// <param name="warning">Whether the command is in source mode.</param>
     /// <returns>Result diagnostics.</returns>
     internal static IReadOnlyList<ToolDiagnostic> Diagnostics(IEnumerable<PlatformIdentityFinding> findings, bool warning) =>
-        [.. findings.Select(finding => new ToolDiagnostic(
-            finding.RuleId,
-            ToolPhase.Prerequisite,
-            warning ? ToolFailureCategory.None : ToolFailureCategory.PrerequisiteUnavailable,
-            finding.Message,
-            finding.Path,
-            finding.Hint)),
+        [
+            .. findings.Select(finding => new ToolDiagnostic(
+                finding.RuleId,
+                ToolPhase.Prerequisite,
+                warning ? ToolFailureCategory.None : ToolFailureCategory.PrerequisiteUnavailable,
+                finding.Message,
+                finding.Path,
+                finding.Hint)),
         ];
 
     /// <summary>Resolves the committed identity and all locally observable conditions.</summary>

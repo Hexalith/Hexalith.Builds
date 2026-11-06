@@ -61,8 +61,10 @@ public sealed class G4P0AcceptanceValidatorTests
     [Fact]
     public void NegativeControlsCoverEveryAcceptanceRule()
     {
-        HashSet<string> rules = [.. Directory.EnumerateFiles(EvidenceFixturePath.Get("acceptance/negative"), "*.expected.json")
-            .Select(path => JsonDocument.Parse(File.ReadAllText(path)).RootElement.GetProperty("outcomeRuleId").GetString()!),
+        HashSet<string> rules =
+        [
+            .. Directory.EnumerateFiles(EvidenceFixturePath.Get("acceptance/negative"), "*.expected.json")
+                .Select(path => JsonDocument.Parse(File.ReadAllText(path)).RootElement.GetProperty("outcomeRuleId").GetString()!),
         ];
 
         rules.ShouldBe(["HXE200", "HXE201", "HXE202", "HXE203", "HXE204", "HXE205", "HXE206", "HXE207", "HXE208"], ignoreOrder: true);

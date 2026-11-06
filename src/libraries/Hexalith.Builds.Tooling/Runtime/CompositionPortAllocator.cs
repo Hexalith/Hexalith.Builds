@@ -121,11 +121,12 @@ public static class CompositionPortAllocator
                     ports[13],
                     ports[14],
                     ports[15],
-                    [.. Enumerable.Range(0, moduleCount).Select(index =>
-                    {
-                        int start = _basePortsPerRun + (index * 5) + 1;
-                        return new CompositionDaprSidecarPorts(ports[start], ports[start + 1], ports[start + 2], ports[start + 3]);
-                    }),
+                    [
+                        .. Enumerable.Range(0, moduleCount).Select(index =>
+                        {
+                            int start = _basePortsPerRun + (index * 5) + 1;
+                            return new CompositionDaprSidecarPorts(ports[start], ports[start + 1], ports[start + 2], ports[start + 3]);
+                        }),
                     ],
                     includeSecondEventStore ? ports[secondEventStoreStart] : null,
                     secondSidecar);

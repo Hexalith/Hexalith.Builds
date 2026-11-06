@@ -105,10 +105,12 @@ public static class CompositionWriterProtocolCutover
             return false;
         }
 
-        string[] unhealthy = [.. results.EnumerateObject()
-            .Where(entry => entry.Value.TryGetProperty("status", out JsonElement status)
-                && string.Equals(status.GetString(), "Unhealthy", StringComparison.Ordinal))
-            .Select(entry => entry.Name),
+        string[] unhealthy =
+        [
+            .. results.EnumerateObject()
+                .Where(entry => entry.Value.TryGetProperty("status", out JsonElement status)
+                    && string.Equals(status.GetString(), "Unhealthy", StringComparison.Ordinal))
+                .Select(entry => entry.Name),
         ];
         return unhealthy.Length == 1 && string.Equals(unhealthy[0], _writerProtocolCheck, StringComparison.Ordinal);
     }

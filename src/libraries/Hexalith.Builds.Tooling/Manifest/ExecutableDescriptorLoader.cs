@@ -186,8 +186,9 @@ public static class ExecutableDescriptorLoader
         IEnumerable<ToolDiagnostic> diagnostics) => new(
             modules,
             ui,
-            [.. diagnostics.OrderBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
-                .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal),
+            [
+                .. diagnostics.OrderBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
+                    .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal),
             ]);
 
     private static string? ResolveAssembly(

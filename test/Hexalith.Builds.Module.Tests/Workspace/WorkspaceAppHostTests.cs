@@ -269,8 +269,10 @@ public sealed class WorkspaceAppHostTests
             probes.Count.ShouldBe(5);
             probes.ShouldAllBe(probe => probe.Endpoint == "/ready");
             using HttpListener listener = new();
-            int[] sidecarPorts = [.. builder.Resources.Where(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation"))
-                .Select(resource => resource.Annotations.OfType<DaprSidecarAnnotation>().Single().Sidecar.Annotations.OfType<DaprSidecarOptionsAnnotation>().Single().Options.DaprHttpPort!.Value),
+            int[] sidecarPorts =
+            [
+                .. builder.Resources.Where(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation"))
+                    .Select(resource => resource.Annotations.OfType<DaprSidecarAnnotation>().Single().Sidecar.Annotations.OfType<DaprSidecarOptionsAnnotation>().Single().Options.DaprHttpPort!.Value),
             ];
             foreach (int port in sidecarPorts)
             {

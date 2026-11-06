@@ -104,11 +104,13 @@ public static partial class PlatformManifestValidator
             }
         }
 
-        ToolDiagnostic[] ordered = [.. diagnostics.Distinct()
-            .OrderBy(diagnostic => diagnostic.Source, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.Message, StringComparer.Ordinal),
+        ToolDiagnostic[] ordered =
+        [
+            .. diagnostics.Distinct()
+                .OrderBy(diagnostic => diagnostic.Source, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.Message, StringComparer.Ordinal),
         ];
         return new PlatformManifestValidationResult(
             ordered.Length == 0 ? declarations.AsReadOnly() : null,
@@ -687,10 +689,12 @@ public static partial class PlatformManifestValidator
             }
         }
 
-        HashSet<string> enabledServers = [.. ArrayValue(ObjectValue(module, "identity"), "servers")
-            .Where(server => ObjectValue(server, "enabled").ValueKind == JsonValueKind.True)
-            .Select(server => StringValue(server, "id"))
-            .OfType<string>(),
+        HashSet<string> enabledServers =
+        [
+            .. ArrayValue(ObjectValue(module, "identity"), "servers")
+                .Where(server => ObjectValue(server, "enabled").ValueKind == JsonValueKind.True)
+                .Select(server => StringValue(server, "id"))
+                .OfType<string>(),
         ];
         HashSet<string> subscriptions = new(StringComparer.Ordinal);
         JsonElement[] topics = ArrayValue(ObjectValue(module, "integration"), "topics");
@@ -727,8 +731,10 @@ public static partial class PlatformManifestValidator
                 JsonElement deadLetter = ObjectValue(topic, "deadLetter");
                 if (StringValue(deadLetter, "strategy") == "topic")
                 {
-                    string?[] targets = [.. topics.Where(target => StringValue(target, "name") == StringValue(deadLetter, "topic") && StringValue(target, "role") == StringValue(topic, "role"))
-                        .Select(PhysicalTopic).Distinct(StringComparer.Ordinal),
+                    string?[] targets =
+                    [
+                        .. topics.Where(target => StringValue(target, "name") == StringValue(deadLetter, "topic") && StringValue(target, "role") == StringValue(topic, "role"))
+                            .Select(PhysicalTopic).Distinct(StringComparer.Ordinal),
                     ];
                     if (targets.Length != 1 || targets[0] is not { } target || target.Contains('*', StringComparison.Ordinal) || target == PhysicalTopic(topic))
                     {

@@ -333,9 +333,11 @@ internal static class G4P0AcceptanceValidator
         try
         {
             using ZipArchive archive = ZipFile.OpenRead(path);
-            ZipArchiveEntry[] nuspecs = [.. archive.Entries.Where(entry =>
-                !entry.FullName.Contains('/', StringComparison.Ordinal)
-                && entry.FullName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase)),
+            ZipArchiveEntry[] nuspecs =
+            [
+                .. archive.Entries.Where(entry =>
+                    !entry.FullName.Contains('/', StringComparison.Ordinal)
+                    && entry.FullName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase)),
             ];
             if (nuspecs.Length != 1 || nuspecs[0].Length > _maximumRecordBytes)
             {

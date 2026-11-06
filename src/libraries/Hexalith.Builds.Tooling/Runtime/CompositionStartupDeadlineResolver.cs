@@ -127,10 +127,12 @@ public static class CompositionStartupDeadlineResolver
 
     private static string Bound(string value)
     {
-        string safe = new([.. value
-            .Where(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '/' or '.' or ':' or ';' or '=' or ' ')
-            .Take(120),
-        ]);
+        string safe = new(
+            [
+                .. value
+                    .Where(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '/' or '.' or ':' or ';' or '=' or ' ')
+                    .Take(120),
+            ]);
         return string.IsNullOrWhiteSpace(safe) ? "-" : safe;
     }
 }
