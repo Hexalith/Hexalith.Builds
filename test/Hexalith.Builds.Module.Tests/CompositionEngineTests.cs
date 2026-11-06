@@ -677,6 +677,9 @@ public sealed class CompositionEngineTests
     [InlineData("never", "HXR021")]
     [InlineData("foreign", "HXR022")]
     [InlineData("cause", "HXR027")]
+    [InlineData("status-unready", "HXR027")]
+    [InlineData("unsafe-status", "HXR022")]
+    [InlineData("foreign-failure", "HXR022")]
     [InlineData("unsafe-name", "HXR022")]
     [InlineData("unsafe-detail", "HXR022")]
     [InlineData("unsafe-task", "HXR022")]
@@ -714,6 +717,24 @@ public sealed class CompositionEngineTests
             {
                 elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(30));
                 result.Result.Diagnostics.Single().Message.ShouldContain("cutover-activation-HTTP-403");
+            }
+
+            if (mode == "status-unready")
+            {
+                ToolDiagnostic diagnostic = result.Result.Diagnostics.Single();
+                TestContext.Current.TestOutputHelper!.WriteLine(JsonSerializer.Serialize(diagnostic));
+                diagnostic.Phase.ShouldBe(ToolPhase.Topology);
+                diagnostic.Category.ShouldBe(ToolFailureCategory.TopologyOrLifecycle);
+                diagnostic.Field.ShouldBe("eventstore");
+                diagnostic.Hint.ShouldBe("Inspect the preserved startup diagnostics.");
+                diagnostic.Message.ShouldContain("Unready resource 'eventstore' last='HTTP 503' task='verify'");
+                diagnostic.Message.ShouldContain("fault-InvalidDataException;stage=owner-preparation");
+            }
+
+            if (mode is "unsafe-status" or "foreign-failure")
+            {
+                result.Result.Diagnostics.Single().Message.ShouldContain("The AppHost failure document does not describe this run.");
+                result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Message.Contains("fault-InvalidDataException", StringComparison.Ordinal));
             }
 
             _ = result.RunId.ShouldNotBeNull();

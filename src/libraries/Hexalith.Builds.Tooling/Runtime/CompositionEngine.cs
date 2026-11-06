@@ -1130,7 +1130,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     failure.RuleId,
                     ToolPhase.Topology,
                     ToolFailureCategory.TopologyOrLifecycle,
-                    $"Unready resource '{resource.Name}' last='{resource.Detail ?? resource.State}'{task}.",
+                    $"Unready resource '{resource.Name}' last='{resource.Detail ?? resource.State}'{task} status='{failure.Status}'.",
                     resource.Name,
                     "Inspect the preserved startup diagnostics.")),
             ];
