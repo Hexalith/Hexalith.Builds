@@ -114,13 +114,13 @@ internal static class CompositionTestFiles
     public static void WriteScript(string path, string body)
     {
         _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        string contents = "#!/bin/sh\n" + body + "\n";
         if (OperatingSystem.IsWindows())
         {
-            File.WriteAllText(path, contents);
+            File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
             return;
         }
 
+        string contents = "#!/bin/sh\n" + body + "\n";
         // A concurrent fork can inherit a parent writer until exec, even after this thread closes it.
         // Publish in a completed child so other test launches never inherit the script's writer.
         using Process writer = new()
