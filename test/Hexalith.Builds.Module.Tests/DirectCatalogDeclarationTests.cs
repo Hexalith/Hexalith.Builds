@@ -112,8 +112,19 @@ public sealed class DirectCatalogDeclarationTests
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
         mapping.IdentityFindings.ShouldBeEmpty();
         mapping.PlatformIdentity.ShouldNotBeNull().IsPlatformRepository.ShouldBe(platformRoot);
-        string snapshot = Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "parties-3.1.0.json");
-        byte[] bytes = await File.ReadAllBytesAsync(snapshot, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string source = Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "parties-3.1.0.json");
+        byte[] bytes = await File.ReadAllBytesAsync(source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string releasedRoot = Path.Combine(fixture.Directory, "released-parties");
+        _ = Directory.CreateDirectory(releasedRoot);
+        string snapshot = Path.Combine(releasedRoot, "hexalith.module-manifest.v2.json");
+        await File.WriteAllBytesAsync(snapshot, bytes, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        foreach (JsonNode? test in JsonNode.Parse(bytes)!["modules"]![0]!["tests"]!.AsArray())
+        {
+            string project = Path.Combine(releasedRoot, test!["entry"]!.GetValue<string>());
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(project)!);
+            await File.WriteAllTextAsync(project, "<Project />", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
         string hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
         hash.ShouldBe("d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348");
         CompositionDeclarationOptions options = new(mapping, [snapshot]) { ActiveModule = "parties" };
