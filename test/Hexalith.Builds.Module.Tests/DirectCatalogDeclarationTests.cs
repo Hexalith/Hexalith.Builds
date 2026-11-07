@@ -99,6 +99,40 @@ public sealed class DirectCatalogDeclarationTests
         refusal.Message.ShouldContain(unknownVersion ? "does not match Builds catalog version '999.0.0'" : "differs from its source provenance");
     }
 
+    /// <summary>Checks the actual released Parties declaration against the verified direct catalog without allocating resources.</summary>
+    /// <param name="platformRoot">Whether the command starts at Platform or its direct consuming module.</param>
+    /// <returns>The exact public source, snapshot and dependency closure assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReleasedParties310UsesVerifiedDirectCatalogAndExactSourceFixtureAsync(bool platformRoot)
+    {
+        using WorkspaceGitFixture fixture = await CreateReleasedWorkspaceAsync(false).ConfigureAwait(true);
+        string manifest = platformRoot ? Path.Combine(fixture.Directory, "platform", "hexalith-platform.json") : fixture.Manifest;
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        mapping.IdentityFindings.ShouldBeEmpty();
+        mapping.PlatformIdentity.ShouldNotBeNull().IsPlatformRepository.ShouldBe(platformRoot);
+        string snapshot = Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "parties-3.1.0.json");
+        byte[] bytes = await File.ReadAllBytesAsync(snapshot, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
+        hash.ShouldBe("d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348");
+        CompositionDeclarationOptions options = new(mapping, [snapshot]) { ActiveModule = "parties" };
+        string version = options.CatalogVersion("parties", snapshot);
+        version.ShouldBe("3.1.0");
+        options.ReleaseCommits["parties/" + version].ShouldBe("50904cc4ba53c9b0b2c082d5872a0d276be8f5c3");
+        options.ReleaseSnapshotHashes["parties/" + version].ShouldBe(hash);
+        options.ReleaseCommits.ContainsKey("parties/3.0.0").ShouldBeFalse();
+        options.ReleaseSnapshotHashes.ContainsKey("parties/3.0.0").ShouldBeFalse();
+
+        IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformModuleDeclaration> closure = CompositionDeclarationClosure.Load(options);
+
+        closure.Select(item => CompositionDeclarationClosure.Id(item.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["eventstore", "memories", "parties", "tenants"]);
+        closure.Single(item => CompositionDeclarationClosure.Id(item.Declaration) == "parties").Source.ShouldBe(snapshot);
+        string nested = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform", "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
+        File.Exists(nested).ShouldBeFalse();
+        Directory.Exists(Path.Combine(fixture.Checkout, "source-mapping")).ShouldBeFalse();
+    }
+
     private static async Task<WorkspaceGitFixture> CreateReleasedWorkspaceAsync(bool unknownVersion)
     {
         WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
