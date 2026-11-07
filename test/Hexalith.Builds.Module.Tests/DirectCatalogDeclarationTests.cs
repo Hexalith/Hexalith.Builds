@@ -138,7 +138,9 @@ public sealed class DirectCatalogDeclarationTests
         IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformModuleDeclaration> closure = CompositionDeclarationClosure.Load(options);
 
         closure.Select(item => CompositionDeclarationClosure.Id(item.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["eventstore", "memories", "parties", "tenants"]);
-        closure.Single(item => CompositionDeclarationClosure.Id(item.Declaration) == "parties").Source.ShouldBe(snapshot);
+        Hexalith.Builds.Tooling.Manifest.PlatformModuleDeclaration parties = closure.Single(item => CompositionDeclarationClosure.Id(item.Declaration) == "parties");
+        Path.GetFullPath(parties.Source).ShouldBe(snapshot);
+        parties.SourceHash.ShouldBe(hash.ToUpperInvariant());
         string nested = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform", "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
         File.Exists(nested).ShouldBeFalse();
         Directory.Exists(Path.Combine(fixture.Checkout, "source-mapping")).ShouldBeFalse();
