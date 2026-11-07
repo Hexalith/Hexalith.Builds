@@ -109,6 +109,11 @@ public sealed class CompositionPrerequisiteProbeTests
                 CompositionTestFiles.CreateDocker(root),
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
 
+            foreach (ToolDiagnostic diagnostic in result.Diagnostics)
+            {
+                TestContext.Current.TestOutputHelper!.WriteLine(diagnostic.Message);
+            }
+
             result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXR013"]);
             result.Diagnostics[0].Hint.ShouldNotBeNull().ShouldContain(CompositionToolchainPins.DaprRuntimeVersion);
         }
@@ -300,6 +305,142 @@ public sealed class CompositionPrerequisiteProbeTests
             using CancellationTokenSource cancellation = new(TimeSpan.FromMilliseconds(200));
             _ = await Should.ThrowAsync<OperationCanceledException>(() => CompositionPrerequisiteProbe.ProbeAspireAsync(
                 aspire, TimeSpan.FromSeconds(5), cancellation.Token)).ConfigureAwait(true);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Retains bounded Docker launch metadata without disclosing process inputs.</summary>
+    /// <param name="mode">The controlled launch condition.</param>
+    /// <param name="nativeCode">The actual native launch refusal.</param>
+    /// <returns>The original fail-closed prerequisite assertions.</returns>
+    [Theory]
+    [InlineData("missing", 2)]
+    [InlineData("permission-denied", 13)]
+    [InlineData("held-writer", 26)]
+    public async Task DockerLaunchFailuresRetainSafeNativeCodeAsync(string mode, int nativeCode)
+    {
+        SkipOnWindows();
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            const string sensitiveDetail = "private-docker-launch-detail-must-not-leak";
+            string home = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion);
+            string docker = Path.Combine(root, sensitiveDetail);
+            if (mode != "missing")
+            {
+                CompositionTestFiles.WriteScript(docker, "echo '" + sensitiveDetail + "'");
+            }
+
+            if (mode == "permission-denied" && !OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(docker, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            }
+
+            using FileStream? writer = mode == "held-writer"
+                ? new(docker, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)
+                : null;
+            CompositionPrerequisiteResult result = await CompositionPrerequisiteProbe.ProbeAsync(home, docker, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXR010"]);
+            result.IsAvailable.ShouldBeFalse();
+            result.DaprHome.ShouldBeNull();
+            ToolDiagnostic diagnostic = result.Diagnostics.Single();
+            diagnostic.Message.ShouldBe($"The container runtime required for run-scoped resources is unavailable. Docker probe observed 'not started' (start failure Win32, native error {nativeCode}); stdout empty; stderr empty.");
+            diagnostic.Message.Length.ShouldBeLessThan(512);
+            diagnostic.Message.ShouldNotContain(root);
+            diagnostic.Message.ShouldNotContain(sensitiveDetail);
+            diagnostic.Phase.ShouldBe(ToolPhase.Prerequisite);
+            diagnostic.Category.ShouldBe(ToolFailureCategory.PrerequisiteUnavailable);
+            diagnostic.Hint.ShouldBe("Start Docker and make its CLI available before retrying.");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Distinguishes empty output from a nonzero Docker exit without retaining its output values.</summary>
+    /// <param name="empty">Whether the fake command produces no standard output.</param>
+    /// <returns>The exact safe completion observation.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DockerCompletionFailuresRetainSafeObservationAsync(bool empty)
+    {
+        SkipOnWindows();
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            const string sensitiveDetail = "private-docker-output-must-not-leak";
+            string home = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion);
+            string docker = Path.Combine(root, sensitiveDetail);
+            string body = empty
+                ? "printf '%s' '" + sensitiveDetail + "' >&2\nexit 0"
+                : "printf '%s' '" + sensitiveDetail + "'\nprintf '%s' '" + sensitiveDetail + "' >&2\nexit 17";
+            CompositionTestFiles.WriteScript(docker, body);
+
+            CompositionPrerequisiteResult result = await CompositionPrerequisiteProbe.ProbeAsync(home, docker, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXR010"]);
+            result.IsAvailable.ShouldBeFalse();
+            result.DaprHome.ShouldBeNull();
+            string observed = empty ? "exit 0" : "exit 17";
+            string output = empty ? "empty" : "present";
+            ToolDiagnostic diagnostic = result.Diagnostics.Single();
+            diagnostic.Message.ShouldBe($"The container runtime required for run-scoped resources is unavailable. Docker probe observed '{observed}'; stdout {output}; stderr present.");
+            diagnostic.Message.ShouldNotContain(root);
+            diagnostic.Message.ShouldNotContain(sensitiveDetail);
+            diagnostic.Message.ShouldNotContain("start failure");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Preserves the original Docker timeout and refuses it as an unavailable prerequisite.</summary>
+    /// <returns>The bounded actual timeout observation.</returns>
+    [Fact]
+    public async Task DockerTimeoutRetainsSafeObservationAsync()
+    {
+        SkipOnWindows();
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string home = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion);
+            string docker = Path.Combine(root, "slow-docker");
+            CompositionTestFiles.WriteScript(docker, "sleep 30");
+
+            CompositionPrerequisiteResult result = await CompositionPrerequisiteProbe.ProbeAsync(home, docker, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXR010"]);
+            result.IsAvailable.ShouldBeFalse();
+            result.Diagnostics.Single().Message.ShouldBe("The container runtime required for run-scoped resources is unavailable. Docker probe observed 'timed out'; stdout empty; stderr empty.");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Preserves caller cancellation through the unchanged bounded Docker process path.</summary>
+    /// <returns>The original cancellation exception assertion.</returns>
+    [Fact]
+    public async Task DockerProbePropagatesCancellationAsync()
+    {
+        SkipOnWindows();
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string home = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion);
+            string docker = Path.Combine(root, "cancelled-docker");
+            CompositionTestFiles.WriteScript(docker, "sleep 30");
+            using CancellationTokenSource cancellation = new(TimeSpan.FromMilliseconds(200));
+
+            _ = await Should.ThrowAsync<OperationCanceledException>(() => CompositionPrerequisiteProbe.ProbeAsync(home, docker, cancellation.Token)).ConfigureAwait(true);
         }
         finally
         {
