@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "a3ee8f978a9cf2dc904b496f79b71844d408e164",
+  "generatedFromRevision": "cbdde2650b95477ea15c9549b0f208e3f6fdf31b",
   "catalogPath": "Props/Directory.Packages.props",
   "catalogSha256": "8a48af3fe775cb3effaad3ef0e30395e3c1971b84dec34d936274f764245fb9c",
   "catalogRawSha256": "c66fb47d42633dd51bdfa6f31216ee22412e0137a664bf472edf72ac103ad5d1",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-07T01:47:31.1816258+00:00",
+    "auditedAtUtc": "2026-11-07T01:59:26.6245397+00:00",
     "refreshedFamilies": [
       "hexalith-parties"
     ],
@@ -181,7 +181,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "a3ee8f978a9cf2dc904b496f79b71844d408e164",
+    "repositoryRevision": "cbdde2650b95477ea15c9549b0f208e3f6fdf31b",
     "sha256": "4fd380f3e08d00300b619409df5918a4824eaae2fb33e80f9abd844d3c74f92f",
     "entries": [
       {
@@ -14402,8 +14402,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-07T01:47:31.1816258+00:00",
-        "generatedFromRevision": "a3ee8f978a9cf2dc904b496f79b71844d408e164",
+        "auditedAtUtc": "2026-11-07T01:59:26.6245397+00:00",
+        "generatedFromRevision": "cbdde2650b95477ea15c9549b0f208e3f6fdf31b",
         "familySelectionSha256": "f9c79dae1e0ecd2dda46413fc60353b551a0d6a7e2d66b40d5510f2856fed899",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "db122a3d99c3929455c7c6e6810d69e1b0c6440fab45f1043c2d9b4675f41e49",
