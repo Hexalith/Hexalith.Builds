@@ -109,16 +109,49 @@ internal static class CompositionTestFiles
     /// </summary>
     /// <param name="path">The script path.</param>
     /// <param name="body">The script body after the shebang.</param>
+    /// <exception cref="IOException">The isolated fixture writer cannot complete successfully.</exception>
+    /// <exception cref="TimeoutException">The isolated fixture writer exceeds its finite allowance.</exception>
     public static void WriteScript(string path, string body)
     {
         _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
-        if (!OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindows())
         {
-            File.SetUnixFileMode(
-                path,
-                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
+            return;
         }
+
+        string contents = "#!/bin/sh\n" + body + "\n";
+
+        // A concurrent fork can inherit a parent writer until exec, even after this thread closes it.
+        // Publish in a completed child so other test launches never inherit the script's writer.
+        using Process writer = new()
+        {
+            StartInfo = CompositionProcess.CreateStartInfo(
+                "/bin/sh",
+                ["-c", "umask 077; printf '%s' \"$2\" > \"$1\"", "hexalith-fixture-writer", path, contents],
+                null,
+                null),
+        };
+        if (!writer.Start())
+        {
+            throw new IOException("The isolated fixture writer did not start.");
+        }
+
+        writer.StandardInput.Close();
+        if (!writer.WaitForExit(5000))
+        {
+            CompositionProcess.Kill(writer);
+            throw new TimeoutException("The isolated fixture writer exceeded five seconds.");
+        }
+
+        if (writer.ExitCode != 0)
+        {
+            throw new IOException("The isolated fixture writer did not complete successfully.");
+        }
+
+        File.SetUnixFileMode(
+            path,
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
     }
 
     /// <summary>

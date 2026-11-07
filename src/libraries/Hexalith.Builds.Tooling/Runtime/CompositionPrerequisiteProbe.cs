@@ -54,7 +54,7 @@ public static partial class CompositionPrerequisiteProbe
         {
             diagnostics.Add(Unavailable(
                 "HXR010",
-                "The container runtime required for run-scoped resources is unavailable.",
+                "The container runtime required for run-scoped resources is unavailable. " + DockerObservation(docker),
                 "docker",
                 "Start Docker and make its CLI available before retrying."));
         }
@@ -158,6 +158,21 @@ public static partial class CompositionPrerequisiteProbe
 
         Match match = ServiceVersionRegex().Match(line);
         return match.Success ? match.Groups["v"].Value : null;
+    }
+
+    private static string DockerObservation(CompositionProcessResult result)
+    {
+        string observed = result switch
+        {
+            { Started: false } => "not started",
+            { TimedOut: true } => "timed out",
+            _ => "exit " + result.ExitCode.ToString(CultureInfo.InvariantCulture),
+        };
+        string nativeDetail = result.StartFailure?.NativeErrorCode is int code ? $", native error {code.ToString(CultureInfo.InvariantCulture)}" : string.Empty;
+        string startDetail = result.StartFailure is { } failure ? $" (start failure {failure.Kind}{nativeDetail})" : string.Empty;
+        string output = string.IsNullOrWhiteSpace(result.Output) ? "empty" : "present";
+        string error = string.IsNullOrWhiteSpace(result.ErrorOutput) ? "empty" : "present";
+        return $"Docker probe observed '{observed}'{startDetail}; stdout {output}; stderr {error}.";
     }
 
     private static async Task<bool> VerifyDaprAsync(string home, List<ToolDiagnostic> diagnostics, string expectedRuntime, CancellationToken cancellationToken)
