@@ -121,6 +121,7 @@ internal static class CompositionTestFiles
         }
 
         string contents = "#!/bin/sh\n" + body + "\n";
+
         // A concurrent fork can inherit a parent writer until exec, even after this thread closes it.
         // Publish in a completed child so other test launches never inherit the script's writer.
         using Process writer = new()
