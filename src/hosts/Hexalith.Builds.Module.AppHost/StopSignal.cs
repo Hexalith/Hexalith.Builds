@@ -27,7 +27,7 @@ internal sealed class StopSignal : IAsyncDisposable
     private StopSignal(CompositionRunPlan plan, Stream? input = null)
     {
         _plan = plan;
-        _input = input ?? Console.OpenStandardInput();
+        _input = input ?? StopSignalInput.Open();
         _listener = ListenAsync();
     }
 
