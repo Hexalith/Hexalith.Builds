@@ -259,6 +259,10 @@ public sealed class StopSignalTests
                 StdinChildProgress.Mark("readiness-write");
                 await WriteReadinessToOwnedOutputAsync().ConfigureAwait(true);
                 StdinChildProgress.Mark("readiness-written");
+                await StdinChildAcknowledgement.PublishAsync(
+                    Environment.GetEnvironmentVariable(StdinChildProgress.DirectoryVariable).ShouldNotBeNull(),
+                    Environment.GetEnvironmentVariable(StdinChildAcknowledgement.TokenVariable).ShouldNotBeNull(),
+                    TestContext.Current.CancellationToken).ConfigureAwait(true);
                 StdinChildProgress.Mark("await-stop-command");
                 _ = await Should.ThrowAsync<OperationCanceledException>(() => Task.Delay(Timeout.InfiniteTimeSpan, next.Token)
                     .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken)).ConfigureAwait(true);
@@ -294,27 +298,21 @@ public sealed class StopSignalTests
         }
     }
 
-    /// <summary>Waits for the actual marker with the existing bound and a fixed child-status diagnostic.</summary>
+    /// <summary>Waits once for the exact private acknowledgement within the original readiness bound.</summary>
     /// <param name="child">The owned control child.</param>
-    /// <param name="output">The owned control output.</param>
-    /// <param name="directory">The actual child stage directory.</param>
-    /// <exception cref="TimeoutException">The actual marker did not arrive within the original bound.</exception>
+    /// <param name="directory">The actual child directory.</param>
+    /// <param name="token">The exact parent-bound ready token.</param>
+    /// <exception cref="TimeoutException">The explicit acknowledgement missed the original bound.</exception>
     /// <returns>The focused control operation.</returns>
-    private static async Task ReadReadinessFromChildAsync(Process child, List<string> output, string directory)
+    private static async Task ReadReadinessFromChildAsync(Process child, string directory, string token)
     {
+        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        deadline.CancelAfter(TimeSpan.FromSeconds(10));
         try
         {
-            string? line;
-            do
-            {
-                line = await child.StandardOutput.ReadLineAsync(TestContext.Current.CancellationToken)
-                    .AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
-                line = line.ShouldNotBeNull(string.Join(Environment.NewLine, output));
-                output.Add(line);
-            }
-            while (line != "stdin-control ready-for-command");
+            await StdinChildAcknowledgement.WaitAsync(directory, token, deadline.Token).ConfigureAwait(true);
         }
-        catch (TimeoutException failure)
+        catch (OperationCanceledException failure) when (!TestContext.Current.CancellationToken.IsCancellationRequested)
         {
             throw new TimeoutException($"stdin-control readiness timed out; childExited={child.HasExited};{StdinChildProgress.Describe(directory)}.", failure);
         }
@@ -477,20 +475,23 @@ public sealed class StopSignalTests
         start.ArgumentList.Add($"{typeof(StopSignalTests).FullName}.{nameof(StandardInputDisposalDrainsWhileOwnerWriterRemainsOpenAsync)}");
         start.Environment[childVariable] = "1";
         start.Environment[StdinChildProgress.DirectoryVariable] = directory;
+        string token = Guid.NewGuid().ToString("N");
+        start.Environment[StdinChildAcknowledgement.TokenVariable] = token;
         using Process child = new() { StartInfo = start };
         child.Start().ShouldBeTrue();
+        Task<string> output = Task.FromResult(string.Empty);
+        Task<string> error = Task.FromResult(string.Empty);
         try
         {
-            Task<string> error = child.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
-            List<string> output = [];
-            await ReadReadinessFromChildAsync(child, output, directory).ConfigureAwait(true);
+            output = child.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
+            error = child.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
+            await ReadReadinessFromChildAsync(child, directory, token).ConfigureAwait(true);
 
             // Neither a stop command nor EOF was sent until both pending reads actually drained.
             await child.StandardInput.WriteLineAsync(CompositionEnvironment.StopCommand).ConfigureAwait(true);
             await child.StandardInput.FlushAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
-            Task<string> tail = child.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
             await child.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            child.ExitCode.ShouldBe(0, string.Join(Environment.NewLine, output) + await tail.ConfigureAwait(true) + await error.ConfigureAwait(true));
+            child.ExitCode.ShouldBe(0, await output.ConfigureAwait(true) + await error.ConfigureAwait(true));
         }
         finally
         {
@@ -501,6 +502,7 @@ public sealed class StopSignalTests
             }
 
             StdinChildProgress.Report(directory, child.HasExited);
+            _ = await Task.WhenAll(output, error).ConfigureAwait(true);
         }
     }
 }

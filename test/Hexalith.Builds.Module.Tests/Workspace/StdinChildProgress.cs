@@ -75,7 +75,7 @@ internal static class StdinChildProgress
         try
         {
             FileInfo file = new(Path.Combine(directory, "child-progress.json"));
-            if (!file.Exists || file.LinkTarget is not null || file.Length > 1024)
+            if (!IsSafeProgressFile(file))
             {
                 return "stage=unobserved";
             }
@@ -95,10 +95,10 @@ internal static class StdinChildProgress
             int minimum = value.GetProperty("minimumWorkers").GetInt32();
             int maximum = value.GetProperty("maximumWorkers").GetInt32();
             JsonElement retain = value.GetProperty("retained");
-            return driver is null || io is null || !_stages.Contains(driver) || !_stages.Contains(io)
-                || runtime is null || runtime.Length > 32 || !Version.TryParse(runtime, out Version? version)
-                || processors is < 1 or > 65536 || minimum < 0 || maximum < 1 || minimum > maximum
-                || retain.ValueKind is not (JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null)
+            return !HasKnownStages(driver, io)
+                || !TryGetRuntimeVersion(runtime, out Version? version)
+                || !HasValidSchedulerCounts(processors, minimum, maximum)
+                || !HasValidRetention(retain)
                     ? "stage=unobserved"
                     : $"driver={driver};io={io};retained={retain.GetRawText()};runtime={version};processors={processors};workers={minimum}/{maximum}";
         }
@@ -113,6 +113,24 @@ internal static class StdinChildProgress
     /// <param name="exited">The actual child exit state.</param>
     internal static void Report(string directory, bool exited) =>
         TestContext.Current.TestOutputHelper?.WriteLine($"stdin-child-progress childExited={exited};{Describe(directory)}");
+
+    private static bool IsSafeProgressFile(FileInfo file) =>
+        file.Exists && file.LinkTarget is null && file.Length <= 1024;
+
+    private static bool HasKnownStages(string? driver, string? io) =>
+        driver is not null && io is not null && _stages.Contains(driver) && _stages.Contains(io);
+
+    private static bool TryGetRuntimeVersion(string? runtime, out Version? version)
+    {
+        version = null;
+        return runtime?.Length <= 32 && Version.TryParse(runtime, out version);
+    }
+
+    private static bool HasValidSchedulerCounts(int processors, int minimum, int maximum) =>
+        processors is >= 1 and <= 65536 && minimum >= 0 && maximum >= 1 && minimum <= maximum;
+
+    private static bool HasValidRetention(JsonElement value) =>
+        value.ValueKind is JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null;
 
     private static void Persist(string directory)
     {
