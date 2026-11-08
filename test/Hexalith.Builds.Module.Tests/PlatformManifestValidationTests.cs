@@ -678,6 +678,202 @@ public sealed class PlatformManifestValidationTests
         result.Declarations.ShouldNotBeNull().Count.ShouldBe(1);
     }
 
+    /// <summary>Verifies an EventStore extension entry passes both schemas and stays separate from owner extensions.</summary>
+    [Fact]
+    public void EventStoreExtensionEntryPassesPublishedAndEmbeddedSchemas()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.runtime.eventStoreExtensions", EventStoreExtensions());
+        string manifest = workspace.Save();
+        using JsonDocument input = JsonDocument.Parse(File.ReadAllText(manifest));
+        PublishedSchema().Evaluate(input.RootElement).IsValid.ShouldBeTrue();
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        result.Diagnostics.ShouldBeEmpty();
+        JsonElement extension = result.Declarations.ShouldNotBeNull().Single().Declaration.GetProperty("runtime").GetProperty("eventStoreExtensions")[0];
+        extension.GetProperty("extensionId").GetString().ShouldBe("sample");
+        extension.GetProperty("extensionApiMajor").GetInt32().ShouldBe(1);
+    }
+
+    /// <summary>Verifies the EventStore extension entry is closed and requires its identity, major and inputs.</summary>
+    /// <param name="path">The changed field below the entry.</param>
+    /// <param name="json">The replacement value or missing sentinel.</param>
+    /// <param name="rule">The expected rule.</param>
+    [Theory]
+    [InlineData("daprRoles", "[\"events\"]", "HXP002")]
+    [InlineData("secrets", "[]", "HXP002")]
+    [InlineData("extensionApiMajor", "0", "HXP002")]
+    [InlineData("extensionApiMajor", "1.5", "HXP002")]
+    [InlineData("extensionApiMajor", "<missing>", "HXP015")]
+    [InlineData("extensionId", "\"Not An Identifier\"", "HXP002")]
+    [InlineData("packageId", "\"../Hexalith.Sample\"", "HXP002")]
+    [InlineData("providerException", "\"unadmitted-provider\"", "HXP002")]
+    public void EventStoreExtensionEntryIsClosed(string path, string json, string rule)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.runtime.eventStoreExtensions", EventStoreExtensions());
+        workspace.Change("modules.0.runtime.eventStoreExtensions.0." + path, json);
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == rule && diagnostic.Field == "modules[0].runtime.eventStoreExtensions[0]." + path);
+    }
+
+    /// <summary>Verifies secret inputs are refused without an admitted AD-9 exception, naming module, package and key.</summary>
+    /// <param name="source">The secret source.</param>
+    [Theory]
+    [InlineData("secret")]
+    [InlineData("dynamic-secret")]
+    public void EventStoreExtensionSecretInputIsRefused(string source)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.runtime.eventStoreExtensions", EventStoreExtensions());
+        workspace.Change("modules.0.runtime.eventStoreExtensions.0.configurationInputs.0.source", JsonSerializer.Serialize(source));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        ToolDiagnostic diagnostic = result.Diagnostics.ShouldHaveSingleItem();
+        diagnostic.RuleId.ShouldBe("HXP025");
+        diagnostic.Field.ShouldBe("modules[0].runtime.eventStoreExtensions[0].configurationInputs[0].source");
+        diagnostic.Message.ShouldStartWith("eventstore-extension-secret:");
+        diagnostic.Message.ShouldContain("Module 'sample'");
+        diagnostic.Message.ShouldContain("'Hexalith.Sample.EventStoreExtensions'");
+        diagnostic.Message.ShouldContain("'Sample:ExtensionSetting'");
+    }
+
+    /// <summary>Verifies an extension input that binds a declared Dapr role by key or role name is refused.</summary>
+    /// <param name="field">The input field.</param>
+    /// <param name="value">The value binding the role.</param>
+    [Theory]
+    [InlineData("key", "Dapr:EventsComponent")]
+    [InlineData("reference", "events")]
+    public void EventStoreExtensionDaprRoleIsRefused(string field, string value)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.runtime.eventStoreExtensions", EventStoreExtensions());
+        workspace.Change("modules.0.runtime.eventStoreExtensions.0.configurationInputs.0." + field, JsonSerializer.Serialize(value));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        ToolDiagnostic diagnostic = result.Diagnostics.Single(diagnostic => diagnostic.RuleId == "HXP026");
+        diagnostic.Field.ShouldBe("modules[0].runtime.eventStoreExtensions[0].configurationInputs[0].key");
+        diagnostic.Message.ShouldContain("Module 'sample'");
+        diagnostic.Message.ShouldContain("'Hexalith.Sample.EventStoreExtensions'");
+        diagnostic.Message.ShouldContain("Dapr role 'events'");
+    }
+
+    /// <summary>Verifies the Memories module's own named AD-9 exception admits only that exception's own secret.</summary>
+    /// <param name="reference">The secret reference.</param>
+    /// <param name="admitted">Whether the reference is the exception's own secret.</param>
+    [Theory]
+    [InlineData("memories-falkordb-graph", true)]
+    [InlineData("memories-falkordb-graph-credential", true)]
+    [InlineData("memories-redis-coordination-credential", false)]
+    [InlineData("provider-access", false)]
+    public void NamedProviderExceptionAdmitsOnlyItsOwnSecret(string reference, bool admitted)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.identity.moduleId", "\"memories\"");
+        workspace.Change("modules.0.runtime.providerExceptions", OwnedProviderException("memories"));
+        workspace.Change("modules.0.runtime.eventStoreExtensions", EventStoreExtensions());
+        workspace.Change("modules.0.runtime.eventStoreExtensions.0.providerException", "\"memories-falkordb-graph\"");
+        workspace.Change("modules.0.runtime.eventStoreExtensions.0.configurationInputs.0.source", "\"secret\"");
+        workspace.Change("modules.0.runtime.eventStoreExtensions.0.configurationInputs.0.reference", JsonSerializer.Serialize(reference));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        if (admitted)
+        {
+            result.Diagnostics.ShouldBeEmpty();
+        }
+        else
+        {
+            ToolDiagnostic diagnostic = result.Diagnostics.ShouldHaveSingleItem();
+            diagnostic.RuleId.ShouldBe("HXP025");
+            diagnostic.Message.ShouldContain("'" + reference + "'");
+            diagnostic.Message.ShouldContain("'memories-falkordb-graph'");
+        }
+    }
+
+    /// <summary>Verifies an extension can name only an AD-9 exception the spine admits for its module, declared as the module's own.</summary>
+    /// <param name="owner">The declared exception owner, or null when the module declares none.</param>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("memories")]
+    [InlineData("sample")]
+    public void ProviderExceptionMustBeOwnedByTheDeclaringModule(string? owner)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.runtime.providerExceptions", owner is null ? "[]" : OwnedProviderException(owner));
+        workspace.Change("modules.0.runtime.eventStoreExtensions", EventStoreExtensions());
+        workspace.Change("modules.0.runtime.eventStoreExtensions.0.providerException", "\"memories-falkordb-graph\"");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        ToolDiagnostic diagnostic = result.Diagnostics.ShouldHaveSingleItem();
+        diagnostic.RuleId.ShouldBe("HXP027");
+        diagnostic.Field.ShouldBe("modules[0].runtime.eventStoreExtensions[0].providerException");
+        diagnostic.Message.ShouldContain("Module 'sample'");
+    }
+
+    /// <summary>Verifies a duplicate extension identity or package across modules names both modules and the duplicate.</summary>
+    /// <param name="field">The duplicated field.</param>
+    /// <param name="kind">The reported duplicate kind.</param>
+    [Theory]
+    [InlineData("extensionId", "id")]
+    [InlineData("packageId", "package")]
+    public void DuplicateEventStoreExtensionAcrossModulesNamesBothModules(string field, string kind)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.runtime.eventStoreExtensions", EventStoreExtensions());
+        string first = workspace.Save("a.json");
+        workspace.Change("modules.0.identity.moduleId", "\"second\"");
+        workspace.Change("modules.0.identity.servers.0.appId", "\"second-api\"");
+        workspace.Change("modules.0.identity.servers.0.resourceId", "\"second-api-host\"");
+        workspace.Change(
+            "modules.0.runtime.eventStoreExtensions.0." + (field == "extensionId" ? "packageId" : "extensionId"),
+            field == "extensionId" ? "\"Hexalith.Second.EventStoreExtensions\"" : "\"second\"");
+        if (field == "packageId")
+        {
+            workspace.Change("modules.0.runtime.eventStoreExtensions.0.packageId", "\"hexalith.sample.eventstoreextensions\"");
+        }
+
+        string second = workspace.Save("b.json");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([first, second], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        ToolDiagnostic[] duplicates = [.. result.Diagnostics.Where(diagnostic => diagnostic.RuleId == "HXP028")];
+        duplicates.Length.ShouldBe(2);
+        duplicates.Select(diagnostic => Path.GetFileName(diagnostic.Source)).ShouldBe(["a.json", "b.json"], ignoreOrder: true);
+        duplicates.ShouldAllBe(diagnostic => diagnostic.Field == "modules[0].runtime.eventStoreExtensions[0]." + field);
+        duplicates.ShouldAllBe(diagnostic => diagnostic.Message.Contains("extension " + kind + " '", StringComparison.Ordinal)
+            && diagnostic.Message.Contains("modules 'sample' and 'second'", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies a duplicate extension identity or package inside one module is refused, naming the module and the duplicate.</summary>
+    /// <param name="field">The duplicated field.</param>
+    /// <param name="kind">The reported duplicate kind.</param>
+    [Theory]
+    [InlineData("extensionId", "id")]
+    [InlineData("packageId", "package")]
+    public void DuplicateEventStoreExtensionWithinOneModuleIsRefused(string field, string kind)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        JsonArray entries = JsonNode.Parse(EventStoreExtensions())!.AsArray();
+        JsonObject second = entries[0]!.DeepClone().AsObject();
+        if (field == "extensionId")
+        {
+            second["packageId"] = "Hexalith.Sample.OtherEventStoreExtensions";
+        }
+        else
+        {
+            second["extensionId"] = "sample-other";
+        }
+
+        entries.Add(second);
+        workspace.Change("modules.0.runtime.eventStoreExtensions", entries.ToJsonString());
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        ToolDiagnostic[] duplicates = [.. result.Diagnostics.Where(diagnostic => diagnostic.RuleId == "HXP028")];
+        duplicates.Select(diagnostic => diagnostic.Field).ShouldBe(
+            ["modules[0].runtime.eventStoreExtensions[0]." + field, "modules[0].runtime.eventStoreExtensions[1]." + field],
+            ignoreOrder: true);
+        duplicates.ShouldAllBe(diagnostic => diagnostic.Message.StartsWith("eventstore-extension-duplicate:", StringComparison.Ordinal)
+            && diagnostic.Message.Contains("extension " + kind + " '", StringComparison.Ordinal)
+            && diagnostic.Message.Contains("declared more than once by module 'sample'", StringComparison.Ordinal));
+    }
+
     /// <summary>Verifies a required server is not covered by a usable probe bound to another server.</summary>
     [Fact]
     public void RequiredServerIgnoresReadinessBoundToAnotherServer()
@@ -911,6 +1107,35 @@ public sealed class PlatformManifestValidationTests
         result.Declarations.ShouldBeNull();
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == ruleId && diagnostic.Field == field);
     }
+
+    private static string EventStoreExtensions() => """
+        [
+          {
+            "packageId": "Hexalith.Sample.EventStoreExtensions",
+            "extensionId": "sample",
+            "extensionApiMajor": 1,
+            "configurationInputs": [
+              {
+                "key": "Sample:ExtensionSetting",
+                "source": "configuration",
+                "reference": "sample-extension-setting"
+              }
+            ]
+          }
+        ]
+        """;
+
+    private static string OwnedProviderException(string owner) => JsonSerializer.Serialize(new[]
+    {
+        new
+        {
+            name = "memories-falkordb-graph",
+            capability = "Graph indexing through the FalkorDB provider SDK",
+            owner,
+            surface = "sample-api",
+            transitional = false,
+        },
+    });
 
     private static void AssertConfigurationKeyRejected(string key, JsonSchema schema)
     {

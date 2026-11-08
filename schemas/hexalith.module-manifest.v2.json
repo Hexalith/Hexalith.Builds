@@ -171,6 +171,51 @@
           "items": {
             "$ref": "#/$defs/providerException"
           }
+        },
+        "eventStoreExtensions": {
+          "description": "EventStore extension packages that Platform composes into the single eventstore host. Distinct from extensions, which names owner server and hosting packages.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/eventStoreExtension"
+          }
+        }
+      }
+    },
+    "eventStoreExtension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packageId",
+        "extensionId",
+        "extensionApiMajor",
+        "configurationInputs"
+      ],
+      "properties": {
+        "packageId": {
+          "description": "The package and assembly identity; source mode maps it to src/<packageId>/<packageId>.csproj in the owner repository.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:[.-][A-Za-z0-9_]+)*(?![\\s\\S])"
+        },
+        "extensionId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "extensionApiMajor": {
+          "description": "The EventStore extension-API major the package implements; the composed EventStore server owns the supported majors.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "configurationInputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/configurationInput"
+          }
+        },
+        "providerException": {
+          "description": "A named AD-9 exception owned by this module; only it admits that exception's provider SDK and own secret.",
+          "$ref": "#/$defs/providerException/properties/name"
         }
       }
     },

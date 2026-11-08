@@ -772,7 +772,16 @@ dotnet tool run hexalith-module validate --manifest module/first.json --output j
 
 Add `--adoption` to report a domain module's static enrollment requirements:
 `workspace`, `declaration`, `references`, `gitlinks`, `nested-references`,
-`tool-pin`, `hosting-inventory`, `dependency-selectors` and `dapr-subscriptions`.
+`tool-pin`, `hosting-inventory`, `dependency-selectors`, `dapr-subscriptions`,
+`eventstore-image` and `eventstore-extensions`. `eventstore-image` fails any tracked
+module build file whose `ContainerRepository` or `ContainerImageName` publishes
+`eventstore`, except the EventStore server owner's own
+`src/Hexalith.EventStore/Hexalith.EventStore.csproj`. `eventstore-extensions` fails a
+declared EventStore extension package whose tracked `src/<packageId>/<packageId>.csproj`
+is missing or directly references a Dapr client (`Dapr.*`) or a known provider SDK,
+unless the entry names the module's own AD-9 exception and the SDK is that exception's
+own. Dapr reached through the EventStore extension API packages is the API itself and is
+not inspected.
 Each row gives the requirement, PASS/FAIL, a workspace-relative file and a reason.
 JSON output adds the rows as `adoption` with the fixed `adoptionScope` statement.
 Any failing row exits `1`, and independent requirements are still reported. The
@@ -795,6 +804,30 @@ finite duration and a nonblank justification. Required servers need usable
 readiness. Tasks declare a scope and authority class; executable references
 must be existing canonical repository-relative files. Validation only reads
 these files. It never starts servers, executes tasks or changes declarations.
+
+Optional `runtime.eventStoreExtensions` entries enroll EventStore extension
+packages into the single Platform-composed `eventstore` host (AD-13). Each closed
+entry supplies `packageId`, `extensionId`, a positive `extensionApiMajor`,
+`configurationInputs` and an optional `providerException`. This field is distinct
+from `runtime.extensions`, which names owner server and hosting packages. EventStore
+owns the supported extension-API majors; Platform checks the declared major against
+the composed server, so validation checks only its shape. Validation also reports:
+
+- `HXP025` (`eventstore-extension-secret`): a `secret` or `dynamic-secret` input,
+  unless the entry names the module's own AD-9 exception and the reference is that
+  exception's own secret (`<exception>` or `<exception>-<purpose>`).
+- `HXP026` (`eventstore-extension-dapr-role`): an input whose key or reference binds
+  a declared `runtime.dapr` role; extension packages declare no Dapr roles.
+- `HXP027` (`eventstore-extension-provider-exception`): a named AD-9 exception whose
+  spine-admitted owner is another module (all four current exceptions belong to
+  `memories`), or that the owner does not declare as its own `runtime.providerExceptions`
+  entry. Self-declaring ownership grants nothing.
+- `HXP028` (`eventstore-extension-duplicate`): the same extension id or package
+  (package identity ignores case) declared twice in the declaration set, naming each
+  declaring module once.
+
+Each message names the module, the package and the offending key, role, exception or
+duplicate.
 
 The following complete example exercises every group. Its `README.md` task
 references illustrate local path checks; a module supplies its own real task

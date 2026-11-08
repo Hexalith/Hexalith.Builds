@@ -101,6 +101,59 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         }
     }
 
+    /// <summary>Resolves one package's pinned version from the same catalog authority.</summary>
+    /// <param name="packageId">The package identity.</param>
+    /// <param name="source">The declaration source for diagnostics.</param>
+    /// <returns>The catalog-pinned version, or null when the catalog does not pin the package.</returns>
+    /// <exception cref="InvalidDataException">The catalog or selected snapshot is unavailable or inconsistent.</exception>
+    public string? CatalogPackageVersion(string packageId, string source)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(packageId);
+        try
+        {
+            return ReadCatalogPackageVersion(packageId, source);
+        }
+        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or XmlException)
+        {
+            throw new InvalidDataException($"{source}: {packageId}: Builds catalog metadata is malformed: {exception.Message}", exception);
+        }
+    }
+
+    private string? ReadCatalogPackageVersion(string packageId, string source)
+    {
+        string? snapshotPath = Workspace is null ? null : Path.Combine(Workspace, "source-mapping", "catalog-versions.json");
+        if (snapshotPath is not null && File.Exists(snapshotPath))
+        {
+            CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
+                ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot is null.");
+            ValidateSnapshot(snapshot, source, packageId, snapshotPath);
+            return snapshot.Versions.FirstOrDefault(pair => string.Equals(pair.Key, packageId, StringComparison.OrdinalIgnoreCase)).Value;
+        }
+
+        XDocument catalog = XDocument.Load(CatalogPath(packageId, source));
+        string? version = catalog.Descendants("PackageVersion")
+            .FirstOrDefault(element => string.Equals(element.Attribute("Include")?.Value, packageId, StringComparison.OrdinalIgnoreCase))
+            ?.Attribute("Version")?.Value.Trim();
+        if (version?.StartsWith("$(", StringComparison.Ordinal) != true || !version.EndsWith(')'))
+        {
+            return version;
+        }
+
+        string property = version[2..^1];
+        return catalog.Descendants(property).FirstOrDefault()?.Value.Trim();
+    }
+
+    private string CatalogPath(string module, string source)
+    {
+        // A module's resolved identity already verifies its direct Builds checkout against Platform's pin.
+        // Platform's own nested references remain uninitialized in a direct-only module workspace.
+        string catalogRoot = Mapping.PlatformIdentity is { IsPlatformRepository: false } ? Mapping.Root : PlatformRoot;
+        string catalogPath = Path.Combine(catalogRoot, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
+        return File.Exists(catalogPath)
+            ? catalogPath
+            : throw new InvalidDataException($"{source}: {module}: {catalogPath}: Builds catalog is unavailable.");
+    }
+
     private string ReadCatalogVersion(string module, string source)
     {
         string package = module switch { "tenants" => "Hexalith.Tenants.Server", "memories" => "Hexalith.Memories.Aspire", _ => CompositionDeclarationClosure.Repository(module) + ".Aspire" };
@@ -115,16 +168,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
                 : throw new InvalidDataException($"{source}: {module}: {package}: image version is missing from the Builds catalog.");
         }
 
-        // A module's resolved identity already verifies its direct Builds checkout against Platform's pin.
-        // Platform's own nested references remain uninitialized in a direct-only module workspace.
-        string catalogRoot = Mapping.PlatformIdentity is { IsPlatformRepository: false } ? Mapping.Root : PlatformRoot;
-        string catalogPath = Path.Combine(catalogRoot, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
-        if (!File.Exists(catalogPath))
-        {
-            throw new InvalidDataException($"{source}: {module}: {catalogPath}: Builds catalog is unavailable.");
-        }
-
-        XDocument catalog = XDocument.Load(catalogPath);
+        XDocument catalog = XDocument.Load(CatalogPath(module, source));
         string suffix = module switch
         {
             "tenants" => "Tenants",

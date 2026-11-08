@@ -871,7 +871,7 @@ public sealed class PlatformManifestCommandTests
             JsonElement root = parsed.RootElement;
             root.GetProperty("adoptionScope").GetString().ShouldBe(Hexalith.Builds.Tooling.Manifest.PlatformAdoptionValidator.Scope);
             JsonElement[] rows = [.. root.GetProperty("adoption").EnumerateArray()];
-            rows.Length.ShouldBe(9);
+            rows.Length.ShouldBe(11);
             foreach (JsonElement row in rows)
             {
                 row.GetProperty("requirement").GetString().ShouldNotBeNullOrWhiteSpace();
@@ -902,7 +902,7 @@ public sealed class PlatformManifestCommandTests
             failedRoot.GetProperty("adoptionScope").GetString().ShouldBe(Hexalith.Builds.Tooling.Manifest.PlatformAdoptionValidator.Scope);
             JsonElement[] failedRows = [.. failedRoot.GetProperty("adoption").EnumerateArray()];
             failedRows.Select(row => row.GetProperty("requirement").GetString()).Distinct().ShouldBe(
-                ["workspace", "declaration", "references", "gitlinks", "nested-references", "tool-pin", "hosting-inventory", "dependency-selectors", "dapr-subscriptions"], ignoreOrder: true);
+                ["workspace", "declaration", "references", "gitlinks", "nested-references", "tool-pin", "hosting-inventory", "dependency-selectors", "dapr-subscriptions", "eventstore-image", "eventstore-extensions"], ignoreOrder: true);
             foreach (JsonElement row in failedRows)
             {
                 row.GetProperty("file").GetString().ShouldNotBeNullOrWhiteSpace();
