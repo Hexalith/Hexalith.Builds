@@ -116,6 +116,135 @@ internal static class PlatformAdoptionSourceAudit
         return rows;
     }
 
+    /// <summary>Rejects module build files that publish the <c>eventstore</c> image, except the EventStore server owner's own server.</summary>
+    /// <param name="root">The module root.</param>
+    /// <param name="tracked">Tracked module-owned paths.</param>
+    /// <param name="modules">The module identities declared in this workspace.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>Failures naming the module and project.</returns>
+    internal static IReadOnlyList<PlatformAdoptionRow> ScanEventStoreImages(string root, IReadOnlyList<string> tracked, IReadOnlySet<string> modules, CancellationToken cancellationToken)
+    {
+        const string requirement = "eventstore-image";
+        List<PlatformAdoptionRow> rows = [];
+        string owners = modules.Count == 0 ? "'unknown'" : string.Join(", ", modules.Order(StringComparer.Ordinal).Select(module => $"'{module}'"));
+        foreach (string path in tracked.Where(path => Path.GetExtension(path).ToUpperInvariant() is ".CSPROJ" or ".PROPS" or ".TARGETS"))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!TryReadBuild(root, path, requirement, rows, out XDocument? document))
+            {
+                continue;
+            }
+
+            bool exempt = modules.Contains(PlatformEventStoreExtensionAuthority.EventStoreModule)
+                && string.Equals(path, PlatformEventStoreExtensionAuthority.EventStoreServerProject, StringComparison.Ordinal);
+            if (!exempt && document.Descendants().Any(element => !element.HasElements && IsEventStoreImage(element)))
+            {
+                rows.Add(new PlatformAdoptionRow(requirement, false, path, $"Module {owners} project '{path}' publishes the 'eventstore' image; only the EventStore server owner's {PlatformEventStoreExtensionAuthority.EventStoreServerProject} may. Platform composes the single eventstore host from enrolled extension packages."));
+            }
+        }
+
+        return rows;
+    }
+
+    /// <summary>Rejects direct Dapr-client and provider-SDK references from declared EventStore extension packages.</summary>
+    /// <param name="root">The module root.</param>
+    /// <param name="tracked">Tracked module-owned paths.</param>
+    /// <param name="extensions">The declared extension packages and their named AD-9 exceptions.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>Failures naming the module, package and dependency.</returns>
+    internal static IReadOnlyList<PlatformAdoptionRow> ScanEventStoreExtensions(
+        string root,
+        IReadOnlyList<string> tracked,
+        IReadOnlyList<(string Module, string PackageId, string? ProviderException)> extensions,
+        CancellationToken cancellationToken)
+    {
+        const string requirement = "eventstore-extensions";
+        List<PlatformAdoptionRow> rows = [];
+        foreach ((string module, string packageId, string? exception) in extensions)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string project = $"src/{packageId}/{packageId}.csproj";
+            if (!tracked.Contains(project, StringComparer.Ordinal))
+            {
+                rows.Add(new PlatformAdoptionRow(requirement, false, project, $"Module '{module}' declares EventStore extension package '{packageId}', but {project} is not a tracked module project."));
+                continue;
+            }
+
+            if (!TryReadBuild(root, project, requirement, rows, out XDocument? document))
+            {
+                continue;
+            }
+
+            foreach (XElement reference in document.Descendants().Where(element => element.Name.LocalName is "PackageReference" or "ProjectReference"))
+            {
+                foreach (string include in (reference.Attribute("Include")?.Value ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    string dependency = reference.Name.LocalName == "ProjectReference" ? Path.GetFileNameWithoutExtension(include.Replace('\\', '/')) : include;
+                    string? kind = PlatformEventStoreExtensionAuthority.Classify(dependency);
+                    if (kind is null || (kind == "provider SDK" && PlatformEventStoreExtensionAuthority.AdmitsSdk(exception, module, dependency)))
+                    {
+                        continue;
+                    }
+
+                    string? owner = PlatformEventStoreExtensionAuthority.Owner(exception);
+                    string admitted = (exception, owner == module) switch
+                    {
+                        (null, _) => "only a named AD-9 exception admits its own provider SDK",
+                        (_, false) => $"AD-9 exception '{exception}' is admitted only for module '{owner ?? "none"}'",
+                        _ => $"AD-9 exception '{exception}' admits only {string.Join(", ", PlatformEventStoreExtensionAuthority.Sdks(exception))}",
+                    };
+                    rows.Add(new PlatformAdoptionRow(requirement, false, project, $"Module '{module}' extension package '{packageId}' directly references {kind} '{dependency}'; extensions use only the EventStore extension API, and {admitted}."));
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    private static bool TryReadBuild(string root, string path, string requirement, List<PlatformAdoptionRow> rows, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out XDocument? document)
+    {
+        document = null;
+        if (!PlatformAdoptionValidator.IsLocalFile(root, path))
+        {
+            rows.Add(new PlatformAdoptionRow(requirement, false, path, "Tracked audit file is missing, unreadable or physically escapes the active workspace."));
+            return false;
+        }
+
+        try
+        {
+            FileInfo info = new(Path.Combine(root, path));
+            if (info.Length > 1_048_576)
+            {
+                rows.Add(new PlatformAdoptionRow(requirement, false, path, "File exceeds the bounded 1 MiB source audit; owner review is required."));
+                return false;
+            }
+
+            document = XDocument.Parse(File.ReadAllText(info.FullName));
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Xml.XmlException)
+        {
+            rows.Add(new PlatformAdoptionRow(requirement, false, path, "Cannot complete the bounded source inspection; correct unreadable/malformed input or obtain owner review."));
+            return false;
+        }
+    }
+
+    private static bool IsEventStoreImage(XElement element)
+    {
+        if (!element.Name.LocalName.Equals("ContainerRepository", StringComparison.OrdinalIgnoreCase)
+            && !element.Name.LocalName.Equals("ContainerImageName", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string image = element.Value.Trim();
+        int digest = image.IndexOf('@', StringComparison.Ordinal);
+        image = (digest < 0 ? image : image[..digest]).TrimEnd('/');
+        image = image[(image.LastIndexOf('/') + 1)..];
+        int tag = image.IndexOf(':', StringComparison.Ordinal);
+        return (tag < 0 ? image : image[..tag]).Equals("eventstore", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static void InspectBuild(string root, string content, string path, List<PlatformAdoptionRow> rows)
     {
         XDocument document = XDocument.Parse(content);

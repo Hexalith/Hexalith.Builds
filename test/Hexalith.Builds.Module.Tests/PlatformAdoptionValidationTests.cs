@@ -33,7 +33,7 @@ public sealed class PlatformAdoptionValidationTests
         string[] files = Directory.GetFiles(workspace.Root, "*", SearchOption.AllDirectories);
         PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
         report.IsValid.ShouldBeTrue(string.Join(Environment.NewLine, report.Rows.Where(row => !row.Passed)));
-        report.Rows.Count.ShouldBe(9);
+        report.Rows.Count.ShouldBe(11);
         report.Diagnostics.ShouldBeEmpty();
         string after = (await WorkspaceGitFixture.RunGitAsync(workspace.Root, "status", "--porcelain=v1", "--untracked-files=all").ConfigureAwait(true)).Output;
         after.ShouldBe(before);
@@ -59,11 +59,145 @@ public sealed class PlatformAdoptionValidationTests
 
         PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
         report.IsValid.ShouldBeFalse();
-        report.Rows.Select(row => row.Requirement).Distinct().Count().ShouldBe(9);
+        report.Rows.Select(row => row.Requirement).Distinct().Count().ShouldBe(11);
         report.Rows.Single(row => row.Requirement == "declaration").Passed.ShouldBeTrue();
         report.Rows.ShouldContain(row => row.Requirement == "dependency-selectors" && !row.Passed);
         report.Rows.ShouldContain(row => row.Requirement == "dapr-subscriptions" && !row.Passed);
         report.Diagnostics.ShouldNotContain(diagnostic => diagnostic.RuleId == "HXP002");
+    }
+
+    /// <summary>Verifies only the EventStore server owner's own server project may publish the eventstore image.</summary>
+    /// <param name="module">The declared module identity.</param>
+    /// <param name="project">The project publishing the image.</param>
+    /// <param name="property">The container image property.</param>
+    /// <param name="value">The published image identity.</param>
+    /// <param name="passes">Whether the workspace passes the image rule.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("sample", "src/Hexalith.Sample.EventStore/Hexalith.Sample.EventStore.csproj", "ContainerRepository", "eventstore", false)]
+    [InlineData("sample", "src/Hexalith.Sample.EventStore/Hexalith.Sample.EventStore.csproj", "ContainerImageName", "registry.example/EventStore:1.0", false)]
+    [InlineData("sample", "src/Hexalith.Sample/Hexalith.Sample.csproj", "ContainerRepository", "sample-eventstore", true)]
+    [InlineData("eventstore", "src/Hexalith.EventStore/Hexalith.EventStore.csproj", "ContainerRepository", "eventstore", true)]
+    [InlineData("eventstore", "src/Hexalith.EventStore.Other/Hexalith.EventStore.Other.csproj", "ContainerRepository", "eventstore", false)]
+    [InlineData("sample", "src/Hexalith.Sample.EventStore/Hexalith.Sample.EventStore.csproj", "ContainerRepository", "eventstore@sha256:0123456789abcdef", false)]
+    [InlineData("sample", "Directory.Build.props", "ContainerRepository", "eventstore", false)]
+    [InlineData("sample", "eng/Container.targets", "ContainerImageName", "eventstore", false)]
+    public async Task EventStoreImageIsReservedForTheServerOwnerAsync(string module, string project, string property, string value, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        if (module != "sample")
+        {
+            JsonNode manifest = JsonNode.Parse(await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+            manifest["modules"]![0]!["identity"]!["moduleId"] = module;
+            workspace.Write("module.json", manifest.ToJsonString());
+        }
+
+        workspace.Write(project, $"<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><{property}>{value}</{property}></PropertyGroup></Project>");
+        await workspace.TrackAsync().ConfigureAwait(true);
+
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        PlatformAdoptionRow image = report.Rows.Single(row => row.Requirement == "eventstore-image");
+        image.Passed.ShouldBe(passes);
+        if (!passes)
+        {
+            image.File.ShouldBe(project);
+            image.Reason.ShouldContain("Module '" + module + "'");
+            image.Reason.ShouldContain(project);
+            report.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXA001" && diagnostic.Field == "eventstore-image" && diagnostic.Source == project);
+        }
+    }
+
+    /// <summary>Verifies declared extension packages cannot directly reference a Dapr client or another provider SDK.</summary>
+    /// <param name="dependency">The direct reference.</param>
+    /// <param name="exception">The named AD-9 exception, or null.</param>
+    /// <param name="module">The declaring module, which self-declares any named exception.</param>
+    /// <param name="passes">Whether the extension passes the reference rule.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("Hexalith.EventStore.DomainService", null, "sample", true)]
+    [InlineData("Dapr.Client", null, "sample", false)]
+    [InlineData("Dapr.Client;Hexalith.EventStore.DomainService", null, "sample", false)]
+    [InlineData("Dapr.AspNetCore", "memories-redis-coordination", "memories", false)]
+    [InlineData("StackExchange.Redis", null, "sample", false)]
+    [InlineData("Azure.Storage.Blobs", null, "sample", false)]
+    [InlineData("StackExchange.Redis", "memories-redis-coordination", "memories", true)]
+    [InlineData("NFalkorDB", "memories-falkordb-graph", "memories", true)]
+    [InlineData("NFalkorDB", "memories-redis-coordination", "memories", false)]
+    [InlineData("NFalkorDB", "memories-falkordb-graph", "sample", true)]
+    public async Task EventStoreExtensionDirectReferencesAreBoundedAsync(string dependency, string? exception, string module, bool passes)
+    {
+        ArgumentNullException.ThrowIfNull(dependency);
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        JsonNode manifest = JsonNode.Parse(await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        if (module != "sample")
+        {
+            manifest["modules"]![0]!["identity"]!["moduleId"] = module;
+            manifest["modules"]![0]!["identity"]!["dependencies"] = new JsonArray("eventstore", "tenants");
+        }
+
+        JsonObject extension = new()
+        {
+            ["packageId"] = "Hexalith.Sample.EventStoreExtensions",
+            ["extensionId"] = "sample",
+            ["extensionApiMajor"] = 1,
+            ["configurationInputs"] = new JsonArray(),
+        };
+        if (exception is not null)
+        {
+            extension["providerException"] = exception;
+            manifest["modules"]![0]!["runtime"]!["providerExceptions"] = new JsonArray(new JsonObject
+            {
+                ["name"] = exception,
+                ["capability"] = "named provider capability",
+                ["owner"] = module,
+                ["surface"] = "sample-api",
+                ["transitional"] = false,
+            });
+        }
+
+        manifest["modules"]![0]!["runtime"]!["eventStoreExtensions"] = new JsonArray(extension);
+        workspace.Write("module.json", manifest.ToJsonString());
+        const string project = "src/Hexalith.Sample.EventStoreExtensions/Hexalith.Sample.EventStoreExtensions.csproj";
+        workspace.Write(project, $"<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><PackageReference Include=\"{dependency}\" /></ItemGroup></Project>");
+        await workspace.TrackAsync().ConfigureAwait(true);
+
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+
+        // A non-owner's self-declared exception fails declaration validation (HXP027), so no extension is admitted for inspection.
+        bool owned = exception is null || module == "memories";
+        report.Rows.Single(row => row.Requirement == "declaration").Passed.ShouldBe(owned);
+        if (!owned)
+        {
+            report.IsValid.ShouldBeFalse();
+            report.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP027" && diagnostic.Message.Contains("only for module 'memories'", StringComparison.Ordinal));
+        }
+
+        PlatformAdoptionRow row = report.Rows.Single(row => row.Requirement == "eventstore-extensions");
+        row.Passed.ShouldBe(passes);
+        if (!passes)
+        {
+            row.File.ShouldBe(project);
+            row.Reason.ShouldContain("Module '" + module + "'");
+            row.Reason.ShouldContain("'Hexalith.Sample.EventStoreExtensions'");
+            row.Reason.ShouldContain("'" + dependency.Split(';')[0] + "'");
+        }
+    }
+
+    /// <summary>Verifies a declared extension package must be the tracked mapped project.</summary>
+    /// <returns>The assertion task.</returns>
+    [Fact]
+    public async Task UntrackedEventStoreExtensionProjectIsReportedAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        JsonNode manifest = JsonNode.Parse(await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        manifest["modules"]![0]!["runtime"]!["eventStoreExtensions"] = JsonNode.Parse("[{\"packageId\":\"Hexalith.Sample.Missing\",\"extensionId\":\"sample\",\"extensionApiMajor\":1,\"configurationInputs\":[]}]");
+        workspace.Write("module.json", manifest.ToJsonString());
+        await workspace.TrackAsync().ConfigureAwait(true);
+
+        PlatformAdoptionRow row = (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.Single(row => row.Requirement == "eventstore-extensions");
+        row.Passed.ShouldBeFalse();
+        row.File.ShouldBe("src/Hexalith.Sample.Missing/Hexalith.Sample.Missing.csproj");
+        row.Reason.ShouldContain("Module 'sample'");
     }
 
     /// <summary>Verifies one or more independent failures still produce every static requirement.</summary>
@@ -93,6 +227,8 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("helper", "dependency-selectors")]
     [InlineData("literal-dapr", "dapr-subscriptions")]
     [InlineData("subscription", "dapr-subscriptions")]
+    [InlineData("eventstore-image", "eventstore-image")]
+    [InlineData("extension-dapr-client", "eventstore-extensions")]
     public async Task EveryRequirementFailureIsReportedAsync(string mutation, string requirement)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
@@ -123,6 +259,13 @@ public sealed class PlatformAdoptionValidationTests
             case "helper": workspace.Write("eng/resolve-source.ps1", "if (Test-Path '../Hexalith.EventStore') { $UseNuGetDeps = $false }"); break;
             case "literal-dapr": workspace.Write("src/Client.cs", "await dapr.PublishEventAsync(\"pubsub\", topic, data);"); break;
             case "subscription": workspace.Write("src/Consumer.cs", "[Topic(\"pubsub\", \"events\")] public void Receive() {}"); break;
+            case "eventstore-image": workspace.Write("src/Hexalith.Sample.EventStore/Hexalith.Sample.EventStore.csproj", "<Project><PropertyGroup><ContainerRepository>eventstore</ContainerRepository></PropertyGroup></Project>"); break;
+            case "extension-dapr-client":
+                JsonNode extended = JsonNode.Parse(await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+                extended["modules"]![0]!["runtime"]!["eventStoreExtensions"] = JsonNode.Parse("[{\"packageId\":\"Hexalith.Sample.EventStoreExtensions\",\"extensionId\":\"sample\",\"extensionApiMajor\":1,\"configurationInputs\":[]}]");
+                workspace.Write("module.json", extended.ToJsonString());
+                workspace.Write("src/Hexalith.Sample.EventStoreExtensions/Hexalith.Sample.EventStoreExtensions.csproj", "<Project><ItemGroup><PackageReference Include=\"Dapr.Client\" /></ItemGroup></Project>");
+                break;
             default: throw new ArgumentException("Unknown fixture mutation.", nameof(mutation));
         }
 
@@ -134,7 +277,7 @@ public sealed class PlatformAdoptionValidationTests
         PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
         report.IsValid.ShouldBeFalse();
         report.Rows.ShouldContain(row => row.Requirement == requirement && !row.Passed && row.File.Length > 0 && row.Reason.Length > 0);
-        report.Rows.Select(row => row.Requirement).Distinct().Count().ShouldBe(9);
+        report.Rows.Select(row => row.Requirement).Distinct().Count().ShouldBe(11);
         report.Rows.ShouldContain(row => row.Requirement != requirement && row.Passed);
 
         void ChangeDependencies(string json)
@@ -156,7 +299,7 @@ public sealed class PlatformAdoptionValidationTests
         external.Rows.ShouldContain(row => row.Requirement == "declaration" && !row.Passed && row.Reason.Contains("inside", StringComparison.Ordinal));
         PlatformAdoptionValidationResult noGit = await PlatformAdoptionValidator.ValidateAsync([outside.Save()], Path.GetRelativePath(Directory.GetCurrentDirectory(), outside.Root), TestContext.Current.CancellationToken).ConfigureAwait(true);
         noGit.Rows.ShouldContain(row => row.Requirement == "workspace" && !row.Passed);
-        noGit.Rows.Select(row => row.Requirement).Distinct().Count().ShouldBe(9);
+        noGit.Rows.Select(row => row.Requirement).Distinct().Count().ShouldBe(11);
         noGit.Rows.ShouldNotContain(row => row.Reason.Contains("basePath", StringComparison.Ordinal));
     }
 

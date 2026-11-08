@@ -40,6 +40,8 @@ public static class PlatformAdoptionValidator
         HashSet<string> requiredReferences = new(StringComparer.Ordinal);
         PlatformManifestValidationResult? declaration = null;
         HashSet<string> daprConfigurationKeys = new(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> modules = new(StringComparer.Ordinal);
+        List<(string Module, string PackageId, string? ProviderException)> eventStoreExtensions = [];
         await CheckAsync("workspace", ".git", async () =>
         {
             CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
@@ -70,6 +72,18 @@ public static class PlatformAdoptionValidator
                 }
 
                 string self = identity.GetProperty("moduleId").GetString()!;
+                _ = modules.Add(self);
+                if (module.GetProperty("runtime").TryGetProperty("eventStoreExtensions", out JsonElement extensions))
+                {
+                    foreach (JsonElement extension in extensions.EnumerateArray())
+                    {
+                        eventStoreExtensions.Add((
+                            self,
+                            extension.GetProperty("packageId").GetString()!,
+                            extension.TryGetProperty("providerException", out JsonElement exception) ? exception.GetString() : null));
+                    }
+                }
+
                 HashSet<string> dependencies = new(identity.GetProperty("dependencies").EnumerateArray().Select(value => value.GetString()!), StringComparer.Ordinal);
                 Require(_minimumDependencies.Where(id => id != self).All(dependencies.Contains), "Declare the distinct minimum server dependencies eventstore, tenants and memories, excluding self.");
                 Require(!dependencies.Contains(self), "A module must not depend on itself.");
@@ -136,13 +150,18 @@ public static class PlatformAdoptionValidator
             frozen = PlatformHostingInventory.Validate(root, tracked);
             return Task.CompletedTask;
         }).ConfigureAwait(false);
-        foreach (string requirement in new[] { "dependency-selectors", "dapr-subscriptions" })
+        foreach (string requirement in new[] { "dependency-selectors", "dapr-subscriptions", "eventstore-image", "eventstore-extensions" })
         {
             int before = rows.Count;
             try
             {
                 Require(tracked.Length > 0, "No tracked module files were available for bounded static inspection.");
-                rows.AddRange(PlatformAdoptionSourceAudit.Scan(root, tracked, frozen, daprConfigurationKeys, requirement, cancellationToken));
+                rows.AddRange(requirement switch
+                {
+                    "eventstore-image" => PlatformAdoptionSourceAudit.ScanEventStoreImages(root, tracked, modules, cancellationToken),
+                    "eventstore-extensions" => PlatformAdoptionSourceAudit.ScanEventStoreExtensions(root, tracked, eventStoreExtensions, cancellationToken),
+                    _ => PlatformAdoptionSourceAudit.Scan(root, tracked, frozen, daprConfigurationKeys, requirement, cancellationToken),
+                });
                 if (rows.Count == before)
                 {
                     rows.Add(new PlatformAdoptionRow(requirement, true, ".", "No known forbidden patterns in tracked module-owned files. " + Scope));

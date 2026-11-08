@@ -78,6 +78,7 @@ public static partial class PlatformManifestValidator
         List<ToolDiagnostic> diagnostics = [];
         List<PlatformModuleDeclaration> declarations = [];
         Dictionary<string, List<(string Source, string Field)>> identities = new(StringComparer.Ordinal);
+        Dictionary<string, List<(string Module, string Value, string Source, string Field)>> extensions = new(StringComparer.Ordinal);
         int fileCount = 0;
         foreach (string path in manifestPaths)
         {
@@ -88,7 +89,7 @@ public static partial class PlatformManifestValidator
                 break;
             }
 
-            ValidateFile(path, declarations, identities, diagnostics, authenticatedReleaseHashes, cancellationToken);
+            ValidateFile(path, declarations, identities, extensions, diagnostics, authenticatedReleaseHashes, cancellationToken);
         }
 
         if (fileCount == 0)
@@ -101,6 +102,19 @@ public static partial class PlatformManifestValidator
             foreach ((string source, string field) in occurrences)
             {
                 Add(diagnostics, "HXP003", source, field, "The identity is duplicated within the supplied declaration set; use a unique identity.");
+            }
+        }
+
+        foreach (KeyValuePair<string, List<(string Module, string Value, string Source, string Field)>> duplicate in extensions.Where(pair => pair.Value.Count > 1))
+        {
+            string kind = duplicate.Key[..duplicate.Key.IndexOf(':', StringComparison.Ordinal)];
+            string[] declaring = [.. duplicate.Value.Select(occurrence => occurrence.Module).Distinct(StringComparer.Ordinal)];
+            string modules = declaring.Length == 1
+                ? $"more than once by module '{declaring[0]}'"
+                : "by modules " + string.Join(" and ", declaring.Select(module => $"'{module}'"));
+            foreach ((string _, string value, string source, string field) in duplicate.Value)
+            {
+                Add(diagnostics, "HXP028", source, field, $"eventstore-extension-duplicate: EventStore extension {kind} '{value}' is declared {modules}; declare each extension package and identity once in the declaration set.");
             }
         }
 
@@ -132,6 +146,7 @@ public static partial class PlatformManifestValidator
         string path,
         List<PlatformModuleDeclaration> declarations,
         Dictionary<string, List<(string Source, string Field)>> identities,
+        Dictionary<string, List<(string Module, string Value, string Source, string Field)>> extensions,
         List<ToolDiagnostic> diagnostics,
         IReadOnlyDictionary<string, string> authenticatedReleaseHashes,
         CancellationToken cancellationToken)
@@ -230,7 +245,7 @@ public static partial class PlatformManifestValidator
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string prefix = $"modules[{moduleIndex++}]";
-                ValidateModule(module, prefix, source, fullPath, identities, diagnostics, requireTestFiles: !releasedSnapshot);
+                ValidateModule(module, prefix, source, fullPath, identities, extensions, diagnostics, requireTestFiles: !releasedSnapshot);
                 if (module.ValueKind == JsonValueKind.Object && initialDiagnosticCount == diagnostics.Count)
                 {
                     declarations.Add(new PlatformModuleDeclaration(source, ApplyDefaults(module))
@@ -550,6 +565,7 @@ public static partial class PlatformManifestValidator
         string source,
         string fullPath,
         Dictionary<string, List<(string Source, string Field)>> identities,
+        Dictionary<string, List<(string Module, string Value, string Source, string Field)>> extensions,
         List<ToolDiagnostic> diagnostics,
         bool requireTestFiles)
     {
@@ -585,6 +601,7 @@ public static partial class PlatformManifestValidator
         }
 
         ValidateDaprBindings(module, prefix, source, serverIds, diagnostics);
+        ValidateEventStoreExtensions(module, prefix, source, extensions, diagnostics);
 
         int interfaceIndex = 0;
         foreach (JsonElement surface in ArrayValue(ObjectValue(module, "surfaces"), "interfaces"))
@@ -778,6 +795,91 @@ public static partial class PlatformManifestValidator
                 }
             }
         }
+    }
+
+    private static void ValidateEventStoreExtensions(
+        JsonElement module,
+        string prefix,
+        string source,
+        Dictionary<string, List<(string Module, string Value, string Source, string Field)>> extensions,
+        List<ToolDiagnostic> diagnostics)
+    {
+        JsonElement runtime = ObjectValue(module, "runtime");
+        JsonElement[] entries = ArrayValue(runtime, "eventStoreExtensions");
+        if (entries.Length == 0)
+        {
+            return;
+        }
+
+        string moduleId = StringValue(ObjectValue(module, "identity"), "moduleId") ?? "unknown";
+        JsonElement[] daprRoles = ArrayValue(runtime, "dapr");
+        HashSet<string> ownedExceptions =
+        [
+            .. ArrayValue(runtime, "providerExceptions")
+                .Where(exception => StringValue(exception, "owner") == moduleId)
+                .Select(exception => StringValue(exception, "name"))
+                .OfType<string>(),
+        ];
+        for (int index = 0; index < entries.Length; index++)
+        {
+            JsonElement entry = entries[index];
+            string field = $"{prefix}.runtime.eventStoreExtensions[{index}]";
+            string package = StringValue(entry, "packageId") ?? "unknown";
+            RegisterExtension("package", StringValue(entry, "packageId"), moduleId, source, field + ".packageId", extensions);
+            RegisterExtension("id", StringValue(entry, "extensionId"), moduleId, source, field + ".extensionId", extensions);
+            string? exception = StringValue(entry, "providerException");
+            string? owner = PlatformEventStoreExtensionAuthority.Owner(exception);
+            bool admitted = exception is not null && owner == moduleId && ownedExceptions.Contains(exception);
+            if (exception is not null && !admitted)
+            {
+                Add(diagnostics, "HXP027", source, field + ".providerException", $"eventstore-extension-provider-exception: Module '{moduleId}' extension package '{package}' names AD-9 exception '{exception}', which the spine admits only for module '{owner ?? "none"}' and which that module must declare as its own runtime.providerExceptions entry.");
+            }
+
+            JsonElement[] inputs = ArrayValue(entry, "configurationInputs");
+            for (int inputIndex = 0; inputIndex < inputs.Length; inputIndex++)
+            {
+                JsonElement input = inputs[inputIndex];
+                string inputField = $"{field}.configurationInputs[{inputIndex}]";
+                string? key = StringValue(input, "key");
+                string? reference = StringValue(input, "reference");
+                string? kind = StringValue(input, "source");
+                if (kind is "secret" or "dynamic-secret" && !(admitted && PlatformEventStoreExtensionAuthority.AdmitsSecret(exception, moduleId, reference)))
+                {
+                    string reason = admitted
+                        ? $"eventstore-extension-secret: Module '{moduleId}' extension package '{package}' input '{key}' references secret '{reference}', which is not AD-9 exception '{exception}''s own secret; name it '{exception}' or '{exception}-<purpose>'."
+                        : $"eventstore-extension-secret: Module '{moduleId}' extension package '{package}' declares {kind} input '{key}'; extension inputs are configuration only unless the entry names the module's admitted AD-9 provider exception.";
+                    Add(diagnostics, "HXP025", source, inputField + ".source", reason);
+                }
+
+                string? role = daprRoles
+                    .Where(capability => (key is not null && StringValue(capability, "configurationKey") is { } configurationKey
+                            && string.Equals(configurationKey.Replace("__", ":", StringComparison.Ordinal), key.Replace("__", ":", StringComparison.Ordinal), StringComparison.OrdinalIgnoreCase))
+                        || (reference is not null && StringValue(capability, "role") == reference))
+                    .Select(capability => StringValue(capability, "role"))
+                    .FirstOrDefault();
+                if (role is not null)
+                {
+                    Add(diagnostics, "HXP026", source, inputField + ".key", $"eventstore-extension-dapr-role: Module '{moduleId}' extension package '{package}' input '{key}' binds Dapr role '{role}'; extension packages declare no Dapr roles.");
+                }
+            }
+        }
+    }
+
+    private static void RegisterExtension(string kind, string? value, string moduleId, string source, string field, Dictionary<string, List<(string Module, string Value, string Source, string Field)>> extensions)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        string key = $"{kind}:{(kind == "package" ? value.ToUpperInvariant() : value)}";
+        if (!extensions.TryGetValue(key, out List<(string Module, string Value, string Source, string Field)>? occurrences))
+        {
+            occurrences = [];
+            extensions.Add(key, occurrences);
+        }
+
+        occurrences.Add((moduleId, value, source, field));
     }
 
     private static bool IsUsableReadiness(JsonElement probe) => StringValue(probe, "kind") switch
