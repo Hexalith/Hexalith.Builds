@@ -11,6 +11,8 @@ internal sealed class ObservedStdinStream(Stream input) : Stream
 {
     private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    private int _pendingReadObserved;
+
     /// <inheritdoc />
     public override bool CanRead => input.CanRead;
 
@@ -26,6 +28,9 @@ internal sealed class ObservedStdinStream(Stream input) : Stream
     /// <inheritdoc />
     public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
+    /// <summary>Gets a value indicating whether an underlying read returned an incomplete operation.</summary>
+    public bool WasReadPending => Volatile.Read(ref _pendingReadObserved) != 0;
+
     /// <summary>Gets the handshake after the underlying asynchronous read was requested.</summary>
 #pragma warning disable VSTHRD003 // The caller owns the read handshake and drains or bounds it before fixture cleanup.
     public Task ReadStarted => _started.Task;
@@ -34,7 +39,14 @@ internal sealed class ObservedStdinStream(Stream input) : Stream
     /// <inheritdoc />
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
+        StdinChildProgress.Mark("read-call", reader: true);
         ValueTask<int> pending = input.ReadAsync(buffer, cancellationToken);
+        if (!pending.IsCompleted)
+        {
+            _ = Interlocked.Exchange(ref _pendingReadObserved, 1);
+        }
+
+        StdinChildProgress.Mark(pending.IsCompleted ? "read-completed" : "read-pending", reader: true);
         _ = _started.TrySetResult();
         return pending;
     }
@@ -59,7 +71,9 @@ internal sealed class ObservedStdinStream(Stream input) : Stream
     {
         if (disposing)
         {
+            StdinChildProgress.Mark("input-dispose", reader: true);
             input.Dispose();
+            StdinChildProgress.Mark("input-disposed", reader: true);
         }
 
         base.Dispose(disposing);

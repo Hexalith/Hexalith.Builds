@@ -29,6 +29,7 @@ public sealed class StopSignalTests
         const string childVariable = "HEXALITH_TEST_STDIN_DISPOSAL_CHILD";
         if (Environment.GetEnvironmentVariable(childVariable) == "1")
         {
+            StdinChildProgress.Mark("child-fact");
             await RunPendingReadDisposalChildAsync().ConfigureAwait(true);
             return;
         }
@@ -237,43 +238,43 @@ public sealed class StopSignalTests
     /// <returns>The focused control operation.</returns>
     private static async Task RunPendingReadDisposalChildAsync()
     {
+        StdinChildProgress.Mark("workspace-create");
         string root = CompositionTestFiles.CreateDirectory();
+        StdinChildProgress.Mark("workspace-created");
         TextWriter originalOutput = Console.Out;
         Console.SetOut(TextWriter.Null);
         try
         {
             foreach (bool retain in new[] { false, true })
             {
-                Stream actual = StopSignalInput.Open();
-                await using (actual.ConfigureAwait(true))
-                {
-                    actual.GetType().FullName.ShouldBe("System.IO.Pipes.AnonymousPipeClientStream");
-                    ObservedStdinStream input = new(actual);
-                    await using (input.ConfigureAwait(true))
-                    {
-                        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { RetainOnFailure = retain };
-                        StopSignal signal = StopSignal.Listen(plan, input);
-                        await input.ReadStarted.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken).ConfigureAwait(true);
-                        await signal.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
-                        File.Exists(CompositionStartupFailure.PathFor(plan.Workspace)).ShouldBeFalse();
-                    }
-                }
+                await DrainOwnedPendingReadAsync(root, retain).ConfigureAwait(true);
             }
 
             // A second listener must still be able to consume the owner's command from fd 0.
+            StdinChildProgress.Mark("next-listener-create", retain: false);
             StopSignal next = StopSignal.Listen(CompositionTestFiles.CreatePlan(root));
             await using (next.ConfigureAwait(true))
             {
+                StdinChildProgress.Mark("next-listener-created");
+                StdinChildProgress.Mark("readiness-write");
                 await WriteReadinessToOwnedOutputAsync().ConfigureAwait(true);
+                StdinChildProgress.Mark("readiness-written");
+                StdinChildProgress.Mark("await-stop-command");
                 _ = await Should.ThrowAsync<OperationCanceledException>(() => Task.Delay(Timeout.InfiniteTimeSpan, next.Token)
                     .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken)).ConfigureAwait(true);
                 next.IsStopRequested.ShouldBeTrue();
+                StdinChildProgress.Mark("stop-command-received");
+                StdinChildProgress.Mark("next-listener-dispose");
             }
+
+            StdinChildProgress.Mark("next-listener-disposed");
         }
         finally
         {
+            StdinChildProgress.Mark("workspace-cleanup");
             CompositionTestFiles.Delete(root);
             Console.SetOut(originalOutput);
+            StdinChildProgress.Mark("child-complete");
         }
     }
 
@@ -282,48 +283,24 @@ public sealed class StopSignalTests
     /// <returns>The focused control operation.</returns>
     private static async Task RunPendingReadDisposalOwnerAsync(string childVariable)
     {
-        ProcessStartInfo start = new("dotnet")
-        {
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
-        start.ArgumentList.Add(typeof(StopSignalTests).Assembly.Location);
-        start.ArgumentList.Add("-method");
-        start.ArgumentList.Add($"{typeof(StopSignalTests).FullName}.{nameof(StandardInputDisposalDrainsWhileOwnerWriterRemainsOpenAsync)}");
-        start.Environment[childVariable] = "1";
-        using Process child = new() { StartInfo = start };
-        child.Start().ShouldBeTrue();
+        string directory = CompositionTestFiles.CreateDirectory();
         try
         {
-            Task<string> error = child.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
-            List<string> output = [];
-            await ReadReadinessFromChildAsync(child, output).ConfigureAwait(true);
-
-            // Neither a stop command nor EOF was sent until both pending reads actually drained.
-            await child.StandardInput.WriteLineAsync(CompositionEnvironment.StopCommand).ConfigureAwait(true);
-            await child.StandardInput.FlushAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
-            Task<string> tail = child.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
-            await child.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            child.ExitCode.ShouldBe(0, string.Join(Environment.NewLine, output) + await tail.ConfigureAwait(true) + await error.ConfigureAwait(true));
+            await RunStagedPendingReadOwnerAsync(childVariable, directory).ConfigureAwait(true);
         }
         finally
         {
-            if (!child.HasExited)
-            {
-                child.Kill(entireProcessTree: true);
-                await child.WaitForExitAsync(CancellationToken.None).ConfigureAwait(true);
-            }
+            CompositionTestFiles.Delete(directory);
         }
     }
 
     /// <summary>Waits for the actual marker with the existing bound and a fixed child-status diagnostic.</summary>
     /// <param name="child">The owned control child.</param>
     /// <param name="output">The owned control output.</param>
+    /// <param name="directory">The actual child stage directory.</param>
     /// <exception cref="TimeoutException">The actual marker did not arrive within the original bound.</exception>
     /// <returns>The focused control operation.</returns>
-    private static async Task ReadReadinessFromChildAsync(Process child, List<string> output)
+    private static async Task ReadReadinessFromChildAsync(Process child, List<string> output, string directory)
     {
         try
         {
@@ -339,7 +316,7 @@ public sealed class StopSignalTests
         }
         catch (TimeoutException failure)
         {
-            throw new TimeoutException($"stdin-control readiness timed out; childExited={child.HasExited}.", failure);
+            throw new TimeoutException($"stdin-control readiness timed out; childExited={child.HasExited};{StdinChildProgress.Describe(directory)}.", failure);
         }
     }
 
@@ -442,6 +419,88 @@ public sealed class StopSignalTests
         finally
         {
             CompositionTestFiles.Delete(fixture);
+        }
+    }
+
+    /// <summary>Checks one real pending read and records its actual disposal boundaries.</summary>
+    /// <param name="root">The private plan directory.</param>
+    /// <param name="retain">The unchanged retention setting.</param>
+    /// <returns>The original pending-read assertions.</returns>
+    private static async Task DrainOwnedPendingReadAsync(string root, bool retain)
+    {
+        StdinChildProgress.Mark("input-open", retain: retain);
+        Stream actual = StopSignalInput.Open();
+        await using (actual.ConfigureAwait(true))
+        {
+            StdinChildProgress.Mark("input-opened");
+            actual.GetType().FullName.ShouldBe("System.IO.Pipes.AnonymousPipeClientStream");
+            ObservedStdinStream input = new(actual);
+            await using (input.ConfigureAwait(true))
+            {
+                CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { RetainOnFailure = retain };
+                StdinChildProgress.Mark("listener-create");
+                StopSignal signal = StopSignal.Listen(plan, input);
+                StdinChildProgress.Mark("listener-created");
+                StdinChildProgress.Mark("await-read");
+                await input.ReadStarted.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                StdinChildProgress.Mark("read-requested");
+                input.WasReadPending.ShouldBeTrue();
+                StdinChildProgress.Mark("signal-dispose");
+                await signal.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                StdinChildProgress.Mark("signal-disposed");
+                File.Exists(CompositionStartupFailure.PathFor(plan.Workspace)).ShouldBeFalse();
+                StdinChildProgress.Mark("wrapper-dispose");
+            }
+
+            StdinChildProgress.Mark("wrapper-disposed");
+            StdinChildProgress.Mark("raw-dispose");
+        }
+
+        StdinChildProgress.Mark("raw-disposed");
+    }
+
+    /// <summary>Owns only this child's stage fixture and the original real stdin process.</summary>
+    /// <param name="childVariable">The existing private child mode.</param>
+    /// <param name="directory">The fresh parent-owned stage directory.</param>
+    /// <returns>The original real-child handshake and cleanup.</returns>
+    private static async Task RunStagedPendingReadOwnerAsync(string childVariable, string directory)
+    {
+        ProcessStartInfo start = new("dotnet")
+        {
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+        start.ArgumentList.Add(typeof(StopSignalTests).Assembly.Location);
+        start.ArgumentList.Add("-method");
+        start.ArgumentList.Add($"{typeof(StopSignalTests).FullName}.{nameof(StandardInputDisposalDrainsWhileOwnerWriterRemainsOpenAsync)}");
+        start.Environment[childVariable] = "1";
+        start.Environment[StdinChildProgress.DirectoryVariable] = directory;
+        using Process child = new() { StartInfo = start };
+        child.Start().ShouldBeTrue();
+        try
+        {
+            Task<string> error = child.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
+            List<string> output = [];
+            await ReadReadinessFromChildAsync(child, output, directory).ConfigureAwait(true);
+
+            // Neither a stop command nor EOF was sent until both pending reads actually drained.
+            await child.StandardInput.WriteLineAsync(CompositionEnvironment.StopCommand).ConfigureAwait(true);
+            await child.StandardInput.FlushAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            Task<string> tail = child.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
+            await child.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            child.ExitCode.ShouldBe(0, string.Join(Environment.NewLine, output) + await tail.ConfigureAwait(true) + await error.ConfigureAwait(true));
+        }
+        finally
+        {
+            if (!child.HasExited)
+            {
+                child.Kill(entireProcessTree: true);
+                await child.WaitForExitAsync(CancellationToken.None).ConfigureAwait(true);
+            }
+
+            StdinChildProgress.Report(directory, child.HasExited);
         }
     }
 }
