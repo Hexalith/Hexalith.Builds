@@ -6,9 +6,18 @@ modules. It factors the common skeleton: checkout with submodules, .NET SDK from
 consumer validation, Dapr bootstrap, multi-tier tests, optional coverage gate,
 and artifact upload.
 
-`dapr-version` pins the CLI (`1.18.0`) while `dapr-runtime-version` separately
-pins the approved runtime exception (`1.18.2`). Both values are passed to every
-Dapr bootstrap tier.
+`dapr-version` and `dapr-runtime-version` default to CLI and runtime `1.19.1`.
+Both values are passed to every Dapr bootstrap tier. The Dapr .NET SDK and
+embedded components remain at `1.19.0`.
+
+The defaults adopt EventStore Story 3.21's
+[hosted run 42532776864](https://github.com/Hexalith/Hexalith.EventStore/actions/runs/42532776864)
+at commit `0a6725d51bb17a9eae28a24a53f3636bab9d48d7`: routing/actors/snapshots
+passed 15/15, admission passed 1/1, and compatibility passed 2/2. The broker lane
+failed separately; this adoption grants no broker or production qualification.
+`Tools/runtime-toolchain-baseline.json` remains the hash-bound historical
+2026-09-06 baseline; the active runtime and CLI pins live in
+`Props/Directory.Packages.props` and these workflow/action defaults.
 
 The `test-platform` input defaults to `vstest` for backward compatibility.
 Callers whose `global.json` selects `Microsoft.Testing.Platform` must set
