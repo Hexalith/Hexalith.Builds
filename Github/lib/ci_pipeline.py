@@ -153,18 +153,22 @@ def initialize_submodules(prepared: PreparedConfig) -> None:
     """Initialize only explicit gitlinks declared in the checkout's root file."""
     if not prepared.submodules:
         return
-    text = run_command(["git", "config", "--file", ".gitmodules", "--get-regexp",
+    # NUL-separated records keep submodule names containing spaces apart from paths.
+    text = run_command(["git", "config", "-z", "--file", ".gitmodules", "--get-regexp",
                         r"^submodule\..*\.path$"], prepared.workspace, capture=True)
-    declared = [line.split(None, 1)[1] for line in text.splitlines() if line.strip()]
+    declared = [record.partition("\n")[2] for record in text.split("\0") if record]
     if len(set(declared)) != len(declared):
         raise PipelineError("duplicate paths in root .gitmodules")
     for path in prepared.submodules:
         contained_path(prepared.workspace, path, kind="submodule")
         if path not in declared:
             raise PipelineError(f"submodule is not declared in root .gitmodules: {path}")
-        entry = run_command(["git", "--literal-pathspecs", "ls-files", "--stage", "--", path],
-                            prepared.workspace, capture=True)
-        if len(entry.splitlines()) != 1 or not entry.startswith("160000 "):
+        entries = [entry for entry in run_command(
+            ["git", "--literal-pathspecs", "ls-files", "-z", "--stage", "--", path],
+            prepared.workspace, capture=True).split("\0") if entry]
+        # A directory pathspec also matches gitlinks below it; require the exact path.
+        if (len(entries) != 1 or not entries[0].startswith("160000 ")
+                or entries[0].partition("\t")[2] != path):
             raise PipelineError(f"declared submodule is not a direct root gitlink: {path}")
     run_command(["git", "--literal-pathspecs", "-c", "protocol.file.allow=never", "-c", "submodule.recurse=false",
                  "submodule", "update", "--init", "--checkout", "--",

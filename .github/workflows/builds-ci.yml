@@ -14,7 +14,8 @@ on:
 
 concurrency:
   # Unlike the release workflow, superseded CI runs carry no publication risk.
-  group: builds-ci-${{ github.ref }}
+  # The event keeps a manual dispatch from cancelling the push run release uses.
+  group: builds-ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions: {}

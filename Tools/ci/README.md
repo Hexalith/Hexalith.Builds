@@ -176,7 +176,10 @@ python3 -I /path/to/trusted/Builds/Github/lib/ci_pipeline.py --workspace . --rep
 `--phase prepare`, `build` and `unit` run the corresponding composite phases;
 the default `all` runs them in order. Preparation validates the complete document
 through `ci_config.py`, then initializes Builds plus only the explicitly listed
-root-declared gitlinks, with recursion disabled and literal Git pathspecs. In
+root-declared gitlinks, with recursion disabled and literal Git pathspecs. It
+uses `git submodule update --init --checkout`, so an already-initialized listed
+submodule is detached at its recorded gitlink commit; run it in a disposable or
+CI-like checkout rather than a working tree with advanced submodules. In
 Builds' own repository the workspace is the Builds tree under test, so no Builds
 gitlink is initialized, including under a test-only `module-root`; listed
 submodule paths are prefixed with that root. It publishes `solution`,
@@ -231,7 +234,8 @@ scripts through `GITHUB_ACTION_PATH`, independently of the module's Builds
 gitlink. The first CI step reserves stage 1 for story 5-1's guard and commitlint;
 Builds' own call runs no delivered-ref guard. A manual `workflow_dispatch` of
 `builds-ci.yml` runs every lane but skips G-4 evidence archiving, whose carrier
-is credited only for push and pull_request runs.
+is credited only for push and pull_request runs. Its concurrency group includes
+the event name, so a dispatch never cancels the push run that release consumes.
 
 The executor also overrides xUnit's within-project `stopOnFail` setting so
 project-level failure never cancels the remaining tests in that project. xUnit

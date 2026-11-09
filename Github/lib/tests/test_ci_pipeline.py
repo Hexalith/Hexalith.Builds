@@ -48,6 +48,8 @@ with (root / "commands.jsonl").open("a") as log:
     log.write(json.dumps(args)+"\n")
 command=args[0]
 if data.get("failure")==command:
+    print("fake-sdk-stdout-marker")
+    print("fake-sdk-stderr-marker", file=sys.stderr)
     sys.exit(17)
 if command=="sln":
     if data.get("broken_list"):
@@ -172,6 +174,31 @@ class SubprocessPipelineTests(unittest.TestCase):
                 self.assertEqual(["restore"] if failing_command == "restore" else ["restore", "build"],
                                  [command[0] for command in self.commands()])
 
+    def test_failed_discovery_commands_report_their_captured_output(self):
+        for failing_command in ("sln", "msbuild"):
+            with self.subTest(command=failing_command):
+                (self.root / "commands.jsonl").unlink(missing_ok=True)
+                self.data["failure"] = failing_command
+                result = self.invoke()
+                self.assertEqual(17, result.returncode, result.stdout + result.stderr)
+                self.assertIn("fake-sdk-stdout-marker", result.stderr)
+                self.assertIn("fake-sdk-stderr-marker", result.stderr)
+                self.assertIn(f"dotnet {failing_command} ", result.stderr)
+                self.assertFalse(any(command[0] == "test" for command in self.commands()))
+
+    def test_composite_phase_sequence_restores_once_and_tests_only_in_unit(self):
+        phases = {}
+        for phase in ("prepare", "build", "unit"):
+            before = len(self.commands())
+            result = self.invoke("--phase", phase)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            phases[phase] = [command[0] for command in self.commands()[before:]]
+        self.assertEqual([], phases["prepare"])
+        self.assertEqual(["restore", "build"], phases["build"])
+        self.assertNotIn("restore", phases["unit"])
+        self.assertNotIn("build", phases["unit"])
+        self.assertEqual(2, phases["unit"].count("test"))
+        self.assertEqual(1, phases["unit"].count("sln"))
     def test_no_solution_does_not_invoke_sdk_or_require_global_json(self):
         self.document["solution"] = "none"
         (self.root / "global.json").unlink()
@@ -224,6 +251,16 @@ class SubprocessPipelineTests(unittest.TestCase):
         result = self.invoke()
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertFalse(any(command[0] == "test" for command in self.commands()))
+        classification = next(json.loads(line) for line in result.stdout.splitlines() if line.startswith('{"unit"'))
+        self.assertEqual({"unit": [], "integration": ["test/Fixture.IntegrationTests.csproj", "test/Z.Tests/Z.Tests.csproj"],
+                          "excluded": ["test/A space/A.Tests.csproj"]}, classification)
+        # An exclusion takes precedence over an integration-stage name.
+        document = configuration()
+        document.update(hooks=["after-unit-tests"],
+                        tests={"integration": [], "exclude": {"test/A.IntegrationTests.csproj": "after-unit-tests"}})
+        result = PIPE.classify_projects(("test/A.IntegrationTests.csproj", "test/B.Tests.csproj"), document,
+                                        repository=BUILDS)
+        self.assertEqual(PIPE.TestProjects(("test/B.Tests.csproj",), (), ("test/A.IntegrationTests.csproj",)), result)
 
     def test_broken_sdk_discovery_and_metadata_fail_closed(self):
         for option in ("broken_list", "broken_metadata"):
@@ -307,6 +344,34 @@ class SubprocessPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(PIPE.PipelineError, "expected-source does not exist"):
             PIPE.prepare_config(self.root, repository=BUILDS, module_root="Samples/Fixture",
                                 expected_source="Samples/Missing")
+
+    def test_workflow_environment_supplies_repository_and_test_only_context(self):
+        fixture = self.root / "Samples/Fixture"
+        (fixture / ".github").mkdir(parents=True)
+        document = configuration()
+        document["buildsTag"] = "v1.0.0"
+        (fixture / ".github/hexalith-ci.json").write_text(json.dumps(document))
+        (fixture / "Fixture.slnx").write_text("<Solution />")
+        (fixture / "global.json").write_bytes((self.root / "global.json").read_bytes())
+        (self.root / "Samples/Expected").mkdir()
+        output = self.root / "github-output"
+        environment = dict(self.environment, GITHUB_OUTPUT=str(output), CI_REPOSITORY=BUILDS,
+                           CI_MODULE_ROOT="Samples/Fixture", CI_EXPECTED_SOURCE="Samples/Expected")
+
+        def prepare():
+            return subprocess.run([sys.executable, "-I", "-S", str(SCRIPT), "--workspace", str(self.root),
+                                   "--phase", "prepare"], env=environment, text=True,
+                                  capture_output=True, check=False)
+
+        result = prepare()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["solution=Samples/Fixture/Fixture.slnx", "global-json=Samples/Fixture/global.json",
+                          "submodules=[]"], output.read_text().splitlines())
+        environment["CI_REPOSITORY"] = "Example/Module"
+        result = prepare()
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("test-only", result.stderr)
+        self.assertEqual([], self.commands())
 
     def test_unsafe_paths_and_symlink_escapes_fail_closed(self):
         for value in ("", "/absolute.slnx", "a\\b.slnx", "C:drive.slnx", "a/../b.slnx", "./a.slnx",
@@ -396,6 +461,27 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
                         {"TargetFrameworks": "", "TargetPath": str(source_config.parent / "Probe.dll")}):
                     self.fail("source configuration must remain untouched")
             self.assertEqual(original, source_config.read_bytes())
+            # Escaping output configs: a symlink to a repository source config, a
+            # symlink outside the repository, and an output directory outside it.
+            outside = tempfile.TemporaryDirectory(prefix="ci-outside-config-")
+            self.addCleanup(outside.cleanup)
+            outside_config = Path(outside.name) / "xunit.runner.json"
+            outside_config.write_bytes(original)
+            for name, target in (("linked-source", source_config), ("linked-outside", outside_config)):
+                output = root / "artifacts" / name
+                output.mkdir(parents=True)
+                (output / "xunit.runner.json").symlink_to(target)
+                with self.subTest(case=name):
+                    with self.assertRaisesRegex(PIPE.PipelineError, "refusing to override"):
+                        with PIPE.complete_xunit_vstest_configuration(root, project,
+                                {"TargetFrameworks": "", "TargetPath": str(output / "Probe.dll")}):
+                            self.fail("escaping configuration must remain untouched")
+            with self.assertRaisesRegex(PIPE.PipelineError, "refusing to override"):
+                with PIPE.complete_xunit_vstest_configuration(root, project,
+                        {"TargetFrameworks": "", "TargetPath": str(Path(outside.name) / "Probe.dll")}):
+                    self.fail("configuration outside the repository must remain untouched")
+            self.assertEqual(original, source_config.read_bytes())
+            self.assertEqual(original, outside_config.read_bytes())
 
     def test_consumer_cli_initializes_recorded_direct_gitlinks_only(self):
         with tempfile.TemporaryDirectory(prefix="ci-gitlinks-") as temporary:
@@ -455,8 +541,10 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
             entries = (("Builds", "references/Hexalith.Builds", builds),
                        ("Dependency", "references/Extra dependency", dependency),
                        ("Unused", "references/Unused", unused))
+            # Like `git submodule add`, name one submodule after its spaced path.
+            sections = {"Dependency": "references/Extra dependency"}
             (consumer / ".gitmodules").write_text("".join(
-                f'[submodule "{name}"]\n\tpath = {path}\n\turl = {url}/{name}.git\n\tupdate = none\n'
+                f'[submodule "{sections.get(name, name)}"]\n\tpath = {path}\n\turl = {url}/{name}.git\n\tupdate = none\n'
                 for name, path, _ in entries))
             (consumer / ".github").mkdir()
             document = configuration()
@@ -481,7 +569,8 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
                 outputs = json.loads(result.stdout.splitlines()[-1])
                 self.assertEqual([path for _, path, _ in entries[:2]], json.loads(outputs["submodules"]))
                 registered = git(consumer, "config", "--local", "--name-only", "--get-regexp", r"^submodule\..*\.url$")
-                self.assertEqual({"submodule.Builds.url", "submodule.Dependency.url"}, set(registered.splitlines()))
+                self.assertEqual({"submodule.Builds.url", "submodule.references/Extra dependency.url"},
+                                 set(registered.splitlines()))
                 for (_, path, revision), tip in zip(entries[:2], (builds_tip, dependency_tip)):
                     checkout = consumer / path
                     self.assertTrue((checkout / ".git").is_file())
@@ -517,14 +606,15 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
             prepared = PIPE.PreparedConfig(root, root, configuration(), "Fixture.slnx", "global.json",
                                            ("references/Builds", "references/Extra"))
             calls = []
+            declared = ["references/Builds", "references/Extra", "references/Unused"]
 
             def command(arguments, directory, *, capture=False):
                 calls.append(arguments)
                 if "config" in arguments[1:3]:
-                    return "submodule.builds.path references/Builds\nsubmodule.extra.path references/Extra\nsubmodule.unused.path references/Unused\n"
+                    return "".join(f"submodule.{path}.path\n{path}\0" for path in declared)
                 if "ls-files" in arguments[1:3]:
                     self.assertEqual("--literal-pathspecs", arguments[1])
-                    return "160000 " + "a" * 40 + " 0\t" + arguments[-1] + "\n"
+                    return "160000 " + "a" * 40 + " 0\t" + arguments[-1] + "\0"
                 return ""
 
             with mock.patch.object(PIPE, "run_command", side_effect=command):
@@ -538,6 +628,13 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
             with mock.patch.object(PIPE, "run_command", side_effect=command):
                 with self.assertRaisesRegex(PIPE.PipelineError, "not declared in root"):
                     PIPE.initialize_submodules(invalid)
+            # Git would silently use the last URL for a path declared twice.
+            declared.append("references/Extra")
+            calls.clear()
+            with mock.patch.object(PIPE, "run_command", side_effect=command):
+                with self.assertRaisesRegex(PIPE.PipelineError, "duplicate paths"):
+                    PIPE.initialize_submodules(prepared)
+            self.assertFalse(any("update" in call for call in calls))
 
     def test_declared_path_that_is_not_a_gitlink_is_rejected_before_update(self):
         with tempfile.TemporaryDirectory(prefix="ci-not-gitlink-") as temporary:
@@ -551,6 +648,20 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
             prepared = PIPE.PreparedConfig(root, root, configuration(), "Fixture.slnx", "global.json",
                                            ("references/Regular",))
             with self.assertRaisesRegex(PIPE.PipelineError, "not a direct root gitlink"):
+                PIPE.initialize_submodules(prepared)
+            self.assertFalse((root / ".git/modules").exists())
+            # A declared directory whose only index entry is a deeper gitlink is
+            # not itself a gitlink; its pathspec would initialize the unlisted child.
+            with (root / ".gitmodules").open("a") as stream:
+                stream.write('[submodule "Holder"]\n\tpath = references/Holder\n'
+                             '\turl = https://example.invalid/Holder.git\n'
+                             '[submodule "Inner"]\n\tpath = references/Holder/Inner\n'
+                             '\turl = https://example.invalid/Inner.git\n')
+            subprocess.run(["git", "update-index", "--add", "--cacheinfo",
+                            "160000," + "a" * 40 + ",references/Holder/Inner"], cwd=root, check=True)
+            prepared = PIPE.PreparedConfig(root, root, configuration(), "Fixture.slnx", "global.json",
+                                           ("references/Holder",))
+            with self.assertRaisesRegex(PIPE.PipelineError, "not a direct root gitlink: references/Holder"):
                 PIPE.initialize_submodules(prepared)
             self.assertFalse((root / ".git/modules").exists())
 
