@@ -622,32 +622,45 @@ def terminate_recorded_session(record: dict, wait: float | None = None) -> bool:
     return not recorded_session_members(record)
 
 
+def unverified_allocation(evidence: Path, context: dict, job_status: str, reason: str) -> None:
+    write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "allocation-unverified", "reason": reason,
+                                    "executionContext": context, "jobStatus": job_status, "verified": False})
+
+
+def recorded_tool_stopped(receipt: Path, evidence: Path, context: dict, job_status: str) -> bool:
+    """A surviving tool could still allocate or hold provisioning.lock; it must be gone before any decision."""
+    process = process_record_path(receipt)
+    if not (process.exists() or process.is_symlink()):
+        return True
+    try:
+        record = read_process_record(process, context)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError):
+        unverified_allocation(evidence, context, job_status, "integration-process-record-unverified")
+        return False
+    if not terminate_recorded_session(record):
+        unverified_allocation(evidence, context, job_status, "integration-process-survived")
+        return False
+    return True
+
+
 def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = 150, job_status: str = "") -> int:
     context = ci_context()
     root, receipt, evidence = checked_paths(root, receipt, evidence)
     if job_status not in ("", "success", "failure", "cancelled"):
         raise ValueError("unsupported CI finalizer job status")
-    process = process_record_path(receipt)
-    if process.exists() or process.is_symlink():
-        try:
-            record = read_process_record(process, context)
-        except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError):
-            write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "allocation-unverified",
-                                            "reason": "integration-process-record-unverified", "executionContext": context,
-                                            "jobStatus": job_status, "verified": False})
-            return 1
-        # A surviving tool could still allocate or hold provisioning.lock; it must be gone before any decision.
-        if not terminate_recorded_session(record):
-            write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "allocation-unverified",
-                                            "reason": "integration-process-survived", "executionContext": context,
-                                            "jobStatus": job_status, "verified": False})
-            return 1
+    if not recorded_tool_stopped(receipt, evidence, context, job_status):
+        return 1
     if not receipt.exists():
         write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "not-allocated", "executionContext": context,
                                         "jobStatus": job_status, "verified": True})
         return 0
     owner = receipt_owner(receipt, context)
     verify_tool(root)
+    return exact_down(root, owner, evidence, context, job_status, timeout)
+
+
+def exact_down(root: Path, owner: dict, evidence: Path, context: dict, job_status: str, timeout: int) -> int:
+    """Run one exact down for the receipt owner, recording the attempt before the tool runs."""
     environment = os.environ.copy()
     environment["HEXALITH_CI_JOB_STATUS"] = job_status
     run_id = uuid.UUID(hex=owner["runId"]).hex
@@ -722,87 +735,117 @@ def execution_outcome(returncode: int | None, result: dict | None, receipt: Path
     return 0 if returncode == 0 and receipt.exists() and isinstance(outcome, dict) and outcome.get("exitCode") == "Success" else 1
 
 
+class ToolSession:
+    """One gated tool session: records it before launch, forwards runner signals to its group, bounds every stop."""
+
+    def __init__(self):
+        self.child = None
+        self.signals = []
+        self.released = False
+        self.interrupted = False
+        self.terminated = False
+
+    def handle(self, signum, frame):
+        self.signals.append({"signal": signum, "observedAt": time.monotonic()})
+        self.forward()
+
+    def forward(self) -> None:
+        """Deliver the runner's cancellation to the whole released tool session, escalating on a second signal."""
+        if self.child is None or not self.released or self.child.poll() is not None:
+            return
+        if self.signals and not self.interrupted:
+            self.interrupted = True
+            signal_groups([self.child.pid], signal.SIGINT)
+        if len(self.signals) > 1:
+            self.terminate()
+
+    def terminate(self) -> None:
+        if not self.terminated:
+            self.terminated = True
+            signal_groups([self.child.pid], signal.SIGTERM)
+
+    def launch(self, command: list[str], root: Path, receipt: Path, context: dict, output, errors) -> None:
+        """Start the gate in a new session and release the tool only after its job-bound record is durable."""
+        self.child = subprocess.Popen(
+            GATE + command,  # nosec B603 # nosemgrep -- fixed gate and tool/verb; checked, equals-bound option values only.
+            cwd=root,
+            stdin=subprocess.PIPE,
+            stdout=output,
+            stderr=errors,
+            start_new_session=True,
+        )
+        try:
+            write_process_record(receipt, context, self.child.pid)
+            if not self.signals:
+                self.child.stdin.write(b"1\n")
+                self.child.stdin.flush()
+                self.released = True
+        finally:
+            self.child.stdin.close()
+
+    def cancellation_settled(self) -> bool:
+        """Escalate inside the runner grace; return once the final kill was sent."""
+        self.forward()
+        elapsed = time.monotonic() - self.signals[0]["observedAt"]
+        if elapsed >= CANCELLATION_FINAL_SECONDS:
+            signal_groups([self.child.pid], signal.SIGKILL)
+            wait_for_child(self.child, 0.5)
+            return True
+        if elapsed >= CANCELLATION_ESCALATION_SECONDS:
+            self.terminate()
+        return False
+
+    def wait(self, timeout: int) -> bool:
+        """Wait for the tool; return True only when the helper's own timeout expired."""
+        deadline = time.monotonic() + timeout
+        while not wait_for_child(self.child, 0.1):
+            if self.signals:
+                if self.cancellation_settled():
+                    return False
+            elif time.monotonic() >= deadline:
+                return True
+        return False
+
+    def stop_after_timeout(self) -> None:
+        """A timeout is not a cancellation: stop the whole tool session here before the helper finalizes exactly."""
+        signal_groups([self.child.pid], signal.SIGTERM)
+        if not wait_for_child(self.child, TIMEOUT_STOP_SECONDS):
+            signal_groups([self.child.pid], signal.SIGKILL)
+            wait_for_child(self.child, 10)
+
+    def record(self, evidence: Path, context: dict, timed_out: bool, output, errors):
+        """Write execution evidence before parsing the tool output, then complete it with the parsed result."""
+        observed = {"schema": EXECUTION_SCHEMA, "executionContext": context, "processExitCode": self.child.poll(),
+                    "launched": self.released, "cancelled": bool(self.signals), "timedOut": timed_out,
+                    "signals": [item["signal"] for item in self.signals], "outputParsed": False, "result": None,
+                    "stderr": stderr_record(bounded_output(errors))}
+        write_evidence(evidence, "execution.json", observed)
+        result = parsed_output(bounded_output(output))
+        write_evidence(evidence, "execution.json", {**observed, "outputParsed": result is not None, "result": result})
+        return result
+
+
 def execute_integration(command: list[str], root: Path, receipt: Path, evidence: Path, timeout: int,
                         context: dict | None = None) -> int:
     """Run the tool in its own recorded session; cancellation stays inside the runner grace, timeouts finalize here."""
     context = context or ci_context()
-    signals = []
-    state = {"child": None, "released": False, "interrupted": False, "terminated": False}
-
-    def forward():
-        """Deliver the runner's cancellation to the whole released tool session, escalating on a second signal."""
-        child = state["child"]
-        if child is None or not state["released"] or child.poll() is not None:
-            return
-        if signals and not state["interrupted"]:
-            state["interrupted"] = True
-            signal_groups([child.pid], signal.SIGINT)
-        if len(signals) > 1 and not state["terminated"]:
-            state["terminated"] = True
-            signal_groups([child.pid], signal.SIGTERM)
-
-    def stop(signum, frame):
-        signals.append({"signal": signum, "observedAt": time.monotonic()})
-        forward()
-
-    previous = {sig: signal.signal(sig, stop) for sig in (signal.SIGINT, signal.SIGTERM)}
+    session = ToolSession()
+    previous = {sig: signal.signal(sig, session.handle) for sig in (signal.SIGINT, signal.SIGTERM)}
     temporary = job_root("RUNNER_TEMP")
     try:
         with tempfile.TemporaryFile(dir=temporary) as output, tempfile.TemporaryFile(dir=temporary) as errors:
-            child = subprocess.Popen(
-                GATE + command,  # nosec B603 # nosemgrep -- fixed gate and tool/verb; checked, equals-bound option values only.
-                cwd=root,
-                stdin=subprocess.PIPE,
-                stdout=output,
-                stderr=errors,
-                start_new_session=True,
-            )
-            state["child"] = child
-            try:
-                write_process_record(receipt, context, child.pid)
-                if not signals:
-                    child.stdin.write(b"1\n")
-                    child.stdin.flush()
-                    state["released"] = True
-            finally:
-                child.stdin.close()
-            timed_out = False
-            deadline = time.monotonic() + timeout
-            while not wait_for_child(child, 0.1):
-                now = time.monotonic()
-                if signals:
-                    forward()
-                    elapsed = now - signals[0]["observedAt"]
-                    if elapsed >= CANCELLATION_FINAL_SECONDS:
-                        signal_groups([child.pid], signal.SIGKILL)
-                        wait_for_child(child, 0.5)
-                        break
-                    if elapsed >= CANCELLATION_ESCALATION_SECONDS and not state["terminated"]:
-                        state["terminated"] = True
-                        signal_groups([child.pid], signal.SIGTERM)
-                elif now >= deadline:
-                    timed_out = True
-                    break
+            session.launch(command, root, receipt, context, output, errors)
+            timed_out = session.wait(timeout)
             if timed_out:
-                # A timeout is not a cancellation: stop the whole tool session here, then finalize exactly.
-                signal_groups([child.pid], signal.SIGTERM)
-                if not wait_for_child(child, TIMEOUT_STOP_SECONDS):
-                    signal_groups([child.pid], signal.SIGKILL)
-                    wait_for_child(child, 10)
-            observed = {"schema": EXECUTION_SCHEMA, "executionContext": context, "processExitCode": child.poll(),
-                        "launched": state["released"], "cancelled": bool(signals), "timedOut": timed_out,
-                        "signals": [item["signal"] for item in signals], "outputParsed": False, "result": None,
-                        "stderr": stderr_record(bounded_output(errors))}
-            write_evidence(evidence, "execution.json", observed)
-            result = parsed_output(bounded_output(output))
-            write_evidence(evidence, "execution.json", {**observed, "outputParsed": result is not None, "result": result})
-        if signals:
+                session.stop_after_timeout()
+            result = session.record(evidence, context, timed_out, output, errors)
+        if session.signals:
             # Exact down after cancellation belongs to the always() finalizer; nothing here outlasts the runner grace.
             return 130
         cleanup = finalize(root, receipt, evidence, job_status="")
         if timed_out:
             return 124
-        return execution_outcome(child.returncode, result, receipt) or cleanup
+        return execution_outcome(session.child.returncode, result, receipt) or cleanup
     finally:
         for sig, handler in previous.items():
             signal.signal(sig, handler)

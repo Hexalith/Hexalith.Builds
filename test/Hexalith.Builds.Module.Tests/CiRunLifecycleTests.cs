@@ -303,29 +303,7 @@ public sealed class CiRunLifecycleTests
             using PlatformManifestTestWorkspace workspace = new();
             string manifest = ConfigureExecutingWorkspace(workspace);
             ModuleTestSelection selected = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
-            CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
-            {
-                WorkspaceRoot = Path.Combine(workspace.Root, "workspace"),
-                ContinuousIntegrationOverride = true,
-                StopTimeout = TimeSpan.FromSeconds(30),
-                SourceMapping = new SourceMapping(WorkspaceMode.Source, workspace.Root, "sample", [new("sample", "source", workspace.Root)], false),
-            };
-            CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selected }, manifest, workspace.Root).ConfigureAwait(true);
-            CompositionRunState state = CompositionRunPlanFactory.CreateInitialState(plan.RunId, plan.Workspace, selected.ManifestHash, selected.RequestedAtUtc) with
-            {
-                AttemptId = plan.AttemptId,
-                EnvironmentId = plan.EnvironmentId,
-                SelectedTest = selected,
-                Status = CompositionRunStatus.Starting,
-                ExecutionContext = Context(),
-                EffectiveDeadlineSeconds = 600,
-                StartupDeadlineUtc = selected.RequestedAtUtc.AddSeconds(600),
-            };
-            await new CompositionRunStateStore(options.StateDirectory).WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
-            string diagnostics = Path.Combine(options.StateDirectory, "diagnostics", plan.RunId);
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            CompositionAttachment active = new(CompositionRunPlanFactory.NewRunId(), plan.EnvironmentId, plan.RunId, CompositionRunPlanFactory.NewRunId(), 14400, now, 14400, now.AddHours(4));
-            _ = await CompositionAttachmentStore.UpdateAsync<int>(diagnostics, plan.RunId, _ => (0, [active]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            (CompositionEngineOptions options, CompositionRunPlan plan, string diagnostics) = await PreparePartialStartupAsync(workspace, manifest, selected).ConfigureAwait(true);
             using Process appHost = new() { StartInfo = CompositionProcess.CreateStartInfo("python3", ["-u", "-c", "import sys; print('ready', flush=True); sys.stdin.readline()"], workspace.Root, new Dictionary<string, string> { [CompositionEnvironment.RunId] = plan.RunId }) };
             appHost.Start().ShouldBeTrue();
             (await appHost.StandardOutput.ReadLineAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("ready");
@@ -335,23 +313,8 @@ public sealed class CiRunLifecycleTests
                 string blocker = Path.Combine(diagnostics, "cleanup-request.json");
                 _ = Directory.CreateDirectory(blocker);
                 CompositionEngine engine = new(options with { SelectedTest = selected });
-                System.Reflection.MethodInfo fail = typeof(CompositionEngine).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                    .Single(method => method.Name == "FailAndTearDownAsync" && method.GetParameters().Length == 8);
-                ToolDiagnostic cause = new(cancelled ? "HXC130" : "HXR020", ToolPhase.Topology, cancelled ? ToolFailureCategory.Cancelled : ToolFailureCategory.TopologyOrLifecycle, "Controlled partial startup termination.", "apphost");
-                ToolExitCode exit = cancelled ? ToolExitCode.Cancelled : ToolExitCode.TopologyOrLifecycle;
-                object[] arguments = [plan.RunId, appHost, selected.ManifestHash, cancelled ? CompositionRunStatus.Cancelled : CompositionRunStatus.Failed, cause, exit, selected.RequestedAtUtc, new CompositionEffectiveDeadline(600, false, null, null)];
-                CompositionStartResult refused = await ((Task<CompositionStartResult>)fail.Invoke(engine, arguments)!).ConfigureAwait(true);
-                refused.Result.Status.ShouldBe(cancelled ? "cancelled" : "failed");
-                refused.Result.Outcome.ExitCode.ShouldBe(exit);
-                refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXT008");
-                refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
-                CompositionRunResources leftovers = refused.Result.RemainingResources.ShouldNotBeNull();
-                leftovers.IsEmpty.ShouldBeFalse();
-                appHost.HasExited.ShouldBeFalse();
-                CompositionAttachment held = (await CompositionAttachmentStore.ReadAsync(diagnostics, plan.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
-                held.EndedAtUtc.ShouldBeNull();
-                held.Outcome.ShouldBeNull();
-                File.Exists(Path.Combine(diagnostics, "attachment-withdrawals.json")).ShouldBeFalse();
+                CompositionStartResult refused = await FailPartialStartupAsync(engine, plan.RunId, appHost, selected, cancelled).ConfigureAwait(true);
+                await AssertWithdrawalRefusedAsync(refused, cancelled, appHost, diagnostics, plan.RunId).ConfigureAwait(true);
                 Directory.Delete(blocker);
                 CompositionDownResult down = await engine.DownAsync(plan.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
                 down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, JsonSerializer.Serialize(down.Result));
@@ -722,14 +685,70 @@ public sealed class CiRunLifecycleTests
 
     private static string BuildsRoot()
     {
-        DirectoryInfo? directory = new(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Hexalith.Builds.slnx")))
+        for (string? directory = AppContext.BaseDirectory; directory is not null; directory = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(directory)))
         {
-            directory = directory.Parent;
+            if (File.Exists(Path.Combine(directory, "Hexalith.Builds.slnx")))
+            {
+                return directory;
+            }
         }
 
-        return directory.ShouldNotBeNull("Could not locate the Builds repository.").FullName;
+        throw new InvalidOperationException("Could not locate the Builds repository.");
     }
+
+    private static async Task<(CompositionEngineOptions Options, CompositionRunPlan Plan, string Diagnostics)> PreparePartialStartupAsync(PlatformManifestTestWorkspace workspace, string manifest, ModuleTestSelection selected)
+    {
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            WorkspaceRoot = Path.Combine(workspace.Root, "workspace"),
+            ContinuousIntegrationOverride = true,
+            StopTimeout = TimeSpan.FromSeconds(30),
+            SourceMapping = new SourceMapping(WorkspaceMode.Source, workspace.Root, "sample", [new("sample", "source", workspace.Root)], false),
+        };
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selected }, manifest, workspace.Root).ConfigureAwait(true);
+        CompositionRunState state = CompositionRunPlanFactory.CreateInitialState(plan.RunId, plan.Workspace, selected.ManifestHash, selected.RequestedAtUtc) with
+        {
+            AttemptId = plan.AttemptId,
+            EnvironmentId = plan.EnvironmentId,
+            SelectedTest = selected,
+            Status = CompositionRunStatus.Starting,
+            ExecutionContext = Context(),
+            EffectiveDeadlineSeconds = 600,
+            StartupDeadlineUtc = selected.RequestedAtUtc.AddSeconds(600),
+        };
+        await new CompositionRunStateStore(options.StateDirectory).WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string diagnostics = Path.Combine(options.StateDirectory, "diagnostics", plan.RunId);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        CompositionAttachment active = new(CompositionRunPlanFactory.NewRunId(), plan.EnvironmentId, plan.RunId, CompositionRunPlanFactory.NewRunId(), 14400, now, 14400, now.AddHours(4));
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(diagnostics, plan.RunId, _ => (0, [active]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        return (options, plan, diagnostics);
+    }
+
+    private static Task<CompositionStartResult> FailPartialStartupAsync(CompositionEngine engine, string runId, Process appHost, ModuleTestSelection selected, bool cancelled)
+    {
+        System.Reflection.MethodInfo fail = typeof(CompositionEngine).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            .Single(method => method.Name == "FailAndTearDownAsync" && method.GetParameters().Length == 8);
+        ToolDiagnostic cause = new(cancelled ? "HXC130" : "HXR020", ToolPhase.Topology, cancelled ? ToolFailureCategory.Cancelled : ToolFailureCategory.TopologyOrLifecycle, "Controlled partial startup termination.", "apphost");
+        object[] arguments = [runId, appHost, selected.ManifestHash, cancelled ? CompositionRunStatus.Cancelled : CompositionRunStatus.Failed, cause, PartialStartupExit(cancelled), selected.RequestedAtUtc, new CompositionEffectiveDeadline(600, false, null, null)];
+        return (Task<CompositionStartResult>)fail.Invoke(engine, arguments)!;
+    }
+
+    private static async Task AssertWithdrawalRefusedAsync(CompositionStartResult refused, bool cancelled, Process appHost, string diagnostics, string runId)
+    {
+        refused.Result.Status.ShouldBe(cancelled ? "cancelled" : "failed");
+        refused.Result.Outcome.ExitCode.ShouldBe(PartialStartupExit(cancelled));
+        refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXT008");
+        refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
+        CompositionRunResources leftovers = refused.Result.RemainingResources.ShouldNotBeNull();
+        leftovers.IsEmpty.ShouldBeFalse();
+        appHost.HasExited.ShouldBeFalse();
+        CompositionAttachment held = (await CompositionAttachmentStore.ReadAsync(diagnostics, runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
+        held.EndedAtUtc.ShouldBeNull();
+        held.Outcome.ShouldBeNull();
+        File.Exists(Path.Combine(diagnostics, "attachment-withdrawals.json")).ShouldBeFalse();
+    }
+
+    private static ToolExitCode PartialStartupExit(bool cancelled) => cancelled ? ToolExitCode.Cancelled : ToolExitCode.TopologyOrLifecycle;
 
     private static JsonElement Context() => JsonSerializer.SerializeToElement(new { kind = "ci", repository = "o/r", workflowRunId = "101", workflowAttempt = 2, jobId = "ci", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
 
