@@ -100,9 +100,11 @@ tool in its own session through a gate that releases the tool only after the job
 process record `$RUNNER_TEMP/hexalith-ci-owner.process.json` is durable. A runner
 signal reaches only the tool's own processes: the gated `dotnet tool run` muxer that
 leads the session and the tool process it runs. Composed processes (the AppHost, DCP,
-the native test host and sidecars) are the tool's descendants and are never signalled
-by the helper. The tool closes admission and records attachment withdrawal before it
-stops them. The helper sends SIGINT, escalates to SIGTERM after 6 s (or at once on a
+the native test host and sidecars) are the tool's descendants, and the helper never
+forwards a runner cancellation to them. The tool closes admission and records
+attachment withdrawal before it stops them. A helper timeout likewise interrupts only
+the tool with SIGINT, its cooperative stop, and kills the tool after 120 s. On a
+cancellation the helper sends SIGINT, escalates to SIGTERM after 6 s (or at once on a
 second runner signal) and kills the tool after 8.5 s, so its own stop work fits the
 grace. After a cancellation the helper performs no exact down itself; that belongs to
 the `always()` finalizer.
@@ -136,9 +138,13 @@ and finally kills the surviving tool processes, then re-reads the receipt.
   withdrawal.
 
 A survivor is reported as `allocation-unverified`. No live orphan can therefore
-allocate after that decision or keep `provisioning.lock` against the exact down. When the helper was never checked out, no integration
-process could have started, and the finalizer exits cleanly unless owner records
-exist. It refuses foreign repository/run/attempt/job receipts and process records,
+allocate after that decision or keep `provisioning.lock` against the exact down. A
+receipt that a muxer-orphaned tool wrote while being stopped still leads to the exact
+down, never to `not-allocated`. A missing or unexecutable tool at finalization is
+recorded as `tool-unavailable` unverified cleanup, and declared diagnostics are still
+retained. When the helper was never checked out, no integration process could have
+started, and the finalizer exits cleanly unless owner records exist. It refuses
+foreign repository/run/attempt/job receipts and process records,
 and mismatched durable owner identities, before destructive commands. Every
 finalizer is bounded. Unknown discovery and any owned process/container/workspace/claim
 prevent completion and retain retryable owner metadata. Peer owners are outside the
@@ -152,8 +158,9 @@ before the tool output is parsed. Each exact down attempt writes its own
 `cleanup-<n>.json`, recording the exit code, parse status, verification and redacted
 stderr. A later attempt never replaces an earlier one. Recording is best effort and
 never prevents the down, but an unrecorded attempt stays non-success. Each down runs
-in its own session, and a down timeout kills that whole session, so no orphaned down
-keeps `provisioning.lock`. The following are all recorded as unverified cleanup, and
+in its own session, and a down timeout kills that process group, so no orphaned down
+keeps `provisioning.lock`. The helper never waits on a descendant that left the group.
+The following are all recorded as unverified cleanup, and
 declared diagnostics are still retained:
 
 - non-JSON or non-UTF-8 output;
@@ -251,5 +258,7 @@ runner does. In them:
 - a live orphan cannot hold the provisioning lock;
 - escalation works against a tool that ignores interrupts;
 - a reused or other-boot session is never signalled;
-- a timeout is finalized as a timeout. Hosted runner observations
+- a timeout is finalized as a timeout.
+
+Hosted runner observations
 are still required before Story 2.8 can complete.

@@ -68,7 +68,7 @@ STDERR_EXCERPT_CHARACTERS = 4096
 # The tool runs only after the helper durably recorded its new session; an orphaned gate exits without launching.
 GATE = ["/bin/sh", "-c", 'IFS= read -r go || exit 125; [ "$go" = 1 ] || exit 125; exec "$@" </dev/null', "hexalith-ci-gate"]
 SECRET_TEXT = re.compile(
-    r"(?i)(?<![a-z])(authorization|bearer|password|passwd|secret|token|api[-_]?key|credential)s?(?![a-z])[^\n]*")
+    r"(?i)(authorization|bearer|password|passwd|secret|token|api[-_]?key|credential)s?(?![a-z])[^\n]*")
 OPAQUE_TEXT = re.compile(r"[A-Za-z\d+/=_-]{40,}", re.ASCII)
 FIXED_METADATA_BYTES = 4 * 1024 * 1024
 JSON_DIAGNOSTIC_BYTES = 1024 * 1024
@@ -616,11 +616,6 @@ def session_identities(record: dict) -> dict[int, dict]:
     return members
 
 
-def recorded_session_members(record: dict) -> dict[int, int]:
-    """Map every live member of the recorded tool session to its process group."""
-    return {pid: identity["processGroup"] for pid, identity in session_identities(record).items()}
-
-
 def session_processes(record: dict) -> dict[int, str]:
     """Every live recorded-session process with its start time."""
     return {pid: identity["startTime"] for pid, identity in session_identities(record).items()}
@@ -742,14 +737,24 @@ def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = DOWN_TIME
         # Without a receipt nothing was allocated, so every other recorded-session process stops before the decision.
         if not stopped(record, lambda: session_processes(record), evidence, context, job_status):
             return 1
-        write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "not-allocated", "executionContext": context,
-                                        "jobStatus": job_status, "verified": True})
-        return 0
+        # A tool orphaned by its muxer is not a leader's child; it could have written the receipt until it stopped.
+        if not receipt.exists():
+            write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "not-allocated", "executionContext": context,
+                                            "jobStatus": job_status, "verified": True})
+            return 0
     owner = receipt_owner(receipt, context)
     # Owned composed processes stay for the exact down, which withdraws attachments before it stops them.
     if not stopped(record, lambda: unowned_survivors(record, owner["runId"]), evidence, context, job_status):
         return 1
-    verify_tool(root)
+    try:
+        verify_tool(root)
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        # A missing or unexecutable tool is unverified cleanup; declared diagnostics are still retained.
+        record_cleanup(evidence, {"schema": CLEANUP_SCHEMA, "status": "tool-unavailable", "reason": type(error).__name__,
+                                  "runId": owner["runId"], "executionContext": context, "jobStatus": job_status,
+                                  "verified": False})
+        retained_safely(owner, evidence)
+        return 1
     return exact_down(root, owner, evidence, context, job_status, timeout)
 
 
@@ -779,7 +784,11 @@ def run_down(command: list[str], *, cwd: Path, env: dict, timeout: int) -> subpr
     except subprocess.TimeoutExpired:
         # No orphaned down may keep provisioning.lock against the always() finalizer's retry.
         signal_groups([child.pid], signal.SIGKILL)
-        stdout, stderr = child.communicate()
+        try:
+            stdout, stderr = child.communicate(timeout=POST_KILL_WAIT_SECONDS)
+        except subprocess.TimeoutExpired:
+            # A descendant in another process group still holds the pipes; never wait on it.
+            stdout, stderr = b"", b""
         raise subprocess.TimeoutExpired(command, timeout, output=stdout, stderr=stderr) from None  # nosemgrep -- a record only.
     output, errors = stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace")
     return subprocess.CompletedProcess(command, child.returncode, output, errors)  # nosemgrep -- a record, nothing executes.
@@ -941,8 +950,9 @@ class ToolSession:
         return False
 
     def stop_after_timeout(self) -> None:
-        """A timeout is not a cancellation: stop the tool here; the helper's exact down then withdraws and cleans."""
-        self.signal_tool(signal.SIGTERM)
+        """A timeout is not a cancellation: interrupt the tool, which withdraws before it stops anything, then kill it."""
+        # The tool handles only SIGINT cooperatively; SIGTERM would end it before withdrawal.
+        self.signal_tool(signal.SIGINT)
         if not wait_for_child(self.child, TIMEOUT_STOP_SECONDS):
             self.signal_tool(signal.SIGKILL)
             wait_for_child(self.child, POST_KILL_WAIT_SECONDS)

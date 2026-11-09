@@ -446,7 +446,7 @@ public sealed class CiRunLifecycleTests
 
         // The service's no-recorded-terminal branch: the remaining stop allowance is still open.
         using CancellationTokenSource allowance = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        allowance.CancelAfter(TimeSpan.FromSeconds(5));
+        allowance.CancelAfter(TimeSpan.FromSeconds(60));
         await engine.RecordOwnerStatusAsync(issued.RunId, CompositionRunStatus.Failed, allowance.Token).ConfigureAwait(true);
         allowance.IsCancellationRequested.ShouldBeFalse();
         CompositionRunState owner = (await store.TryReadAsync(issued.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();

@@ -61,17 +61,23 @@ if 'down' in args:
     if scenario == 'owned-survivor':
         apphost = int((root / 'actual-apphost-ready').read_text())
         record['startedAtNs'] = time.time_ns()
-        try:
-            os.kill(apphost, 0)
-            record['appHostAlive'] = True
-        except ProcessLookupError:
-            record['appHostAlive'] = False
+        descendant = int((root / 'actual-apphost-child').read_text())
+        def alive(pid):
+            # A killed but unreaped child is a zombie, not a live process.
+            try:
+                return pathlib.Path(f'/proc/{pid}/stat').read_text().rpartition(')')[2].split()[0] not in ('Z', 'X')
+            except FileNotFoundError:
+                return False
+        record['appHostAlive'] = alive(apphost)
+        record['appHostChildAlive'] = alive(descendant)
         (root / f'actual-down-{number}.json').write_text(json.dumps(record))
         if record['appHostAlive']:
             # The real down stops owned processes only after it recorded attachment withdrawal.
             os.kill(apphost, signal.SIGTERM)
             while (root / 'actual-apphost-alive').exists():
                 time.sleep(0.01)
+        if record['appHostChildAlive']:
+            os.kill(descendant, signal.SIGKILL)
     if scenario == 'binary-down':
         sys.stdout.buffer.write(b'\xff\xfe not utf-8')
         (root / f'actual-down-{number}.json').write_text(json.dumps(record))
@@ -104,7 +110,7 @@ def interrupted(signum, frame):
     (root / 'actual-tool-signal').write_text(str(signum))
     report('Cancelled')
     sys.exit(130)
-def start_apphost():
+def start_apphost(*extra):
     """A composed child of the tool, tagged with the owner run like the real AppHost; it records its first signal."""
     code = ("import os, pathlib, signal, sys, time\n"
             "root = pathlib.Path(sys.argv[1])\n"
@@ -116,12 +122,17 @@ def start_apphost():
             "    os._exit(0)\n"
             "signal.signal(signal.SIGINT, first)\n"
             "signal.signal(signal.SIGTERM, first)\n"
+            "if len(sys.argv) > 2:\n"
+            "    import subprocess\n"
+            "    plain = {key: value for key, value in os.environ.items() if key != 'HEXALITH_G4_RUN_ID'}\n"
+            "    child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], env=plain)\n"
+            "    (root / 'actual-apphost-child').write_text(str(child.pid))\n"
             "(root / 'actual-apphost-alive').write_text('1')\n"
             "(root / 'actual-apphost-ready').write_text(str(os.getpid()))\n"
             "while True:\n"
             "    time.sleep(0.02)\n")
     environment = dict(os.environ, HEXALITH_G4_RUN_ID=owner['runId'])
-    child = subprocess.Popen([sys.executable, '-c', code, str(root)], env=environment)
+    child = subprocess.Popen([sys.executable, '-c', code, str(root), *extra], env=environment)
     while not (root / 'actual-apphost-ready').exists():
         time.sleep(0.01)
     return child
@@ -145,12 +156,12 @@ if scenario == 'muxer-apphost':
         apphost.wait()
         report('Cancelled')
         sys.exit(130)
+    # Like the real tool: only SIGINT is cooperative; SIGTERM ends it before withdrawal.
     signal.signal(signal.SIGINT, withdraw_then_stop)
-    signal.signal(signal.SIGTERM, withdraw_then_stop)
 if scenario == 'owned-survivor':
     # The tool fails after a refused withdrawal and deliberately leaves its owned AppHost for the exact down.
     write_receipt()
-    start_apphost()
+    start_apphost('with-untagged-child')
     report('TopologyOrLifecycle')
     os._exit(1)
 if scenario == 'ignore-all':
@@ -166,8 +177,8 @@ if scenario in ('wait', 'wait-before-receipt'):
     if scenario == 'wait':
         write_receipt()
 elif scenario == 'timeout':
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    signal.signal(signal.SIGTERM, interrupted)
+    # Like the real tool: SIGINT is the cooperative stop and SIGTERM kills it without withdrawal.
+    signal.signal(signal.SIGINT, interrupted)
     write_receipt()
 elif scenario == 'stubborn-late-receipt':
     def late(signum, frame):
@@ -292,8 +303,9 @@ class IntegrationTests(unittest.TestCase):
                            JOB_TIMEOUT_MINUTES="45", JOB_STARTED_EPOCH=str(int(time.time()) - 300))
         return environment
 
-    def start_step(self, scenario):
+    def start_step(self, scenario, **extra):
         environment = self.step_environment(scenario)
+        environment.update(extra)
         script = self.root / "integration-step.sh"
         script.write_text(self.workflow_step_body("Runner-owned package integration"))
         return subprocess.Popen(["bash", "--noprofile", "--norc", "-eo", "pipefail", str(script)], cwd=self.root,  # nosec B603
@@ -926,7 +938,7 @@ class IntegrationTests(unittest.TestCase):
         with self.fake_tool("timeout"), patch.object(helper, "verify_tool"):
             self.assertEqual(helper.execute_integration(helper.TOOL + ["test", "--ci-owner-receipt=" + str(self.receipt)],
                                                         self.root, self.receipt, self.evidence, 1), 124)
-        self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGTERM))
+        self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGINT))
         execution = json.loads((self.evidence / "execution.json").read_text())
         self.assertEqual((execution["timedOut"], execution["cancelled"]), (True, False))
         self.assertEqual([down["jobStatus"] for down in self.downs()], [""])
@@ -1305,6 +1317,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(step.returncode, 1, output + errors)
         [down] = self.downs()
         self.assertTrue(down["appHostAlive"], "The exact down must find the owned AppHost still alive.")
+        self.assertTrue(down["appHostChildAlive"], "An untagged descendant of the owned AppHost is owned too.")
         number, observed = (self.root / "actual-apphost-signal").read_text().split()
         self.assertEqual(int(number), signal.SIGTERM)
         self.assertGreaterEqual(int(observed), down["startedAtNs"], "Nothing may signal the owned AppHost before the down.")
@@ -1314,8 +1327,8 @@ class IntegrationTests(unittest.TestCase):
     def test_cancellation_escalates_on_a_tool_that_ignores_interrupt_and_terminate(self):
         for runner_signals in (1, 2):
             with self.subTest(runner_signals=runner_signals), self.fake_tool("ignore-all"), patch.object(
-                helper, "CANCELLATION_ESCALATION_SECONDS", 0.6
-            ), patch.object(helper, "CANCELLATION_FINAL_SECONDS", 1.2), tempfile.TemporaryFile() as output, \
+                helper, "CANCELLATION_ESCALATION_SECONDS", 2.5
+            ), patch.object(helper, "CANCELLATION_FINAL_SECONDS", 4.0), tempfile.TemporaryFile() as output, \
                     tempfile.TemporaryFile() as errors:
                 self.reset_job_records()
                 session = helper.ToolSession()
@@ -1331,9 +1344,9 @@ class IntegrationTests(unittest.TestCase):
                 self.assertEqual([int(number) for number, _ in logged], [signal.SIGINT, signal.SIGTERM])
                 terminated = float(logged[1][1]) - started
                 if runner_signals == 2:
-                    self.assertLess(terminated, 0.6, "A second runner signal escalates to SIGTERM at once.")
+                    self.assertLess(terminated, 2.0, "A second runner signal escalates to SIGTERM at once.")
                 else:
-                    self.assertGreaterEqual(terminated, 0.6, "SIGTERM waits for the in-grace escalation time.")
+                    self.assertGreaterEqual(terminated, 2.5, "SIGTERM waits for the in-grace escalation time.")
 
     @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
     def test_a_reused_or_other_boot_session_is_never_signalled(self):
@@ -1362,16 +1375,17 @@ class IntegrationTests(unittest.TestCase):
     def test_a_failed_cleanup_record_never_prevents_the_exact_down(self):
         self.write_receipt()
         original = helper.write_cleanup_record
-        for failure in (OSError(errno.ENOSPC, "no space"), ValueError("evidence path refused")):
+        for failing, failure in ((1, OSError(errno.ENOSPC, "no space")), (1, ValueError("evidence path refused")),
+                                 (3, OSError(errno.EIO, "final verified record lost"))):
             calls = []
 
             def first_write_fails(*args, **kwargs):
                 calls.append(args)
-                if len(calls) == 1:
+                if len(calls) == failing:
                     raise failure
                 return original(*args, **kwargs)
 
-            with self.subTest(failure=type(failure).__name__), patch.object(helper, "verify_tool"), patch.object(
+            with self.subTest(write=failing, failure=type(failure).__name__), patch.object(helper, "verify_tool"), patch.object(
                 helper, "write_cleanup_record", side_effect=first_write_fails
             ), patch.object(helper, "run_down", return_value=self.down_result()) as down:
                 self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1,
@@ -1380,10 +1394,13 @@ class IntegrationTests(unittest.TestCase):
 
     def test_stderr_is_redacted_before_the_excerpt_and_across_joined_keywords(self):
         straddling = "plain " * 1000 + "\ntoken=" + "v1 " * 3000
-        record = helper.stderr_record(straddling + "\nDB_PASSWORD=hunter2\nAPI-TOKEN: abc\nplain line\n")
+        record = helper.stderr_record(straddling + "\nDB_PASSWORD=hunter2\nAPI-TOKEN: abc\ndbPassword=camel1\n"
+                                      "clientSecret=camel2\naccessToken=camel3\nplain line\n")
         self.assertNotIn("v1", record["excerpt"])
         self.assertNotIn("hunter2", record["excerpt"])
         self.assertNotIn("abc", record["excerpt"])
+        for value in ("camel1", "camel2", "camel3"):
+            self.assertNotIn(value, record["excerpt"])
         self.assertIn("plain line", record["excerpt"])
         self.assertTrue(record["truncated"])
 
@@ -1395,10 +1412,15 @@ class IntegrationTests(unittest.TestCase):
         record = self.cleanup_record(1)
         self.assertEqual((record["status"], record["outputParsed"], record["verified"]), ("completed", False, False))
         self.assertTrue((self.evidence / "test-result.json").exists())
-        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", side_effect=FileNotFoundError("dotnet")):
+        (self.evidence / "test-result.json").unlink()
+        self._real_helper_environment()
+        empty = self.root / "no-dotnet"
+        empty.mkdir()
+        with patch.dict(os.environ, {"PATH": str(empty)}):
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
         record = self.cleanup_record(2)
         self.assertEqual((record["status"], record["reason"], record["verified"]), ("tool-unavailable", "FileNotFoundError", False))
+        self.assertTrue((self.evidence / "test-result.json").exists(), "Declared diagnostics are retained without the tool.")
 
     @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
     def test_a_timed_out_down_leaves_no_orphan_in_its_session(self):
@@ -1430,31 +1452,108 @@ class IntegrationTests(unittest.TestCase):
                 helper.derived_timeout(invalid, 45, int(now), now=now)
 
     def test_an_exhausted_job_budget_refuses_before_any_allocation(self):
-        self._real_helper_environment()
         with self.fake_tool("success"):
+            environment = self._real_helper_environment()
             base = [sys.executable, str(Path(helper.__file__).resolve()), "run", "--manifest", "module.json", "--profiles",
                     "real", "--receipt", str(self.receipt), "--evidence", str(self.evidence)]
             exhausted = ["--step-timeout-minutes", "40", "--job-timeout-minutes", "45", "--job-started-epoch",
                          str(int(time.time()) - 41 * 60)]
-            for extra in (exhausted, exhausted + ["--timeout-seconds", "600"], exhausted[:4]):
+            cases = ((exhausted, "cannot hold the minimum integration timeout"),
+                     (exhausted + ["--timeout-seconds", "600"], "derive the integration timeout from all"),
+                     (exhausted[:4], "derive the integration timeout from all"))
+            for extra, reason in cases:
                 with self.subTest(extra=extra):
-                    refused = subprocess.run(base + extra, cwd=self.root, env=os.environ.copy(), capture_output=True,  # nosec B603
+                    refused = subprocess.run(base + extra, cwd=self.root, env=environment, capture_output=True,  # nosec B603
                                              text=True, timeout=60, check=False)
                     self.assertEqual(refused.returncode, 1, refused.stdout + refused.stderr)
+                    self.assertIn(reason, refused.stderr)
                     self.assertFalse((self.root / "actual-tool-args.json").exists())
                     self.assertFalse(self.receipt.exists() or helper.process_record_path(self.receipt).exists())
                     self.assertFalse((self.evidence / "invocation.json").exists())
 
     def test_the_v2_step_passes_its_derived_budget_into_the_invocation(self):
-        step = self.start_step("success")
+        started = int(time.time()) - 300
+        latest = helper.derived_timeout(40, 45, started, now=time.time())
+        step = self.start_step("success", JOB_STARTED_EPOCH=str(started))
         output, errors = step.communicate(timeout=60)
+        earliest = helper.derived_timeout(40, 45, started, now=time.time())
         self.assertEqual(step.returncode, 0, output + errors)
         invocation = json.loads((self.evidence / "invocation.json").read_text())
         self.assertIsInstance(invocation["timeoutSeconds"], int)
-        self.assertLessEqual(invocation["timeoutSeconds"], 40 * 60 - helper.STEP_RESERVE_SECONDS)
-        self.assertLessEqual(invocation["timeoutSeconds"],
-                             45 * 60 - 300 - helper.JOB_SETUP_ALLOWANCE_SECONDS - helper.STEP_RESERVE_SECONDS
-                             - helper.FINALIZER_STEP_SECONDS)
+        # The exact derived value for this step's inputs, bounded by the step's own run time.
+        self.assertTrue(earliest <= invocation["timeoutSeconds"] <= latest, (earliest, invocation["timeoutSeconds"], latest))
+        self.assertLess(latest - earliest, 5)
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_helper_timeout_interrupts_the_tool_so_withdrawal_precedes_every_composed_stop(self):
+        with self.fake_tool("muxer-apphost"), patch.object(helper, "verify_tool"):
+            code = helper.execute_integration(helper.TOOL + ["test", "--ci-owner-receipt=" + str(self.receipt)],
+                                              self.root, self.receipt, self.evidence, 3)
+        self.assertEqual(code, 124)
+        self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGINT))
+        withdrawn = int((self.root / "actual-withdrawn").read_text())
+        number, observed = (self.root / "actual-apphost-signal").read_text().split()
+        self.assertEqual(int(number), signal.SIGTERM, "Only the tool's own stop may reach the AppHost.")
+        self.assertGreaterEqual(int(observed), withdrawn, "No signal may reach a composed process before withdrawal.")
+        execution = json.loads((self.evidence / "execution.json").read_text())
+        self.assertEqual((execution["timedOut"], execution["cancelled"]), (True, False))
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_a_tool_orphaned_by_its_muxer_is_stopped_before_any_not_allocated_decision(self):
+        marker = self.root / "actual-orphan-tool"
+        code = ("import json, os, pathlib, signal, subprocess, sys, time\n"
+                "receipt, marker, owner, late = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3], sys.argv[4]\n"
+                "child = os.fork()\n"
+                "if child == 0:\n"
+                "    def stop(signum, frame):\n"
+                "        if late == 'late':\n"
+                "            receipt.write_text(owner)\n"
+                "        os._exit(0)\n"
+                "    signal.signal(signal.SIGINT, stop)\n"
+                "    marker.write_text(str(os.getpid()))\n"
+                "    while True:\n"
+                "        time.sleep(0.02)\n"
+                "sys.stdin.readline()\n")
+        for late in ("none", "late"):
+            with self.subTest(late=late):
+                self.reset_job_records()
+                leader = subprocess.Popen([sys.executable, "-c", code, str(self.receipt), str(marker), json.dumps(self.owner), late],  # nosec B603
+                                          stdin=subprocess.PIPE, start_new_session=True)
+                tool = int(self.wait_for(marker).read_text())
+                helper.write_process_record(self.receipt, helper.ci_context(), leader.pid)
+                leader.communicate(b"exit\n", timeout=10)
+                self.assertIsNotNone(helper.process_identity(tool), "The tool must outlive its muxer.")
+                with patch.object(helper, "SESSION_SIGNAL_WAIT_SECONDS", 0.5), patch.object(helper, "verify_tool"), patch.object(
+                    helper, "run_down", return_value=self.down_result()
+                ) as down:
+                    self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence, job_status="cancelled"), 0)
+                self.wait_until(lambda: helper.process_identity(tool) is None)
+                statuses = [json.loads(path.read_text())["status"] for path in self.evidence.glob("cleanup-*.json")]
+                if late == "late":
+                    self.assertNotIn("not-allocated", statuses, "A receipt written while stopping requires the exact down.")
+                    down.assert_called_once()
+                else:
+                    self.assertEqual(statuses, ["not-allocated"])
+                    down.assert_not_called()
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_a_timed_out_down_never_waits_on_a_descendant_in_another_process_group(self):
+        marker = self.root / "actual-detached-descendant"
+        code = ("import subprocess, sys, time\n"
+                "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], start_new_session=True)\n"
+                "open(sys.argv[1], 'w').write(str(child.pid))\n"
+                "time.sleep(60)\n")
+        started = time.monotonic()
+        try:
+            with patch.object(helper, "POST_KILL_WAIT_SECONDS", 1), self.assertRaises(subprocess.TimeoutExpired):
+                helper.run_down([sys.executable, "-c", code, str(marker)], cwd=self.root, env=os.environ.copy(), timeout=2)
+            self.assertLess(time.monotonic() - started, 15)
+        finally:
+            if marker.exists():
+                try:
+                    os.kill(int(marker.read_text()), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
 
 
 if __name__ == "__main__":

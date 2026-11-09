@@ -1100,7 +1100,7 @@ if ($isV2) {
     $inputStep = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate declared integration inputs'
     Assert-Contains -Name 'First step records the job start' -Content $inputStep -Expected 'id: integration-inputs'
     Assert-Contains -Name 'Job start is an immutable step output' -Content $inputStep -Expected 'echo "started-epoch=$(date +%s)" >> "$GITHUB_OUTPUT"'
-    Assert-Condition -Name 'Job start is recorded first' -Condition ($ciWorkflow.IndexOf('- name: Validate declared integration inputs') -lt $ciWorkflow.IndexOf('- uses: actions/checkout@')) -Failure 'the job start must be recorded by the first step.'
+    Assert-Condition -Name 'Job start is recorded first' -Condition ([regex]::IsMatch($ciWorkflow, '(?ms)^  build-and-test:\r?\n(?:(?!^  [a-z]).)*?^    steps:\r?\n      - name: Validate declared integration inputs\r?$')) -Failure 'the first step of build-and-test must record the job start.'
     $finalizerTimeout = [regex]::Match($finalize, '(?m)^        timeout-minutes: (?<Minutes>\d+)\r?$')
     Assert-Condition -Name 'Finalizer step equals the helper reserve' -Condition ($finalizerTimeout.Success -and ([int] $finalizerTimeout.Groups['Minutes'].Value * 60) -eq $budget['FINALIZER_STEP_SECONDS'] -and $budget['FINALIZER_STEP_SECONDS'] -ge ($finalizeReserve + $budget['RESERVE_MARGIN_SECONDS'])) -Failure "the finalizer step must equal FINALIZER_STEP_SECONDS and hold its $finalizeReserve-second exact cleanup."
     Assert-Condition -Name 'Original job budget unchanged' -Condition ([regex]::IsMatch($ciWorkflow, '(?ms)^      build-timeout-minutes:\r?\n        required: false\r?\n        type: number\r?\n        default: 45\r?$')) -Failure 'build-timeout-minutes and its default of 45 must stay unchanged.'
