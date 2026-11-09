@@ -27,6 +27,12 @@ None.
 4. Run `npx semantic-release` with the caller's `GITHUB_TOKEN` and optional
    short-lived NuGet.org Trusted Publishing key available to repository-configured plugins.
 
+During that invocation, an identical semantic-release notes-ref push retries up
+to three times after HTTP 500, 502, 503, or 504, waiting two and four seconds.
+Other Git operations and permanent push failures propagate immediately. The
+action never retries semantic-release itself: a tag that reached the remote
+remains genuine even if a later operation fails.
+
 ## Environment Variables
 
 | Variable | Required | Description |

@@ -34,4 +34,11 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         NUGET_API_KEY: ${{ inputs.nuget-api-key }}
         HEXALITH_NUGET_VERIFY_ATTEMPTS: ${{ env.HEXALITH_NUGET_VERIFY_ATTEMPTS || '180' }}
-      run: npx --no-install --ignore-scripts semantic-release
+      run: |
+        release_git_directory="$(mktemp -d)"
+        trap 'rm -rf "$release_git_directory"' EXIT
+        export HEXALITH_RELEASE_GIT
+        HEXALITH_RELEASE_GIT="$(command -v git)"
+        install -m 755 "$GITHUB_ACTION_PATH/git-with-retry.sh" "$release_git_directory/git"
+        export PATH="$release_git_directory:$PATH"
+        npx --no-install --ignore-scripts semantic-release
