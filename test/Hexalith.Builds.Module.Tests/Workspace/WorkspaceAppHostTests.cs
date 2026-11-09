@@ -8,6 +8,7 @@ namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
@@ -236,6 +237,7 @@ public sealed class WorkspaceAppHostTests
                 new SourceMappingEntry("Hexalith.Memories", "source", Path.Combine(platform, "references", "Hexalith.Memories")),
             ];
             SourceMapping mapping = verifiedMapping ?? new(WorkspaceMode.Source, platform, "Hexalith.Platform", entries, false);
+            (string Resource, string AppId, string Endpoint)[] expectedServers = ExpectedPlatformServers(mapping);
             string eventStore = mapping.Entries.Single(entry => entry.Identity == "Hexalith.EventStore").Path!;
             string declaration = Path.Combine(eventStore, "module", "hexalith.module-manifest.v2.json");
             string declarationHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(declaration, TestContext.Current.CancellationToken).ConfigureAwait(true)));
@@ -261,12 +263,15 @@ public sealed class WorkspaceAppHostTests
 
             builder.Resources.Count(resource => resource.Name == "eventstore").ShouldBe(1);
             builder.Resources.ShouldNotContain(resource => resource.Name == "eventstore-2" || resource.Name.Contains("admin", StringComparison.Ordinal));
-            builder.Resources.Count(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation")).ShouldBe(6);
+            builder.Resources.Where(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation"))
+                .Select(resource => resource.Name).Order(StringComparer.Ordinal)
+                .ShouldBe(expectedServers.Select(server => server.Resource).Order(StringComparer.Ordinal));
             builder.Resources.OfType<ProjectResource>().Single(resource => resource.Name == "eventstore")
                 .Annotations.OfType<ExecutableAnnotation>().Last().WorkingDirectory.ShouldBe(Path.Combine(eventStore, "src", "Hexalith.EventStore"));
             DistributedApplicationModel applicationModel = new(builder.Resources);
             IReadOnlyList<(string Resource, string AppId, string Endpoint)> probes = RunReadiness.InvocationProbes(plan, applicationModel);
-            probes.Count.ShouldBe(5);
+            probes.OrderBy(probe => probe.Resource, StringComparer.Ordinal)
+                .ShouldBe(expectedServers.Where(server => server.Resource != "eventstore").OrderBy(server => server.Resource, StringComparer.Ordinal));
             probes.ShouldAllBe(probe => probe.Endpoint == "/ready");
             using HttpListener listener = new();
             int[] sidecarPorts =
@@ -445,6 +450,27 @@ public sealed class WorkspaceAppHostTests
         {
             CompositionTestFiles.Delete(root);
         }
+    }
+
+    private static (string Resource, string AppId, string Endpoint)[] ExpectedPlatformServers(SourceMapping mapping)
+    {
+        List<(string Resource, string AppId, string Endpoint)> servers = [];
+        foreach (string repository in new[] { "Hexalith.EventStore", "Hexalith.Tenants", "Hexalith.Memories" })
+        {
+            string root = mapping.Entries.Single(entry => entry.Identity == repository).Path.ShouldNotBeNull();
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(root, "module", "hexalith.module-manifest.v2.json")));
+            foreach (JsonElement module in document.RootElement.GetProperty("modules").EnumerateArray())
+            {
+                foreach (JsonElement server in module.GetProperty("identity").GetProperty("servers").EnumerateArray().Where(server => server.GetProperty("enabled").GetBoolean()))
+                {
+                    string id = server.GetProperty("id").GetString()!;
+                    JsonElement readiness = module.GetProperty("lifecycle").GetProperty("readiness").EnumerateArray().Single(probe => probe.GetProperty("server").GetString() == id);
+                    servers.Add((server.GetProperty("resourceId").GetString()!, server.GetProperty("appId").GetString()!, readiness.GetProperty("endpoint").GetString()!));
+                }
+            }
+        }
+
+        return [.. servers];
     }
 
     private static async Task<string[]> GenerateAspireLaunchArgumentsAsync(ProjectResource project, DistributedApplicationOptions launchOptions, string[] resourceArguments)
