@@ -71,6 +71,7 @@ elif command=="msbuild":
             if inner:
                 values["IsCrossTargetingBuild"]="false"
                 values["TargetFramework"]=inner
+                values["TargetPath"]=str(root / pathlib.Path(project).parent / "bin/Release" / inner / (pathlib.Path(project).stem+".dll"))
                 if data.get("inconsistent") and inner=="net9.0":
                     values["IsTestProject"]="false"
                 if data.get("outer_only"):
@@ -78,6 +79,8 @@ elif command=="msbuild":
             else:
                 # Like SDK 10/xunit.v3: package imports apply only to inner builds.
                 values["XunitTestProject"]=""
+        values.update(data.get("metadata",{}).get(project,{}))
+        values.update(data.get("framework_metadata",{}).get(project,{}).get(inner,{}))
         print(json.dumps({"Properties":values}))
 elif command=="test":
     project=args[2] if args[1]=="--project" else args[1]
@@ -86,6 +89,8 @@ elif command=="test":
         results.write(project+":passing-test-completed\n")
     if data.get("fail_project")==project:
         sys.exit(23)
+elif command=="build":
+    (root / "build-completed").write_text("Release")
 '''
 
 
@@ -322,6 +327,48 @@ class SubprocessPipelineTests(unittest.TestCase):
         result = self.invoke("--phase", "prepare")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual(["solution=none", "global-json=", "submodules=[]"], output.read_text().splitlines())
+        self.assertEqual([], self.commands())
+
+    def test_unit_outputs_are_published_only_on_success_and_include_e2e_inference(self):
+        output = self.root / "github-output"
+        self.environment["GITHUB_OUTPUT"] = str(output)
+        self.document.update(dapr=True, registry=True, hooks=["after-unit-tests", "nightly"])
+        project = "test/Browser.E2E.csproj"
+        self.data["projects"][project] = True
+        (self.root / project).write_text("<Project />")
+        result = self.invoke("--phase", "unit")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual({"dapr": "true", "registry": "true", "browsers": "true",
+                          "after-unit-tests": "true", "after-integration-tests": "false"},
+                         dict(line.split("=", 1) for line in output.read_text().splitlines()))
+        output.unlink()
+        self.data["fail_project"] = "test/A space/A.Tests.csproj"
+        result = self.invoke("--phase", "unit")
+        self.assertEqual(23, result.returncode, result.stderr)
+        self.assertFalse(output.exists())
+
+    def test_integration_phase_orders_projects_and_preserves_first_failure(self):
+        self.document["tests"]["integration"] = ["test/A space/A.Tests.csproj", "test/Z.Tests/Z.Tests.csproj"]
+        self.data["fail_project"] = "test/Fixture.IntegrationTests.csproj"
+        result = self.invoke("--phase", "integration")
+        self.assertEqual(23, result.returncode, result.stdout + result.stderr)
+        commands = self.commands()
+        self.assertFalse(any(command[0] in ("restore", "build") for command in commands))
+        tests = [command for command in commands if command[0] == "test"]
+        self.assertEqual(["test/A space/A.Tests.csproj", "test/Fixture.IntegrationTests.csproj"],
+                         [command[2] for command in tests])
+        self.assertEqual(4, len((self.root / "tests-completed").read_text().splitlines()))
+        self.assertTrue(all("--no-build" in command and "--no-restore" in command for command in tests))
+
+    def test_no_solution_integration_and_stage_outputs_require_no_sdk(self):
+        self.document.update(solution="none", registry=True)
+        (self.root / "global.json").unlink()
+        output = self.root / "github-output"
+        self.environment["GITHUB_OUTPUT"] = str(output)
+        for phase in ("unit", "integration"):
+            result = self.invoke("--phase", phase)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertTrue(all(line.endswith("=false") for line in output.read_text().splitlines()))
         self.assertEqual([], self.commands())
 
     def test_builds_module_root_is_workspace_relative_without_builds_gitlink(self):
@@ -816,6 +863,24 @@ public sealed class ProbeTests
                 for path in (prepared.root / "test dir/A.Tests/xunit.runner.json",
                              prepared.root / "test dir/A.Tests/bin/Release/net10.0/xunit.runner.json"):
                     self.assertEqual(self.runner_configuration, path.read_bytes())
+
+    def test_real_integration_override_completes_failing_project_for_both_runners(self):
+        from dataclasses import replace
+
+        for prepared in (self.prepared, self.vstest_prepared):
+            with self.subTest(runner=PIPE.test_runner(prepared.root)):
+                marker = prepared.root / "integration-completed-tests"
+                document = dict(prepared.document, tests={"integration": ["test dir/A.Tests/A.Tests.csproj",
+                                                                        "test dir/Z.Tests/Z.Tests.csproj"],
+                                                       "exclude": {}})
+                with mock.patch.dict(os.environ, {"CI_TEST_MARKER": str(marker)}):
+                    with self.assertRaises(PIPE.PipelineError) as caught:
+                        PIPE.run_integration_tests(replace(prepared, document=document), repository=BUILDS)
+                self.assertGreater(caught.exception.returncode, 0)
+                self.assertEqual(["A.Tests:first:fr-FR", "A.Tests:second:fr-FR", "A.Tests:third:fr-FR"],
+                                 sorted(marker.read_text().splitlines()))
+                self.assertEqual(self.runner_configuration,
+                                 (prepared.root / "test dir/A.Tests/bin/Release/net10.0/xunit.runner.json").read_bytes())
 
 
 class NuGetTrustPolicyTests(unittest.TestCase):

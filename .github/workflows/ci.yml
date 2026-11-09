@@ -11,6 +11,13 @@ on:
         description: Test-only expected-state fixture directory in Builds.
         type: string
         default: ''
+    secrets:
+      registry-pull-username:
+        description: Dedicated pull-only registry identity, required only with registry enabled.
+        required: false
+      registry-pull-password:
+        description: Password for the dedicated pull-only registry identity.
+        required: false
     outputs:
       solution:
         description: Validated workspace-relative solution path, or none.
@@ -23,7 +30,7 @@ permissions: {}
 
 jobs:
   ci:
-    name: Build and unit tests
+    name: Build and tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -64,5 +71,34 @@ jobs:
         uses: $/Github/ci-build
 
       - name: Stage 3 unit tests
+        id: unit
         if: steps.prepare.outputs.solution != 'none'
         uses: $/Github/ci-unit-tests
+        env:
+          CI_STAGE_STATE: ${{ runner.temp }}/hexalith-ci-stage-state.json
+
+      - name: Stage 4 environment setup
+        if: steps.prepare.outputs.solution != 'none'
+        uses: $/Github/ci-environment
+        with:
+          solution: ${{ steps.prepare.outputs.solution }}
+          dapr: ${{ steps.unit.outputs.dapr }}
+          browsers: ${{ steps.unit.outputs.browsers }}
+          registry: ${{ steps.unit.outputs.registry }}
+        env:
+          REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}
+          REGISTRY_PULL_PASSWORD: ${{ secrets.registry-pull-password }}
+
+      - name: After unit tests hook
+        if: steps.unit.outputs.after-unit-tests == 'true'
+        uses: ./.github/actions/after-unit-tests
+
+      - name: Stage 4 integration tests
+        if: steps.prepare.outputs.solution != 'none'
+        uses: $/Github/ci-integration-tests
+        env:
+          CI_STAGE_STATE: ${{ runner.temp }}/hexalith-ci-stage-state.json
+
+      - name: After integration tests hook
+        if: steps.unit.outputs.after-integration-tests == 'true'
+        uses: ./.github/actions/after-integration-tests

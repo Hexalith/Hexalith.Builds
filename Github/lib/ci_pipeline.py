@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared, stdlib-only CI stages 2–3, also importable by the future local check.
+"""Shared, stdlib-only CI test/build stages, importable by the local check.
 
 Workflow-owned composites provide this file and the NuGet configuration. The
 module's Builds gitlink supplies product imports only, never executable CI code.
@@ -328,12 +328,12 @@ def complete_xunit_vstest_configuration(root: Path, project: str, properties: di
             path.write_bytes(content)
 
 
-def execute_unit_projects(root: Path, projects: tuple[str, ...], *, runner: str) -> None:
+def execute_test_projects(root: Path, projects: tuple[str, ...], *, runner: str, stage: str) -> None:
     """Finish every test in a project; stop before the next failing-project successor."""
     if runner not in ("VSTest", "Microsoft.Testing.Platform"):
         raise PipelineError(f"unsupported test runner: {runner!r}")
     for project in sorted(projects):
-        print(f"Unit tests: {project}", flush=True)
+        print(f"{stage} tests: {project}", flush=True)
         selector = ["--project", project] if runner == "Microsoft.Testing.Platform" else [project]
         options = []
         properties = evaluated_properties(root, project)
@@ -355,22 +355,71 @@ def execute_unit_projects(root: Path, projects: tuple[str, ...], *, runner: str)
             run_command(arguments, root)
 
 
-def run_unit_tests(prepared: PreparedConfig, *, repository: str, module_root: str = "") -> TestProjects:
-    """Discover, classify and execute only stage 3; stage 4 remains future work."""
+def execute_unit_projects(root: Path, projects: tuple[str, ...], *, runner: str) -> None:
+    """Keep the stages 1–3 Python API while sharing complete-project semantics."""
+    execute_test_projects(root, projects, runner=runner, stage="Unit")
+
+
+def classified_projects(prepared: PreparedConfig, *, repository: str, module_root: str = "") -> TestProjects:
+    """Discover and validate the one AD-13 classification shared by both stages."""
     if prepared.solution == "none":
         return TestProjects((), (), ())
     projects = discover_test_projects(prepared.root, prepared.document["solution"])
     classified = classify_projects(projects, prepared.document, repository=repository, module_root=module_root)
     print(json.dumps({"unit": classified.unit, "integration": classified.integration,
                       "excluded": classified.excluded}), flush=True)
+    return classified
+
+
+def run_unit_tests(prepared: PreparedConfig, *, repository: str, module_root: str = "") -> TestProjects:
+    """Discover, classify and execute only stage 3, retaining local-check behavior."""
+    classified = classified_projects(prepared, repository=repository, module_root=module_root)
+    if prepared.solution == "none":
+        return classified
     execute_unit_projects(prepared.root, classified.unit, runner=test_runner(prepared.root))
     return classified
+
+
+def stage_state(prepared: PreparedConfig, classified: TestProjects) -> dict[str, Any]:
+    """Bind the successful unit classification to its validated module inputs."""
+    return {"root": str(prepared.root), "document": prepared.document,
+            "runner": test_runner(prepared.root) if prepared.solution != "none" else "",
+            "projects": {name: list(getattr(classified, name)) for name in ("unit", "integration", "excluded")}}
+
+
+def run_integration_tests(prepared: PreparedConfig, *, repository: str, module_root: str = "",
+                          expected_state: dict[str, Any] | None = None) -> TestProjects:
+    """Execute stage 4 projects without checkout, restore, build or setup."""
+    classified = classified_projects(prepared, repository=repository, module_root=module_root)
+    if expected_state is not None and stage_state(prepared, classified) != expected_state:
+        raise PipelineError("CI configuration, runner or test classification changed after unit tests")
+    if prepared.solution != "none":
+        execute_test_projects(prepared.root, classified.integration,
+                              runner=test_runner(prepared.root), stage="Integration")
+    return classified
+
+
+def write_stage_outputs(prepared: PreparedConfig, classified: TestProjects) -> None:
+    """Publish environment and hook gates only after successful unit execution."""
+    active = prepared.solution != "none"
+    document = prepared.document
+    values = {name: str(active and document[name]).lower() for name in ("dapr", "registry")}
+    values["browsers"] = str(active and (document["browsers"] or any(
+        "E2E" in Path(project).stem for project in classified.integration))).lower()
+    values.update({hook: str(active and hook in document["hooks"]).lower()
+                   for hook in ("after-unit-tests", "after-integration-tests")})
+    publish_outputs(values)
 
 
 def write_outputs(prepared: PreparedConfig) -> None:
     """Expose validated workspace-relative inputs for future Windows prepare."""
     values = {"solution": prepared.solution, "global-json": prepared.global_json,
               "submodules": json.dumps(prepared.submodules)}
+    publish_outputs(values)
+
+
+def publish_outputs(values: dict[str, str]) -> None:
+    """Write validated single-line values to the Actions output channel."""
     if os.environ.get("GITHUB_OUTPUT"):
         with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as stream:
             for name, value in values.items():
@@ -387,7 +436,7 @@ def main() -> int:
     parser.add_argument("--repository", default=os.environ.get("CI_REPOSITORY"), required=not os.environ.get("CI_REPOSITORY"))
     parser.add_argument("--module-root", default=os.environ.get("CI_MODULE_ROOT", ""))
     parser.add_argument("--expected-source", default=os.environ.get("CI_EXPECTED_SOURCE", ""))
-    parser.add_argument("--phase", choices=("prepare", "build", "unit", "all"), default="all")
+    parser.add_argument("--phase", choices=("prepare", "build", "unit", "integration", "all"), default="all")
     args = parser.parse_args()
     try:
         if sys.version_info < (3, 12):
@@ -400,7 +449,17 @@ def main() -> int:
         if args.phase in ("build", "all"):
             restore_and_build(prepared)
         if args.phase in ("unit", "all"):
-            run_unit_tests(prepared, repository=args.repository, module_root=args.module_root)
+            classified = run_unit_tests(prepared, repository=args.repository, module_root=args.module_root)
+            if args.phase == "unit" and os.environ.get("CI_STAGE_STATE"):
+                Path(os.environ["CI_STAGE_STATE"]).write_text(
+                    json.dumps(stage_state(prepared, classified)), encoding="utf-8")
+            write_stage_outputs(prepared, classified)
+        if args.phase == "integration":
+            expected = _read_json(Path(os.environ["CI_STAGE_STATE"])) if os.environ.get("CI_STAGE_STATE") else None
+            if os.environ.get("CI_STAGE_STATE") and not isinstance(expected, dict):
+                raise PipelineError("invalid successful unit stage state")
+            run_integration_tests(prepared, repository=args.repository, module_root=args.module_root,
+                                  expected_state=expected)
         return 0
     except ConfigError as error:
         print(error, file=sys.stderr)

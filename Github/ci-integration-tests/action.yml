@@ -1,0 +1,8 @@
+name: Run shared CI integration tests
+description: Run classified integration projects in ordinal order, completing each project before failing.
+runs:
+  using: composite
+  steps:
+    - name: Run integration projects in ordinal path order
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_pipeline.py" --phase integration

@@ -163,7 +163,7 @@ missing tags in module/sample contexts and references to disabled actions.
 Delivery's later per-module checks verify that action paths and submodules
 actually exist; this contract does not initialize repositories or run commands.
 
-The shared CI stages 2–3 live in `Github/lib/ci_pipeline.py`. Its importable
+The shared CI build/test stages live in `Github/lib/ci_pipeline.py`. Its importable
 `build_flags`, `prepare_config`, `discover_test_projects`, `classify_projects`,
 `restore_and_build` and `execute_unit_projects` functions are also the building
 blocks for the future local check. From an initialized module workspace, run
@@ -174,7 +174,9 @@ python3 -I /path/to/trusted/Builds/Github/lib/ci_pipeline.py --workspace . --rep
 ```
 
 `--phase prepare`, `build` and `unit` run the corresponding composite phases;
-the default `all` runs them in order. Preparation validates the complete document
+the default `all` runs only stages 1–3, preserving the future local check's scope.
+`--phase integration` runs classified integration projects without restoring,
+building or setting up an environment. Preparation validates the complete document
 through `ci_config.py`, then initializes Builds plus only the explicitly listed
 root-declared gitlinks, with recursion disabled and literal Git pathspecs. It
 uses `git submodule update --init --checkout`, so an already-initialized listed
@@ -211,8 +213,73 @@ Only evaluated test projects enter AD-13 classification. Overrides must identify
 known test projects, and exclusions must name an enabled hook or job. Unit
 projects execute in ordinal path order, with no build or restore. Failure leaves
 all tests within that project running to completion, preserves its exit status,
-and prevents the next project from starting. Integration projects are classified
-but stage 4 and hooks are not implemented by these stages.
+and prevents the next project from starting. Integration projects use the same
+executor, runner selection and complete-project behavior, in ordinal path order.
+`execute_unit_projects` and the existing stages 1–3 Python APIs remain compatible.
+
+After successful unit execution, `ci-unit-tests` publishes literal `true`/`false`
+outputs for `dapr`, `browsers`, `registry`, `after-unit-tests` and
+`after-integration-tests`. The browser output is true when configured or when a
+classified integration project's name contains `E2E`; an excluded E2E project
+does not enable browsers. Failed units publish no stage gates. YAML consumes
+these validated outputs and never interprets the configuration JSON.
+CI also captures the validated configuration, runner and project classification
+after unit tests. A hook that changes them fails before integration execution,
+so it cannot silently remove the projects that stage 3 classified for stage 4.
+
+Stage 4 runs once in the existing read-only CI job: `ci-environment`, the enabled
+workspace-root `./.github/actions/after-unit-tests` composite, integration tests,
+then the enabled `./.github/actions/after-integration-tests` composite. Hook
+directories that are not enabled stay dormant, including `nightly` in CI. Hooks
+resolve from the workspace root even with a test-only module root, and assume
+the existing restored Release build and prepared environment. They never repeat
+checkout, restore, build or setup. Any failed step stops every successor and
+test failures retain their original status.
+
+`Github/ci-environment` is independently reusable after a Linux prepare build.
+Its `solution` input is the validated workspace-relative solution output, and its
+optional `dapr`, `browsers` and `registry` inputs are literal validated booleans
+(default `false`). `CI_MODULE_ROOT` selects the already validated test-only module
+root when needed. Its stdlib script reads no CI configuration, restores nothing
+and builds nothing; disabled tools make no calls. `solution: none` makes no SDK,
+tool or hook calls.
+
+Dapr setup reads `HexalithDaprRuntimeVersion` and `HexalithDaprCliVersion` from
+the executing workflow's Builds `Props/Directory.Packages.props`, never the
+module gitlink. On Linux x86_64 it downloads the official versioned CLI archive,
+checks its committed SHA-256 before extracting the single regular executable,
+adds that verified directory to `GITHUB_PATH`, and runs
+`dapr init --runtime-version <pin>`. A CLI pin change requires adding the official
+release asset's independently verified digest to `DAPR_CLI_DIGESTS`; an unknown
+version or mismatched download fails before execution. Dapr manages its pinned
+runtime downloads. Docker must be available for self-hosted initialization.
+
+Browser setup asks MSBuild for the solution projects' evaluated Release output
+paths, including inner target frameworks, then uses built `playwright.ps1` next
+to `Microsoft.Playwright.dll` and `.playwright/package/package.json`. It runs
+`pwsh -NoProfile -File <built-script> install --with-deps` once per distinct built
+Playwright package version, so browser binaries match the module's packages,
+including when they differ from Builds' central version. It never installs a
+global Playwright tool or searches source directories for scripts. Requested
+browsers without complete built tooling fail clearly. See the official
+[Playwright browser installation contract](https://playwright.dev/dotnet/docs/browsers)
+and [versioned Dapr initialization](https://docs.dapr.io/reference/cli/dapr-init/).
+
+Registry setup logs into `registry.hexalith.com` with only the optional reusable
+workflow secrets `registry-pull-username` and `registry-pull-password`. Builds'
+caller passes the org secrets `HEXALITH_REGISTRY_PULL_USERNAME` and
+`HEXALITH_REGISTRY_PULL_PASSWORD` by name. They enter only the setup step as
+`REGISTRY_PULL_USERNAME`/`REGISTRY_PULL_PASSWORD`, and the password reaches
+`docker login` through stdin. Enabling registry without both credentials fails
+before any optional setup. No publisher credential enters this job.
+
+The environment tests execute the actual shared job and composite metadata in a
+disposable behavioral harness with SDK/tool executables and temporary hook
+actions. They observe setup and hook order, dormant actions, workspace-root
+resolution, one build/restore, and every failure boundary. Separate archive
+tests verify Dapr integrity and safe extraction before executing a command
+double; real SDK tests verify both integration runner paths and completion of
+all tests in a failing project.
 
 Ordinary runners use positional `dotnet test`; Microsoft.Testing.Platform uses
 `--project`. SDK 10's MTP CLI forwards `-noAutoResponse` and `-warnaserror` to the

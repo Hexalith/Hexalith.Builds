@@ -44,6 +44,9 @@ jobs:
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
+    secrets:
+      registry-pull-username: ${{ secrets.HEXALITH_REGISTRY_PULL_USERNAME }}
+      registry-pull-password: ${{ secrets.HEXALITH_REGISTRY_PULL_PASSWORD }}
 
   catalog:
     runs-on: ubuntu-latest
