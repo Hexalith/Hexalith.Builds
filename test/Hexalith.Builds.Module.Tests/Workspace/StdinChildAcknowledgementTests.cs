@@ -113,8 +113,65 @@ public sealed class StdinChildAcknowledgementTests
                 await File.WriteAllTextAsync(path, invalid, TestContext.Current.CancellationToken).ConfigureAwait(true);
             }
 
-            _ = await Should.ThrowAsync<InvalidDataException>(() => StdinChildAcknowledgement.WaitAsync(directory, token, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+            InvalidDataException failure = await Should.ThrowAsync<InvalidDataException>(() => StdinChildAcknowledgement.WaitAsync(directory, token, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+            failure.Message.ShouldBe("HXLQ110 checkpoint=stdin-acknowledgement;redacted=true;reason=invalid-record");
+            failure.InnerException.ShouldBeNull();
+            failure.ToString().ShouldNotContain(token);
+            failure.ToString().ShouldNotContain(directory);
             (await File.ReadAllTextAsync(foreign, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(token);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(directory);
+        }
+    }
+
+    /// <summary>Classifies a real exclusive-file refusal without publishing its private path or token.</summary>
+    /// <returns>The bounded unreadable-record diagnostic assertions.</returns>
+    [Fact]
+    public async Task WaitRedactsUnreadableRecordAsync()
+    {
+        string directory = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string token = Guid.NewGuid().ToString("N");
+            string path = Path.Combine(directory, "stdin-ready.token");
+            await File.WriteAllTextAsync(path, token, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            FileStream exclusive = new(path, FileMode.Open, FileAccess.Read, FileShare.None);
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownedExclusive = exclusive.ConfigureAwait(true);
+            InvalidDataException failure = await Should.ThrowAsync<InvalidDataException>(() => StdinChildAcknowledgement.WaitAsync(directory, token, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+            failure.Message.ShouldBe("HXLQ110 checkpoint=stdin-acknowledgement;redacted=true;reason=invalid-record");
+            failure.InnerException.ShouldBeNull();
+            failure.ToString().ShouldNotContain(directory);
+            failure.ToString().ShouldNotContain(token);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(directory);
+        }
+    }
+
+    /// <summary>Retains only allowlisted progress when the actual child misses its original readiness bound.</summary>
+    /// <param name="childExited">The actual process-exit observation.</param>
+    /// <returns>The fixed code/checkpoint and bounded redaction assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadinessTimeoutHasBoundedRedactedDiagnosticAsync(bool childExited)
+    {
+        string directory = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            const string privateValue = "PRIVATE_STDIN_PAYLOAD";
+            await File.WriteAllTextAsync(
+                Path.Combine(directory, "child-progress.json"),
+                new string('x', 2048) + privateValue,
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string diagnostic = StdinChildAcknowledgement.TimeoutDiagnostic(directory, childExited);
+            diagnostic.ShouldBe($"HXLQ109 checkpoint=stdin-acknowledgement;redacted=true;childExited={childExited};stage=unobserved");
+            diagnostic.Length.ShouldBeLessThan(512);
+            diagnostic.ShouldNotContain(directory);
+            diagnostic.ShouldNotContain(privateValue);
         }
         finally
         {

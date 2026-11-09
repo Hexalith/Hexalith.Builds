@@ -312,9 +312,9 @@ public sealed class StopSignalTests
         {
             await StdinChildAcknowledgement.WaitAsync(directory, token, deadline.Token).ConfigureAwait(true);
         }
-        catch (OperationCanceledException failure) when (!TestContext.Current.CancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (!TestContext.Current.CancellationToken.IsCancellationRequested)
         {
-            throw new TimeoutException($"stdin-control readiness timed out; childExited={child.HasExited};{StdinChildProgress.Describe(directory)}.", failure);
+            throw new TimeoutException(StdinChildAcknowledgement.TimeoutDiagnostic(directory, child.HasExited));
         }
     }
 
