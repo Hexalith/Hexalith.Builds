@@ -1,0 +1,10 @@
+name: Sample HookTests
+description: Execute the existing sample Release test assembly.
+runs:
+  using: composite
+  steps:
+    - name: Run built sample HookTests
+      shell: bash
+      working-directory: Samples/Hexalith.Sample
+      run: |
+          dotnet test --project test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj --no-build --no-restore --configuration Release --stop-on-fail off

@@ -25,6 +25,9 @@ on:
       submodules:
         description: JSON array of validated workspace-relative direct submodule paths.
         value: ${{ jobs.ci.outputs.submodules }}
+      global-json:
+        description: Validated workspace-relative module SDK path, empty for solution none.
+        value: ${{ jobs.ci.outputs.global-json }}
 
 permissions: {}
 
@@ -42,6 +45,7 @@ jobs:
     outputs:
       solution: ${{ steps.prepare.outputs.solution }}
       submodules: ${{ steps.prepare.outputs.submodules }}
+      global-json: ${{ steps.prepare.outputs.global-json }}
     steps:
       # Stage 1 must stay first. Story 5-1 supplies the guard and commitlint.
       # Builds' own call never runs a delivered-ref guard (AD-19).

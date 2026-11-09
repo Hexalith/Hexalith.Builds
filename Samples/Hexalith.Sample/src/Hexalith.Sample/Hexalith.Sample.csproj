@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../../../Hexalith.Package.props" />
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>A real consumer of the current shared Builds imports.</Description>
+  </PropertyGroup>
+</Project>

@@ -39,13 +39,14 @@ class CompositeHarness:
     """
 
     def __init__(self, root, environment, *, module_root="", secrets=None,
-                 dapr_archive=None, mutate_workflow=None):
+                 dapr_archive=None, mutate_workflow=None, runner_os="Linux", external_action=None):
         self.root = root
         self.environment = dict(environment, GITHUB_WORKSPACE=str(root))
         self.path = self.environment["PATH"]
         self.stdout = []
         self.stderr = []
         self.mutate_workflow = mutate_workflow
+        self.external_action = external_action
         runner_temp = root / "runner-temp"
         runner_temp.mkdir(exist_ok=True)
         self.environment["RUNNER_TEMP"] = str(runner_temp)
@@ -74,7 +75,7 @@ os.execv(sys.executable, [sys.executable, *args])
             self.path = str(shim.parent) + os.pathsep + self.path
             self.environment["HARNESS_DAPR_ARCHIVE"] = str(archive)
         self.context = {"github": {"repository": FIXTURE.BUILDS},
-                        "runner": {"temp": str(runner_temp)},
+                        "runner": {"temp": str(runner_temp), "os": runner_os},
                         "inputs": {"module-root": module_root, "expected-source": ""},
                         "secrets": secrets or {"registry-pull-username": "", "registry-pull-password": ""},
                         "steps": {}}
@@ -84,15 +85,21 @@ os.execv(sys.executable, [sys.executable, *args])
         return subprocess.CompletedProcess([], code, "".join(self.stdout), "".join(self.stderr))
 
     def value(self, expression, context):
+        joined = re.fullmatch(r"join\(fromJSON\((.*?)\), '([\s\S]*)'\)", expression.strip())
+        if joined:
+            return joined[2].join(json.loads(self.value(joined[1], context)))
         value = context
         for name in expression.strip().split("."):
             value = value.get(name, "") if isinstance(value, dict) else ""
         return str(value)
 
     def expand(self, value, context):
-        return re.sub(r"\$\{\{\s*(.*?)\s*\}\}", lambda match: self.value(match[1], context), str(value))
+        return re.sub(r"\$\{\{\s*(.*?)\s*\}\}", lambda match: self.value(match[1], context),
+                      str(value), flags=re.DOTALL)
 
     def enabled(self, expression, context):
+        if " && " in expression:
+            return all(self.enabled(part, context) for part in expression.split(" && "))
         match = re.fullmatch(r"(.*?) (==|!=) '([^']*)'", expression)
         if not match:
             raise AssertionError(f"unsupported harness condition: {expression}")
@@ -114,7 +121,13 @@ os.execv(sys.executable, [sys.executable, *args])
                 elif reference.startswith("./"):
                     action = self.root / reference[2:]
                 else:
-                    # Hosted checkout and SDK setup are already provided here.
+                    # Hosted implementations remain external controls, distinct
+                    # from the local composite/script execution evidence.
+                    if self.external_action:
+                        inputs = {name: self.expand(value, context) for name, value in step.get("with", {}).items()}
+                        code = self.external_action(reference, inputs, env)
+                        if code:
+                            return self.result(code)
                     continue
                 document = yaml.safe_load((action / "action.yml").read_text())
                 if document["runs"]["using"] != "composite":
@@ -134,8 +147,20 @@ os.execv(sys.executable, [sys.executable, *args])
                 output.unlink(missing_ok=True)
                 path.unlink(missing_ok=True)
                 env.update(GITHUB_OUTPUT=str(output), GITHUB_PATH=str(path))
-                result = subprocess.run(["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", step["run"]],
-                                        cwd=self.root, env=env, text=True, capture_output=True, check=False)
+                if step.get("shell", "bash") == "pwsh":
+                    # A dotnet-tool installation of pwsh can launch through
+                    # dotnet on PATH. Bootstrap the real shell first, then
+                    # install the command-double PATH inside PowerShell.
+                    env["HARNESS_COMMAND_PATH"] = env["PATH"]
+                    env["PATH"] = os.environ["PATH"]
+                    body = ("$ErrorActionPreference = 'Stop'; $env:PATH = $env:HARNESS_COMMAND_PATH;\n"
+                            + step["run"] + "\nif (Test-Path -LiteralPath variable:\\LASTEXITCODE) { exit $LASTEXITCODE }")
+                    command = [shutil.which("pwsh"), "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", body]
+                else:
+                    command = ["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", step["run"]]
+                directory = self.root / self.expand(step.get("working-directory", "."), context)
+                result = subprocess.run(command, cwd=directory, env=env,
+                                        text=True, capture_output=True, check=False)
                 self.stdout.append(result.stdout)
                 self.stderr.append(result.stderr)
                 if result.returncode:
@@ -155,6 +180,15 @@ os.execv(sys.executable, [sys.executable, *args])
         job = document["jobs"]["ci"]
         self.environment.update({name: self.expand(value, self.context) for name, value in job.get("env", {}).items()})
         return self.steps(job["steps"], self.context, self.environment)
+
+    def run_action(self, action, inputs=None):
+        """Execute real composite metadata with controlled external actions."""
+        document = yaml.safe_load((action / "action.yml").read_text())
+        values = {name: entry.get("default", "") for name, entry in document.get("inputs", {}).items()}
+        values.update(inputs or {})
+        context = dict(self.context, inputs=values, steps={})
+        return self.steps(document["runs"]["steps"], context,
+                          dict(self.environment, GITHUB_ACTION_PATH=str(action)))
 
 
 class EnvironmentTests(unittest.TestCase):

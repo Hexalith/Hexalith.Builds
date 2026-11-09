@@ -186,6 +186,11 @@ class LintTests(unittest.TestCase):
 
     def test_scan_passes_all_required_surfaces_and_keeps_online_audits_enabled(self):
         tools, log = self.setup_linters()
+        actions = [self.root / directory / f"sample-{suffix}" / f"action.{suffix}"
+                   for directory in ("Github", ".github/actions") for suffix in ("yml", "yaml")]
+        for action in actions:
+            action.parent.mkdir(parents=True)
+            action.write_text("name: fixture\nruns: {using: composite, steps: []}\n")
         self.scan(tools)
         invocations = [json.loads(line) for line in log.read_text().splitlines()]
         self.assertEqual(2, len(invocations))
@@ -193,6 +198,8 @@ class LintTests(unittest.TestCase):
             self.assertIn(str(self.root / path), invocations[0])
             self.assertIn(str(self.root / path), invocations[1])
         self.assertIn(str(self.root / "Github/frozen/action.yml"), invocations[1])
+        for action in actions:
+            self.assertIn(str(action), invocations[1])
         self.assertIn("--strict-collection", invocations[1])
         self.assertNotIn("--offline", invocations[1])
         self.assertNotIn("--no-online-audits", invocations[1])

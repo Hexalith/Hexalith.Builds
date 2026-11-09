@@ -111,9 +111,11 @@ def check_findings(findings: list, baseline: dict, root: Path) -> int:
 def run_linters(root: Path, binaries: dict[str, Path], baseline: dict) -> None:
     workflows = sorted(path for path in (root / ".github/workflows").iterdir()
                        if path.suffix in {".yml", ".yaml"} and path.is_file())
-    actions = sorted((root / "Github").glob("**/action.yml"))
+    actions = sorted(path for directory in (root / "Github", root / ".github/actions")
+                     for name in ("action.yml", "action.yaml")
+                     for path in directory.glob(f"**/{name}"))
     if not workflows or not actions:
-        raise ValueError("Expected both workflow YAML and Github/**/action.yml inputs")
+        raise ValueError("Expected both workflow YAML and composite action.yml/action.yaml inputs")
     subprocess.run([str(binaries["actionlint"]), "-shellcheck=", "-pyflakes=",
                     "-config-file", str(root / ".github/actionlint.yaml"),
                     *map(str, workflows)], cwd=root, check=True)

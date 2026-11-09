@@ -28,7 +28,8 @@ python3 Tools/ci/lint_workflows.py
 Actionlint checks every `.github/workflows/*.yml` and `*.yaml`; its external
 ShellCheck and pyflakes integrations are disabled so runner-installed tool
 versions cannot alter results. Zizmor checks those workflows and every
-`Github/**/action.yml`, with strict collection, the committed config, all online
+`Github/**/action.{yml,yaml}` and root `.github/actions/**/action.{yml,yaml}`, with strict
+collection, the committed config, all online
 audits enabled and no severity filtering. Missing credentials, invalid output,
 integrity errors and failed processes fail the lane. Offline environment
 overrides are rejected. Hexalith actions require at least a ref; other actions
@@ -316,3 +317,52 @@ evaluated build-output runner configs are temporarily merged with
 outputs are handled individually; source, tracked and escaping configurations
 are rejected. Other runner settings are retained, and other test frameworks
 receive no xUnit options. Real SDK tests exercise both runner paths.
+
+`Github/prepare` prepares a separate custom job without running tests or hooks.
+It always checks out with persisted credentials and recursive submodules disabled.
+On Windows, pass shared CI's `solution`, `submodules` (the unchanged JSON-array
+output), and `global-json` outputs. The SDK-path input defaults to `global.json`
+for root modules; prefixed samples must pass the validated output explicitly.
+Actions expressions decode the validated array to LF-delimited paths in an
+environment variable. The PowerShell script reads no module configuration JSON
+and invokes no Python or environment setup. An omitted Windows solution fails; explicit `none` skips preparation.
+It rejects case-insensitive submodule destination collisions, unsafe paths, symlinks,
+missing solutions/SDK files, undeclared submodules and non-gitlink paths before
+SDK/product commands. It initializes only the exact requested root gitlinks,
+with file transport and recursion disabled. The global.json directory controls
+both SDK selection and cwd, including solutions nested below it or paths with
+spaces. One restore and one no-restore Release build use the same mandatory
+package/analyzer/warnings/audit/NuGet/response-file flags as shared Linux CI.
+Native command failures preserve their status and stop every successor.
+
+On Linux, prepare reads configuration through the same `ci_config.py` loader,
+initializes direct dependencies, selects the module SDK, restores/builds once,
+and calls the existing `ci-environment` composite once. It classifies projects
+only to infer browsers from integration E2E names; it executes no test project
+or hook. `module-root` is a Builds-only fixture input here too. Pull-only
+registry credentials use the existing `REGISTRY_PULL_USERNAME` and
+`REGISTRY_PULL_PASSWORD` environment contract. `solution: none` still validates
+Linux configuration, while both OS paths skip SDK/build/environment/tests.
+All preparation scripts resolve from the executing action's `GITHUB_ACTION_PATH`.
+
+Builds' second shared-CI call targets `Samples/Hexalith.Sample`, a consumer with
+its own SDK pin, a nested solution, central MSBuild imports, and four product
+test projects. Shared CI runs units, the root `after-unit-tests` action, then
+integration. The dependent Windows job has only prepare and the root
+`sample-windows` action. Both custom actions invoke MTP projects with explicit
+`--project`, `--no-build`, `--no-restore`, and Release selection; they reuse built
+outputs and write no evidence. Only the sample configuration enables them and
+delegates those projects through exclusions, avoiding duplicate test execution.
+Both sample verdicts feed Builds' retained aggregate job.
+
+The sample's expected-source fixture contains
+`rendered/Hexalith.Sample/.github/hexalith-ci.json` and a sibling
+`rendered/Hexalith.Sample.perimeter.json`. The latter is an empty placeholder;
+story 5-1 owns its schema and enforcement integration. The retained first CI
+step remains a reserved slot and provides no guard/commit-format enforcement.
+
+Prepare tests execute real PowerShell and the actual composite metadata in a
+temporary workspace. External checkout/SDK actions and command doubles are
+labeled controls, covering their inputs and failure boundaries. They provide
+local behavioral evidence; the dependent job on `windows-latest` supplies the
+separate hosted Windows evidence.

@@ -1,0 +1,27 @@
+{
+  "schema": "hexalith.ci.v1",
+  "buildsTag": "v4.46.0",
+  "solution": "solutions/Hexalith.Sample.slnx",
+  "dapr": false,
+  "browsers": false,
+  "registry": false,
+  "codeql": [
+    "csharp"
+  ],
+  "tests": {
+    "integration": [],
+    "exclude": {
+      "test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj": "after-unit-tests",
+      "test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj": "sample-windows"
+    }
+  },
+  "hooks": [
+    "after-unit-tests"
+  ],
+  "jobs": {
+    "sample-windows": {
+      "runner": "windows-latest"
+    }
+  },
+  "submodules": []
+}

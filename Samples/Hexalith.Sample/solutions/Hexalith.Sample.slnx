@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../src/Hexalith.Sample/Hexalith.Sample.csproj" />
+  <Project Path="../test/Hexalith.Sample.UnitTests/Hexalith.Sample.UnitTests.csproj" />
+  <Project Path="../test/Hexalith.Sample.IntegrationTests/Hexalith.Sample.IntegrationTests.csproj" />
+  <Project Path="../test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj" />
+  <Project Path="../test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj" />
+</Solution>

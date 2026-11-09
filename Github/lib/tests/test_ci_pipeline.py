@@ -531,6 +531,13 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
             self.assertEqual(original, outside_config.read_bytes())
 
     def test_consumer_cli_initializes_recorded_direct_gitlinks_only(self):
+        self.check_recorded_consumer_gitlinks(lambda consumer, environment: subprocess.run(
+            [sys.executable, "-I", "-S", str(SCRIPT), "--phase", "prepare",
+             "--workspace", str(consumer), "--repository", "Example/Consumer"],
+            env=environment, text=True, capture_output=True, check=False))
+
+    def check_recorded_consumer_gitlinks(self, prepare):
+        """Share real HTTP Git setup and checkout assertions across entrypoints."""
         with tempfile.TemporaryDirectory(prefix="ci-gitlinks-") as temporary:
             base = Path(temporary)
             served = base / "served"
@@ -609,9 +616,7 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
                 environment = os.environ.copy()
                 for key in ("CI_MODULE_ROOT", "CI_EXPECTED_SOURCE", "GITHUB_OUTPUT"):
                     environment.pop(key, None)
-                result = subprocess.run([sys.executable, "-I", "-S", str(SCRIPT), "--phase", "prepare",
-                                         "--workspace", str(consumer), "--repository", "Example/Consumer"],
-                                        env=environment, text=True, capture_output=True, check=False)
+                result = prepare(consumer, environment)
                 self.assertEqual(0, result.returncode, result.stdout + result.stderr)
                 outputs = json.loads(result.stdout.splitlines()[-1])
                 self.assertEqual([path for _, path, _ in entries[:2]], json.loads(outputs["submodules"]))
