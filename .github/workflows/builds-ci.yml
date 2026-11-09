@@ -216,7 +216,10 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -PackageDirectory artifacts/g4-ci-qualification -RetainPackageDirectory -RequireControls -SkipSourceValidation
 
+      # The archiver credits only push and pull_request carriers. A manual
+      # dispatch still qualifies and retains its diagnostic attempt identity.
       - name: Archive CI qualification evidence
+        if: github.event_name != 'workflow_dispatch'
         run: python3 Tools/archive-g4-qualification-evidence.py --package-directory artifacts/g4-ci-qualification --kind ci
 
       - name: Record CI qualification attempt

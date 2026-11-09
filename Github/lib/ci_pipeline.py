@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 from typing import Any
@@ -95,8 +96,7 @@ def run_command(arguments: list[str], root: Path, *, capture: bool = False) -> s
         if capture:
             print(result.stdout, end="", file=sys.stderr)
             print(result.stderr, end="", file=sys.stderr)
-        raise PipelineError(f"{arguments[0]} {arguments[1]} failed ({result.returncode})",
-                            result.returncode)
+        raise PipelineError(f"{shlex.join(arguments)} failed ({result.returncode})", result.returncode)
     return result.stdout if capture else ""
 
 
@@ -140,8 +140,9 @@ def prepare_config(workspace: Path, *, repository: str, module_root: str = "",
         raise PipelineError(f"{global_json}: sdk.version is required")
     test_runner(root)  # Reject malformed runner metadata before setup-dotnet.
     prefix = f"{module_root}/" if module_root else ""
-    paths = ([] if repository == BUILDS_REPOSITORY and not module_root
-             else ["references/Hexalith.Builds"])
+    # In Builds' own repository, including a module-root fixture, the workspace
+    # is the Builds tree under test; it never has a Builds gitlink to initialize.
+    paths = [] if repository == BUILDS_REPOSITORY else ["references/Hexalith.Builds"]
     paths.extend(config["submodules"])
     submodules = tuple(dict.fromkeys(prefix + path for path in paths))
     return PreparedConfig(workspace, root, config, prefix + config["solution"],
@@ -161,10 +162,11 @@ def initialize_submodules(prepared: PreparedConfig) -> None:
         contained_path(prepared.workspace, path, kind="submodule")
         if path not in declared:
             raise PipelineError(f"submodule is not declared in root .gitmodules: {path}")
-        entry = run_command(["git", "ls-files", "--stage", "--", path], prepared.workspace, capture=True)
+        entry = run_command(["git", "--literal-pathspecs", "ls-files", "--stage", "--", path],
+                            prepared.workspace, capture=True)
         if len(entry.splitlines()) != 1 or not entry.startswith("160000 "):
             raise PipelineError(f"declared submodule is not a direct root gitlink: {path}")
-    run_command(["git", "-c", "protocol.file.allow=never", "-c", "submodule.recurse=false",
+    run_command(["git", "--literal-pathspecs", "-c", "protocol.file.allow=never", "-c", "submodule.recurse=false",
                  "submodule", "update", "--init", "--checkout", "--",
                  *prepared.submodules], prepared.workspace)
 
@@ -205,6 +207,11 @@ def solution_projects(root: Path, solution: str) -> tuple[str, ...]:
     return tuple(sorted(projects))
 
 
+def target_frameworks(properties: dict[str, str]) -> list[str]:
+    """Split evaluated TargetFrameworks like the SDK: trim entries, drop empty ones."""
+    return [framework.strip() for framework in properties["TargetFrameworks"].split(";") if framework.strip()]
+
+
 def evaluated_properties(root: Path, project: str, *, framework: str = "") -> dict[str, str]:
     """Read real MSBuild evaluation in the same package-mode Release context."""
     arguments = ["dotnet", "msbuild", project, "-nologo", "-verbosity:quiet",
@@ -230,13 +237,11 @@ def discover_test_projects(root: Path, solution: str) -> tuple[str, ...]:
     tests = []
     for project in solution_projects(root, solution):
         outer = evaluated_properties(root, project)
-        frameworks = outer["TargetFrameworks"].split(";") if outer["TargetFrameworks"] else []
+        frameworks = target_frameworks(outer)
         if outer["IsCrossTargetingBuild"].lower() not in ("", "true", "false"):
             raise PipelineError(f"{project}: invalid IsCrossTargetingBuild")
         if outer["IsCrossTargetingBuild"].lower() == "true" and not frameworks:
             raise PipelineError(f"{project}: cross-targeting build has no TargetFrameworks")
-        if any(not framework or framework.strip() != framework for framework in frameworks):
-            raise PipelineError(f"{project}: invalid TargetFrameworks")
         values = [evaluated_properties(root, project, framework=framework) for framework in frameworks]
         flags = [value["IsTestProject"].lower() == "true" for value in values]
         if flags and len(set(flags)) != 1:
@@ -289,7 +294,7 @@ def complete_xunit_vstest_configuration(root: Path, project: str, properties: di
     """
     originals = {}
     try:
-        frameworks = properties["TargetFrameworks"].split(";") if properties["TargetFrameworks"] else []
+        frameworks = target_frameworks(properties)
         targets = [evaluated_properties(root, project, framework=value) for value in frameworks] if frameworks else [properties]
         for values in targets:
             if not values["TargetPath"]:
@@ -328,7 +333,11 @@ def execute_unit_projects(root: Path, projects: tuple[str, ...], *, runner: str)
         selector = ["--project", project] if runner == "Microsoft.Testing.Platform" else [project]
         options = []
         properties = evaluated_properties(root, project)
-        xunit = properties["XunitTestProject"].lower() == "true"
+        # A cross-targeting outer evaluation has no package-imported xUnit
+        # identity; each inner build carries it.
+        targets = [evaluated_properties(root, project, framework=framework)
+                   for framework in target_frameworks(properties)] or [properties]
+        xunit = any(values["XunitTestProject"].lower() == "true" for values in targets)
         if xunit:
             # Override only xUnit's early-stop setting; preserve its other settings
             # and leave non-xUnit applications free of framework-specific options.

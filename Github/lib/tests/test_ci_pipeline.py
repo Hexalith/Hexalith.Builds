@@ -65,12 +65,17 @@ elif command=="msbuild":
                 "TargetFrameworks":"", "IsCrossTargetingBuild":"", "XunitTestProject":str(data.get("xunit",True)).lower(),
                 "TargetPath":str(root / pathlib.Path(project).parent / "bin/Release/net10.0" / (pathlib.Path(project).stem+".dll"))}
         if data.get("cross") and project.endswith("A.Tests.csproj"):
-            values.update(TargetFrameworks="net10.0;net9.0", IsCrossTargetingBuild="true")
+            values.update(TargetFrameworks=data.get("frameworks", "net10.0;net9.0"), IsCrossTargetingBuild="true")
             if inner:
                 values["IsCrossTargetingBuild"]="false"
                 values["TargetFramework"]=inner
                 if data.get("inconsistent") and inner=="net9.0":
                     values["IsTestProject"]="false"
+                if data.get("outer_only"):
+                    values["IsTestProject"]="false"
+            else:
+                # Like SDK 10/xunit.v3: package imports apply only to inner builds.
+                values["XunitTestProject"]=""
         print(json.dumps({"Properties":values}))
 elif command=="test":
     project=args[2] if args[1]=="--project" else args[1]
@@ -111,10 +116,10 @@ class SubprocessPipelineTests(unittest.TestCase):
         self.environment.pop("CI_MODULE_ROOT", None)
         self.environment.pop("CI_EXPECTED_SOURCE", None)
 
-    def invoke(self, *arguments):
+    def invoke(self, *arguments, isolation="-I"):
         (self.root / ".github/hexalith-ci.json").write_text(json.dumps(self.document))
         (self.root / "fake-sdk.json").write_text(json.dumps(self.data))
-        return subprocess.run([sys.executable, "-I", "-S", str(SCRIPT), "--workspace", str(self.root),
+        return subprocess.run([sys.executable, isolation, "-S", str(SCRIPT), "--workspace", str(self.root),
                                "--repository", BUILDS, *arguments], env=self.environment,
                               text=True, capture_output=True, check=False)
 
@@ -163,6 +168,7 @@ class SubprocessPipelineTests(unittest.TestCase):
                 self.data["failure"] = failing_command
                 result = self.invoke()
                 self.assertEqual(17, result.returncode, result.stderr)
+                self.assertIn(f"dotnet {failing_command} Fixture.slnx ", result.stderr)
                 self.assertEqual(["restore"] if failing_command == "restore" else ["restore", "build"],
                                  [command[0] for command in self.commands()])
 
@@ -231,15 +237,96 @@ class SubprocessPipelineTests(unittest.TestCase):
 
     def test_cross_targeting_evaluates_each_inner_build_and_rejects_disagreement(self):
         self.data["cross"] = True
-        result = self.invoke()
-        self.assertEqual(0, result.returncode, result.stderr)
-        evaluations = [command for command in self.commands() if command[0] == "msbuild"]
-        for framework in ("net10.0", "net9.0"):
-            self.assertTrue(any(f"-p:TargetFramework={framework}" in command for command in evaluations))
+        # MSBuild preserves property whitespace; the SDK trims and drops empty entries.
+        for frameworks in ("net10.0;net9.0", "\n    net10.0;\n    net9.0;\n  "):
+            with self.subTest(frameworks=frameworks):
+                (self.root / "commands.jsonl").unlink(missing_ok=True)
+                self.data["frameworks"] = frameworks
+                result = self.invoke()
+                self.assertEqual(0, result.returncode, result.stderr)
+                evaluations = [command for command in self.commands() if command[0] == "msbuild"]
+                inner = {argument for command in evaluations for argument in command
+                         if argument.startswith("-p:TargetFramework=")}
+                self.assertEqual({"-p:TargetFramework=net10.0", "-p:TargetFramework=net9.0"}, inner)
+                # xUnit identity comes from the inner builds, so completion still holds.
+                tests = {command[2]: command for command in self.commands() if command[0] == "test"}
+                self.assertEqual(["--stop-on-fail", "off"], tests["test/A space/A.Tests.csproj"][-2:])
         self.data["inconsistent"] = True
         result = self.invoke()
         self.assertEqual(1, result.returncode)
         self.assertIn("differs across target frameworks", result.stderr)
+
+    def test_outer_and_inner_test_identity_disagreement_fails_without_tests(self):
+        self.data.update(cross=True, outer_only=True)
+        result = self.invoke()
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("outer and inner IsTestProject disagree", result.stderr)
+        self.assertFalse(any(command[0] == "test" for command in self.commands()))
+
+    def test_unit_execution_order_is_ordinal_not_case_insensitive(self):
+        self.data["projects"] = {"test/b.Tests/b.Tests.csproj": True, "test/C.Tests/C.Tests.csproj": True}
+        for project in self.data["projects"]:
+            (self.root / project).parent.mkdir(parents=True, exist_ok=True)
+            (self.root / project).write_text("<Project />", encoding="utf-8")
+        result = self.invoke()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["test/C.Tests/C.Tests.csproj", "test/b.Tests/b.Tests.csproj"],
+                         [command[2] for command in self.commands() if command[0] == "test"])
+
+    def test_prepare_publishes_validated_workflow_outputs(self):
+        output = self.root / "github-output"
+        self.environment["GITHUB_OUTPUT"] = str(output)
+        result = self.invoke("--phase", "prepare")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["solution=Fixture.slnx", "global-json=global.json", "submodules=[]"],
+                         output.read_text().splitlines())
+        output.unlink()
+        self.document["solution"] = "none"
+        result = self.invoke("--phase", "prepare")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["solution=none", "global-json=", "submodules=[]"], output.read_text().splitlines())
+        self.assertEqual([], self.commands())
+
+    def test_builds_module_root_is_workspace_relative_without_builds_gitlink(self):
+        fixture = self.root / "Samples/Fixture"
+        (fixture / ".github").mkdir(parents=True)
+        document = configuration()
+        document.update(buildsTag="v1.0.0", submodules=["references/Extra"])
+        (fixture / ".github/hexalith-ci.json").write_text(json.dumps(document))
+        (fixture / "Fixture.slnx").write_text("<Solution />")
+        (fixture / "global.json").write_bytes((self.root / "global.json").read_bytes())
+        (self.root / "Samples/Expected").mkdir()
+        prepared = PIPE.prepare_config(self.root, repository=BUILDS, module_root="Samples/Fixture",
+                                       expected_source="Samples/Expected")
+        self.assertEqual(fixture.resolve(), prepared.root)
+        self.assertEqual("Samples/Fixture/Fixture.slnx", prepared.solution)
+        self.assertEqual("Samples/Fixture/global.json", prepared.global_json)
+        self.assertEqual(("Samples/Fixture/references/Extra",), prepared.submodules)
+        with self.assertRaisesRegex(PIPE.PipelineError, "requires module-root"):
+            PIPE.prepare_config(self.root, repository=BUILDS, expected_source="Samples/Expected")
+        with self.assertRaisesRegex(PIPE.PipelineError, "expected-source does not exist"):
+            PIPE.prepare_config(self.root, repository=BUILDS, module_root="Samples/Fixture",
+                                expected_source="Samples/Missing")
+
+    def test_unsafe_paths_and_symlink_escapes_fail_closed(self):
+        for value in ("", "/absolute.slnx", "a\\b.slnx", "C:drive.slnx", "a/../b.slnx", "./a.slnx",
+                      "a//b.slnx", "${{ github.token }}.slnx", "a\nb.slnx", "a\x85b.slnx"):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(PIPE.PipelineError, "unsafe solution path"):
+                    PIPE.contained_path(self.root, value, kind="solution")
+        outside = tempfile.TemporaryDirectory(prefix="ci-outside-")
+        self.addCleanup(outside.cleanup)
+        (Path(outside.name) / "Escape.slnx").write_text("<Solution />")
+        (Path(outside.name) / "Out.Tests.csproj").write_text("<Project />")
+        (self.root / "Escape.slnx").symlink_to(Path(outside.name) / "Escape.slnx")
+        with self.assertRaisesRegex(PIPE.PipelineError, "escapes its repository"):
+            PIPE.contained_path(self.root, "Escape.slnx", kind="solution")
+        (self.root / "linked").symlink_to(outside.name, target_is_directory=True)
+        self.data["projects"]["linked/Out.Tests.csproj"] = True
+        result = self.invoke()
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("unsupported or missing solution project", result.stderr)
+        self.assertFalse(any(command[0] == "test" for command in self.commands()))
 
     def test_runner_metadata_and_test_only_inputs_fail_before_product_commands(self):
         for value in ({"runner": "unsupported"}, [], {"runner": False}):
@@ -257,8 +344,12 @@ class SubprocessPipelineTests(unittest.TestCase):
         for name in ("ci_config.py", "ci_pipeline.py"):
             (poisoned / name).write_text("raise RuntimeError('module code was executed')")
         self.environment["PYTHONPATH"] = str(poisoned)
-        result = self.invoke()
-        self.assertEqual(0, result.returncode, result.stderr)
+        # -P honors PYTHONPATH but omits the script directory, so only the
+        # implementation's own leading import path can keep the poison out.
+        for isolation in ("-I", "-P"):
+            with self.subTest(isolation=isolation):
+                result = self.invoke(isolation=isolation)
+                self.assertEqual(0, result.returncode, result.stderr)
 
 
 class ClassifierAndSubmoduleTests(unittest.TestCase):
@@ -410,9 +501,14 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
 
     def test_names_are_case_sensitive_and_ordinal(self):
         projects = ("tests/z.Tests.csproj", "test/B.Integration.Tests.csproj", "test/C.AppHost.Tests.csproj",
-                    "test/D.E2E.Checks.csproj", "tests/A.Tests.csproj", "test/E.IntegrationTests.csproj")
+                    "test/D.E2E.Checks.csproj", "tests/A.Tests.csproj", "test/E.IntegrationTests.csproj",
+                    "test/F.integrationtests.csproj", "test/G.e2e.Tests.csproj", "test/H.apphost.Tests.csproj",
+                    "tests/a.Tests.csproj", "tests/B.Tests.csproj")
         result = PIPE.classify_projects(projects, configuration(), repository=BUILDS)
-        self.assertEqual(("tests/A.Tests.csproj", "tests/z.Tests.csproj"), result.unit)
+        # Lowercase markers are unit projects; ordinal order puts B before a.
+        self.assertEqual(("test/F.integrationtests.csproj", "test/G.e2e.Tests.csproj", "test/H.apphost.Tests.csproj",
+                          "tests/A.Tests.csproj", "tests/B.Tests.csproj", "tests/a.Tests.csproj",
+                          "tests/z.Tests.csproj"), result.unit)
         self.assertEqual(tuple(sorted(set(projects) - set(result.unit))), result.integration)
 
     def test_only_explicit_root_declared_gitlinks_initialize_without_recursion(self):
@@ -424,15 +520,16 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
 
             def command(arguments, directory, *, capture=False):
                 calls.append(arguments)
-                if arguments[1] == "config":
+                if "config" in arguments[1:3]:
                     return "submodule.builds.path references/Builds\nsubmodule.extra.path references/Extra\nsubmodule.unused.path references/Unused\n"
-                if arguments[1] == "ls-files":
+                if "ls-files" in arguments[1:3]:
+                    self.assertEqual("--literal-pathspecs", arguments[1])
                     return "160000 " + "a" * 40 + " 0\t" + arguments[-1] + "\n"
                 return ""
 
             with mock.patch.object(PIPE, "run_command", side_effect=command):
                 PIPE.initialize_submodules(prepared)
-            self.assertEqual(["git", "-c", "protocol.file.allow=never", "-c", "submodule.recurse=false",
+            self.assertEqual(["git", "--literal-pathspecs", "-c", "protocol.file.allow=never", "-c", "submodule.recurse=false",
                               "submodule", "update", "--init", "--checkout", "--",
                               "references/Builds", "references/Extra"], calls[-1])
             self.assertFalse(any("--recursive" in call for call in calls))
@@ -441,6 +538,21 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
             with mock.patch.object(PIPE, "run_command", side_effect=command):
                 with self.assertRaisesRegex(PIPE.PipelineError, "not declared in root"):
                     PIPE.initialize_submodules(invalid)
+
+    def test_declared_path_that_is_not_a_gitlink_is_rejected_before_update(self):
+        with tempfile.TemporaryDirectory(prefix="ci-not-gitlink-") as temporary:
+            root = Path(temporary)
+            subprocess.run(["git", "init", "--quiet", "--initial-branch=main", str(root)], check=True)
+            (root / ".gitmodules").write_text('[submodule "Regular"]\n\tpath = references/Regular\n'
+                                              '\turl = https://example.invalid/Regular.git\n')
+            (root / "references").mkdir()
+            (root / "references/Regular").write_text("ordinary tracked file")
+            subprocess.run(["git", "add", ".gitmodules", "references/Regular"], cwd=root, check=True)
+            prepared = PIPE.PreparedConfig(root, root, configuration(), "Fixture.slnx", "global.json",
+                                           ("references/Regular",))
+            with self.assertRaisesRegex(PIPE.PipelineError, "not a direct root gitlink"):
+                PIPE.initialize_submodules(prepared)
+            self.assertFalse((root / ".git/modules").exists())
 
 
 class RealSdkTests(unittest.TestCase):
@@ -587,11 +699,72 @@ public sealed class ProbeTests
                     with self.assertRaises(PIPE.PipelineError) as caught:
                         PIPE.run_unit_tests(prepared, repository=BUILDS)
                 self.assertGreater(caught.exception.returncode, 0)
-                self.assertEqual({"A.Tests:first:fr-FR", "A.Tests:second:fr-FR", "A.Tests:third:fr-FR"},
-                                 set(marker.read_text().splitlines()))
+                # Each test runs exactly once; none is cancelled or repeated.
+                self.assertEqual(["A.Tests:first:fr-FR", "A.Tests:second:fr-FR", "A.Tests:third:fr-FR"],
+                                 sorted(marker.read_text().splitlines()))
                 for path in (prepared.root / "test dir/A.Tests/xunit.runner.json",
                              prepared.root / "test dir/A.Tests/bin/Release/net10.0/xunit.runner.json"):
                     self.assertEqual(self.runner_configuration, path.read_bytes())
+
+
+class NuGetTrustPolicyTests(unittest.TestCase):
+    """The real trusted config rejects unsigned and unmapped packages."""
+
+    PACKAGE = "Hexalith.Ci.Unsigned.Probe"
+
+    def derived_config(self, root: Path, name: str, *, mapped: bool, signatures: bool) -> Path:
+        # Each variant changes exactly one control of the real config, so
+        # relaxing that control in NuGet.ci.Config changes the outcome.
+        tree = ET.parse(PIPE.NUGET_CONFIG)
+        document = tree.getroot()
+        ET.SubElement(document.find("packageSources"), "add", key="probe", value=str(root / "feed"))
+        if mapped:
+            source = ET.SubElement(document.find("packageSourceMapping"), "packageSource", key="probe")
+            ET.SubElement(source, "package", pattern=self.PACKAGE)
+        if not signatures:
+            settings = document.find("config")
+            for item in list(settings):
+                if item.get("key") == "signatureValidationMode":
+                    settings.remove(item)
+        path = root / f"{name}.config"
+        tree.write(path, encoding="utf-8", xml_declaration=True)
+        return path
+
+    def test_unsigned_local_package_is_rejected_by_signature_and_source_mapping(self):
+        with tempfile.TemporaryDirectory(prefix="ci-nuget-trust-") as temporary:
+            root = Path(temporary)
+            (root / "global.json").write_bytes((ROOT / "global.json").read_bytes())
+            (root / "Probe").mkdir()
+            (root / "Probe/Probe.csproj").write_text(
+                '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
+                f'<PackageId>{self.PACKAGE}</PackageId><Version>1.0.0</Version><Authors>CI</Authors>'
+                '<Description>Unsigned trust probe</Description></PropertyGroup></Project>')
+            (root / "Probe/Marker.cs").write_text("namespace Probe;\npublic static class Marker { }\n")
+            result = subprocess.run(["dotnet", "pack", "Probe/Probe.csproj", "-o", "feed",
+                                     f"-p:RestorePackagesPath={root / 'packages-pack'}", *PIPE.build_flags()],
+                                    cwd=root, text=True, capture_output=True, check=False)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            (root / "Consumer").mkdir()
+            (root / "Consumer/Consumer.csproj").write_text(
+                '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
+                f'</PropertyGroup><ItemGroup><PackageReference Include="{self.PACKAGE}" Version="1.0.0" />'
+                '</ItemGroup></Project>')
+            cases = (("signed", True, True, "NU3004"), ("control", True, False, None),
+                     ("unmapped", False, False, "NU1101"))
+            for name, mapped, signatures, error in cases:
+                with self.subTest(policy=name):
+                    config = self.derived_config(root, name, mapped=mapped, signatures=signatures)
+                    # A fresh package folder forces source selection and signature verification.
+                    result = subprocess.run(["dotnet", "restore", "Consumer/Consumer.csproj",
+                                             f"-p:RestorePackagesPath={root / ('packages-' + name)}",
+                                             *PIPE.build_flags(config)],
+                                            cwd=root, text=True, capture_output=True, check=False)
+                    output = result.stdout + result.stderr
+                    if error is None:
+                        self.assertEqual(0, result.returncode, output)
+                    else:
+                        self.assertNotEqual(0, result.returncode, output)
+                        self.assertIn(error, output)
 
 
 if __name__ == "__main__":

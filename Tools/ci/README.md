@@ -176,7 +176,10 @@ python3 -I /path/to/trusted/Builds/Github/lib/ci_pipeline.py --workspace . --rep
 `--phase prepare`, `build` and `unit` run the corresponding composite phases;
 the default `all` runs them in order. Preparation validates the complete document
 through `ci_config.py`, then initializes Builds plus only the explicitly listed
-root-declared gitlinks, with recursion disabled. It publishes `solution`,
+root-declared gitlinks, with recursion disabled and literal Git pathspecs. In
+Builds' own repository the workspace is the Builds tree under test, so no Builds
+gitlink is initialized, including under a test-only `module-root`; listed
+submodule paths are prefixed with that root. It publishes `solution`,
 `submodules` (a JSON array) and `global-json` through `GITHUB_OUTPUT` when set.
 The solution output is workspace-relative, including a test-only `module-root`.
 `module-root` and `expected-source` are accepted only in Builds' own repository.
@@ -191,10 +194,16 @@ requires signatures and trusts only nuget.org's repository signing certificates.
 The SHA-256 fingerprints were checked against the actual DER certificate bytes
 advertised by the [nuget.org signatures endpoint](https://api.nuget.org/v3-index/repository-signatures/5.0.0/index.json)
 on 2026-11-09; historical certificates support timestamped older packages.
+Behavioral tests derive variants that relax exactly one control of the real
+config: a locally packed unsigned package fails restore with NU3004 under its
+signature policy and with NU1101 under its source mapping, while the control
+variant with both relaxed restores. Add nuget.org's new certificate fingerprint
+here when it rotates its repository signing certificate.
 
 Discovery asks the selected SDK for actual solution membership, then evaluates
 `IsTestProject` with the same Release/package properties. Cross-targeted projects
-are evaluated for every target framework; inconsistent test identity fails.
+are evaluated for every target framework, trimming entries and dropping empty
+ones as the SDK does; inconsistent test identity fails.
 Only evaluated test projects enter AD-13 classification. Overrides must identify
 known test projects, and exclusions must name an enabled hook or job. Unit
 projects execute in ordinal path order, with no build or restore. Failure leaves
@@ -209,8 +218,8 @@ therefore retains all MSBuild properties and expresses warning enforcement as
 properties for MTP. Its in-process MSBuild evaluation consumes no automatic
 response files. The real SDK tests prove this with poisoned `MSBuild.rsp` and
 `Directory.Build.rsp` in both the workspace and project directories; they also
-prove that both tests in a failing xUnit project finish while its successor
-never starts. The MSBuild CLI paths retain both switches unchanged.
+prove that all three tests in a failing xUnit project finish exactly once while
+its successor never starts. The MSBuild CLI paths retain both switches unchanged.
 
 Own-code resolution was verified **before implementation** by a temporary hosted
 `$/Github/ci-runtime-probe` action with no workspace checkout: [run 42615634829](https://github.com/Hexalith/Hexalith.Builds/actions/runs/42615634829)
@@ -220,12 +229,16 @@ The temporary probe files have been removed. Native `$/` works, so AD-9's pinned
 own-code-checkout fallback is unnecessary. All new composites locate their
 scripts through `GITHUB_ACTION_PATH`, independently of the module's Builds
 gitlink. The first CI step reserves stage 1 for story 5-1's guard and commitlint;
-Builds' own call runs no delivered-ref guard.
+Builds' own call runs no delivered-ref guard. A manual `workflow_dispatch` of
+`builds-ci.yml` runs every lane but skips G-4 evidence archiving, whose carrier
+is credited only for push and pull_request runs.
 
 The executor also overrides xUnit's within-project `stopOnFail` setting so
 project-level failure never cancels the remaining tests in that project. xUnit
-is identified by evaluated `XunitTestProject` metadata. MTP uses its supported
-`--stop-on-fail off` option; VSTest uses `xUnit.StopOnFail=false`. The v3
+is identified by evaluated `XunitTestProject` metadata, read from each inner
+build of a multi-targeted project because its outer evaluation has no
+package-imported identity. MTP uses its supported `--stop-on-fail off` option;
+VSTest uses `xUnit.StopOnFail=false`. The v3
 VSTest adapter's separate executable can reload its JSON configuration, so only
 evaluated build-output runner configs are temporarily merged with
 `stopOnFail=false`, then restored byte-for-byte in `finally`. Multi-targeted
