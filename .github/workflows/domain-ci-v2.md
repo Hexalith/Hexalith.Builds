@@ -10,19 +10,29 @@ never publishes packages or images.
 
 Declare nonempty package suites in the v2 module declaration, pin
 `hexalith.builds.module.cli` exactly in `.config/dotnet-tools.json` with
-`rollForward: false`, and pass:
+`rollForward: false`, and call the workflow with an exact producer commit:
 
 ```yaml
-with:
-  solution: Hexalith.Module.slnx
-  module-manifest: module/hexalith.module-manifest.v2.json
-  integration-test-profiles: platform-package
-  test-platform: microsoft-testing-platform
-  unit-test-projects: |
-    tests/Hexalith.Module.Contracts.Tests
-    tests/Hexalith.Module.Domain.Tests
-  build-timeout-minutes: 60
+jobs:
+  ci:
+    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci-v2.yml@<approved-builds-commit-sha>
+    with:
+      solution: Hexalith.Module.slnx
+      module-manifest: module/hexalith.module-manifest.v2.json
+      integration-test-profiles: platform-package
+      test-platform: microsoft-testing-platform
+      unit-test-projects: |
+        tests/Hexalith.Module.Contracts.Tests
+        tests/Hexalith.Module.Domain.Tests
+      build-timeout-minutes: 60
+    secrets:
+      registry-pull-username: ${{ secrets.HEXALITH_CI_REGISTRY_USERNAME }}
+      registry-pull-password: ${{ secrets.HEXALITH_CI_REGISTRY_PASSWORD }}
 ```
+
+`module-manifest`, `integration-test-profiles` and `unit-test-projects` are required.
+The first step refuses empty values and the retired inputs below before checkout,
+build or tests.
 
 Use the versioned `.github/workflows/domain-ci-v2.yml` entry point. The workflow
 reference must select an approved exact producer commit containing this file.
@@ -58,10 +68,15 @@ Each configured isolated project executes independently. VSTest and
 Microsoft.Testing.Platform keep their distinct reporter/coverage options, preserve
 all shard results and emit explicit failure counts. Missing/invalid outputs or any
 failure block provisioning. Unit suites must be nonempty for integration callers.
-Coverage gates and optional consumer package validation remain blocking.
+Coverage gates and optional consumer package validation remain blocking; the coverage
+gate runs before toolchain installation, registry login and integration.
 
 After isolated success, the workflow installs the catalog-selected Aspire CLI and
-isolated Dapr binaries without starting default Dapr services. The runner tool
+isolated Dapr binaries without starting default Dapr services. Each Dapr CLI and
+runtime archive (`daprd`, `placement`, `scheduler`) is verified against the SHA-256
+pinned for the exact catalog version in `Props/dapr-toolchain-sha256.json` before it is
+extracted. A version without a pinned digest, a malformed digest or a mismatch refuses
+before extraction. Aspire.Cli is a signature-verified NuGet tool package. The runner tool
 probes the actual versions and container runtime before allocating its own services.
 Integration uses declared suites, real services and package/Release dependencies;
 it never runs a consumer-owned AppHost.
@@ -78,12 +93,45 @@ producing attempt, actual repository/run/attempt/job and durable metadata root.
 Receipt publication must succeed and the file must remain outside deleted run
 workspaces. A receipt cannot be rebound to another allocation.
 
-The helper finalizes in `finally`, and an independent `always()` workflow step
-retries exact `down --run-id` after success, failure, cancellation or partial startup.
-It refuses foreign repository/run/attempt/job receipts or mismatched durable owner
-identities before destructive commands. Every finalizer is bounded. Unknown
-discovery and any owned process/container/workspace/claim prevent completion and
-retain retryable owner metadata. Peer owners are outside the cleanup scope.
+The hosted runner cancels a step by signalling only the step process: SIGINT, then
+SIGTERM 7.5 s later, then a process-tree kill 2.5 s after that. The integration step
+therefore `exec`s the helper, so the helper is that process. The helper starts the
+tool in its own session through a gate that releases the tool only after the job-bound
+process record `$RUNNER_TEMP/hexalith-ci-owner.process.json` is durable. A runner
+signal is delivered to the whole tool process group as SIGINT, escalated to SIGTERM
+after 6 s and SIGKILL after 8.5 s, so the helper's own stop work fits the grace. After
+a cancellation the helper performs no exact down itself; that belongs to the
+`always()` finalizer.
+
+The step has `timeout-minutes: 40` and the helper a 2,100-second (35-minute) timeout,
+so the helper's timeout path fires first. A timeout is not a cancellation: the
+helper terminates the tool session, finalizes exactly with an empty job status and
+returns 124.
+
+After normal completion or a timeout the helper runs exact `down --run-id` itself,
+and an independent `always()` step retries it after success, failure, cancellation
+or partial startup. Before deciding anything, the finalizer interrupts, terminates
+and finally kills any surviving member of the recorded tool session, then re-reads
+the receipt. It reports `not-allocated` only when no recorded process survives and no
+receipt exists; a surviving process is reported as `allocation-unverified`. No live
+orphan can therefore allocate after that decision or keep `provisioning.lock`
+against the exact down. When the helper was never checked out, no integration
+process could have started, and the finalizer exits cleanly unless owner records
+exist. It refuses foreign repository/run/attempt/job receipts and process records,
+and mismatched durable owner identities, before destructive commands. Every
+finalizer is bounded. Unknown discovery and any owned process/container/workspace/claim
+prevent completion and retain retryable owner metadata. Peer owners are outside the
+cleanup scope.
+
+Evidence writes are atomic: complete bytes are fsynced to a private temporary file and
+then renamed. `execution.json` records the tool's process exit code, whether it was
+launched, cancelled or timed out, the parsed result (or `outputParsed: false`), and a
+bounded, redacted stderr excerpt with the full stderr size and SHA-256. It is written
+before the tool output is parsed. Each exact down attempt writes its own
+`cleanup-<n>.json`, recording the exit code, parse status, verification and redacted
+stderr. A later attempt never replaces an earlier one. Non-JSON output, malformed
+nested results and a down timeout are recorded as unverified cleanup; declared
+diagnostics are still retained.
 
 CI admits compatible active attachments only within that exact job. It closes
 admission and durably reports active attachments as withdrawn before stopping
@@ -107,11 +155,14 @@ original native outcome/time and the actual cleanup result remain separate.
 ## Permissions and publication boundary
 
 The workflow grants `contents: read`. Callers explicitly map the required
-`registry-pull-username` and `registry-pull-password` inputs to repository secrets
+`registry-pull-username` and `registry-pull-password` workflow secrets to repository secrets
 `HEXALITH_CI_REGISTRY_USERNAME` and `HEXALITH_CI_REGISTRY_PASSWORD`. They identify the
 dedicated `ci-reader` account with registry read permission and no admin membership.
 Provider, publisher and cluster-workload accounts are not accepted for this job.
 There is no secret inheritance or `pull_request_target` credential path.
+Pull requests from forks and Dependabot runs receive no repository secrets, so their
+registry login fails and v2 integration cannot pass for those events. Run them from a
+branch in the repository, or let a maintainer rerun the change there.
 
 Login runs only after isolated suites succeed, using password stdin and a private
 job-temporary Docker config. The runtime already inherits `DOCKER_CONFIG`; the
@@ -148,13 +199,19 @@ no candidate test-environment acceptance or publication authorization by itself.
 ## Verification
 
 ```bash
+npm ci
 python3 -m unittest discover -s Github/prepare-module-build/tests -v
 python3 -m unittest discover -s Github/run-module-integration/tests -v
+python3 -m unittest discover -s Github/governed-provenance/tests -v
 pwsh -NoProfile -File Tools/test-domain-workflow-test-platforms.ps1
 pwsh -NoProfile -File Tools/test-domain-workflow-test-platforms.ps1 -Contract v2
 ```
 
-The executable controls cover isolated gating, required prerequisites, same-job
-binding, cancellation, partial startup, first outcomes, exact retry, classified
-retention and failure on unknown discovery/leftovers. Hosted runner observations
+The executable controls cover isolated gating, early input refusal, required
+prerequisites, pinned Dapr digests, same-job binding, cancellation, partial startup,
+first outcomes, exact retry, classified retention and failure on unknown
+discovery/leftovers. Process-level controls signal only the step shell, as the
+runner does: the signal reaches the tool session, a surviving tool cannot be
+reported `not-allocated`, a live orphan cannot hold the provisioning lock, and a
+timeout is finalized as a timeout. Hosted runner observations
 are still required before Story 2.8 can complete.
