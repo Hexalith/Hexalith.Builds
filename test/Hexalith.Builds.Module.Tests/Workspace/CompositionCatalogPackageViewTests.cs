@@ -108,7 +108,7 @@ public sealed class CompositionCatalogPackageViewTests
     public async Task OwningCatalogMaterializesTheEventStoreHostViewWithoutAPrematureFixturePinAsync()
     {
         string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(catalogOverride: catalog).ConfigureAwait(true);
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(catalog).ConfigureAwait(true);
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string workspace = Path.Combine(fixture.Directory, "actual-host-consumer");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -131,7 +131,7 @@ public sealed class CompositionCatalogPackageViewTests
         string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
         System.Xml.Linq.XDocument document = System.Xml.Linq.XDocument.Parse(catalog);
         document.Root!.AddFirst(new System.Xml.Linq.XElement("PropertyGroup", new System.Xml.Linq.XElement("HexalithEventStoreVersion", selected)));
-        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(catalogOverride: document.ToString()).ConfigureAwait(true);
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(document.ToString()).ConfigureAwait(true);
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string workspace = Path.Combine(fixture.Directory, "historical-host-consumer");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
