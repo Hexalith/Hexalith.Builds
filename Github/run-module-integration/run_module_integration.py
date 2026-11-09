@@ -780,10 +780,9 @@ def run_down(command: list[str], *, cwd: Path, env: dict, timeout: int) -> subpr
         # No orphaned down may keep provisioning.lock against the always() finalizer's retry.
         signal_groups([child.pid], signal.SIGKILL)
         stdout, stderr = child.communicate()
-        raise subprocess.TimeoutExpired(  # nosemgrep -- a result record of the fixed down command, nothing is executed.
-            command, timeout, output=stdout, stderr=stderr) from None
-    return subprocess.CompletedProcess(  # nosemgrep -- a result record of the fixed down command, nothing is executed.
-        command, child.returncode, stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace"))
+        raise subprocess.TimeoutExpired(command, timeout, output=stdout, stderr=stderr) from None  # nosemgrep -- a record only.
+    output, errors = stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace")
+    return subprocess.CompletedProcess(command, child.returncode, output, errors)  # nosemgrep -- a record, nothing executes.
 
 
 def exact_down(root: Path, owner: dict, evidence: Path, context: dict, job_status: str, timeout: int) -> int:
