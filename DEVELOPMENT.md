@@ -39,6 +39,15 @@ through 3600 seconds; the largest declared override is used. Failed startup
 reports each unready resource and a preserved diagnostics directory.
 `hexalith-module down` stops only resources tagged for the selected run.
 
+The private stdin regression controller uses a dedicated parent-bound readiness
+record and the original ten-second wait. `HXLQ109` identifies a missing readiness
+acknowledgement; `HXLQ110` identifies an invalid or unreadable record. Both report
+the fixed `stdin-acknowledgement` checkpoint and redaction status. Timeout
+diagnostics retain only allowlisted child stages and bounded scheduler facts;
+refusals exclude private paths, tokens, payloads and file-exception text. These
+resource-free controls exercise actual redirected input without composing services
+and supply no hosted lifecycle or accepted-tool qualification.
+
 ## Technology Stack
 
 - .NET 10 or later and C# 14 or later
