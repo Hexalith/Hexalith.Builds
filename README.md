@@ -333,6 +333,11 @@ catalog, a generated guard compares the effective version, including
 The catalog is evaluated for the consumer project name, so conditional pins
 apply to that project. Equivalent exact NuGet ranges are accepted before
 restore; the guard checks the resolved package version after restore.
+Composition can resolve an extension package with
+`CompositionDeclarationOptions.CatalogPackageVersion(packageId, source, projectName)`.
+A named consumer requires its recorded view in the Builds-materialized pinned
+snapshot; an absent snapshot, absent view or changed snapshot refuses selection.
+The two-argument overload retains the default snapshot/catalog behavior.
 
 McpCli is a short-lived tool, not a server, so its v2 declaration lists no
 server. When the active v2 module is `mcpcli`, source-mode `run` and `debug`
