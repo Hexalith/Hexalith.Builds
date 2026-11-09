@@ -70,7 +70,8 @@ schema fixtures, are excluded; those names remain public for composite inputs,
 secrets and outputs. YAML, JSON and XML are
 parsed with real parsers; malformed documents fail clearly. PyYAML 6.0.3 is a
 CI-only PEP 723 dependency whose artifacts and hashes are recorded in both
-script `.lock` files. Runtime scripts gain no third-party dependencies.
+script `.lock` files. The test runner also pins jsonschema 4.26.0 and its
+transitive dependencies in its lock. Runtime scripts gain no third-party dependencies.
 
 Additions pass. Removals print their entries and fail unless a commit in
 `baseline..HEAD` has a Conventional Commit `!` header or a
@@ -102,3 +103,62 @@ exit status. Unit tests use temporary Git repositories and synthetic API/tool
 fixtures. Existing shell execution/output tests remain; workflow-source text
 assertions have been removed. Legacy .NET, catalog, contract, qualification and
 CodeQL jobs remain in CI; quality and both Python runs feed its aggregate verdict.
+
+The CI configuration contract is `schemas/hexalith.ci.v1.json` (draft 2020-12).
+`Github/lib/tests/fixtures/contract.json` contains complete positive and negative
+documents. The automatically discovered `Github/lib/tests` group passes each
+document through jsonschema and the independent stdlib loader, checks both
+against the expected result, and fails any disagreement. Both interpreters run
+that same corpus and validate Builds' hand-written `.github/hexalith-ci.json`.
+
+Schema `default` values are renderer metadata. Every configuration must explicitly
+contain `schema`, `solution`, `dapr`, `browsers`, `registry`, `codeql`, `tests`,
+`hooks`, `jobs` and `submodules`; readers never insert values. The renderer's
+`codeql` default is `["csharp"]` with a solution and `[]` with `solution: "none"`.
+The other defaults are `solution: "none"`, false booleans, and empty collections
+(including both `tests.integration` and `tests.exclude`). An explicit empty
+`codeql` list skips analysis. Supported CodeQL identifiers follow the
+[GitHub language identifiers](https://docs.github.com/en/code-security/reference/code-scanning/workflow-configuration-options),
+with `actions` forbidden by the CI contract.
+
+`tests.integration` lists repository-relative `.csproj` paths. `tests.exclude`
+maps such paths to enabled hook or job names; it cannot skip a test without an
+action responsible for it. Hooks are `after-unit-tests`,
+`after-integration-tests` and `nightly`. Jobs map other kebab-case names (excluding
+`ci` and every fixed hook name) to closed `{"runner": "windows-latest"}` objects.
+`submodules` lists additional direct repository-relative submodule paths. Builds
+checkout is implicit; this list never requests recursive initialization. Paths
+reject absolute/drive paths, backslashes, dot/traversal segments, empty segments,
+trailing slashes, control characters and `${{` expressions. A solution is a
+`.slnx` path or `none`; with `none`, hooks/jobs/tests are empty and dapr/browsers
+are false.
+
+Use the single loader in `Github/lib/ci_config.py` from every runtime reader:
+
+```python
+from ci_config import load_config, validate_config
+
+config = load_config(path, repository=repository, module_root=module_root)
+config = validate_config(document, repository=repository, module_root=module_root)
+```
+
+Add the trusted Builds `Github/lib` directory to the importing application's
+module search path. `repository` is a required trusted owner/name supplied by
+the caller, and `module_root` defaults to an empty string. Neither is read from
+the document. Only `repository="Hexalith/Hexalith.Builds"` with an empty module
+root may omit `buildsTag`; samples require it. When present, a tag must be an
+exact stable `vMAJOR.MINOR.PATCH` (no prerelease, build metadata or leading zeros).
+The loader resolves its schema identity beside its own file, returns the same
+values, raises `ConfigError` on invalid input, rejects duplicate JSON keys and
+non-JSON constants, and uses no third-party modules. The CLI prints validated
+JSON, or a source/location diagnostic on stderr with a nonzero exit status:
+
+```bash
+python3 -I Github/lib/ci_config.py .github/hexalith-ci.json --repository Hexalith/Hexalith.Builds
+```
+
+Schema validation cannot know the trusted repository identity or correlate
+exclusion targets with arbitrary job property names. Separate loader tests cover
+missing tags in module/sample contexts and references to disabled actions.
+Delivery's later per-module checks verify that action paths and submodules
+actually exist; this contract does not initialize repositories or run commands.

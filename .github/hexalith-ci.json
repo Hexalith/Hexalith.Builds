@@ -1,0 +1,12 @@
+{
+  "schema": "hexalith.ci.v1",
+  "solution": "Hexalith.Builds.slnx",
+  "dapr": false,
+  "browsers": false,
+  "registry": false,
+  "codeql": ["csharp"],
+  "tests": { "integration": [], "exclude": {} },
+  "hooks": [],
+  "jobs": {},
+  "submodules": []
+}

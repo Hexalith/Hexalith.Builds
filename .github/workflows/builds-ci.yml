@@ -344,7 +344,7 @@ jobs:
       - name: Install integrity-checked CI tools
         run: python Tools/ci/lint_workflows.py --install-only --export-path
 
-      - name: Run the shared Python suite
+      - name: Run the shared Python suite and both CI configuration validators
         env:
           CI_PYTHON: ${{ matrix.python == 'runner' && env.RUNNER_PYTHON || '3.12' }}
           GH_TOKEN: ${{ github.token }}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["PyYAML==6.0.3"]
+# dependencies = ["PyYAML==6.0.3", "jsonschema==4.26.0"]
 # ///
 """Run each retained Python test group with this exact interpreter, failing closed."""
 
