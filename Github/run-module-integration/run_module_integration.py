@@ -44,14 +44,31 @@ CLEANUP_SCHEMA = "hexalith.module.ci-integration-cleanup.v1"
 # after that. The helper escalates inside that window and leaves exact cleanup to the always() finalizer.
 CANCELLATION_ESCALATION_SECONDS = 6.0
 CANCELLATION_FINAL_SECONDS = 8.5
-DEFAULT_TIMEOUT_SECONDS = 2100
+# Every bounded wait on the timeout path. The helper timeout leaves room for all of them inside the integration step,
+# and for them plus the always() finalizer step inside the job (domain-ci-v2.yml; the validator derives from these).
+VERIFY_TOOL_SECONDS = 30
 TIMEOUT_STOP_SECONDS = 120
+POST_KILL_WAIT_SECONDS = 10
 SESSION_SIGNAL_WAIT_SECONDS = 5.0
+DOWN_TIMEOUT_SECONDS = 150
+RESERVE_MARGIN_SECONDS = 30
+FINALIZER_STEP_SECONDS = 240
+JOB_SETUP_ALLOWANCE_SECONDS = 60
+MINIMUM_TIMEOUT_SECONDS = 60
+MAXIMUM_TIMEOUT_SECONDS = 86400
+# Two escalating terminations (tool first, then the remaining selection), each SIGINT, SIGTERM and SIGKILL.
+FINALIZE_RESERVE_SECONDS = 2 * 3 * int(SESSION_SIGNAL_WAIT_SECONDS) + VERIFY_TOOL_SECONDS + DOWN_TIMEOUT_SECONDS
+STEP_RESERVE_SECONDS = (VERIFY_TOOL_SECONDS + TIMEOUT_STOP_SECONDS + POST_KILL_WAIT_SECONDS + FINALIZE_RESERVE_SECONDS
+                        + RESERVE_MARGIN_SECONDS)
+DEFAULT_STEP_TIMEOUT_MINUTES = 40
+DEFAULT_TIMEOUT_SECONDS = DEFAULT_STEP_TIMEOUT_MINUTES * 60 - STEP_RESERVE_SECONDS
+OWNER_RUN_TAG = "HEXALITH_G4_RUN_ID"
 STDOUT_BYTES = 16 * 1024 * 1024
 STDERR_EXCERPT_CHARACTERS = 4096
 # The tool runs only after the helper durably recorded its new session; an orphaned gate exits without launching.
 GATE = ["/bin/sh", "-c", 'IFS= read -r go || exit 125; [ "$go" = 1 ] || exit 125; exec "$@" </dev/null', "hexalith-ci-gate"]
-SECRET_TEXT = re.compile(r"(?i)\b(authorization|bearer|password|passwd|secret|token|api[-_]?key|credential)s?\b[^\n]*")
+SECRET_TEXT = re.compile(
+    r"(?i)(?<![a-z])(authorization|bearer|password|passwd|secret|token|api[-_]?key|credential)s?(?![a-z])[^\n]*")
 OPAQUE_TEXT = re.compile(r"[A-Za-z\d+/=_-]{40,}", re.ASCII)
 FIXED_METADATA_BYTES = 4 * 1024 * 1024
 JSON_DIAGNOSTIC_BYTES = 1024 * 1024
@@ -163,7 +180,7 @@ def verify_tool(root: Path) -> None:
         cwd=root,
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=VERIFY_TOOL_SECONDS,
         check=False,
     )
     if completed.returncode or completed.stdout.strip().split("+", 1)[0] != version:
@@ -303,11 +320,12 @@ def stderr_record(stderr) -> dict:
     else:
         body = str(stderr).encode("utf-8", "replace")
     text = body.decode("utf-8", "replace")
-    tail = text[-STDERR_EXCERPT_CHARACTERS:]
-    redacted = OPAQUE_TEXT.sub("<redacted>", SECRET_TEXT.sub(lambda match: match.group(1) + " <redacted>", tail))
-    printable = "".join(character if character in "\n\t" or 32 <= ord(character) < 127 else "?" for character in redacted)
+    # Redact the whole text first, so a secret that straddles the excerpt boundary cannot survive the slice.
+    redacted = OPAQUE_TEXT.sub("<redacted>", SECRET_TEXT.sub(lambda match: match.group(1) + " <redacted>", text))
+    tail = redacted[-STDERR_EXCERPT_CHARACTERS:]
+    printable = "".join(character if character in "\n\t" or 32 <= ord(character) < 127 else "?" for character in tail)
     return {"bytes": len(body), "sha256": hashlib.sha256(body).hexdigest(), "excerpt": printable,
-            "truncated": len(tail) < len(text), "redacted": True}
+            "truncated": len(tail) < len(redacted), "redacted": True}
 
 
 def parsed_output(output: str):
@@ -549,7 +567,7 @@ def process_identity(pid: int) -> dict | None:
     fields = text.rpartition(")")[2].split()
     if len(fields) < 20 or fields[0] in ("Z", "X"):
         return None
-    return {"processGroup": int(fields[2]), "session": int(fields[3]), "startTime": fields[19]}
+    return {"parent": int(fields[1]), "processGroup": int(fields[2]), "session": int(fields[3]), "startTime": fields[19]}
 
 
 def write_process_record(receipt: Path, context: dict, pid: int) -> dict:
@@ -580,8 +598,8 @@ def read_process_record(path: Path, context: dict) -> dict:
     return record
 
 
-def recorded_session_members(record: dict) -> dict[int, int]:
-    """Map every live member of the recorded tool session to its process group."""
+def session_identities(record: dict) -> dict[int, dict]:
+    """Map every live member of the recorded tool session to its identity; a reused session or other boot has none."""
     if record.get("bootId") and record["bootId"] != boot_identity():
         return {}
     session = record["session"]
@@ -594,8 +612,91 @@ def recorded_session_members(record: dict) -> dict[int, int]:
         if entry.name.isdigit():
             identity = process_identity(int(entry.name))
             if identity is not None and identity["session"] == session:
-                members[int(entry.name)] = identity["processGroup"]
+                members[int(entry.name)] = identity
     return members
+
+
+def recorded_session_members(record: dict) -> dict[int, int]:
+    """Map every live member of the recorded tool session to its process group."""
+    return {pid: identity["processGroup"] for pid, identity in session_identities(record).items()}
+
+
+def session_processes(record: dict) -> dict[int, str]:
+    """Every live recorded-session process with its start time."""
+    return {pid: identity["startTime"] for pid, identity in session_identities(record).items()}
+
+
+def tool_processes(record: dict) -> dict[int, str]:
+    """The tool's own processes: the live gated muxer (session leader) and the tool process it runs (its direct child).
+
+    Composed processes (AppHost, DCP, the native test host, sidecars) are started by the tool, so they are its
+    descendants and never the leader's direct children. Signals sent here reach only the tool, which records attachment
+    withdrawal before it stops them.
+    """
+    members = session_identities(record)
+    leader = members.get(record["session"])
+    if leader is None or leader["startTime"] != record["startTime"]:
+        return {}
+    return {pid: identity["startTime"] for pid, identity in members.items()
+            if pid == record["session"] or identity["parent"] == record["session"]}
+
+
+def owned_process(pid: int, run_id: str) -> bool:
+    """A process started with the owner's run tag in its environment is an owned composed process."""
+    try:
+        environment = Path(f"/proc/{pid}/environ").read_bytes()
+    except OSError:
+        return False
+    return (OWNER_RUN_TAG + "=" + run_id).encode("ascii") in environment.split(b"\0")
+
+
+def unowned_survivors(record: dict, run_id: str) -> dict[int, str]:
+    """Recorded-session processes that are neither owned composed processes nor their descendants.
+
+    The exact down stops owned processes after it withdraws attachments; everything else (the tool, its orphans and
+    helpers that could allocate or hold provisioning.lock) must be gone before the finalizer decides.
+    """
+    members = session_identities(record)
+    owned = {pid for pid in members if owned_process(pid, run_id)}
+
+    def protected(pid: int) -> bool:
+        seen = set()
+        while pid in members and pid not in seen:
+            if pid in owned:
+                return True
+            seen.add(pid)
+            pid = members[pid]["parent"]
+        return False
+
+    return {pid: identity["startTime"] for pid, identity in members.items() if not protected(pid)}
+
+
+def signal_processes(processes: dict[int, str], session: int, number: int) -> None:
+    """Signal each selected process individually; a departed or reused process identity is skipped."""
+    for pid, start in sorted(processes.items()):
+        identity = process_identity(pid)
+        if identity is None or identity["session"] != session or identity["startTime"] != start:
+            continue
+        try:
+            os.kill(pid, number)
+        except ProcessLookupError:
+            pass
+
+
+def terminate_processes(select, session: int, wait: float | None = None) -> bool:
+    """Interrupt, then terminate, then kill the currently selected processes; return True once none remains."""
+    wait = SESSION_SIGNAL_WAIT_SECONDS if wait is None else wait
+    for number in (signal.SIGINT, signal.SIGTERM, signal.SIGKILL):
+        targets = select()
+        if not targets:
+            return True
+        signal_processes(targets, session, number)
+        deadline = time.monotonic() + wait
+        while time.monotonic() < deadline:
+            if not select():
+                return True
+            time.sleep(0.05)
+    return not select()
 
 
 def signal_groups(groups, number: int) -> None:
@@ -606,95 +707,122 @@ def signal_groups(groups, number: int) -> None:
             pass
 
 
-def terminate_recorded_session(record: dict, wait: float | None = None) -> bool:
-    """Interrupt, then terminate, then kill every surviving process of the recorded session; return when none remain."""
-    wait = SESSION_SIGNAL_WAIT_SECONDS if wait is None else wait
-    for number in (signal.SIGINT, signal.SIGTERM, signal.SIGKILL):
-        members = recorded_session_members(record)
-        if not members:
-            return True
-        signal_groups(members.values(), number)
-        deadline = time.monotonic() + wait
-        while time.monotonic() < deadline:
-            if not recorded_session_members(record):
-                return True
-            time.sleep(0.05)
-    return not recorded_session_members(record)
-
-
 def unverified_allocation(evidence: Path, context: dict, job_status: str, reason: str) -> None:
     """Record that this job's allocation could not be verified, so cleanup stays non-success."""
     write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "allocation-unverified", "reason": reason,
                                     "executionContext": context, "jobStatus": job_status, "verified": False})
 
 
-def recorded_tool_stopped(receipt: Path, evidence: Path, context: dict, job_status: str) -> bool:
-    """A surviving tool could still allocate or hold provisioning.lock; it must be gone before any decision."""
+def recorded_process(receipt: Path, evidence: Path, context: dict, job_status: str):
+    """Return the job's process record, None when no tool was launched, or False when the record cannot be trusted."""
     process = process_record_path(receipt)
     if not (process.exists() or process.is_symlink()):
-        return True
+        return None
     try:
-        record = read_process_record(process, context)
+        return read_process_record(process, context)
     except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError):
         unverified_allocation(evidence, context, job_status, "integration-process-record-unverified")
         return False
-    if not terminate_recorded_session(record):
-        unverified_allocation(evidence, context, job_status, "integration-process-survived")
-        return False
-    return True
 
 
-def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = 150, job_status: str = "") -> int:
+def stopped(record: dict | None, select, evidence: Path, context: dict, job_status: str) -> bool:
+    """Terminate the selected recorded-session processes; survivors leave the allocation unverified."""
+    if record is None or terminate_processes(select, record["session"]):
+        return True
+    unverified_allocation(evidence, context, job_status, "integration-process-survived")
+    return False
+
+
+def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = DOWN_TIMEOUT_SECONDS, job_status: str = "") -> int:
     context = ci_context()
     root, receipt, evidence = checked_paths(root, receipt, evidence)
     if job_status not in ("", "success", "failure", "cancelled"):
         raise ValueError("unsupported CI finalizer job status")
-    if not recorded_tool_stopped(receipt, evidence, context, job_status):
+    record = recorded_process(receipt, evidence, context, job_status)
+    # The tool could still write its receipt, allocate or hold provisioning.lock, so it always stops first.
+    if record is False or not stopped(record, lambda: tool_processes(record), evidence, context, job_status):
         return 1
     if not receipt.exists():
+        # Without a receipt nothing was allocated, so every other recorded-session process stops before the decision.
+        if not stopped(record, lambda: session_processes(record), evidence, context, job_status):
+            return 1
         write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "not-allocated", "executionContext": context,
                                         "jobStatus": job_status, "verified": True})
         return 0
     owner = receipt_owner(receipt, context)
+    # Owned composed processes stay for the exact down, which withdraws attachments before it stops them.
+    if not stopped(record, lambda: unowned_survivors(record, owner["runId"]), evidence, context, job_status):
+        return 1
     verify_tool(root)
     return exact_down(root, owner, evidence, context, job_status, timeout)
 
 
+def record_cleanup(evidence: Path, value: dict, filename: str | None = None) -> str | None:
+    """Best-effort cleanup evidence: a recording failure never prevents or hides the exact down."""
+    try:
+        return write_cleanup_record(evidence, value, filename)
+    except (OSError, ValueError) as error:
+        print(f"run-module-integration: cleanup evidence was not recorded ({type(error).__name__})", file=sys.stderr)
+        return None
+
+
+def run_down(command: list[str], *, cwd: Path, env: dict, timeout: int) -> subprocess.CompletedProcess:
+    """subprocess.run for one exact down in its own session; a timeout kills that whole session, never only the muxer.
+
+    Output is decoded with replacement, so non-UTF-8 bytes are an unverified observation rather than an exception.
+    """
+    child = subprocess.Popen(
+        command,  # nosec B603 # nosemgrep -- fixed tool/options; canonical 128-bit run identity only.
+        cwd=cwd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = child.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # No orphaned down may keep provisioning.lock against the always() finalizer's retry.
+        signal_groups([child.pid], signal.SIGKILL)
+        stdout, stderr = child.communicate()
+        raise subprocess.TimeoutExpired(command, timeout, output=stdout, stderr=stderr) from None
+    return subprocess.CompletedProcess(command, child.returncode, stdout.decode("utf-8", "replace"),
+                                       stderr.decode("utf-8", "replace"))
+
+
 def exact_down(root: Path, owner: dict, evidence: Path, context: dict, job_status: str, timeout: int) -> int:
-    """Run one exact down for the receipt owner, recording the attempt before the tool runs."""
+    """Run one exact down for the receipt owner; its evidence is recorded around it but never gates it."""
     environment = os.environ.copy()
     environment["HEXALITH_CI_JOB_STATUS"] = job_status
     run_id = uuid.UUID(hex=owner["runId"]).hex
     command = TOOL + ["down", "--run-id=" + run_id, "--output=json"]
     attempt = {"schema": CLEANUP_SCHEMA, "status": "attempted", "runId": run_id, "executionContext": context,
                "jobStatus": job_status, "processExitCode": None, "outputParsed": False, "verified": False}
-    record_name = write_cleanup_record(evidence, attempt)
+    record_name = record_cleanup(evidence, attempt)
+    recorded = record_name is not None
     try:
-        completed = subprocess.run(
-            command,  # nosec B603 # nosemgrep -- fixed tool/options; canonical128-bit run identity only.
-            cwd=root,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            check=False,
-            stdin=subprocess.DEVNULL,
-            env=environment,
-        )
+        completed = run_down(command, cwd=root, env=environment, timeout=timeout)
     except subprocess.TimeoutExpired as expired:
-        write_cleanup_record(evidence, {**attempt, "status": "timed-out", "timeoutSeconds": timeout,
-                                        "stderr": stderr_record(expired.stderr)}, record_name)
+        record_cleanup(evidence, {**attempt, "status": "timed-out", "timeoutSeconds": timeout,
+                                  "stderr": stderr_record(expired.stderr)}, record_name)
+        retained_safely(owner, evidence)
+        return 1
+    except OSError as error:
+        # A missing or unexecutable tool is unverified cleanup; declared diagnostics are still retained.
+        record_cleanup(evidence, {**attempt, "status": "tool-unavailable", "reason": type(error).__name__}, record_name)
         retained_safely(owner, evidence)
         return 1
     observed = {**attempt, "status": "completed", "processExitCode": completed.returncode,
                 "stderr": stderr_record(completed.stderr)}
-    write_cleanup_record(evidence, observed, record_name)
+    record_name = record_cleanup(evidence, observed, record_name) or record_name
     result = parsed_output(completed.stdout)
     verified = result is not None and cleanup_verified(completed, result, owner)
-    write_cleanup_record(evidence, {**observed, "outputParsed": result is not None, "result": result, "verified": verified},
-                         record_name)
+    recorded = record_cleanup(evidence, {**observed, "outputParsed": result is not None, "result": result,
+                                         "verified": verified}, record_name) is not None and recorded
     if not retained_safely(owner, evidence):
         return 1
-    return 0 if verified else 1
+    return 0 if verified and recorded else 1
 
 
 def selected_manifest(root: Path, manifest: str, profiles: list[str]) -> Path:
@@ -737,15 +865,20 @@ def execution_outcome(returncode: int | None, result: dict | None, receipt: Path
 
 
 class ToolSession:
-    """One gated tool session: records it before launch, forwards runner signals to its group, bounds every stop."""
+    """One gated tool session: records it before launch, signals only the tool's own processes, bounds every stop."""
 
     def __init__(self):
         """Start with no tool process, no observed signal and nothing released or sent."""
         self.child = None
+        self.process = None
         self.signals = []
         self.released = False
         self.interrupted = False
         self.terminated = False
+
+    def signal_tool(self, number: int) -> None:
+        """Signal the gated muxer and the tool it runs, never the composed processes the tool started."""
+        signal_processes(tool_processes(self.process), self.process["session"], number)
 
     def handle(self, signum, frame):
         """Record one runner signal and forward it at once."""
@@ -753,20 +886,20 @@ class ToolSession:
         self.forward()
 
     def forward(self) -> None:
-        """Deliver the runner's cancellation to the whole released tool session, escalating on a second signal."""
+        """Deliver the runner's cancellation to the released tool only, escalating to SIGTERM on a second signal."""
         if self.child is None or not self.released or self.child.poll() is not None:
             return
         if self.signals and not self.interrupted:
             self.interrupted = True
-            signal_groups([self.child.pid], signal.SIGINT)
+            self.signal_tool(signal.SIGINT)
         if len(self.signals) > 1:
             self.terminate()
 
     def terminate(self) -> None:
-        """Send SIGTERM to the tool session once."""
+        """Send SIGTERM to the tool once."""
         if not self.terminated:
             self.terminated = True
-            signal_groups([self.child.pid], signal.SIGTERM)
+            self.signal_tool(signal.SIGTERM)
 
     def launch(self, command: list[str], root: Path, receipt: Path, context: dict, output, errors) -> None:
         """Start the gate in a new session and release the tool only after its job-bound record is durable."""
@@ -779,7 +912,7 @@ class ToolSession:
             start_new_session=True,
         )
         try:
-            write_process_record(receipt, context, self.child.pid)
+            self.process = write_process_record(receipt, context, self.child.pid)
             if not self.signals:
                 self.child.stdin.write(b"1\n")
                 self.child.stdin.flush()
@@ -788,11 +921,16 @@ class ToolSession:
             self.child.stdin.close()
 
     def cancellation_settled(self) -> bool:
-        """Escalate inside the runner grace; return once the final kill was sent."""
+        """Escalate on the tool inside the runner grace; return once the final kill was sent.
+
+        Composed processes are never signalled here: the always() finalizer's exact down withdraws attachments before it
+        stops whatever the tool left behind. Only the runner's own process-tree kill after its grace can precede that.
+        """
         self.forward()
         elapsed = time.monotonic() - self.signals[0]["observedAt"]
         if elapsed >= CANCELLATION_FINAL_SECONDS:
-            signal_groups([self.child.pid], signal.SIGKILL)
+            if self.released:
+                self.signal_tool(signal.SIGKILL)
             wait_for_child(self.child, 0.5)
             return True
         if elapsed >= CANCELLATION_ESCALATION_SECONDS:
@@ -811,11 +949,11 @@ class ToolSession:
         return False
 
     def stop_after_timeout(self) -> None:
-        """A timeout is not a cancellation: stop the whole tool session here before the helper finalizes exactly."""
-        signal_groups([self.child.pid], signal.SIGTERM)
+        """A timeout is not a cancellation: stop the tool here; the helper's exact down then withdraws and cleans."""
+        self.signal_tool(signal.SIGTERM)
         if not wait_for_child(self.child, TIMEOUT_STOP_SECONDS):
-            signal_groups([self.child.pid], signal.SIGKILL)
-            wait_for_child(self.child, 10)
+            self.signal_tool(signal.SIGKILL)
+            wait_for_child(self.child, POST_KILL_WAIT_SECONDS)
 
     def record(self, evidence: Path, context: dict, timed_out: bool, output, errors):
         """Write execution evidence before parsing the tool output, then complete it with the parsed result."""
@@ -869,7 +1007,8 @@ def run_integration(
     owners: list[str] | None = None,
 ) -> int:
     owners = qualification_owners(owners or [])
-    if not isinstance(timeout, int) or isinstance(timeout, bool) or not 60 <= timeout <= 86400:
+    if (not isinstance(timeout, int) or isinstance(timeout, bool)
+            or not MINIMUM_TIMEOUT_SECONDS <= timeout <= MAXIMUM_TIMEOUT_SECONDS):
         raise ValueError("integration timeout must be a whole number of seconds from 60 to 86400")
     context = ci_context()
     root, receipt, evidence = checked_paths(root, receipt, evidence)
@@ -898,6 +1037,32 @@ def run_integration(
     return execute_integration(command, root, receipt, evidence, timeout, context)
 
 
+def derived_timeout(step_minutes: int, job_minutes: int, job_started: int, now: float | None = None) -> int:
+    """Fit the helper timeout and every bounded wait after it inside the step and the job's actual remaining time."""
+    values = (step_minutes, job_minutes, job_started)
+    if any(not isinstance(value, int) or isinstance(value, bool) or value <= 0 for value in values):
+        raise ValueError("integration budget inputs must be positive whole numbers")
+    now = time.time() if now is None else now
+    if not 0 <= now - job_started <= job_minutes * 60:
+        raise ValueError("the recorded job start is not within this job's timeout")
+    step = step_minutes * 60 - STEP_RESERVE_SECONDS
+    job = job_started - JOB_SETUP_ALLOWANCE_SECONDS + job_minutes * 60 - now - STEP_RESERVE_SECONDS - FINALIZER_STEP_SECONDS
+    timeout = int(min(step, job, MAXIMUM_TIMEOUT_SECONDS))
+    if timeout < MINIMUM_TIMEOUT_SECONDS:
+        raise ValueError("the job's remaining time cannot hold the minimum integration timeout and its exact cleanup")
+    return timeout
+
+
+def integration_timeout(args) -> int:
+    """Use the explicit timeout, or derive it from the step and job budgets; never both."""
+    budget = (args.step_timeout_minutes, args.job_timeout_minutes, args.job_started_epoch)
+    if all(value is None for value in budget):
+        return DEFAULT_TIMEOUT_SECONDS if args.timeout_seconds is None else args.timeout_seconds
+    if args.timeout_seconds is not None or any(value is None for value in budget):
+        raise ValueError("derive the integration timeout from all of the step and job budget inputs, or pass it alone")
+    return derived_timeout(*budget)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("operation", choices=("run", "finalize"))
@@ -906,6 +1071,9 @@ def main() -> int:
     parser.add_argument("--profiles", default="")
     parser.add_argument("--owners", default="")
     parser.add_argument("--timeout-seconds", type=int, default=None)
+    parser.add_argument("--step-timeout-minutes", type=int, default=None)
+    parser.add_argument("--job-timeout-minutes", type=int, default=None)
+    parser.add_argument("--job-started-epoch", type=int, default=None)
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     args = parser.parse_args()
@@ -913,10 +1081,11 @@ def main() -> int:
         if args.operation == "finalize":
             if args.owners:
                 raise ValueError("qualification owners apply only to a fresh test invocation")
-            if args.timeout_seconds is not None:
+            if any(value is not None for value in (args.timeout_seconds, args.step_timeout_minutes,
+                                                   args.job_timeout_minutes, args.job_started_epoch)):
                 raise ValueError("the integration timeout applies only to a fresh test invocation")
             return finalize(Path.cwd(), args.receipt, args.evidence, job_status=args.job_status)
-        timeout = DEFAULT_TIMEOUT_SECONDS if args.timeout_seconds is None else args.timeout_seconds
+        timeout = integration_timeout(args)
         return run_integration(Path.cwd(), args.manifest, args.profiles.split(), args.receipt, args.evidence,
                                timeout=timeout, owners=args.owners.split())
     except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError, subprocess.SubprocessError) as error:

@@ -1076,9 +1076,34 @@ if ($isV2) {
 
     $ownerBody = Get-StepRunBody -Block $ownerRun -StepName 'Runner-owned package integration'
     Assert-Condition -Name 'Helper is the signalled step process' -Condition ($ownerBody.TrimStart().StartsWith('exec python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py run ')) -Failure 'must exec the helper so the runner cancellation reaches it.'
+    # The timeout budget is derived from the helper's own constants, never from numbers repeated here.
+    $helperSource = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../Github/run-module-integration/run_module_integration.py') -Raw
+    $budget = @{}
+    foreach ($match in [regex]::Matches($helperSource, '(?m)^(?<Name>[A-Z_]+_(?:SECONDS|MINUTES)) = (?<Value>\d+(?:\.\d+)?)\r?$')) {
+        $budget[$match.Groups['Name'].Value] = [double] $match.Groups['Value'].Value
+    }
+    $budgetNames = @('VERIFY_TOOL_SECONDS', 'TIMEOUT_STOP_SECONDS', 'POST_KILL_WAIT_SECONDS', 'SESSION_SIGNAL_WAIT_SECONDS', 'DOWN_TIMEOUT_SECONDS', 'RESERVE_MARGIN_SECONDS', 'FINALIZER_STEP_SECONDS', 'MINIMUM_TIMEOUT_SECONDS')
+    Assert-Condition -Name 'Helper budget constants' -Condition (@($budgetNames | Where-Object { -not $budget.ContainsKey($_) }).Count -eq 0) -Failure 'the helper must declare every bounded wait of its timeout path.'
+    $finalizeReserve = 2 * 3 * $budget['SESSION_SIGNAL_WAIT_SECONDS'] + $budget['VERIFY_TOOL_SECONDS'] + $budget['DOWN_TIMEOUT_SECONDS']
+    $stepReserve = $budget['VERIFY_TOOL_SECONDS'] + $budget['TIMEOUT_STOP_SECONDS'] + $budget['POST_KILL_WAIT_SECONDS'] + $finalizeReserve + $budget['RESERVE_MARGIN_SECONDS']
+    Assert-Contains -Name 'Helper reserves its finalize path' -Content $helperSource -Expected 'FINALIZE_RESERVE_SECONDS = 2 * 3 * int(SESSION_SIGNAL_WAIT_SECONDS) + VERIFY_TOOL_SECONDS + DOWN_TIMEOUT_SECONDS'
+    Assert-Contains -Name 'Helper reserves its timeout path' -Content $helperSource -Expected "STEP_RESERVE_SECONDS = (VERIFY_TOOL_SECONDS + TIMEOUT_STOP_SECONDS + POST_KILL_WAIT_SECONDS + FINALIZE_RESERVE_SECONDS`n                        + RESERVE_MARGIN_SECONDS)"
     $stepTimeout = [regex]::Match($ownerRun, '(?m)^        timeout-minutes: (?<Minutes>\d+)\r?$')
-    $helperTimeout = [regex]::Match($ownerBody, '--timeout-seconds (?<Seconds>\d+) ')
-    Assert-Condition -Name 'Helper timeout precedes the step timeout' -Condition ($stepTimeout.Success -and $helperTimeout.Success -and ([int] $helperTimeout.Groups['Seconds'].Value + 120 + 150) -lt ([int] $stepTimeout.Groups['Minutes'].Value * 60)) -Failure 'requires an explicit step timeout above the helper timeout plus its stop and exact-down allowances.'
+    $stepBudget = [regex]::Match($ownerBody, '--step-timeout-minutes (?<Minutes>\d+) ')
+    Assert-Condition -Name 'Helper derives from this step timeout' -Condition ($stepTimeout.Success -and $stepBudget.Success -and $stepBudget.Groups['Minutes'].Value -eq $stepTimeout.Groups['Minutes'].Value) -Failure 'must pass the exact integration step timeout to the helper.'
+    Assert-Condition -Name 'Step holds the minimum timeout path' -Condition ($stepTimeout.Success -and ([int] $stepTimeout.Groups['Minutes'].Value * 60) -ge ($stepReserve + $budget['MINIMUM_TIMEOUT_SECONDS'])) -Failure "the step must hold the minimum helper timeout plus its $stepReserve-second reserve."
+    Assert-NotContains -Name 'No fixed helper timeout' -Content $ownerBody -Unexpected '--timeout-seconds'
+    Assert-Contains -Name 'Helper derives from the job timeout' -Content $ownerBody -Expected '--job-timeout-minutes "$JOB_TIMEOUT_MINUTES"'
+    Assert-Contains -Name 'Job timeout reaches the helper' -Content $ownerRun -Expected 'JOB_TIMEOUT_MINUTES: ${{ inputs.build-timeout-minutes }}'
+    Assert-Contains -Name 'Helper derives from the job start' -Content $ownerBody -Expected '--job-started-epoch "$JOB_STARTED_EPOCH"'
+    Assert-Contains -Name 'Job start reaches the helper' -Content $ownerRun -Expected 'JOB_STARTED_EPOCH: ${{ steps.integration-inputs.outputs.started-epoch }}'
+    $inputStep = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate declared integration inputs'
+    Assert-Contains -Name 'First step records the job start' -Content $inputStep -Expected 'id: integration-inputs'
+    Assert-Contains -Name 'Job start is an immutable step output' -Content $inputStep -Expected 'echo "started-epoch=$(date +%s)" >> "$GITHUB_OUTPUT"'
+    Assert-Condition -Name 'Job start is recorded first' -Condition ($ciWorkflow.IndexOf('- name: Validate declared integration inputs') -lt $ciWorkflow.IndexOf('- uses: actions/checkout@')) -Failure 'the job start must be recorded by the first step.'
+    $finalizerTimeout = [regex]::Match($finalize, '(?m)^        timeout-minutes: (?<Minutes>\d+)\r?$')
+    Assert-Condition -Name 'Finalizer step equals the helper reserve' -Condition ($finalizerTimeout.Success -and ([int] $finalizerTimeout.Groups['Minutes'].Value * 60) -eq $budget['FINALIZER_STEP_SECONDS'] -and $budget['FINALIZER_STEP_SECONDS'] -ge ($finalizeReserve + $budget['RESERVE_MARGIN_SECONDS'])) -Failure "the finalizer step must equal FINALIZER_STEP_SECONDS and hold its $finalizeReserve-second exact cleanup."
+    Assert-Condition -Name 'Original job budget unchanged' -Condition ([regex]::IsMatch($ciWorkflow, '(?ms)^      build-timeout-minutes:\r?\n        required: false\r?\n        type: number\r?\n        default: 45\r?$')) -Failure 'build-timeout-minutes and its default of 45 must stay unchanged.'
 
     $finalizeBody = Get-StepRunBody -Block $finalize -StepName 'Finalize exact CI owner'
     Assert-Contains -Name 'Finalizer is the signalled step process' -Content $finalizeBody -Expected 'exec python3 "$helper" finalize'
@@ -1092,31 +1117,34 @@ if ($isV2) {
 
     $toolchainVersions = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Install integration toolchain without starting services'
     $toolchainBody = Get-StepRunBody -Block $toolchainVersions -StepName 'Install integration toolchain without starting services'
-    $catalogFixture = @'
-mkdir -p .hexalith/builds-execution/Props
-cat > .hexalith/builds-execution/Props/Directory.Packages.props <<'XML'
-<Project><PropertyGroup><HexalithAspireAppHostSdkVersion>13.6.4</HexalithAspireAppHostSdkVersion><HexalithDaprRuntimeVersion>1.18.7</HexalithDaprRuntimeVersion><HexalithDaprCliVersion>1.18.2</HexalithDaprCliVersion></PropertyGroup></Project>
-XML
-export GITHUB_ENV="$PWD/github-env"
-: > "$GITHUB_ENV"
-'@
+    # The pinned fixture uses the real catalog versions, so a catalog bump without its digests fails here.
+    $catalogSource = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../Props/Directory.Packages.props') -Raw
+    $catalog = @{}
+    foreach ($name in @('HexalithAspireAppHostSdkVersion', 'HexalithDaprRuntimeVersion', 'HexalithDaprCliVersion')) {
+        $catalog[$name] = [regex]::Match($catalogSource, "<$name>(?<Value>[^<]+)</$name>").Groups['Value'].Value
+        Assert-Condition -Name "Real catalog $name" -Condition (-not [string]::IsNullOrWhiteSpace($catalog[$name])) -Failure 'the catalog must declare the integration toolchain version.'
+    }
+    $catalogProperties = "<HexalithAspireAppHostSdkVersion>$($catalog['HexalithAspireAppHostSdkVersion'])</HexalithAspireAppHostSdkVersion><HexalithDaprRuntimeVersion>$($catalog['HexalithDaprRuntimeVersion'])</HexalithDaprRuntimeVersion><HexalithDaprCliVersion>$($catalog['HexalithDaprCliVersion'])</HexalithDaprCliVersion>"
+    $catalogFixture = "mkdir -p .hexalith/builds-execution/Props`ncat > .hexalith/builds-execution/Props/Directory.Packages.props <<'XML'`n<Project><PropertyGroup>$catalogProperties</PropertyGroup></Project>`nXML`nexport GITHUB_ENV=`"`$PWD/github-env`"`n: > `"`$GITHUB_ENV`"`n"
     $digestDocument = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../Props/dapr-toolchain-sha256.json') -Raw
+    $digestData = $digestDocument | ConvertFrom-Json
+    $runtimeDigest = $digestData.runtime.($catalog['HexalithDaprRuntimeVersion']).'daprd_linux_amd64.tar.gz'
     foreach ($scenario in @('pinned', 'missing-version', 'missing-digest', 'malformed-digest', 'missing-catalog-property')) {
         $document = $digestDocument
         $fixture = $catalogFixture
         switch ($scenario) {
-            'missing-version' { $document = $document.Replace('"1.18.7"', '"0.0.0"') }
+            'missing-version' { $document = $document.Replace('"' + $catalog['HexalithDaprRuntimeVersion'] + '"', '"0.0.0"') }
             'missing-digest' { $document = $document.Replace('"scheduler_linux_amd64.tar.gz"', '"scheduler_linux_arm64.tar.gz"') }
-            'malformed-digest' { $document = $document.Replace('a5ab4fd9d77448d90e6f8b3c1c795234eb683108a8650a35df9ac71c9b14b5e2', 'not-a-digest') }
-            'missing-catalog-property' { $fixture = $fixture.Replace('<HexalithDaprCliVersion>1.18.2</HexalithDaprCliVersion>', '') }
+            'malformed-digest' { $document = $document.Replace([string] $runtimeDigest, 'not-a-digest') }
+            'missing-catalog-property' { $fixture = $fixture.Replace("<HexalithDaprCliVersion>$($catalog['HexalithDaprCliVersion'])</HexalithDaprCliVersion>", '') }
         }
         $body = $fixture + "`ncat > .hexalith/builds-execution/Props/dapr-toolchain-sha256.json <<'JSON'`n" + $document.TrimEnd() + "`nJSON`n(`n" + $toolchainBody + "`n)`nstatus=`$?`nprintf 'toolchain-exit=%s\n' `"`$status`" >> `"`$GITHUB_OUTPUT`"`ncat `"`$GITHUB_ENV`" >> `"`$GITHUB_OUTPUT`"`n"
         $result = Invoke-WorkflowBashBody -Body $body -Environment @{}
         $succeeded = $result.StepOutput.Contains("toolchain-exit=0`n")
         Assert-Condition -Name "Pinned Dapr digests $scenario" -Condition ($succeeded -eq ($scenario -eq 'pinned')) -Failure "returned $($result.StepOutput) $($result.Output)"
         if ($scenario -eq 'pinned') {
-            Assert-Contains -Name 'Pinned CLI digest exported' -Content $result.StepOutput -Expected 'CI_DAPR_CLI_SHA256=ccfff008fd16f50096a9192ad56697ac7052e3add6fa0a07789d87b4c4df8c40'
-            Assert-Contains -Name 'Pinned scheduler digest exported' -Content $result.StepOutput -Expected 'CI_SCHEDULER_SHA256=634b438a1a1501a35cfe378f00719cf23176c653f275b606a0ed8f9fd4226d31'
+            Assert-Contains -Name 'Pinned CLI digest exported' -Content $result.StepOutput -Expected ('CI_DAPR_CLI_SHA256=' + $digestData.cli.($catalog['HexalithDaprCliVersion']).'dapr_linux_amd64.tar.gz')
+            Assert-Contains -Name 'Pinned scheduler digest exported' -Content $result.StepOutput -Expected ('CI_SCHEDULER_SHA256=' + $digestData.runtime.($catalog['HexalithDaprRuntimeVersion']).'scheduler_linux_amd64.tar.gz')
         } else {
             Assert-NotContains -Name "No partial toolchain export $scenario" -Content $result.StepOutput -Unexpected 'CI_DAPR'
         }
@@ -1138,10 +1166,11 @@ curl() {
 }
 tar() { printf 'tar %s\n' "$*" >> "$DOTNET_INVOCATIONS"; }
 digest() { printf '%s' "fixture-archive:$1" | sha256sum | cut -d' ' -f1; }
-export CI_DAPR_CLI_VERSION=1.18.2 CI_DAPR_RUNTIME_VERSION=1.18.7 CI_ASPIRE_VERSION=13.6.4
+export CI_DAPR_CLI_VERSION=@@CLI@@ CI_DAPR_RUNTIME_VERSION=@@RUNTIME@@ CI_ASPIRE_VERSION=@@ASPIRE@@
 export CI_DAPR_CLI_SHA256="$(digest dapr-cli.tar.gz)" CI_DAPRD_SHA256="$(digest daprd.tar.gz)"
 export CI_PLACEMENT_SHA256="$(digest placement.tar.gz)" CI_SCHEDULER_SHA256="$(digest scheduler.tar.gz)"
 '@
+    $binaryHarness = $binaryHarness.Replace('@@CLI@@', $catalog['HexalithDaprCliVersion']).Replace('@@RUNTIME@@', $catalog['HexalithDaprRuntimeVersion']).Replace('@@ASPIRE@@', $catalog['HexalithAspireAppHostSdkVersion'])
     foreach ($scenario in @('verified', 'cli-mismatch', 'runtime-mismatch', 'runtime-missing')) {
         $mutation = switch ($scenario) {
             'cli-mismatch' { "export CI_DAPR_CLI_SHA256=$('0' * 64)`n" }

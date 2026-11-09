@@ -424,6 +424,40 @@ public sealed class CiRunLifecycleTests
         }
     }
 
+    /// <summary>A CI owner without a recorded first outcome closes admission as failed while stop allowance remains.</summary>
+    /// <returns>The failed owner status and the owner-failed attachment refusal assertions.</returns>
+    [Fact]
+    public async Task FailedOwnerStatusWithinStopAllowanceRefusesLaterAttachmentAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState created) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with { ContinuousIntegrationOverride = true };
+        CompositionRunState issued = created with
+        {
+            Status = CompositionRunStatus.Ready,
+            ReadinessResults = [new CompositionResourceReadiness("owned", "process", "Healthy")],
+            RemainingResources = null,
+            ExecutionContext = Context(),
+        };
+        CompositionRunStateStore store = new(options.StateDirectory);
+        await store.WriteAsync(issued, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionWorkspace.CreatePrivateDirectory(Path.Combine(options.StateDirectory, "diagnostics", issued.RunId));
+        CompositionEngine engine = new(options);
+
+        // The service's no-recorded-terminal branch: the remaining stop allowance is still open.
+        using CancellationTokenSource allowance = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        allowance.CancelAfter(TimeSpan.FromSeconds(5));
+        await engine.RecordOwnerStatusAsync(issued.RunId, CompositionRunStatus.Failed, allowance.Token).ConfigureAwait(true);
+        allowance.IsCancellationRequested.ShouldBeFalse();
+        CompositionRunState owner = (await store.TryReadAsync(issued.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        owner.Status.ShouldBe(CompositionRunStatus.Failed);
+        owner.TestRun.ShouldBeNull();
+        CompositionAttachRequest request = new(issued.RunId, "source", selected.ManifestHash) { AttacherContext = Context() };
+        ToolCommandResult admission = await CompositionAttachAdmission.AdmitAsync(store, request, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        admission.Attachment.ShouldBeNull();
+        admission.Diagnostics.Single().Field.ShouldBe("owner-failed");
+    }
+
     private static async Task ExecuteCiOwnerAsync(CiOwnerExecution run, StringWriter output)
     {
         Stopwatch elapsed = Stopwatch.StartNew();
@@ -746,6 +780,7 @@ public sealed class CiRunLifecycleTests
         held.EndedAtUtc.ShouldBeNull();
         held.Outcome.ShouldBeNull();
         File.Exists(Path.Combine(diagnostics, "attachment-withdrawals.json")).ShouldBeFalse();
+        refused.StoppingTimestamp.ShouldNotBeNull().ShouldBeInRange(1, Stopwatch.GetTimestamp());
     }
 
     private static ToolExitCode PartialStartupExit(bool cancelled) => cancelled ? ToolExitCode.Cancelled : ToolExitCode.TopologyOrLifecycle;

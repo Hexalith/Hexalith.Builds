@@ -98,24 +98,45 @@ SIGTERM 7.5 s later, then a process-tree kill 2.5 s after that. The integration 
 therefore `exec`s the helper, so the helper is that process. The helper starts the
 tool in its own session through a gate that releases the tool only after the job-bound
 process record `$RUNNER_TEMP/hexalith-ci-owner.process.json` is durable. A runner
-signal is delivered to the whole tool process group as SIGINT, escalated to SIGTERM
-after 6 s and SIGKILL after 8.5 s, so the helper's own stop work fits the grace. After
-a cancellation the helper performs no exact down itself; that belongs to the
-`always()` finalizer.
+signal reaches only the tool's own processes: the gated `dotnet tool run` muxer that
+leads the session and the tool process it runs. Composed processes (the AppHost, DCP,
+the native test host and sidecars) are the tool's descendants and are never signalled
+by the helper. The tool closes admission and records attachment withdrawal before it
+stops them. The helper sends SIGINT, escalates to SIGTERM after 6 s (or at once on a
+second runner signal) and kills the tool after 8.5 s, so its own stop work fits the
+grace. After a cancellation the helper performs no exact down itself; that belongs to
+the `always()` finalizer.
 
-The step has `timeout-minutes: 40` and the helper a 2,100-second (35-minute) timeout,
-so the helper's timeout path fires first. A timeout is not a cancellation: the
-helper terminates the tool session, finalizes exactly with an empty job status and
-returns 124.
+One limit is outside the helper's control: the runner's own process-tree kill after
+its grace can reach composed processes before the tool has recorded withdrawal. In
+that case the `always()` finalizer's exact down still withdraws active attachments
+before it stops whatever remains.
+
+The helper derives its timeout when the integration step starts. It uses the step's
+`timeout-minutes: 40` and the job's actual remaining time, from the first step's
+recorded start and `build-timeout-minutes`. It reserves every bounded wait of its
+timeout path: tool verification, the 120-second stop plus the post-kill wait, session
+termination, the finalize-time verification, the exact down and the 4-minute
+finalizer step. If the remaining time cannot hold the minimum timeout, it refuses
+before allocation. A timeout is not a cancellation: the helper stops the tool,
+finalizes exactly with an empty job status and returns 124. The budget constants
+live in the helper, and the workflow validator derives its checks from them.
 
 After normal completion or a timeout the helper runs exact `down --run-id` itself,
 and an independent `always()` step retries it after success, failure, cancellation
 or partial startup. Before deciding anything, the finalizer interrupts, terminates
-and finally kills any surviving member of the recorded tool session, then re-reads
-the receipt. It reports `not-allocated` only when no recorded process survives and no
-receipt exists; a surviving process is reported as `allocation-unverified`. No live
-orphan can therefore allocate after that decision or keep `provisioning.lock`
-against the exact down. When the helper was never checked out, no integration
+and finally kills the surviving tool processes, then re-reads the receipt.
+
+- Without a receipt it also stops every other recorded-session process. It reports
+  `not-allocated` only when none survives.
+- With a receipt it stops every surviving recorded-session process that is not an
+  owned composed process. Owned processes carry the owner's run tag, and their
+  descendants are owned too. The exact down then withdraws attachments before it
+  stops those owned processes, such as an AppHost kept alive after a refused CI
+  withdrawal.
+
+A survivor is reported as `allocation-unverified`. No live orphan can therefore
+allocate after that decision or keep `provisioning.lock` against the exact down. When the helper was never checked out, no integration
 process could have started, and the finalizer exits cleanly unless owner records
 exist. It refuses foreign repository/run/attempt/job receipts and process records,
 and mismatched durable owner identities, before destructive commands. Every
@@ -129,9 +150,18 @@ launched, cancelled or timed out, the parsed result (or `outputParsed: false`), 
 bounded, redacted stderr excerpt with the full stderr size and SHA-256. It is written
 before the tool output is parsed. Each exact down attempt writes its own
 `cleanup-<n>.json`, recording the exit code, parse status, verification and redacted
-stderr. A later attempt never replaces an earlier one. Non-JSON output, malformed
-nested results and a down timeout are recorded as unverified cleanup; declared
-diagnostics are still retained.
+stderr. A later attempt never replaces an earlier one. Recording is best effort and
+never prevents the down, but an unrecorded attempt stays non-success. Each down runs
+in its own session, and a down timeout kills that whole session, so no orphaned down
+keeps `provisioning.lock`. The following are all recorded as unverified cleanup, and
+declared diagnostics are still retained:
+
+- non-JSON or non-UTF-8 output;
+- malformed nested results;
+- a down timeout;
+- a missing tool.
+
+Stderr is redacted before it is shortened to an excerpt.
 
 CI admits compatible active attachments only within that exact job. It closes
 admission and durably reports active attachments as withdrawn before stopping
@@ -160,9 +190,10 @@ The workflow grants `contents: read`. Callers explicitly map the required
 dedicated `ci-reader` account with registry read permission and no admin membership.
 Provider, publisher and cluster-workload accounts are not accepted for this job.
 There is no secret inheritance or `pull_request_target` credential path.
-Pull requests from forks and Dependabot runs receive no repository secrets, so their
-registry login fails and v2 integration cannot pass for those events. Run them from a
-branch in the repository, or let a maintainer rerun the change there.
+Pull requests from forks receive no repository secrets, so their registry login fails
+and v2 integration cannot pass for those events. Dependabot runs receive only
+Dependabot secrets: configure the pull-only reader as Dependabot secrets with the
+same names, or run the change from a branch in the repository.
 
 Login runs only after isolated suites succeed, using password stdin and a private
 job-temporary Docker config. The runtime already inherits `DOCKER_CONFIG`; the
@@ -211,7 +242,14 @@ The executable controls cover isolated gating, early input refusal, required
 prerequisites, pinned Dapr digests, same-job binding, cancellation, partial startup,
 first outcomes, exact retry, classified retention and failure on unknown
 discovery/leftovers. Process-level controls signal only the step shell, as the
-runner does: the signal reaches the tool session, a surviving tool cannot be
-reported `not-allocated`, a live orphan cannot hold the provisioning lock, and a
-timeout is finalized as a timeout. Hosted runner observations
+runner does. In them:
+
+- the signal reaches only the tool, and no signal reaches a composed child before
+  the withdrawal mark;
+- the finalizer leaves an owned surviving AppHost alive for the exact down;
+- a surviving tool cannot be reported `not-allocated`;
+- a live orphan cannot hold the provisioning lock;
+- escalation works against a tool that ignores interrupts;
+- a reused or other-boot session is never signalled;
+- a timeout is finalized as a timeout. Hosted runner observations
 are still required before Story 2.8 can complete.

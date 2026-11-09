@@ -202,6 +202,7 @@ jobs:
       governed-external-actions-json: ${{ steps.governed-provenance.outputs.external-actions-json }}
     steps:
       - name: Validate declared integration inputs
+        id: integration-inputs
         shell: bash
         env:
           MODULE_MANIFEST: ${{ inputs.module-manifest }}
@@ -219,6 +220,8 @@ jobs:
             echo 'Declared package integration requires a module manifest, nonempty package suites and nonempty isolated test projects.' >&2
             exit 1
           fi
+          # The first step's start bounds the job's elapsed time; the integration helper derives its timeout from it.
+          echo "started-epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -727,8 +730,10 @@ jobs:
           export DOCKER_CONFIG="$config"
           printf '%s\n' "DOCKER_CONFIG=$config" "HEXALITH_CI_REGISTRY_CONFIG=$config" >> "$GITHUB_ENV"
           printf '%s' "$REGISTRY_PULL_PASSWORD" | docker login registry.hexalith.com --username="$REGISTRY_PULL_USERNAME" --password-stdin
-      # The runner signals only this step's process, so the helper must be that process (exec). Its own
-      # timeout (35 minutes) fires before this step timeout and leaves room for its exact cleanup.
+      # The runner signals only this step's process, so the helper must be that process (exec); it forwards the
+      # cancellation to the tool alone, which withdraws attachments before stopping composed resources. The helper
+      # derives its timeout from this step's 40 minutes and the job's remaining time, so its timeout path, every
+      # bounded wait after it and the 4-minute finalizer all fit; too little remaining time refuses before allocation.
       - name: Runner-owned package integration
         if: ${{ inputs.module-manifest != '' && steps.isolated-gate.outcome == 'success' && steps.registry-login.outcome == 'success' }}
         timeout-minutes: 40
@@ -737,8 +742,10 @@ jobs:
           MODULE_MANIFEST: ${{ inputs.module-manifest }}
           INTEGRATION_PROFILES: ${{ inputs.integration-test-profiles }}
           INTEGRATION_REFERENCE_OWNERS: ${{ inputs.integration-test-reference-owners }}
+          JOB_TIMEOUT_MINUTES: ${{ inputs.build-timeout-minutes }}
+          JOB_STARTED_EPOCH: ${{ steps.integration-inputs.outputs.started-epoch }}
         run: |
-          exec python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py run --manifest "$MODULE_MANIFEST" --profiles "$INTEGRATION_PROFILES" --owners "$INTEGRATION_REFERENCE_OWNERS" --timeout-seconds 2100 --receipt "$RUNNER_TEMP/hexalith-ci-owner.json" --evidence TestResults/module-integration
+          exec python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py run --manifest "$MODULE_MANIFEST" --profiles "$INTEGRATION_PROFILES" --owners "$INTEGRATION_REFERENCE_OWNERS" --step-timeout-minutes 40 --job-timeout-minutes "$JOB_TIMEOUT_MINUTES" --job-started-epoch "$JOB_STARTED_EPOCH" --receipt "$RUNNER_TEMP/hexalith-ci-owner.json" --evidence TestResults/module-integration
       - name: Finalize exact CI owner
         if: ${{ always() && inputs.module-manifest != '' }}
         timeout-minutes: 4
