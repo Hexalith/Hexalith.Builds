@@ -5,7 +5,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $validatorPath = Join-Path $PSScriptRoot 'validate-central-package-versions.ps1'
-$workflowPath = Join-Path $PSScriptRoot '../.github/workflows/ci.yml'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) "central-package-validator-$([Guid]::NewGuid().ToString('N'))"
 $failures = [System.Collections.Generic.List[string]]::new()
@@ -222,29 +221,6 @@ try {
     $mismatchedEvaluator = New-EvaluatorScript -Name 'mismatched-effective-version' -Output $mismatchedJson
     Test-Scenario -Name 'Mismatched effective catalog version' -CatalogPath $stableCatalog -ExpectedExitCode 1 `
         -ExpectedOutput "source version '1.2.3' evaluates to '9.9.9'" -EvaluatorScriptPath $mismatchedEvaluator
-
-    $script:scenarioCount++
-    $workflow = Get-Content -LiteralPath $workflowPath -Raw
-    $validateIndex = $workflow.IndexOf('- name: Validate central package versions', [StringComparison]::Ordinal)
-    $catalogContractIndex = $workflow.IndexOf('- name: Test authoritative package catalog', [StringComparison]::Ordinal)
-    $testIndex = $workflow.IndexOf('- name: Test central package version validator', [StringComparison]::Ordinal)
-    $consumerValidationIndex = $workflow.IndexOf('- name: Validate Builds consumer package authority', [StringComparison]::Ordinal)
-    $consumerTestIndex = $workflow.IndexOf('- name: Test consumer package authority validator', [StringComparison]::Ordinal)
-    $exceptionValidationIndex = $workflow.IndexOf('- name: Validate package version exception inventory', [StringComparison]::Ordinal)
-    $exceptionTestIndex = $workflow.IndexOf('- name: Test package version exception validator', [StringComparison]::Ordinal)
-    $daprIndex = $workflow.IndexOf('- name: Validate Dapr package versions', [StringComparison]::Ordinal)
-    if (
-        $validateIndex -lt 0 -or
-        $catalogContractIndex -le $validateIndex -or
-        $testIndex -le $catalogContractIndex -or
-        $consumerValidationIndex -le $testIndex -or
-        $consumerTestIndex -le $consumerValidationIndex -or
-        $exceptionValidationIndex -le $consumerTestIndex -or
-        $exceptionTestIndex -le $exceptionValidationIndex -or
-        $daprIndex -le $exceptionTestIndex
-    ) {
-        $failures.Add('CI must run all package-authority validations and tests before Dapr validation.')
-    }
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue

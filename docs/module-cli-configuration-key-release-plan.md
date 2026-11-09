@@ -6,7 +6,7 @@ The [compatibility investigation](module-cli-configuration-key-compatibility.md)
 and its completion evidence remain historical local observations.
 
 The user authorized the necessary semantic-release-triggering fix commit, push
-and manual Builds release. Use the existing `build-release.yml` route from the
+and manual Builds release. Use the existing `builds-release.yml` route from the
 exact current `main` SHA, successful push CI, protected `production` approval,
 complete source/control qualification and hashed-inventory publisher. Let
 semantic-release choose the successor version. No gate may be bypassed.

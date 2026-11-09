@@ -19,11 +19,11 @@ on:
       dapr-version:
         required: false
         type: string
-        default: '1.18.0'
+        default: '1.19.1'
       dapr-runtime-version:
         required: false
         type: string
-        default: '1.18.2'
+        default: '1.19.1'
       test-platform:
         description: >-
           Test command contract: vstest uses --logger/--collect; microsoft-testing-platform

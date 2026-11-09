@@ -289,7 +289,7 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
         param($Command,$Endpoint)
         if ($Command -cne 'api' -or $Endpoint -cne 'repos/Hexalith/Hexalith.Builds/actions/runs/123') { throw 'Unexpected qualifier API dependency.' }
         $global:LASTEXITCODE = 0
-        @{id=123;run_attempt=2;repository=@{full_name='Hexalith/Hexalith.Builds'};path='.github/workflows/ci.yml';head_sha=$global:HexalithG4GateRevision;head_branch='main';event='push';status='completed';conclusion='success';html_url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'} | ConvertTo-Json -Depth 4
+        @{id=123;run_attempt=2;repository=@{full_name='Hexalith/Hexalith.Builds'};path='.github/workflows/builds-ci.yml';head_sha=$global:HexalithG4GateRevision;head_branch='main';event='push';status='completed';conclusion='success';html_url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'} | ConvertTo-Json -Depth 4
     }
     function global:pwsh {
         param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Arguments)
@@ -320,7 +320,7 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
         & $qualificationPath -Version '0.0.0-gate.6' -PackageDirectory $ciOutput -SourceCiRunId '123' -RetainPackageDirectory -PackageBuildScriptPath $fixtureBuildPath
         $inventory = Get-Content (Join-Path $ciOutput 'g4-tool-package-inventory.json') -Raw | ConvertFrom-Json
         $validation = $inventory.qualification.sourceValidation
-        $expected = @{id='123';runAttempt='2';repository='Hexalith/Hexalith.Builds';workflow='.github/workflows/ci.yml';sha=$global:HexalithG4GateRevision;branch='main';url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'}
+        $expected = @{id='123';runAttempt='2';repository='Hexalith/Hexalith.Builds';workflow='.github/workflows/builds-ci.yml';sha=$global:HexalithG4GateRevision;branch='main';url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'}
         if ($validation.mode -cne 'ci' -or $validation.result -cne 'passed') { throw 'Actual qualifier did not retain CI source validation.' }
         foreach ($name in $expected.Keys) {
             if ([string]$validation.ciRun.$name -cne $expected[$name]) { throw "Actual qualifier lost CI evidence '$name'." }

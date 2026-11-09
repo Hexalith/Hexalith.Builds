@@ -1,0 +1,368 @@
+name: CI
+
+# Validate the shared actions, reusable workflows, and PowerShell/Python tooling
+# consumed by Hexalith modules.
+# Release consumes successful push CI for the exact source revision, then builds
+# and qualifies only the actual release version before publication.
+
+on:
+  pull_request:
+    branches: [main, prerelease]
+  workflow_dispatch:
+  push:
+    branches: [main, prerelease]
+
+concurrency:
+  # Unlike the release workflow, superseded CI runs carry no publication risk.
+  # The event keeps a manual dispatch from cancelling the push run release uses.
+  group: builds-ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    needs: [catalog, contracts, dotnet, sample, sample-windows, python-tests, quality]
+    if: always()
+    timeout-minutes: 5
+    steps:
+      - name: Require every validation job to pass
+        env:
+          CATALOG_RESULT: ${{ needs.catalog.result }}
+          CONTRACTS_RESULT: ${{ needs.contracts.result }}
+          DOTNET_RESULT: ${{ needs.dotnet.result }}
+          SAMPLE_RESULT: ${{ needs.sample.result }}
+          WINDOWS_RESULT: ${{ needs.sample-windows.result }}
+          PYTHON_RESULT: ${{ needs.python-tests.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        shell: bash
+        run: |
+          [[ "$CATALOG_RESULT" == "success" && "$CONTRACTS_RESULT" == "success" && "$DOTNET_RESULT" == "success" && "$SAMPLE_RESULT" == "success" && "$WINDOWS_RESULT" == "success" && "$PYTHON_RESULT" == "success" && "$QUALITY_RESULT" == "success" ]]
+
+  dotnet:
+    name: .NET tests
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+    secrets:
+      registry-pull-username: ${{ secrets.HEXALITH_REGISTRY_PULL_USERNAME }}
+      registry-pull-password: ${{ secrets.HEXALITH_REGISTRY_PULL_PASSWORD }}
+
+  sample:
+    name: Sample module
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+    with:
+      module-root: Samples/Hexalith.Sample
+      expected-source: Samples/Hexalith.Sample/expected-source
+
+  sample-windows:
+    name: Sample Windows tests
+    needs: sample
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Prepare module
+        uses: $/Github/prepare
+        with:
+          solution: ${{ needs.sample.outputs.solution }}
+          submodules: ${{ needs.sample.outputs.submodules }}
+          global-json: ${{ needs.sample.outputs.global-json }}
+
+      - name: Run module action
+        uses: ./.github/actions/sample-windows
+
+  catalog:
+    runs-on: ubuntu-latest
+    name: Package catalog contracts
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+
+      - name: Initialize .NET
+        uses: ./Github/initialize-dotnet
+        with:
+          global-json-file: global.json
+
+      - name: Validate central package versions
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1
+
+      - name: Test authoritative package catalog
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1
+
+      - name: Test central package version validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1
+
+      - name: Validate package version audit
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1
+
+      - name: Test package version audit generator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-package-version-audit-generator.ps1
+
+      - name: Test package version audit validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1
+
+      - name: Validate Builds consumer package authority
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-consumer-package-authority.ps1 -RepositoryRoot . -CatalogPath ./Props/Directory.Packages.props
+
+      - name: Test consumer package authority validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-consumer-package-authority-validator.ps1
+
+      - name: Validate package version exception inventory
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-package-version-exceptions.ps1 -InventoryPath ./Tools/package-version-exceptions.json -CatalogPath ./Props/Directory.Packages.props
+
+      - name: Test package version exception validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-package-version-exception-validator.ps1
+
+      - name: Validate Platform version catalog and hosting compatibility
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-platform-version-catalog.ps1
+
+      - name: Test Platform version catalog contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-platform-version-catalog.ps1
+
+      - name: Validate Dapr package versions
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1
+
+      - name: Test Dapr package validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1
+
+  contracts:
+    runs-on: ubuntu-latest
+    name: Build and package contracts
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+
+      - name: Initialize .NET
+        uses: ./Github/initialize-dotnet
+        with:
+          global-json-file: global.json
+
+      - name: Test domain workflow test-platform contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
+
+      - name: Test strict v2 workflow contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1 -Contract v2
+
+      - name: Test caller-owned domain release preparation
+        shell: bash
+        run: python3 Tools/test-prepare-domain-release.py
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          # Must match the release pin so CI proves the toolchain the release uses.
+          node-version: '24'
+          package-manager-cache: false
+
+      # --ignore-scripts: nothing in this lockfile declares an install script, so
+      # skipping them changes no behavior and denies a compromised transitive
+      # dependency arbitrary code execution on the runner.
+      - name: Install Node.js dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify npm dependency provenance and signatures
+        run: npm audit signatures
+
+      - name: Test commitlint workflow contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-commitlint-workflow.ps1
+
+      - name: Test legacy package publisher contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-publish-packages.ps1
+
+      - name: Test G-4 tool package publisher contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
+
+      - name: Test G-4 release lifecycle contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-release-contract.ps1
+
+      - name: Test G-4 release source guard
+        shell: bash
+        run: bash ./Tools/test-g4-release-source.sh
+
+      - name: Test G-4 source CI verification
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-source-ci.ps1
+
+      # Each job owns a disposable runner. Keep build gates independent of a
+      # missing or empty user NuGet.Config inherited from the runner image.
+      - name: Initialize runner NuGet configuration
+        shell: bash
+        run: install -D -m 600 test/fixtures/package-consumer/NuGet.Config "$HOME/.nuget/NuGet/NuGet.Config"
+
+      - name: Test G-4 tool package qualification gate
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1
+
+      - name: Test G-4 tool package artifact validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-artifact-validator.ps1
+
+      - name: Restore
+        run: dotnet restore Hexalith.Builds.slnx
+
+      - name: Build
+        run: dotnet build Hexalith.Builds.slnx --no-restore --configuration Release -warnaserror -p:GeneratePackageOnBuild=false
+
+      # Runs the packaged-tool qualification exactly as the release does, so a
+      # missing control fixture or a broken packaged CLI fails on the pull
+      # request rather than at release time.
+      - name: Qualify G-4 tool source and Release packages
+        id: g4_qualification
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -PackageDirectory artifacts/g4-ci-qualification -RetainPackageDirectory -RequireControls -SkipSourceValidation
+
+      # The archiver credits only push and pull_request carriers. A manual
+      # dispatch still qualifies and retains its diagnostic attempt identity.
+      - name: Archive CI qualification evidence
+        if: github.event_name != 'workflow_dispatch'
+        run: python3 Tools/archive-g4-qualification-evidence.py --package-directory artifacts/g4-ci-qualification --kind ci
+
+      - name: Record CI qualification attempt
+        if: always()
+        env:
+          G4_PRODUCER_STEP_OUTCOME: ${{ steps.g4_qualification.outcome }}
+        run: python3 Tools/archive-g4-qualification-evidence.py --package-directory artifacts/g4-ci-qualification --kind ci --record-attempt
+
+      - name: Retain CI qualification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: g4-ci-qualification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/g4-ci-qualification/producer-attempt.json
+            artifacts/g4-ci-qualification/g4-tool-qualification-evidence.zip
+            artifacts/g4-ci-qualification/g4-tool-package-inventory.json
+            artifacts/g4-ci-qualification/qualification-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Test multi-platform container publisher contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1
+
+      - name: Test governed workflow provenance
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-governed-provenance.ps1
+
+  quality:
+    name: Workflow lint and public API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Lint workflows and composite actions with online audits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python Tools/ci/lint_workflows.py --export-path
+
+      - name: Check public API against the reachable stable release
+        run: uv run --no-cache --locked --script --python 3.12 Tools/ci/check_public_api.py
+
+  python-tests:
+    runs-on: ubuntu-latest
+    name: Python contract tests (${{ matrix.python }})
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.12', 'runner']
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: false
+          persist-credentials: false
+
+      - name: Capture runner Python before setup
+        run: python3 Tools/ci/capture_python.py
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Initialize .NET SDK
+        uses: ./Github/initialize-dotnet
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Install Node.js dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify npm dependency provenance and signatures
+        run: npm audit signatures
+
+      - name: Install integrity-checked CI tools
+        run: python Tools/ci/lint_workflows.py --install-only --export-path
+
+      - name: Run the shared Python suite and both CI configuration validators
+        env:
+          CI_PYTHON: ${{ matrix.python == 'runner' && env.RUNNER_PYTHON || '3.12' }}
+          GH_TOKEN: ${{ github.token }}
+        run: uv run --no-cache --locked --script --python "$CI_PYTHON" Tools/ci/run_python_tests.py
+
+  codeql:
+    name: CodeQL
+    uses: ./.github/workflows/codeql.yml
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      languages: csharp

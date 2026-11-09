@@ -16,9 +16,9 @@
   <Project Path="test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj" />
   <Folder Name="/.github/" />
   <Folder Name="/.github/workflows/">
-    <File Path=".github/workflows/build-release.yml" />
+    <File Path=".github/workflows/builds-ci.yml" />
+    <File Path=".github/workflows/builds-release.yml" />
     <File Path=".github/workflows/ci-cd-standards.md" />
-    <File Path=".github/workflows/ci.yml" />
     <File Path=".github/workflows/codeql.yml" />
     <File Path=".github/workflows/commitlint-caller.yml" />
     <File Path=".github/workflows/commitlint.yml" />

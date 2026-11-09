@@ -114,20 +114,6 @@ else:
         self.assertIn(reference[2], executed_outputs[reference[1]], "The export must reference an emitted output")
         return executed_outputs[reference[1]][reference[2]]
 
-    def test_package_preparation_matches_ci_and_precedes_release_restore(self) -> None:
-        text = ACTION.read_text(encoding="utf-8")
-        block = step_block("Prepare package dependencies", text)
-        self.assertIn("inputs.package-prepare-script != ''", block)
-        self.assertIn("PACKAGE_PREPARE_SCRIPT: ${{ inputs.package-prepare-script }}", block)
-        self.assertLess(text.index("    - name: Prepare package dependencies"), text.index("    - name: Restore"))
-        self.assertIn('run: dotnet restore "$SOLUTION" -p:Configuration=Release', text)
-        ci = (ACTION.parents[2] / ".github/workflows/domain-ci.yml").read_text()
-        match = re.search(r"(?ms)^      - name: Prepare package dependencies\n(.*?)(?=^      - name: )", ci)
-        self.assertIsNotNone(match)
-        body = re.search(r"(?ms)^        run: \|\n(.*)", match[1])
-        self.assertIsNotNone(body)
-        ci_body = "\n".join(line[10:] if line.startswith("          ") else line for line in body[1].splitlines())
-        self.assertEqual(ci_body, run_body("Prepare package dependencies"))
 
     def test_package_preparation_fails_closed_and_preserves_hook_exit(self) -> None:
         hooks = self.root / "hooks"

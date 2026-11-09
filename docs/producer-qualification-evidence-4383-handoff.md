@@ -110,7 +110,7 @@ These actions require separate authorization; none was executed here.
    replace the actual-version release evidence.
 4. Obtain separate release/publication authorization and the existing protected
    environment approval. Recheck that remote `main` still equals the reviewed
-   successor SHA, then dispatch `build-release.yml` at `main`. Semantic-release
+   successor SHA, then dispatch `builds-release.yml` at `main`. Semantic-release
    must select a new version; do not rebuild/relabel it as original 4.38.3 or
    replace existing 4.38.3 assets. The source guard must pass before and after
    approval. If there is no new release version, the release owner must first

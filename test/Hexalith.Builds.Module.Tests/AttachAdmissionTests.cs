@@ -1729,7 +1729,7 @@ public sealed class AttachAdmissionTests
         (await appHost.StandardOutput.ReadLineAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("ready");
         using System.Diagnostics.Process observer = System.Diagnostics.Process.GetProcessById(appHost.Id);
         CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { RunId = owner.RunId, EnvironmentId = owner.EnvironmentId!, AttemptId = owner.AttemptId!, Workspace = owner.Workspace, SelectedTest = owner.SelectedTest };
-        CompositionRunSession session = new(plan, new(CompositionReadiness.SupportedSchema, owner.RunId, new Uri("http://127.0.0.1:20012/"), null, [.. owner.ReadinessResults]), "private-key", appHost) { LocalExecution = false };
+        CompositionRunSession session = new(plan, new(CompositionReadiness.SupportedSchema, owner.RunId, new Uri("http://127.0.0.1:20012/"), null, [.. owner.ReadinessResults]), "private-key", appHost);
         using CancellationTokenSource stopping = new(TimeSpan.FromSeconds(10));
         if (exit == "exhausted-budget")
         {

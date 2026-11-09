@@ -1,0 +1,25 @@
+name: Run shared CI unit tests
+description: Evaluate solution test projects and stop after the first failing unit project.
+outputs:
+  dapr:
+    description: Validated Dapr setup flag after successful units.
+    value: ${{ steps.unit.outputs.dapr }}
+  browsers:
+    description: Validated browser setup flag including integration E2E inference.
+    value: ${{ steps.unit.outputs.browsers }}
+  registry:
+    description: Validated pull-only registry setup flag after successful units.
+    value: ${{ steps.unit.outputs.registry }}
+  after-unit-tests:
+    description: Whether the workspace-root after-unit-tests action is enabled.
+    value: ${{ steps.unit.outputs.after-unit-tests }}
+  after-integration-tests:
+    description: Whether the workspace-root after-integration-tests action is enabled.
+    value: ${{ steps.unit.outputs.after-integration-tests }}
+runs:
+  using: composite
+  steps:
+    - name: Run unit projects in ordinal path order
+      id: unit
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_pipeline.py" --phase unit

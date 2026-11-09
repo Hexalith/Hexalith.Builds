@@ -13,6 +13,7 @@ using Xunit;
 internal sealed class WorkspaceGitFixture : IDisposable
 {
     private static readonly Lock _protocolLock = new();
+    private static readonly AsyncLocal<string?> _catalogOverride = new();
     private static int _protocolLeases;
     private static string? _originalAllowedProtocols;
 
@@ -37,6 +38,23 @@ internal sealed class WorkspaceGitFixture : IDisposable
 
     /// <summary>Gets the absolute manifest path in the checkout.</summary>
     public string Manifest => Path.Combine(Checkout, "module.json");
+
+    /// <summary>Creates a fixture with an exact custom catalog without changing the normal fixture options.</summary>
+    /// <param name="catalog">The catalog body committed by the owning fixture.</param>
+    /// <returns>The isolated fixture.</returns>
+    public static async Task<WorkspaceGitFixture> CreateWithCatalogAsync(string catalog)
+    {
+        string? previous = _catalogOverride.Value;
+        try
+        {
+            _catalogOverride.Value = catalog;
+            return await CreateAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            _catalogOverride.Value = previous;
+        }
+    }
 
     /// <summary>Creates a local superproject with a required direct submodule.</summary>
     /// <param name="withNested">Whether the direct submodule declares a nested submodule.</param>
@@ -88,9 +106,7 @@ internal sealed class WorkspaceGitFixture : IDisposable
 
             string builds = await fixture.CreateRepositoryAsync("builds", "builds.txt").ConfigureAwait(true);
             _ = System.IO.Directory.CreateDirectory(Path.Combine(builds, "Props"));
-            string catalog = conditionalCatalog
-                ? "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(msbuildprojectname)' == 'Hexalith.Folders.Aspire'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>".Replace("Hexalith.Dep", conditionalPackageId, StringComparison.Ordinal)
-                : "<Project><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /></ItemGroup></Project>";
+            string catalog = ReadCatalogFixture(conditionalCatalog, conditionalPackageId);
             if (compoundCatalogCondition)
             {
                 catalog = "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(MSBuildProjectName)' == 'Hexalith.Folders.Aspire' Or '$(Configuration)' == '__never__'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>";
@@ -216,6 +232,11 @@ internal sealed class WorkspaceGitFixture : IDisposable
             }
         }
     }
+
+    private static string ReadCatalogFixture(bool conditionalCatalog, string conditionalPackageId)
+        => _catalogOverride.Value ?? (conditionalCatalog
+                ? "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(msbuildprojectname)' == 'Hexalith.Folders.Aspire'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>".Replace("Hexalith.Dep", conditionalPackageId, StringComparison.Ordinal)
+                : "<Project><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /></ItemGroup></Project>");
 
     private async Task<string> CreateRepositoryAsync(string name, string fileName)
     {

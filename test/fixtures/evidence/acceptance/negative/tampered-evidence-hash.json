@@ -3,8 +3,8 @@
   "status": "accepted",
   "sourceRevision": "0123456789abcdef0123456789abcdef01234567",
   "platformPins": {
-    "eventStoreVersion": "4.1.0",
-    "daprRuntimeVersion": "1.18.7",
+    "eventStoreVersion": "4.2.0",
+    "daprRuntimeVersion": "1.19.1",
     "daprSdkVersion": "1.19.0",
     "frontComposerVersion": "4.7.6"
   },
@@ -50,7 +50,7 @@
       "exitCode": 0,
       "finalStatus": "completed",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.json",
-      "evidenceSha256": "903E3B6F703D388D886D3DD5B88E72C26F77855437C370511F416135C90A9766",
+      "evidenceSha256": "AEF5689B480DC7D1FA7EA0CD207D3EEB0D6F8258FA9D1A51E5EF2D0776606087",
       "reportPath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.mtp.trx",
       "reportSha256": "7A81E16B31D9D46B875DD225F4783F671E956EA0F7E694EF1E539917111760AE",
       "reportPlatform": "mtp"
@@ -61,7 +61,7 @@
       "exitCode": 2,
       "finalStatus": "unavailable",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-prerequisite-unavailable.json",
-      "evidenceSha256": "E0CEA89D9E2B62FDC3D2E6DF54E161CF4D4432FDE17B7F6B3CBA28F0892F26F8",
+      "evidenceSha256": "FA52D873310202ADB7EE9F8406D5618B0AA787F767A8337FDC29FC2DEACB0EC5",
       "reportPath": null,
       "reportSha256": null,
       "reportPlatform": null
@@ -72,7 +72,7 @@
       "exitCode": 130,
       "finalStatus": "cancelled",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-cancelled.json",
-      "evidenceSha256": "F549102704437B67937F886120FD00D53B89B4F94900C9C1126F249D9984921A",
+      "evidenceSha256": "3B6A9335A5A78CCA03AE8A8A2B518E013CE73CF956AD9FA3D06D7A6917BFA7B7",
       "reportPath": null,
       "reportSha256": null,
       "reportPlatform": null
@@ -82,7 +82,7 @@
     "status": "passed",
     "command": "dotnet tool run hexalith-module down --manifest test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json --run-id 0123456789abcdef0123456789abcd01",
     "artifactPath": "test/fixtures/evidence/acceptance/bound/cleanup-down.json",
-    "artifactSha256": "A5A47FB45591984F7F9D39C1DFC9A0EDA8FD2A79EFBE3CC639BB0A44762B0B14"
+    "artifactSha256": "F45C9776AA3583B1F0ABDFA2D19279D8DA908E375F2A10F6C4E2FA399245E4CA"
   },
   "rollback": {
     "status": "passed",

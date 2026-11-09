@@ -58,7 +58,7 @@ def validated_payload(directory: Path, kind: str) -> dict[str, bytes]:
     required = ("GITHUB_REPOSITORY", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_JOB",
                 "GITHUB_WORKFLOW_REF", "GITHUB_WORKFLOW_SHA", "GITHUB_EVENT_NAME")
     identity = {key: os.environ.get(key) for key in required}
-    workflow = "build-release.yml" if kind == "release" else "ci.yml"
+    workflow = "builds-release.yml" if kind == "release" else "builds-ci.yml"
     if (any(not value for value in identity.values())
             or identity["GITHUB_REPOSITORY"] != "Hexalith/Hexalith.Builds"
             or not re.fullmatch(r"[1-9][0-9]*", identity["GITHUB_RUN_ID"])

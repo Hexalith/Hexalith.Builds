@@ -76,7 +76,7 @@ try {
             id = 123
             run_attempt = 1
             repository = @{ full_name = 'Hexalith/Hexalith.Builds' }
-            path = '.github/workflows/ci.yml'
+            path = '.github/workflows/builds-ci.yml'
             head_sha = $revision
             head_branch = $branch
             event = 'push'
@@ -209,7 +209,7 @@ try {
         $expectedCiProof = $false
         $env:GITHUB_JOB = 'release'
         $env:GITHUB_EVENT_NAME = 'workflow_dispatch'
-        $env:GITHUB_WORKFLOW_REF = "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/$branch"
+        $env:GITHUB_WORKFLOW_REF = "Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@refs/heads/$branch"
         $env:GITHUB_WORKFLOW_SHA = $revision
         $env:GITHUB_RUN_ID = '789'
         $env:GITHUB_RUN_ATTEMPT = '1'

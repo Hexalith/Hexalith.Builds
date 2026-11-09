@@ -33,10 +33,9 @@ on:
         type: string
         default: 'vstest'
       unit-test-projects:
-        description: 'Newline-separated Tier 1 test project paths (no Dapr).'
-        required: false
+        description: 'Required newline-separated Tier 1 test project paths (no Dapr) that must pass before provisioning.'
+        required: true
         type: string
-        default: ''
       integration-test-projects:
         description: 'Retired direct integration input; migrate to module-manifest and integration-test-profiles.'
         required: false
@@ -100,11 +99,12 @@ on:
         default: 45
       governed-ci:
         description: >-
-          Opt into the BUILD-REL-1 / GOV-1 governed CI contract: validate the actual
-          reusable-workflow identity, evaluate the bounded static workflow/composite
-          closure, and emit the provenance the caller needs for its
-          hexalith.dependency-release-handoff.v1 artifact. Leave unset to keep the
-          pre-BUILD-REL-1 CI contract exactly.
+          Opt into the BUILD-REL-1 / GOV-1 governed CI contract for this v2 entry point:
+          validate the actual domain-ci-v2.yml reusable-workflow identity, evaluate the
+          bounded static workflow/composite closure, and emit the provenance the caller
+          needs for its hexalith.dependency-release-handoff.v1 artifact. Leave unset for
+          an ungoverned v2 run; the strict isolated-then-package integration contract
+          applies either way.
         required: false
         type: boolean
         default: false
@@ -201,6 +201,27 @@ jobs:
       governed-actions-json: ${{ steps.governed-provenance.outputs.actions-json }}
       governed-external-actions-json: ${{ steps.governed-provenance.outputs.external-actions-json }}
     steps:
+      - name: Validate declared integration inputs
+        id: integration-inputs
+        shell: bash
+        env:
+          MODULE_MANIFEST: ${{ inputs.module-manifest }}
+          INTEGRATION_PROFILES: ${{ inputs.integration-test-profiles }}
+          LEGACY_INTEGRATION: ${{ inputs.integration-test-projects }}
+          LEGACY_ASPIRE: ${{ inputs.aspire-test-project }}
+          UNIT_PROJECTS: ${{ inputs.unit-test-projects }}
+        run: |
+          set -euo pipefail
+          if [ -n "$LEGACY_INTEGRATION$LEGACY_ASPIRE" ]; then
+            echo 'Direct integration and advisory AppHost testing are retired; declare package suites and pass module-manifest/integration-test-profiles.' >&2
+            exit 1
+          fi
+          if [ -z "${MODULE_MANIFEST//[[:space:]]/}" ] || [ -z "${INTEGRATION_PROFILES//[[:space:]]/}" ] || [ -z "${UNIT_PROJECTS//[[:space:]]/}" ]; then
+            echo 'Declared package integration requires a module manifest, nonempty package suites and nonempty isolated test projects.' >&2
+            exit 1
+          fi
+          # The first step's start bounds the job's elapsed time; the integration helper derives its timeout from it.
+          echo "started-epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -599,21 +620,63 @@ jobs:
             echo 'Declared package integration requires nonempty suites and successful isolated tests before provisioning.' >&2
             exit 1
           fi
+      - name: Validate coverage gates
+        if: ${{ inputs.run-coverage-gate }}
+        shell: bash
+        env:
+          COVERAGE_ISOLATION_TARGETS: ${{ inputs.coverage-isolation-targets }}
+          COVERAGE_LINE_SCOPE: ${{ inputs.coverage-line-scope }}
+          COVERAGE_MINIMUM_LINE: ${{ inputs.coverage-minimum-line }}
+          COVERAGE_REQUIRED_BRANCH: ${{ inputs.coverage-required-branch }}
+        run: |
+          set -euo pipefail
+          args=(--coverage-root TestResults
+                --minimum-line-coverage "$COVERAGE_MINIMUM_LINE"
+                --required-branch-coverage "$COVERAGE_REQUIRED_BRANCH")
+          while IFS= read -r tgt; do
+            [ -z "$tgt" ] && continue
+            args+=(--isolation-auth-target "$tgt")
+          done <<< "$COVERAGE_ISOLATION_TARGETS"
+          while IFS= read -r prefix; do
+            [ -z "$prefix" ] && continue
+            args+=(--line-scope "$prefix")
+          done <<< "$COVERAGE_LINE_SCOPE"
+          python3 scripts/validate-coverage.py "${args[@]}" --summary-file "$GITHUB_STEP_SUMMARY"
       - name: Install integration toolchain without starting services
         if: ${{ inputs.module-manifest != '' && steps.isolated-gate.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PYTHON'
+          import json
           import os
+          import re
           import xml.etree.ElementTree as ET
           from pathlib import Path
-          root = ET.parse('.hexalith/builds-execution/Props/Directory.Packages.props').getroot()
+          builds = Path('.hexalith/builds-execution')
+          root = ET.parse(builds / 'Props/Directory.Packages.props').getroot()
+          versions = {}
+          for key, element in [('CI_ASPIRE_VERSION', 'HexalithAspireAppHostSdkVersion'), ('CI_DAPR_CLI_VERSION', 'HexalithDaprCliVersion'), ('CI_DAPR_RUNTIME_VERSION', 'HexalithDaprRuntimeVersion')]:
+              node = root.find('.//' + element)
+              value = None if node is None or node.text is None else node.text.strip()
+              if not value or any(c not in '0123456789.-abcdefghijklmnopqrstuvwxyz' for c in value):
+                  raise ValueError('missing or invalid workflow-owned toolchain version: ' + element)
+              versions[key] = value
+          # Digests are pinned beside the catalog versions; a missing or malformed entry refuses before any download.
+          digests = json.loads((builds / 'Props/dapr-toolchain-sha256.json').read_text(encoding='utf-8'))
+          if digests.get('schema') != 'hexalith.builds.dapr-toolchain-sha256.v1':
+              raise ValueError('unsupported Dapr toolchain digest schema')
+          pinned = {
+              'CI_DAPR_CLI_SHA256': digests.get('cli', {}).get(versions['CI_DAPR_CLI_VERSION'], {}).get('dapr_linux_amd64.tar.gz'),
+              'CI_DAPRD_SHA256': digests.get('runtime', {}).get(versions['CI_DAPR_RUNTIME_VERSION'], {}).get('daprd_linux_amd64.tar.gz'),
+              'CI_PLACEMENT_SHA256': digests.get('runtime', {}).get(versions['CI_DAPR_RUNTIME_VERSION'], {}).get('placement_linux_amd64.tar.gz'),
+              'CI_SCHEDULER_SHA256': digests.get('runtime', {}).get(versions['CI_DAPR_RUNTIME_VERSION'], {}).get('scheduler_linux_amd64.tar.gz'),
+          }
+          for key, value in pinned.items():
+              if not isinstance(value, str) or re.fullmatch(r'[0-9a-f]{64}', value) is None:
+                  raise ValueError('missing or invalid pinned Dapr archive digest: ' + key)
           with Path(os.environ['GITHUB_ENV']).open('a') as stream:
-              for key, element in [('CI_ASPIRE_VERSION', 'HexalithAspireAppHostSdkVersion'), ('CI_DAPR_CLI_VERSION', 'HexalithDaprCliVersion'), ('CI_DAPR_RUNTIME_VERSION', 'HexalithDaprRuntimeVersion')]:
-                  value = root.find('.//' + element).text
-                  if not value or any(c not in '0123456789.-abcdefghijklmnopqrstuvwxyz' for c in value):
-                      raise ValueError('invalid workflow-owned toolchain version')
+              for key, value in {**versions, **pinned}.items():
                   stream.write(key + '=' + value + '\n')
           PYTHON
       - name: Prepare integration binaries
@@ -625,10 +688,24 @@ jobs:
           dapr_home="$RUNNER_TEMP/hexalith-ci-dapr"
           mkdir -p "$tools" "$dapr_home/tools" "$dapr_home/.dapr/bin"
           dotnet tool install --tool-path "$tools" Aspire.Cli --version "$CI_ASPIRE_VERSION"
+          verify_archive() {
+            if [[ ! "$1" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "Refusing $2 without its pinned SHA-256 digest." >&2
+              return 1
+            fi
+            printf '%s  %s\n' "$1" "$2" | sha256sum --check --strict --quiet -
+          }
           curl --fail --location --proto '=https' --proto-redir '=https' --retry 3 "https://github.com/dapr/cli/releases/download/v$CI_DAPR_CLI_VERSION/dapr_linux_amd64.tar.gz" -o "$RUNNER_TEMP/dapr-cli.tar.gz"
+          verify_archive "${CI_DAPR_CLI_SHA256:-}" "$RUNNER_TEMP/dapr-cli.tar.gz"
           tar -xzf "$RUNNER_TEMP/dapr-cli.tar.gz" -C "$dapr_home/tools" dapr
           for binary in daprd placement scheduler; do
+            case "$binary" in
+              daprd) digest="${CI_DAPRD_SHA256:-}" ;;
+              placement) digest="${CI_PLACEMENT_SHA256:-}" ;;
+              scheduler) digest="${CI_SCHEDULER_SHA256:-}" ;;
+            esac
             curl --fail --location --proto '=https' --proto-redir '=https' --retry 3 "https://github.com/dapr/dapr/releases/download/v$CI_DAPR_RUNTIME_VERSION/${binary}_linux_amd64.tar.gz" -o "$RUNNER_TEMP/$binary.tar.gz"
+            verify_archive "$digest" "$RUNNER_TEMP/$binary.tar.gz"
             tar -xzf "$RUNNER_TEMP/$binary.tar.gz" -C "$dapr_home/.dapr/bin" "$binary"
           done
           echo "$tools" >> "$GITHUB_PATH"
@@ -653,15 +730,22 @@ jobs:
           export DOCKER_CONFIG="$config"
           printf '%s\n' "DOCKER_CONFIG=$config" "HEXALITH_CI_REGISTRY_CONFIG=$config" >> "$GITHUB_ENV"
           printf '%s' "$REGISTRY_PULL_PASSWORD" | docker login registry.hexalith.com --username="$REGISTRY_PULL_USERNAME" --password-stdin
+      # The runner signals only this step's process, so the helper must be that process (exec); it forwards the
+      # cancellation to the tool alone, which withdraws attachments before stopping composed resources. The helper
+      # derives its timeout from this step's 40 minutes and the job's remaining time, so its timeout path, every
+      # bounded wait after it and the 4-minute finalizer all fit; too little remaining time refuses before allocation.
       - name: Runner-owned package integration
         if: ${{ inputs.module-manifest != '' && steps.isolated-gate.outcome == 'success' && steps.registry-login.outcome == 'success' }}
+        timeout-minutes: 40
         shell: bash
         env:
           MODULE_MANIFEST: ${{ inputs.module-manifest }}
           INTEGRATION_PROFILES: ${{ inputs.integration-test-profiles }}
           INTEGRATION_REFERENCE_OWNERS: ${{ inputs.integration-test-reference-owners }}
+          JOB_TIMEOUT_MINUTES: ${{ inputs.build-timeout-minutes }}
+          JOB_STARTED_EPOCH: ${{ steps.integration-inputs.outputs.started-epoch }}
         run: |
-          python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py run --manifest "$MODULE_MANIFEST" --profiles "$INTEGRATION_PROFILES" --owners "$INTEGRATION_REFERENCE_OWNERS" --receipt "$RUNNER_TEMP/hexalith-ci-owner.json" --evidence TestResults/module-integration
+          exec python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py run --manifest "$MODULE_MANIFEST" --profiles "$INTEGRATION_PROFILES" --owners "$INTEGRATION_REFERENCE_OWNERS" --step-timeout-minutes 40 --job-timeout-minutes "$JOB_TIMEOUT_MINUTES" --job-started-epoch "$JOB_STARTED_EPOCH" --receipt "$RUNNER_TEMP/hexalith-ci-owner.json" --evidence TestResults/module-integration
       - name: Finalize exact CI owner
         if: ${{ always() && inputs.module-manifest != '' }}
         timeout-minutes: 4
@@ -669,7 +753,16 @@ jobs:
         env:
           CI_JOB_STATUS: ${{ job.status }}
         run: |
-          python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py finalize --receipt "$RUNNER_TEMP/hexalith-ci-owner.json" --evidence TestResults/module-integration --job-status "$CI_JOB_STATUS"
+          helper=.hexalith/builds-execution/Github/run-module-integration/run_module_integration.py
+          if [ ! -f "$helper" ]; then
+            if [ -e "$RUNNER_TEMP/hexalith-ci-owner.json" ] || [ -e "$RUNNER_TEMP/hexalith-ci-owner.process.json" ]; then
+              echo '::error::CI owner records exist without the workflow-owned helper.'
+              exit 1
+            fi
+            echo 'The workflow-owned helper was never checked out, so no integration process could have started.'
+            exit 0
+          fi
+          exec python3 "$helper" finalize --receipt "$RUNNER_TEMP/hexalith-ci-owner.json" --evidence TestResults/module-integration --job-status "$CI_JOB_STATUS"
       - name: Remove integration registry credentials
         if: ${{ always() }}
         shell: bash
@@ -691,28 +784,6 @@ jobs:
           name: module-integration-diagnostics
           path: TestResults/module-integration
           retention-days: 7
-      - name: Validate coverage gates
-        if: ${{ inputs.run-coverage-gate }}
-        shell: bash
-        env:
-          COVERAGE_ISOLATION_TARGETS: ${{ inputs.coverage-isolation-targets }}
-          COVERAGE_LINE_SCOPE: ${{ inputs.coverage-line-scope }}
-          COVERAGE_MINIMUM_LINE: ${{ inputs.coverage-minimum-line }}
-          COVERAGE_REQUIRED_BRANCH: ${{ inputs.coverage-required-branch }}
-        run: |
-          set -euo pipefail
-          args=(--coverage-root TestResults
-                --minimum-line-coverage "$COVERAGE_MINIMUM_LINE"
-                --required-branch-coverage "$COVERAGE_REQUIRED_BRANCH")
-          while IFS= read -r tgt; do
-            [ -z "$tgt" ] && continue
-            args+=(--isolation-auth-target "$tgt")
-          done <<< "$COVERAGE_ISOLATION_TARGETS"
-          while IFS= read -r prefix; do
-            [ -z "$prefix" ] && continue
-            args+=(--line-scope "$prefix")
-          done <<< "$COVERAGE_LINE_SCOPE"
-          python3 scripts/validate-coverage.py "${args[@]}" --summary-file "$GITHUB_STEP_SUMMARY"
       - name: Fail on blocking test failures
         if: always()
         shell: bash

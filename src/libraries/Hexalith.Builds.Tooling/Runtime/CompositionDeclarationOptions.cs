@@ -27,6 +27,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/3.0.12"] = "ef5c134bbee7ec708f354ce1bc3e508ee6105ab7",
         ["eventstore/4.0.4"] = "326bfef884543cdbcaf96de7f4c4ad378dbad6d7",
         ["eventstore/4.1.0"] = "dbc6e7e08d605ba6c6c790e3e08a15dc8bbdec8a",
+        ["eventstore/4.2.0"] = "aa16227bd07f0564a3026d619a5abd973e02656f",
         ["tenants/6.0.0"] = "9e5a991d0ba304bac7b1a5809cd71797b47d78ed",
         ["tenants/7.0.0"] = "1b2c71b0e3cc5b16745f87aa7f1bc2c0ac8ffc27",
         ["tenants/7.0.2"] = "143cec60a3f5bb1831fa57f35c510880ceb788d8",
@@ -46,6 +47,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/3.0.12"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
         ["eventstore/4.0.4"] = "21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495",
         ["eventstore/4.1.0"] = "21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495",
+        ["eventstore/4.2.0"] = "21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495",
         ["tenants/6.0.0"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
         ["tenants/7.0.0"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
         ["tenants/7.0.2"] = "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522",
@@ -107,11 +109,20 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     /// <returns>The catalog-pinned version, or null when the catalog does not pin the package.</returns>
     /// <exception cref="InvalidDataException">The catalog or selected snapshot is unavailable or inconsistent.</exception>
     public string? CatalogPackageVersion(string packageId, string source)
+        => CatalogPackageVersion(packageId, source, null);
+
+    /// <summary>Resolves a package from an already recorded consumer-specific pinned snapshot view.</summary>
+    /// <param name="packageId">The package identity.</param>
+    /// <param name="source">The declaration source for diagnostics.</param>
+    /// <param name="projectName">The actual consumer project name, or null for the default view.</param>
+    /// <returns>The selected package version, or null when the selected view does not pin it.</returns>
+    /// <exception cref="InvalidDataException">The snapshot is invalid or the requested consumer view is absent.</exception>
+    public string? CatalogPackageVersion(string packageId, string source, string? projectName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(packageId);
         try
         {
-            return ReadCatalogPackageVersion(packageId, source);
+            return ReadCatalogPackageVersion(packageId, source, projectName);
         }
         catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or XmlException)
         {
@@ -119,15 +130,17 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         }
     }
 
-    private string? ReadCatalogPackageVersion(string packageId, string source)
+    private string? ReadCatalogPackageVersion(string packageId, string source, string? projectName)
     {
         string? snapshotPath = Workspace is null ? null : Path.Combine(Workspace, "source-mapping", "catalog-versions.json");
         if (snapshotPath is not null && File.Exists(snapshotPath))
         {
-            CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
-                ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot is null.");
-            ValidateSnapshot(snapshot, source, packageId, snapshotPath);
-            return snapshot.Versions.FirstOrDefault(pair => string.Equals(pair.Key, packageId, StringComparison.OrdinalIgnoreCase)).Value;
+            return ReadRecordedPackageVersion(packageId, source, projectName, snapshotPath);
+        }
+
+        if (!string.IsNullOrWhiteSpace(projectName))
+        {
+            throw new InvalidDataException($"{source}: {packageId}: consumer '{projectName}' requires a materialized pinned catalog snapshot.");
         }
 
         XDocument catalog = XDocument.Load(CatalogPath(packageId, source));
@@ -141,6 +154,21 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
 
         string property = version[2..^1];
         return catalog.Descendants(property).FirstOrDefault()?.Value.Trim();
+    }
+
+    private string? ReadRecordedPackageVersion(string packageId, string source, string? projectName, string snapshotPath)
+    {
+        CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
+            ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot is null.");
+        ValidateSnapshot(snapshot, source, packageId, snapshotPath);
+        IReadOnlyDictionary<string, string> selected = snapshot.Versions;
+        if (!string.IsNullOrWhiteSpace(projectName))
+        {
+            selected = snapshot.ProjectVersions.FirstOrDefault(pair => string.Equals(pair.Key, projectName, StringComparison.OrdinalIgnoreCase)).Value
+                ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot has no recorded view for consumer '{projectName}'.");
+        }
+
+        return selected.FirstOrDefault(pair => string.Equals(pair.Key, packageId, StringComparison.OrdinalIgnoreCase)).Value;
     }
 
     private string CatalogPath(string module, string source)

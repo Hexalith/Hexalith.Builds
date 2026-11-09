@@ -5,7 +5,7 @@ inputs:
   version:
     description: 'Dapr CLI version to install and legacy fallback runtime version'
     required: false
-    default: '1.18.0'
+    default: '1.19.1'
   runtime-version:
     description: 'Dapr runtime version for dapr init; defaults to version when omitted'
     required: false

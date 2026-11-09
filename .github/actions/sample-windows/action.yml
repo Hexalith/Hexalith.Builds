@@ -1,0 +1,11 @@
+name: Sample WindowsTests
+description: Execute the existing sample Release test assembly.
+runs:
+  using: composite
+  steps:
+    - name: Run built sample WindowsTests
+      shell: pwsh
+      working-directory: Samples/Hexalith.Sample
+      run: |
+          dotnet test --project test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj --no-build --no-restore --configuration Release --stop-on-fail off
+          exit $LASTEXITCODE

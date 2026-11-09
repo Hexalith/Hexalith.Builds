@@ -1,0 +1,82 @@
+name: Prepare module job
+description: Checkout and prepare one Release build, reusing validated CI outputs on Windows.
+inputs:
+  solution:
+    description: Validated workspace-relative solution output from shared CI, or none (Windows only).
+    default: ''
+  submodules:
+    description: Validated JSON array output of direct submodule paths from shared CI (Windows only).
+    default: '[]'
+  global-json:
+    description: Validated workspace-relative SDK path from shared CI (Windows only).
+    default: global.json
+  module-root:
+    description: Test-only module fixture root in the Builds repository (Linux only).
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Checkout module
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        submodules: false
+        persist-credentials: false
+
+    - name: Validate Linux configuration and direct dependencies
+      id: linux
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        CI_REPOSITORY: ${{ github.repository }}
+        CI_MODULE_ROOT: ${{ inputs.module-root }}
+      run: python3 -I "$GITHUB_ACTION_PATH/prepare_linux.py" --phase prepare
+
+    - name: Validate Windows paths and direct dependencies
+      if: runner.os == 'Windows' && inputs.solution != 'none'
+      shell: pwsh
+      env:
+        CI_PREPARE_SOLUTION: ${{ inputs.solution }}
+        CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
+        CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
+      run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Validate'
+
+    - name: Set up Linux module SDK
+      if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none'
+      uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+      with:
+        global-json-file: ${{ steps.linux.outputs.global-json }}
+
+    - name: Set up Windows module SDK
+      if: runner.os == 'Windows' && inputs.solution != 'none'
+      uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+      with:
+        global-json-file: ${{ inputs.global-json }}
+
+    - name: Restore and build Linux module
+      id: build
+      if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none'
+      shell: bash
+      env:
+        CI_REPOSITORY: ${{ github.repository }}
+        CI_MODULE_ROOT: ${{ inputs.module-root }}
+      run: python3 -I "$GITHUB_ACTION_PATH/prepare_linux.py" --phase build
+
+    - name: Prepare Linux environment
+      if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none'
+      uses: $/Github/ci-environment
+      with:
+        solution: ${{ steps.linux.outputs.solution }}
+        dapr: ${{ steps.build.outputs.dapr }}
+        browsers: ${{ steps.build.outputs.browsers }}
+        registry: ${{ steps.build.outputs.registry }}
+      env:
+        CI_MODULE_ROOT: ${{ inputs.module-root }}
+
+    - name: Initialize direct dependencies and build Windows module
+      if: runner.os == 'Windows' && inputs.solution != 'none'
+      shell: pwsh
+      env:
+        CI_PREPARE_SOLUTION: ${{ inputs.solution }}
+        CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
+        CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
+      run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Build'

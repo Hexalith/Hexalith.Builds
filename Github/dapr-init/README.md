@@ -10,7 +10,7 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
 
 | Input             | Required | Default  | Description |
 |-------------------|----------|----------|-------------|
-| `version`         | No       | `1.18.0` | Dapr CLI version to install and the legacy runtime fallback. |
+| `version`         | No       | `1.19.1` | Dapr CLI version to install and the legacy runtime fallback. |
 | `runtime-version` | No       | _unset_  | Dapr runtime version used by `dapr init`; falls back to `version`. |
 
 ## Behavior
@@ -33,8 +33,8 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
 - name: Install and initialize Dapr
   uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
   with:
-    version: '1.18.0'
-    runtime-version: '1.18.2'
+    version: '1.19.1'
+    runtime-version: '1.19.1'
 ```
 
 Omit `runtime-version` when the CLI and runtime use the same release. The action

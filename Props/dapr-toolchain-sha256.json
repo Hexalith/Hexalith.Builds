@@ -1,0 +1,25 @@
+{
+  "schema": "hexalith.builds.dapr-toolchain-sha256.v1",
+  "purpose": "SHA-256 digests of the Dapr CLI and runtime archives that CI downloads for the HexalithDaprCliVersion and HexalithDaprRuntimeVersion pins in Directory.Packages.props. A pin without an entry here is refused before extraction.",
+  "source": "Each value equals the upstream <archive>.sha256 checksum file and the GitHub release asset digest published with that dapr/cli or dapr/dapr release, and was recomputed from the downloaded archive on 2026-11-09.",
+  "cli": {
+    "1.18.2": {
+      "dapr_linux_amd64.tar.gz": "ccfff008fd16f50096a9192ad56697ac7052e3add6fa0a07789d87b4c4df8c40"
+    },
+    "1.19.1": {
+      "dapr_linux_amd64.tar.gz": "6e9a339d261e430e5914909cc4443572573c197c174c3e14504c34116831de3b"
+    }
+  },
+  "runtime": {
+    "1.18.7": {
+      "daprd_linux_amd64.tar.gz": "a5ab4fd9d77448d90e6f8b3c1c795234eb683108a8650a35df9ac71c9b14b5e2",
+      "placement_linux_amd64.tar.gz": "a4d6f2089177587b57c495f5b061aba8fd86972d834653c8362852b7d087c4ed",
+      "scheduler_linux_amd64.tar.gz": "634b438a1a1501a35cfe378f00719cf23176c653f275b606a0ed8f9fd4226d31"
+    },
+    "1.19.1": {
+      "daprd_linux_amd64.tar.gz": "93217800d5072cf1735ed89ec8a9cdeedfb9d235895fb9e0d864088bc5d9466c",
+      "placement_linux_amd64.tar.gz": "2efbe23d12254f4822d61a17f58460a119c25d9e98740d8507a3a66e1c5aa0d5",
+      "scheduler_linux_amd64.tar.gz": "9064b6a6f3c4ff44d9ae69d22a07eedc564b3d11ab2653e9d5945768fc19f3af"
+    }
+  }
+}

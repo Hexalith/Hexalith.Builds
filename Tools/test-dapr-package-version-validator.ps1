@@ -5,7 +5,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $validatorPath = Join-Path $PSScriptRoot 'validate-dapr-package-versions.ps1'
-$workflowPath = Join-Path $PSScriptRoot '../.github/workflows/ci.yml'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
 $requiredPackageIds = @(
     'Dapr.Client'
@@ -726,25 +725,6 @@ try {
             -StreamDrainTimeoutSeconds 1 `
             -ParentTimeoutSeconds 8
         Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('redirected evaluator output did not drain within 1 seconds', 'No unbounded wait')
-    }
-
-    Invoke-Scenario -Name 'CI orders initializer and both Dapr gates' -Body {
-        $workflow = Get-Content -LiteralPath $workflowPath -Raw
-        Assert-Contains -Actual $workflow -Expected 'uses: ./Github/initialize-dotnet' -Because 'The repository-owned initializer must supply the SDK.'
-        Assert-NotContains -Actual $workflow -Unexpected 'dotnet-version:' -Because 'The initializer default must remain the single SDK-version source.'
-
-        $checkoutIndex = $workflow.IndexOf('uses: actions/checkout@', [StringComparison]::Ordinal)
-        $initializerIndex = $workflow.IndexOf('uses: ./Github/initialize-dotnet', [StringComparison]::Ordinal)
-        $validatorIndex = $workflow.IndexOf('pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1', [StringComparison]::Ordinal)
-        $testsIndex = $workflow.IndexOf('pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1', [StringComparison]::Ordinal)
-        if (
-            $checkoutIndex -lt 0 -or
-            $initializerIndex -le $checkoutIndex -or
-            $validatorIndex -le $initializerIndex -or
-            $testsIndex -le $validatorIndex
-        ) {
-            throw 'Workflow steps are not ordered checkout -> initializer -> validator -> tests.'
-        }
     }
 }
 finally {

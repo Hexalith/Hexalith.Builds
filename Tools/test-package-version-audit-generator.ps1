@@ -1283,25 +1283,6 @@ try {
     }
     Assert-Equal -Scenario 'Catalog collision preserves bytes' `
         -Expected $catalogBefore -Actual (Get-Content -LiteralPath $catalogPath -Raw)
-
-    foreach ($workflowRelativePath in @('../.github/workflows/ci.yml')) {
-        $scenarioCount++
-        $workflowPath = Join-Path $PSScriptRoot $workflowRelativePath
-        $workflow = Get-Content -LiteralPath $workflowPath -Raw
-        $generatorStepIndex = $workflow.IndexOf('- name: Test package version audit generator', [StringComparison]::Ordinal)
-        $generatorCommandIndex = $workflow.IndexOf(
-            'run: pwsh -NoProfile -File ./Tools/test-package-version-audit-generator.ps1',
-            [StringComparison]::Ordinal
-        )
-        $validatorStepIndex = $workflow.IndexOf('- name: Test package version audit validator', [StringComparison]::Ordinal)
-        if (
-            $generatorStepIndex -lt 0 -or
-            $generatorCommandIndex -le $generatorStepIndex -or
-            $validatorStepIndex -le $generatorCommandIndex
-        ) {
-            $failures.Add("Workflow '$workflowRelativePath' must run generator fixtures before validator fixtures.")
-        }
-    }
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue

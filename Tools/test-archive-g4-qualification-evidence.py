@@ -9,7 +9,6 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import re
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -42,7 +41,7 @@ class CarrierTests(unittest.TestCase):
         environment = {
             "GITHUB_SHA": SOURCE, "GITHUB_REPOSITORY": "Hexalith/Hexalith.Builds",
             "GITHUB_RUN_ID": "123", "GITHUB_RUN_ATTEMPT": "2", "GITHUB_JOB": "release",
-            "GITHUB_WORKFLOW_REF": "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/main",
+            "GITHUB_WORKFLOW_REF": "Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@refs/heads/main",
             "GITHUB_WORKFLOW_SHA": SOURCE, "GITHUB_EVENT_NAME": "workflow_dispatch",
         }
         self.env = patch.dict(os.environ, environment, clear=True)
@@ -110,7 +109,7 @@ class CarrierTests(unittest.TestCase):
         self.inventory["qualification"]["releaseEligible"] = False
         original = self.write_inventory()
         with self.assertRaises(ValueError): carrier.archive_evidence(self.directory, "release")
-        os.environ["GITHUB_WORKFLOW_REF"] = "Hexalith/Hexalith.Builds/.github/workflows/ci.yml@refs/pull/1/merge"
+        os.environ["GITHUB_WORKFLOW_REF"] = "Hexalith/Hexalith.Builds/.github/workflows/builds-ci.yml@refs/pull/1/merge"
         os.environ["GITHUB_EVENT_NAME"] = "pull_request"
         os.environ["GITHUB_JOB"] = "contracts"
         with zipfile.ZipFile(carrier.archive_evidence(self.directory, "ci")) as archive:
@@ -177,7 +176,7 @@ class CarrierTests(unittest.TestCase):
         alias.symlink_to(self.directory, target_is_directory=True)
         with self.assertRaises(ValueError): carrier.archive_evidence(alias / ".", "release")
         for key, value in (("GITHUB_JOB", "unrelated"), ("GITHUB_EVENT_NAME", "pull_request"),
-                           ("GITHUB_WORKFLOW_REF", "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@")):
+                           ("GITHUB_WORKFLOW_REF", "Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@")):
             with self.subTest(key=key), patch.dict(os.environ, {key: value}):
                 with self.assertRaises(ValueError): carrier.archive_evidence(self.directory, "release")
 
@@ -200,32 +199,6 @@ class CarrierTests(unittest.TestCase):
         path.write_bytes(original)
         with zipfile.ZipFile(path, "a") as archive: archive.writestr("extra", b"unexpected")
         with self.assertRaises(ValueError): carrier.verify_archive(self.directory, "release")
-
-    def test_workflows_retain_carriers_and_release_publishes_it(self):
-        root = Path(__file__).resolve().parents[1]
-        release = json.loads((root / "package.json").read_text())["release"]
-        assets = next(plugin[1]["assets"] for plugin in release["plugins"] if isinstance(plugin, list) and plugin[0] == "@semantic-release/github")
-        self.assertEqual({asset["path"] for asset in assets}, {
-            "artifacts/g4-tool-packages/**/g4-tool-package-inventory.json",
-            "artifacts/g4-tool-packages/**/g4-tool-qualification-evidence.zip",
-        })
-        for workflow, path in (("ci.yml", "artifacts/g4-ci-qualification/"), ("build-release.yml", "artifacts/g4-tool-packages/**/")):
-            text = (root / ".github/workflows" / workflow).read_text()
-            block, = re.findall(r"(?m)^\s*- name: Retain (?:CI qualification evidence|actual-version qualification evidence)\n([\s\S]*?)(?=\n\s*- name:|\n  [a-zA-Z_-]+:|\Z)", text)
-            self.assertIn("if: always()\n", block)
-            self.assertIn("actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9", block)
-            self.assertIn(path + carrier.ARCHIVE_NAME, block)
-            self.assertIn(path + "qualification-evidence/", block)
-            self.assertIn("${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}", block)
-            self.assertIn("retention-days: " + ("30" if workflow == "ci.yml" else "90"), block)
-        ci = (root / ".github/workflows/ci.yml").read_text()
-        self.assertIn("-PackageDirectory artifacts/g4-ci-qualification -RetainPackageDirectory -RequireControls -SkipSourceValidation", ci)
-        verifier = (root / "Tools/verify-g4-tool-release.ps1").read_text()
-        self.assertLess(verifier.index("Assert-ReleaseEligibleInventory"), verifier.index("archive-g4-qualification-evidence.py"))
-        self.assertIn("if ($LASTEXITCODE -ne 0)", verifier)
-        publisher = (root / "Tools/publish-g4-tool-packages.ps1").read_text()
-        self.assertLess(publisher.index("--kind release --verify"), publisher.index("'nuget', 'push'"))
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

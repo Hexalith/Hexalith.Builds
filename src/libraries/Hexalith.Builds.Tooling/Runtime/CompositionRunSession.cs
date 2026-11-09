@@ -57,14 +57,6 @@ public sealed class CompositionRunSession
     internal NativeTestExecutionResult? FirstObservedOutcome { get; set; }
 
     /// <summary>
-    /// Gets a value indicating whether this process executes locally, read from the process environment when the session
-    /// becomes ready with the same rule <c>ExecutionContext()</c> uses to record the owner's context. Attachment admission
-    /// never accepts another context, so only a local selected-test session keeps its AppHost until withdrawal is durably
-    /// recorded.
-    /// </summary>
-    internal bool LocalExecution { get; init; } = true;
-
-    /// <summary>
     /// Gets the AppHost process.
     /// </summary>
     internal Process AppHost { get; }

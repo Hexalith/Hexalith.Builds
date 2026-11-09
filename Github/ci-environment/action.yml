@@ -1,0 +1,26 @@
+name: Prepare shared CI environment
+description: Set up enabled Linux tools once using the existing Release build and trusted Builds pins.
+inputs:
+  solution:
+    description: Validated workspace-relative solution path, including any module-root prefix.
+    required: true
+  dapr:
+    description: Literal validated Dapr flag.
+    default: 'false'
+  browsers:
+    description: Literal validated browser flag, including classified E2E inference.
+    default: 'false'
+  registry:
+    description: Literal validated pull-only registry login flag.
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Set up enabled environment tools
+      shell: bash
+      env:
+        CI_ENVIRONMENT_SOLUTION: ${{ inputs.solution }}
+        CI_ENVIRONMENT_DAPR: ${{ inputs.dapr }}
+        CI_ENVIRONMENT_BROWSERS: ${{ inputs.browsers }}
+        CI_ENVIRONMENT_REGISTRY: ${{ inputs.registry }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_environment.py"

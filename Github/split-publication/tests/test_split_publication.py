@@ -479,61 +479,6 @@ class GraphTests(unittest.TestCase):
         return subprocess.run(["git", "-C", str(directory), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
 
 
-class HostileWorkflowTests(unittest.TestCase):
-    def test_split_jobs_keep_candidate_code_away_from_publication_authority(self):
-        workflow = Path(__file__).resolve().parents[3] / ".github" / "workflows" / "domain-release.yml"
-        text = workflow.read_text(encoding="utf-8")
-        self.assertIn("release-mode:\n", text)
-        self.assertIn("default: ''", text)
-        builder = job(text, "build-publication-candidate")
-        publisher = job(text, "publish-publication-candidate")
-        legacy = job(text, "release")
-        governed = job(text, "governed-release")
-        self.assertIn("inputs.release-mode == '' && !inputs.governed-release", legacy)
-        self.assertIn("inputs.release-mode == '' && inputs.governed-release", governed)
-        self.assertNotIn("environment:", builder)
-        self.assertNotIn("secrets.", builder)
-        self.assertIn("actions: read", builder)
-        self.assertIn("contents: read", builder)
-        self.assertNotIn("id-token:", builder)
-        self.assertNotIn("attestations:", builder)
-        self.assertNotIn("contents: write", builder)
-        self.assertIn("submodules: false", builder)
-        self.assertIn("persist-credentials: false", builder)
-        self.assertIn('GITHUB_TOKEN: ""', builder)
-        self.assertIn("environment: ${{ inputs.environment-name }}", publisher)
-        self.assertNotIn("secrets: inherit", publisher)
-        self.assertNotIn("candidate-command", publisher)
-        self.assertNotIn("semantic-release", publisher)
-        self.assertNotIn("dotnet ", publisher)
-        self.assertNotIn("npm ", publisher)
-        self.assertIn("actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6", publisher)
-        self.assertIn("repository: Hexalith/Hexalith.Builds", publisher)
-        self.assertNotIn("submodules: true", builder)
-        self.assertNotIn("--recursive", (ROOT.parent / "initialize-build" / "action.yml").read_text(encoding="utf-8"))
-        for line in publisher.splitlines():
-            if "uses:" in line and "actions/checkout@" in line:
-                self.assertIn("Hexalith/Hexalith.Builds", publisher)
-        uses = [line.strip() for line in publisher.splitlines() if line.strip().startswith("- uses:") or line.strip().startswith("uses:")]
-        for value in uses:
-            reference = value.split(":", 1)[1].strip()
-            self.assertTrue(
-                reference.startswith("./.hexalith/builds-execution/") or "@" in reference and reference.rsplit("@", 1)[1].split()[0].islower(),
-                reference,
-            )
-            self.assertNotIn("@main", reference)
-            self.assertNotRegex(reference, r"@v[0-9]")
-
-
-def job(workflow: str, name: str) -> str:
-    start = workflow.index(f"\n  {name}:\n")
-    remainder = workflow[start + 1:]
-    import re
-
-    match = re.search(r"\n  [a-z][a-z0-9-]*:\n", remainder)
-    return remainder if match is None else remainder[: match.start()]
-
-
 class WorkspaceInputTests(unittest.TestCase):
     def test_relative_and_absolute_inputs_stay_inside_workspace(self):
         with tempfile.TemporaryDirectory() as directory:

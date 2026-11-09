@@ -1,5 +1,12 @@
 config-variables: null
 paths:
+  .github/workflows/*:
+    # GitHub's self-repository syntax and newer workflow fields are ahead of the
+    # actionlint 1.7.12 schema. Keep these exceptions limited to the exact gaps.
+    ignore:
+      - 'specifying action "\$/[^"]+" in invalid format because ref is missing'
+      - '^unexpected key "cache-mode" for "workflow" section\.'
+      - 'property "workflow_(repository|sha|ref|file_path)" is not defined in object type'
   .github/workflows/domain-release.yml:
     # GitHub exposes these reusable-workflow identity fields at runtime, but
     # actionlint 1.7.12 does not yet include them in its job-context schema.

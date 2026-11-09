@@ -3,6 +3,7 @@
 import importlib.util
 import hashlib
 import copy
+import errno
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ import signal
 import sys
 import time
 import tempfile
+import threading
 import unittest
 from unittest.mock import patch
 
@@ -26,6 +28,181 @@ CI = {
     "RUNNER_ENVIRONMENT": "github-hosted",
     "RUNNER_OS": "Linux",
 }
+
+
+FAKE_TOOL = r'''
+import fcntl, json, os, pathlib, signal, subprocess, sys, time
+root = pathlib.Path.cwd()
+args = sys.argv[1:]
+scenario = os.environ.get('FAKE_SCENARIO', 'success')
+if '--version' in args:
+    print('9.9.9')
+    sys.exit(0)
+owner = json.loads(os.environ['FAKE_CI_OWNER'])
+def resources(**changes):
+    value = {key: [] for key in ('containerIds', 'processIds', 'workspaceIds', 'claimIds', 'discoveryFailures')}
+    value['unverified'] = False
+    value.update(changes)
+    return value
+if 'down' in args:
+    number = len(list(root.glob('actual-down-*.json'))) + 1
+    record = {'runId': owner['runId'], 'jobStatus': os.environ.get('HEXALITH_CI_JOB_STATUS'), 'args': args}
+    lock = os.environ.get('FAKE_LOCK')
+    if lock:
+        handle = open(lock, 'a+')
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            record['locked'] = True
+            (root / f'actual-down-{number}.json').write_text(json.dumps(record))
+            print(json.dumps({'runId': owner['runId'], 'outcome': {'exitCode': 'TopologyOrLifecycle', 'ruleId': 'HXR037'},
+                              'remainingResources': resources(unverified=True)}))
+            sys.exit(3)
+    if scenario == 'owned-survivor':
+        apphost = int((root / 'actual-apphost-ready').read_text())
+        record['startedAtNs'] = time.time_ns()
+        descendant = int((root / 'actual-apphost-child').read_text())
+        def alive(pid):
+            # A killed but unreaped child is a zombie, not a live process.
+            try:
+                return pathlib.Path(f'/proc/{pid}/stat').read_text().rpartition(')')[2].split()[0] not in ('Z', 'X')
+            except FileNotFoundError:
+                return False
+        record['appHostAlive'] = alive(apphost)
+        record['appHostChildAlive'] = alive(descendant)
+        (root / f'actual-down-{number}.json').write_text(json.dumps(record))
+        if record['appHostAlive']:
+            # The real down stops owned processes only after it recorded attachment withdrawal.
+            os.kill(apphost, signal.SIGTERM)
+            while (root / 'actual-apphost-alive').exists():
+                time.sleep(0.01)
+        if record['appHostChildAlive']:
+            os.kill(descendant, signal.SIGKILL)
+    if scenario == 'binary-down':
+        sys.stdout.buffer.write(b'\xff\xfe not utf-8')
+        (root / f'actual-down-{number}.json').write_text(json.dumps(record))
+        sys.exit(0)
+    (root / f'actual-down-{number}.json').write_text(json.dumps(record))
+    print(json.dumps({'runId': owner['runId'], 'outcome': {'exitCode': 'Success'}, 'remainingResources': resources()}))
+    sys.exit(0)
+assert 'test' in args
+receipt = pathlib.Path(next(arg.split('=', 1)[1] for arg in args if arg.startswith('--ci-owner-receipt=')))
+(root / 'actual-tool-args.json').write_text(json.dumps(args))
+(root / 'actual-tool-stdin.json').write_text(json.dumps(sys.stdin.read()))
+def write_receipt():
+    receipt.write_text(json.dumps(owner))
+def report(code):
+    print(json.dumps({'outcome': {'exitCode': code}}), flush=True)
+if scenario == 'success':
+    write_receipt(); report('Success'); sys.exit(0)
+if scenario == 'success-without-receipt':
+    report('Success'); sys.exit(0)
+if scenario == 'zero-not-success':
+    write_receipt(); report('ProductOrTest'); sys.exit(0)
+if scenario == 'failure':
+    write_receipt(); report('ProductOrTest'); sys.exit(17)
+if scenario == 'invalid-output':
+    write_receipt()
+    sys.stderr.write('tool failed: password=hunter2 ' + 'Q' * 48 + '\n')
+    print('interrupted')
+    sys.exit(1)
+def interrupted(signum, frame):
+    (root / 'actual-tool-signal').write_text(str(signum))
+    report('Cancelled')
+    sys.exit(130)
+def start_apphost(*extra):
+    """A composed child of the tool, tagged with the owner run like the real AppHost; it records its first signal."""
+    code = ("import os, pathlib, signal, sys, time\n"
+            "root = pathlib.Path(sys.argv[1])\n"
+            "def first(signum, frame):\n"
+            "    path = root / 'actual-apphost-signal'\n"
+            "    if not path.exists():\n"
+            "        path.write_text(f'{signum} {time.time_ns()}')\n"
+            "    (root / 'actual-apphost-alive').unlink(missing_ok=True)\n"
+            "    os._exit(0)\n"
+            "signal.signal(signal.SIGINT, first)\n"
+            "signal.signal(signal.SIGTERM, first)\n"
+            "if len(sys.argv) > 2:\n"
+            "    import subprocess\n"
+            "    plain = {key: value for key, value in os.environ.items() if key != 'HEXALITH_G4_RUN_ID'}\n"
+            "    child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], env=plain)\n"
+            "    (root / 'actual-apphost-child').write_text(str(child.pid))\n"
+            "(root / 'actual-apphost-alive').write_text('1')\n"
+            "(root / 'actual-apphost-ready').write_text(str(os.getpid()))\n"
+            "while True:\n"
+            "    time.sleep(0.02)\n")
+    environment = dict(os.environ, HEXALITH_G4_RUN_ID=owner['runId'])
+    child = subprocess.Popen([sys.executable, '-c', code, str(root), *extra], env=environment)
+    while not (root / 'actual-apphost-ready').exists():
+        time.sleep(0.01)
+    return child
+if scenario == 'muxer-apphost' and os.environ.get('FAKE_ROLE') != 'tool':
+    # The gated `dotnet tool run` muxer: it keeps waiting on SIGINT and forwards SIGTERM to the tool it runs.
+    tool = subprocess.Popen([sys.argv[0]] + args, env=dict(os.environ, FAKE_ROLE='tool'))
+    signal.signal(signal.SIGINT, lambda signum, frame: None)
+    signal.signal(signal.SIGTERM, lambda signum, frame: tool.send_signal(signal.SIGTERM))
+    while True:
+        try:
+            sys.exit(tool.wait())
+        except InterruptedError:
+            continue
+if scenario == 'muxer-apphost':
+    write_receipt()
+    apphost = start_apphost()
+    def withdraw_then_stop(signum, frame):
+        (root / 'actual-tool-signal').write_text(str(signum))
+        (root / 'actual-withdrawn').write_text(str(time.time_ns()))
+        apphost.send_signal(signal.SIGTERM)
+        apphost.wait()
+        report('Cancelled')
+        sys.exit(130)
+    # Like the real tool: only SIGINT is cooperative; SIGTERM ends it before withdrawal.
+    signal.signal(signal.SIGINT, withdraw_then_stop)
+if scenario == 'owned-survivor':
+    # The tool fails after a refused withdrawal and deliberately leaves its owned AppHost for the exact down.
+    write_receipt()
+    start_apphost('with-untagged-child')
+    report('TopologyOrLifecycle')
+    os._exit(1)
+if scenario == 'ignore-all':
+    def logged(signum, frame):
+        with open(root / 'actual-tool-signals', 'a') as stream:
+            stream.write(f'{signum} {time.monotonic()}\n')
+    signal.signal(signal.SIGINT, logged)
+    signal.signal(signal.SIGTERM, logged)
+    write_receipt()
+if scenario in ('wait', 'wait-before-receipt'):
+    signal.signal(signal.SIGINT, interrupted)
+    signal.signal(signal.SIGTERM, interrupted)
+    if scenario == 'wait':
+        write_receipt()
+elif scenario == 'timeout':
+    # Like the real tool: SIGINT is the cooperative stop and SIGTERM kills it without withdrawal.
+    signal.signal(signal.SIGINT, interrupted)
+    write_receipt()
+elif scenario == 'stubborn-late-receipt':
+    def late(signum, frame):
+        write_receipt()
+        (root / 'actual-tool-signal').write_text(str(signum))
+    signal.signal(signal.SIGINT, late)
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+elif scenario == 'lock-orphan':
+    write_receipt()
+    if os.fork() == 0:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        handle = open(os.environ['FAKE_LOCK'], 'a+')
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        (root / 'actual-orphan-ready').write_text(str(os.getpid()))
+        while True:
+            time.sleep(0.05)
+    while not (root / 'actual-orphan-ready').exists():
+        time.sleep(0.01)
+    report('Success')
+    sys.exit(0)
+(root / 'actual-tool-ready').write_text(str(os.getpid()))
+while True:
+    time.sleep(0.02)
+'''
 
 
 class IntegrationTests(unittest.TestCase):
@@ -62,6 +239,124 @@ class IntegrationTests(unittest.TestCase):
 
     def write_receipt(self):
         self.receipt.write_text(json.dumps(self.owner))
+
+    def fake_tool(self, scenario, **extra):
+        """Install a fake `dotnet` on PATH that records how the gated tool and its exact down were invoked."""
+        tools = self.root / "fake-tools"
+        tools.mkdir(exist_ok=True)
+        executable = tools / "dotnet"
+        executable.write_text("#!" + sys.executable + "\n" + FAKE_TOOL)
+        executable.chmod(0o700)
+        values = {"PATH": str(tools) + os.pathsep + os.environ["PATH"], "FAKE_SCENARIO": scenario,
+                  "FAKE_CI_OWNER": json.dumps(self.owner), **extra}
+        return patch.dict(os.environ, values)
+
+    def latest_cleanup(self):
+        records = sorted(self.evidence.glob("cleanup-*.json"), key=lambda path: int(path.stem.split("-")[1]))
+        return json.loads(records[-1].read_text())
+
+    def evidence_names(self):
+        return {path.name for path in self.evidence.iterdir() if not path.name.startswith("cleanup-")}
+
+    def downs(self):
+        return [json.loads(path.read_text()) for path in sorted(self.root.glob("actual-down-*.json"))]
+
+    def cleanup_record(self, number):
+        return json.loads((self.evidence / helper.CLEANUP_RECORD.format(number)).read_text())
+
+    def reset_job_records(self):
+        for path in (self.receipt, helper.process_record_path(self.receipt)):
+            path.unlink(missing_ok=True)
+        for path in self.root.glob("actual-*"):
+            path.unlink()
+        if self.evidence.exists():
+            for path in self.evidence.iterdir():
+                path.unlink()
+
+    def wait_until(self, condition, seconds=10):
+        deadline = time.monotonic() + seconds
+        while not condition():
+            self.assertLess(time.monotonic(), deadline, "The fixture condition was not observed in time.")
+            time.sleep(0.01)
+
+    def wait_for(self, path, seconds=10):
+        self.wait_until(path.exists, seconds)
+        return path
+
+    def workflow_step_body(self, name):
+        workflow = (Path(__file__).resolve().parents[3] / ".github/workflows/domain-ci-v2.yml").read_text()
+        block = workflow.split("      - name: " + name + "\n", 1)[1].split("\n      - ", 1)[0]
+        body = block.split("        run: |\n", 1)[1]
+        return "\n".join(line[10:] for line in body.splitlines()) + "\n"
+
+    def step_environment(self, scenario):
+        """The exact workflow-owned helper layout, verified-preparation inputs and fake tool for a v2 step."""
+        execution = self.root / ".hexalith" / "builds-execution" / "Github"
+        for relative in ("run-module-integration/run_module_integration.py", "prepare-module-build/prepare_module_build.py"):
+            target = execution / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((Path(helper.__file__).resolve().parents[1] / relative).read_bytes())
+        environment = self._real_helper_environment()
+        with self.fake_tool(scenario):
+            environment.update({key: os.environ[key] for key in ("PATH", "FAKE_SCENARIO", "FAKE_CI_OWNER")})
+        environment.update(MODULE_MANIFEST="module.json", INTEGRATION_PROFILES="real", INTEGRATION_REFERENCE_OWNERS="",
+                           JOB_TIMEOUT_MINUTES="45", JOB_STARTED_EPOCH=str(int(time.time()) - 300))
+        return environment
+
+    def start_step(self, scenario, **extra):
+        environment = self.step_environment(scenario)
+        environment.update(extra)
+        script = self.root / "integration-step.sh"
+        script.write_text(self.workflow_step_body("Runner-owned package integration"))
+        return subprocess.Popen(["bash", "--noprofile", "--norc", "-eo", "pipefail", str(script)], cwd=self.root,  # nosec B603
+                                env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                start_new_session=True)
+
+    def run_finalizer_step(self, job_status):
+        environment = self.step_environment(os.environ.get("FAKE_SCENARIO", "success"))
+        environment["CI_JOB_STATUS"] = job_status
+        script = self.root / "finalizer-step.sh"
+        script.write_text(self.workflow_step_body("Finalize exact CI owner"))
+        return subprocess.run(["bash", "--noprofile", "--norc", "-eo", "pipefail", str(script)], cwd=self.root,  # nosec B603
+                              env=environment, capture_output=True, text=True, timeout=120, check=False)
+
+    def stop_step(self, step):
+        if step.poll() is None:
+            step.kill()
+            step.communicate(timeout=10)
+        record = helper.process_record_path(self.receipt)
+        if record.exists():
+            recorded = json.loads(record.read_text())
+            helper.terminate_processes(lambda: helper.session_processes(recorded), recorded["session"], wait=0.5)
+
+    def _real_helper_environment(self):
+        configuration = self.root / ".config"
+        configuration.mkdir(exist_ok=True)
+        (configuration / "dotnet-tools.json").write_text(
+            json.dumps(
+                {
+                    "isRoot": True,
+                    "tools": {
+                        "hexalith.builds.module.cli": {
+                            "version": "9.9.9",
+                            "rollForward": False,
+                            "commands": ["hexalith-module"],
+                        }
+                    },
+                }
+            )
+        )
+        imports = self.root / "prepared" / "source-mapping"
+        imports.mkdir(parents=True, exist_ok=True)
+        environment = os.environ.copy()
+        for key, filename in helper._prepare.IMPORTS.items():
+            path = imports / filename
+            path.write_text("<Project />")
+            environment[key] = str(path)
+        digest = "d" * 64
+        (imports / "mapping.json").write_text(json.dumps({"Mode": "package", "HasGit": True, "ContentHash": digest}))
+        environment.update(Configuration="Release", HEXALITH_SOURCE_MAPPING_HASH=digest)
+        return environment
 
     def published_diagnostics(self):
         directory = self.state / "diagnostics" / self.owner["runId"]
@@ -111,7 +406,7 @@ class IntegrationTests(unittest.TestCase):
         self.write_receipt()
         _, result, files = self.published_diagnostics()
         with patch.object(helper, "verify_tool"), patch.object(
-            helper.subprocess, "run", return_value=self.down_result()
+            helper, "run_down", return_value=self.down_result()
         ):
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
             for filename, body in files.items():
@@ -126,12 +421,12 @@ class IntegrationTests(unittest.TestCase):
     def assert_declared_result_refuses_after_exact_cleanup(self, directory, result, terminal):
         self.publish_result(directory, result)
         with patch.object(helper, "verify_tool"), patch.object(
-            helper.subprocess, "run", return_value=self.down_result()
+            helper, "run_down", return_value=self.down_result()
         ) as cleanup:
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
             cleanup.assert_called_once()
             self.assertIn("--run-id=" + self.owner["runId"], cleanup.call_args.args[0])
-            self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+            self.assertEqual(self.latest_cleanup()["result"]["outcome"]["exitCode"], "Success")
             self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], terminal)
 
     def test_unclassified_or_unsafe_diagnostic_references_refuse_after_exact_cleanup(self):
@@ -216,11 +511,11 @@ class IntegrationTests(unittest.TestCase):
                 updated["diagnostics"][0].update(reference=target.name, contentIdentity="sha256:" + digest)
             self.publish_result(directory, updated)
             with self.subTest(fault=fault), patch.object(helper, "verify_tool"), patch.object(
-                helper.subprocess, "run", return_value=self.down_result()
+                helper, "run_down", return_value=self.down_result()
             ) as cleanup:
                 self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
                 cleanup.assert_called_once()
-                self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+                self.assertEqual(self.latest_cleanup()["result"]["outcome"]["exitCode"], "Success")
 
     def test_native_and_functional_report_size_bounds_follow_the_actual_writers(self):
         self.write_receipt()
@@ -239,7 +534,7 @@ class IntegrationTests(unittest.TestCase):
                 reference.update(reference=path.name, contentIdentity="sha256:" + digest)
                 self.publish_result(directory, result)
                 with self.subTest(identity=identity, overflow=overflow), patch.object(helper, "verify_tool"), patch.object(
-                    helper.subprocess, "run", return_value=self.down_result()
+                    helper, "run_down", return_value=self.down_result()
                 ):
                     self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), int(overflow))
 
@@ -263,12 +558,12 @@ class IntegrationTests(unittest.TestCase):
                 target.write_bytes(b"changed" if fault == "changed" else body)
                 target.chmod(0o644 if fault == "permissions" else 0o600)
             with self.subTest(fault=fault), patch.object(helper, "verify_tool"), patch.object(
-                helper.subprocess, "run", return_value=self.down_result()
+                helper, "run_down", return_value=self.down_result()
             ):
                 self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
                 self.assertEqual(sentinel.read_bytes(), b"sentinel unchanged")
         target.unlink()
-        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()):
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
         self.assertEqual(target.read_bytes(), body)
         self.assertEqual(target.stat().st_mode & 0o777, 0o600)
@@ -277,19 +572,12 @@ class IntegrationTests(unittest.TestCase):
         self.write_receipt()
         directory, result, _ = self.published_diagnostics()
         (directory / result["diagnostics"][0]["reference"]).unlink()
-
-        class Child:
-            returncode = 17
-
-            def communicate(child, timeout):
-                return '{"outcome":{"exitCode":"TestFailure"}}', None
-        with patch.object(helper.subprocess, "Popen", return_value=Child()), patch.object(
-            helper, "verify_tool"
-        ), patch.object(helper.subprocess, "run", return_value=self.down_result()) as cleanup:
-            self.assertEqual(helper.execute_integration(helper.TOOL + ["test"], self.root, self.receipt, self.evidence, 1), 17)
-            cleanup.assert_called_once()
+        with self.fake_tool("failure"), patch.object(helper, "verify_tool"):
+            self.assertEqual(helper.execute_integration(helper.TOOL + ["test", "--ci-owner-receipt=" + str(self.receipt)],
+                                                        self.root, self.receipt, self.evidence, 60), 17)
+        self.assertEqual(len(self.downs()), 1)
         self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
-        self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+        self.assertEqual(self.cleanup_record(1)["result"]["outcome"]["exitCode"], "Success")
 
     def test_diagnostic_directory_symlinks_and_unrelated_metadata_never_escape_the_artifact_boundary(self):
         self.write_receipt()
@@ -304,28 +592,35 @@ class IntegrationTests(unittest.TestCase):
             directory.symlink_to(held, target_is_directory=True)
             return self.down_result()
 
-        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", side_effect=replace_after_owner_validation) as cleanup:
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", side_effect=replace_after_owner_validation) as cleanup:
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
             cleanup.assert_called_once()
         directory.unlink()
         held.rename(directory)
-        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()):
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
-        self.assertEqual(set(path.name for path in self.evidence.iterdir()), {"cleanup.json", "test-result.json", *files})
+        self.assertEqual(self.evidence_names(), {"test-result.json", *files})
         self.assertNotIn("private-endpoint-sentinel", b"".join(path.read_bytes() for path in self.evidence.iterdir()).decode())
 
     def assert_collection_failure_can_retry(self, fault):
         self.write_receipt()
         _, result, files = self.published_diagnostics()
-        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+        real_publication = helper.write_diagnostic
+
+        def faulted_publication(*args, **kwargs):
+            # The fault targets diagnostic publication only; evidence records keep their own durable writes.
             with fault:
+                return real_publication(*args, **kwargs)
+
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()):
+            with patch.object(helper, "write_diagnostic", side_effect=faulted_publication):
                 self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
             self.assertFalse(any((self.evidence / name).exists() for name in files), "Incomplete publication must not occupy an immutable final name.")
-            self.assertEqual(set(p.name for p in self.evidence.iterdir()), {"cleanup.json", "test-result.json"})
+            self.assertEqual(self.evidence_names(), {"test-result.json"})
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
         self.assertEqual({name: (self.evidence / name).read_bytes() for name in files}, files)
         self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
-        self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["outcome"]["exitCode"], "Success")
+        self.assertEqual(self.latest_cleanup()["result"]["outcome"]["exitCode"], "Success")
 
     def test_partial_diagnostic_write_never_strands_a_final_name_and_identical_retry_succeeds(self):
         real_open = os.fdopen
@@ -397,7 +692,7 @@ class IntegrationTests(unittest.TestCase):
                 stream.write(b"concurrent immutable bytes")
             real_publication(directory, source, destination)
 
-        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()), patch.object(
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()), patch.object(
             helper, "promote_diagnostic", side_effect=concurrent_publication
         ):
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
@@ -426,13 +721,13 @@ class IntegrationTests(unittest.TestCase):
             path = directory / name
             path.write_text(json.dumps(large))
             path.chmod(0o600)
-        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()):
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()):
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
         for name in ("attachments.json", "attachment-withdrawals.json"):
             self.assertEqual(json.loads((self.evidence / name).read_text()), large)
         path = directory / "attachments.json"
         path.write_bytes(b" " * (4 * 1024 * 1024 + 1))
-        with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "run", return_value=self.down_result()) as cleanup:
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()) as cleanup:
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
             cleanup.assert_called_once()
 
@@ -492,10 +787,10 @@ class IntegrationTests(unittest.TestCase):
         self.assertNotIn("qualificationOwners", json.loads((self.evidence / "invocation.json").read_text()))
 
     def test_no_receipt_means_no_allocation_and_does_not_invoke_tool(self):
-        with patch.object(helper.subprocess, "run") as run:
+        with patch.object(helper, "run_down") as run:
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
             run.assert_not_called()
-        self.assertEqual(json.loads((self.evidence / "cleanup.json").read_text())["status"], "not-allocated")
+        self.assertEqual(self.cleanup_record(1)["status"], "not-allocated")
 
     def test_foreign_repository_run_attempt_or_job_cannot_cleanup(self):
         for key, value in (
@@ -504,7 +799,7 @@ class IntegrationTests(unittest.TestCase):
             ("workflowAttempt", 3),
             ("jobId", "another"),
         ):
-            with self.subTest(key=key), patch.object(helper.subprocess, "run") as run:
+            with self.subTest(key=key), patch.object(helper, "run_down") as run:
                 original = self.owner["executionContext"][key]
                 self.owner["executionContext"][key] = value
                 self.write_receipt()
@@ -516,7 +811,7 @@ class IntegrationTests(unittest.TestCase):
     def test_mismatching_durable_owner_cannot_cleanup(self):
         self.write_receipt()
         (self.state / (self.owner["runId"] + ".json")).write_text(json.dumps(dict(self.owner, environmentId="d" * 32)))
-        with self.assertRaises(ValueError), patch.object(helper.subprocess, "run") as run:
+        with self.assertRaises(ValueError), patch.object(helper, "run_down") as run:
             helper.finalize(self.root, self.receipt, self.evidence)
         run.assert_not_called()
 
@@ -528,7 +823,7 @@ class IntegrationTests(unittest.TestCase):
         (directory / "test-result.json").chmod(0o600)
         (directory / "native-endpoint-credentials.json").write_text("private-key-sentinel")
         with patch.object(helper, "verify_tool"), patch.object(
-            helper.subprocess, "run", return_value=self.down_result()
+            helper, "run_down", return_value=self.down_result()
         ) as run:
             for _ in range(2):
                 self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
@@ -542,7 +837,7 @@ class IntegrationTests(unittest.TestCase):
         self.owner["runId"] = "00000000000000001234567890abcdef"
         self.write_receipt()
         with patch.object(helper, "verify_tool"), patch.object(
-            helper.subprocess, "run", return_value=self.down_result()
+            helper, "run_down", return_value=self.down_result()
         ) as process:
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
         self.assertEqual(
@@ -554,182 +849,148 @@ class IntegrationTests(unittest.TestCase):
                 "--output=json",
             ],
         )
-        result = json.loads((self.evidence / "cleanup.json").read_text())
-        self.assertEqual(result["runId"], self.owner["runId"])
+        record = self.cleanup_record(1)
+        self.assertEqual(record["result"]["runId"], self.owner["runId"])
+        self.assertTrue(record["verified"])
 
-    def test_constructor_time_cancellation_is_forwarded_after_child_assignment(self):
-        forwarded = []
-
-        class Child:
-            returncode = 130
-
-            def poll(child):
-                return None
-
-            def send_signal(child, signum):
-                forwarded.append(signum)
-
-            def communicate(child, timeout):
-                self.write_receipt()
-                return '{"outcome":{"exitCode":"Cancelled"}}', None
+    def test_constructor_time_cancellation_never_releases_the_tool(self):
+        real = helper.subprocess.Popen
 
         def constructing(*args, **kwargs):
+            child = real(*args, **kwargs)
             helper.signal.raise_signal(helper.signal.SIGTERM)
-            return Child()
+            return child
 
-        with patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
+        with self.fake_tool("wait"), patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
             helper.subprocess, "Popen", side_effect=constructing
-        ), patch.object(helper, "finalize", return_value=0) as cleanup:
+        ):
             self.assertEqual(
-                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence), 130
+                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence, timeout=60), 130
             )
-            self.assertEqual(forwarded, [helper.signal.SIGINT])
-            self.assertEqual(cleanup.call_args.kwargs["job_status"], "cancelled")
+        self.assertFalse((self.root / "actual-tool-args.json").exists(), "The gated tool must never start.")
+        self.assertEqual(self.downs(), [], "Exact cleanup after cancellation belongs to the job finalizer.")
+        execution = json.loads((self.evidence / "execution.json").read_text())
+        self.assertEqual((execution["launched"], execution["cancelled"], execution["timedOut"]), (False, True, False))
+        self.assertTrue(helper.process_record_path(self.receipt).exists())
+        self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence, job_status="cancelled"), 0)
+        self.assertEqual(self.cleanup_record(1)["status"], "not-allocated")
 
     @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
-    def test_real_helper_process_forwards_cancellation_and_finalizes_exact_receipt(self):
-        process = self._start_real_helper()
-        child_pid = None
+    def test_runner_signal_to_the_step_shell_reaches_the_tool_session_and_the_finalizer_cleans_exactly(self):
+        step = self.start_step("wait")
         try:
-            child_pid = self._wait_real_child(process)
-            process.send_signal(signal.SIGTERM)
-            output, errors = process.communicate(timeout=10)
-            self._assert_real_cancellation(process, output, errors)
+            self.wait_for(self.root / "actual-tool-ready")
+            # The hosted runner signals only the step process.
+            step.send_signal(signal.SIGINT)
+            output, errors = step.communicate(timeout=10)
         finally:
-            self._stop_real_children(process, child_pid)
+            self.stop_step(step)
+        self.assertEqual(step.returncode, 130, output + errors)
+        self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGINT))
+        self.assertEqual(self.downs(), [], "The helper leaves exact cleanup after cancellation to the job finalizer.")
+        execution = json.loads((self.evidence / "execution.json").read_text())
+        self.assertTrue(execution["cancelled"])
+        self.assertEqual(execution["result"]["outcome"]["exitCode"], "Cancelled")
+        finalizer = self.run_finalizer_step("cancelled")
+        self.assertEqual(finalizer.returncode, 0, finalizer.stdout + finalizer.stderr)
+        self.assertEqual([down["jobStatus"] for down in self.downs()], ["cancelled"])
+        record = self.cleanup_record(1)
+        self.assertEqual((record["status"], record["verified"]), ("completed", True))
 
-    def _real_helper_environment(self):
-        configuration = self.root / ".config"
-        configuration.mkdir()
-        (configuration / "dotnet-tools.json").write_text(
-            json.dumps(
-                {
-                    "isRoot": True,
-                    "tools": {
-                        "hexalith.builds.module.cli": {
-                            "version": "9.9.9",
-                            "rollForward": False,
-                            "commands": ["hexalith-module"],
-                        }
-                    },
-                }
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_signal_before_the_receipt_never_reports_not_allocated_while_a_tool_survives(self):
+        step = self.start_step("stubborn-late-receipt")
+        try:
+            tool = int(self.wait_for(self.root / "actual-tool-ready").read_text())
+            self.assertFalse(self.receipt.exists())
+            # The runner's final process-tree kill can miss a reparented tool; model the orphan directly.
+            step.kill()
+            step.communicate(timeout=10)
+            self.assertIsNotNone(helper.process_identity(tool), "The tool must survive the step as an orphan.")
+            with self.fake_tool("stubborn-late-receipt"), patch.object(helper, "SESSION_SIGNAL_WAIT_SECONDS", 0.5), patch.object(
+                helper, "verify_tool"
+            ):
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence, job_status="cancelled"), 0)
+        finally:
+            self.stop_step(step)
+        self.assertIsNone(helper.process_identity(tool))
+        self.assertTrue(self.receipt.exists(), "The orphan allocated after the step ended.")
+        record = self.cleanup_record(1)
+        self.assertNotEqual(record["status"], "not-allocated")
+        self.assertTrue(record["verified"])
+        self.assertEqual([down["jobStatus"] for down in self.downs()], ["cancelled"])
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_a_live_orphan_cannot_hold_the_provisioning_lock_against_exact_cleanup(self):
+        lock = self.root / "provisioning.lock"
+        with self.fake_tool("lock-orphan", FAKE_LOCK=str(lock)), patch.object(helper, "verify_tool"), patch.object(
+            helper, "verify_preparation"
+        ), patch.object(helper, "SESSION_SIGNAL_WAIT_SECONDS", 0.5):
+            self.assertEqual(
+                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence, timeout=60), 0
             )
-        )
-        imports = self.root / "prepared" / "source-mapping"
-        imports.mkdir(parents=True)
-        environment = os.environ.copy()
-        for key, filename in helper._prepare.IMPORTS.items():
-            path = imports / filename
-            path.write_text("<Project />")
-            environment[key] = str(path)
-        digest = "d" * 64
-        (imports / "mapping.json").write_text(json.dumps({"Mode": "package", "HasGit": True, "ContentHash": digest}))
-        environment.update(
-            Configuration="Release", HEXALITH_SOURCE_MAPPING_HASH=digest, FAKE_CI_OWNER=json.dumps(self.owner)
-        )
-        return environment
+        orphan = int((self.root / "actual-orphan-ready").read_text())
+        self.assertIsNone(helper.process_identity(orphan))
+        self.assertEqual([down.get("locked") for down in self.downs()], [None])
+        self.assertTrue(self.cleanup_record(1)["verified"])
 
-    def _fake_dotnet_directory(self):
-        tools = self.root / "tools"
-        tools.mkdir()
-        executable = tools / "dotnet"
-        executable.write_text(
-            "#!"
-            + sys.executable
-            + "\n"
-            + r"""
-import json, os, pathlib, signal, sys, time
-root = pathlib.Path.cwd()
-args = sys.argv[1:]
-if '--version' in args:
-    print('9.9.9')
-    sys.exit(0)
-owner = json.loads(os.environ['FAKE_CI_OWNER'])
-if 'down' in args:
-    assert '--run-id=' + owner['runId'] in args
-    (root / 'actual-finalizer.json').write_text(json.dumps({'runId': owner['runId'], 'jobStatus': os.environ['HEXALITH_CI_JOB_STATUS']}))
-    resources = {key: [] for key in ('containerIds', 'processIds', 'workspaceIds', 'claimIds', 'discoveryFailures')}
-    resources['unverified'] = False
-    print(json.dumps({'runId': owner['runId'], 'outcome': {'exitCode': 'Success'}, 'remainingResources': resources}))
-    sys.exit(0)
-assert 'test' in args
-def interrupt(signum, frame):
-    (root / 'actual-child-interrupted').write_text(str(signum))
-    print(json.dumps({'outcome': {'exitCode': 'Cancelled'}}), flush=True)
-    sys.exit(130)
-signal.signal(signal.SIGINT, interrupt)
-pathlib.Path(next(arg.split('=', 1)[1] for arg in args if arg.startswith('--ci-owner-receipt='))).write_text(json.dumps(owner))
-(root / 'actual-child-ready').write_text(str(os.getpid()))
-while True:
-    time.sleep(0.01)
-"""
-        )
-        executable.chmod(0o700)
-        return tools
+    def test_timeout_is_not_a_cancellation_and_is_finalized_by_the_helper(self):
+        with self.fake_tool("timeout"), patch.object(helper, "verify_tool"):
+            self.assertEqual(helper.execute_integration(helper.TOOL + ["test", "--ci-owner-receipt=" + str(self.receipt)],
+                                                        self.root, self.receipt, self.evidence, 1), 124)
+        self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGINT))
+        execution = json.loads((self.evidence / "execution.json").read_text())
+        self.assertEqual((execution["timedOut"], execution["cancelled"]), (True, False))
+        self.assertEqual([down["jobStatus"] for down in self.downs()], [""])
+        self.assertTrue(self.cleanup_record(1)["verified"])
 
-    def _start_real_helper(self):
-        environment = self._real_helper_environment()
-        tools = self._fake_dotnet_directory()
-        environment["PATH"] = str(tools) + os.pathsep + environment["PATH"]
-        command = [
-            sys.executable,
-            str(Path(helper.__file__).resolve()),
-            "run",
-            "--manifest",
-            "module.json",
-            "--profiles",
-            "real",
-            "--receipt",
-            str(self.receipt),
-            "--evidence",
-            str(self.evidence),
-        ]
-        return subprocess.Popen(
-            command,  # nosec B603 # nosemgrep -- fixed interpreter/helper; all arguments belong to this temporary fixture.
-            cwd=self.root,
-            env=environment,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-
-    def _wait_real_child(self, process):
-        deadline = time.monotonic() + 10
-        ready = self.root / "actual-child-ready"
-        while not ready.exists() and process.poll() is None and time.monotonic() < deadline:
-            time.sleep(0.01)
-        self.assertTrue(ready.exists(), "The real tool child must reach its interruptible boundary.")
-        return int(ready.read_text())
-
-    def _assert_real_cancellation(self, process, output, errors):
-        self.assertEqual(process.returncode, 130, output + errors)
-        self.assertEqual((self.root / "actual-child-interrupted").read_text(), str(signal.SIGINT))
-        actual = json.loads((self.root / "actual-finalizer.json").read_text())
-        self.assertEqual(actual, {"runId": self.owner["runId"], "jobStatus": "cancelled"})
-        self.assertEqual(
-            json.loads((self.evidence / "execution.json").read_text())["outcome"]["exitCode"], "Cancelled"
-        )
-        self.assertEqual(
-            json.loads((self.evidence / "cleanup.json").read_text())["remainingResources"]["processIds"], []
-        )
-
-    def _stop_real_children(self, process, child_pid):
-        if process.poll() is None:
-            process.kill()
-        process.communicate(timeout=10)
-        if child_pid is not None and not (self.root / "actual-child-interrupted").exists():
-            try:
-                os.kill(child_pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
+    def test_unterminated_session_refuses_every_allocation_decision(self):
+        survivor = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"], start_new_session=True)  # nosec B603
+        try:
+            self.wait_until(lambda: helper.process_identity(survivor.pid) is not None)
+            helper.write_process_record(self.receipt, helper.ci_context(), survivor.pid)
+            with patch.object(helper, "terminate_processes", return_value=False), patch.object(helper, "run_down") as run:
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence, job_status="cancelled"), 1)
+                run.assert_not_called()
+            self.assertEqual(self.cleanup_record(1)["status"], "allocation-unverified")
+            context = dict(helper.ci_context(), jobId="another")
+            record = json.loads(helper.process_record_path(self.receipt).read_text())
+            helper.process_record_path(self.receipt).write_text(json.dumps(dict(record, executionContext=context)))
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+            self.assertEqual(self.cleanup_record(2)["reason"], "integration-process-record-unverified")
+        finally:
+            survivor.kill()
+            survivor.wait(timeout=10)
 
     def test_actual_job_cancellation_reaches_exact_down_without_rewriting_first_result(self):
         self.write_receipt()
         with patch.object(helper, "verify_tool"), patch.object(
-            helper.subprocess, "run", return_value=self.down_result()
+            helper, "run_down", return_value=self.down_result()
         ) as run:
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence, job_status="cancelled"), 0)
             self.assertEqual(run.call_args.kwargs["env"]["HEXALITH_CI_JOB_STATUS"], "cancelled")
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence, job_status="cancelled"), 0)
+        first, second = self.cleanup_record(1), self.cleanup_record(2)
+        self.assertEqual((first["jobStatus"], second["jobStatus"]), ("cancelled", "cancelled"))
+        self.assertTrue(first["verified"] and second["verified"])
+
+    def test_finalize_cli_bridges_cancelled_job_status_and_refuses_invocation_options(self):
+        self._real_helper_environment()
+        self.write_receipt()
+        with self.fake_tool("success"):
+            base = [sys.executable, str(Path(helper.__file__).resolve()), "finalize", "--receipt", str(self.receipt),
+                    "--evidence", str(self.evidence)]
+            for extra in (["--owners", "tenants"], ["--timeout-seconds", "60"], ["--step-timeout-minutes", "40"],
+                          ["--job-timeout-minutes", "45"], ["--job-started-epoch", str(int(time.time()))]):
+                with self.subTest(extra=extra):
+                    refused = subprocess.run(base + extra, cwd=self.root, env=os.environ.copy(), capture_output=True,  # nosec B603
+                                             text=True, timeout=60, check=False)
+                    self.assertEqual(refused.returncode, 1)
+                    self.assertEqual(self.downs(), [])
+            completed = subprocess.run(base + ["--job-status", "cancelled"], cwd=self.root, env=os.environ.copy(),  # nosec B603
+                                       capture_output=True, text=True, timeout=60, check=False)
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertEqual([down["jobStatus"] for down in self.downs()], ["cancelled"])
 
     def test_unknown_discovery_or_any_owned_leftover_refuses_completion(self):
         self.write_receipt()
@@ -742,7 +1003,7 @@ while True:
             {"discoveryFailures": ["docker"]},
         ):
             with self.subTest(remaining=remaining), patch.object(helper, "verify_tool"), patch.object(
-                helper.subprocess, "run", return_value=self.down_result(remaining)
+                helper, "run_down", return_value=self.down_result(remaining)
             ):
                 self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
 
@@ -756,58 +1017,53 @@ while True:
             process.assert_not_called()
 
     def test_execution_failure_preserved_and_finalized_after_partial_startup(self):
-        class Child:
-            returncode = 17
-
-            def communicate(child, timeout):
-                self.write_receipt()
-                return json.dumps({"outcome": {"exitCode": "ProductOrTest"}}), None
-
-        with patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
-            helper.subprocess, "Popen", return_value=Child()
-        ), patch.object(helper, "finalize", return_value=1) as cleanup:
+        with self.fake_tool("failure"), patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"):
             self.assertEqual(
-                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence), 17
+                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence, timeout=60), 17
             )
-            cleanup.assert_called_once()
+        self.assertEqual([down["jobStatus"] for down in self.downs()], [""])
+        execution = json.loads((self.evidence / "execution.json").read_text())
+        self.assertEqual((execution["processExitCode"], execution["result"]["outcome"]["exitCode"]), (17, "ProductOrTest"))
 
-    def test_invalid_child_output_still_finalizes(self):
-        class Child:
-            returncode = 1
+    def test_zero_exit_counts_only_with_a_receipt_and_a_success_outcome(self):
+        for scenario, expected in (("success", 0), ("success-without-receipt", 1), ("zero-not-success", 1)):
+            with self.subTest(scenario=scenario):
+                self.reset_job_records()
+                with self.fake_tool(scenario), patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"):
+                    self.assertEqual(
+                        helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence, timeout=60),
+                        expected,
+                    )
 
-            def communicate(child, timeout):
-                self.write_receipt()
-                return "interrupted", None
-
-        with patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
-            helper.subprocess, "Popen", return_value=Child()
-        ), patch.object(helper, "finalize", return_value=0) as cleanup:
-            with self.assertRaises(ValueError):
-                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence)
-            cleanup.assert_called_once()
-
-    def test_cancellation_during_execution_runs_finalizer_and_preserves_cancel(self):
-        class Child:
-            returncode = 130
-
-            def poll(child):
-                return None
-
-            def send_signal(child, signum):
-                self.assertEqual(signum, helper.signal.SIGINT)
-
-            def communicate(child, timeout):
-                self.write_receipt()
-                helper.signal.raise_signal(helper.signal.SIGTERM)
-                return '{"outcome":{"exitCode":"Cancelled"}}', None
-
-        with patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
-            helper.subprocess, "Popen", return_value=Child()
-        ), patch.object(helper, "finalize", return_value=0) as cleanup:
+    def test_invalid_child_output_is_recorded_unverified_and_still_finalizes(self):
+        with self.fake_tool("invalid-output"), patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"):
             self.assertEqual(
-                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence), 130
+                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence, timeout=60), 1
             )
-            cleanup.assert_called_once()
+        execution = json.loads((self.evidence / "execution.json").read_text())
+        self.assertEqual((execution["processExitCode"], execution["outputParsed"], execution["result"]), (1, False, None))
+        excerpt = execution["stderr"]["excerpt"]
+        self.assertIn("password <redacted>", excerpt)
+        self.assertNotIn("hunter2", excerpt)
+        self.assertNotIn("Q" * 48, excerpt)
+        self.assertEqual(len(self.downs()), 1)
+
+    def test_cancellation_during_execution_defers_exact_cleanup_to_the_job_finalizer(self):
+        def cancel_when_ready():
+            self.wait_for(self.root / "actual-tool-ready")
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        canceller = threading.Thread(target=cancel_when_ready, daemon=True)
+        with self.fake_tool("wait"), patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"):
+            canceller.start()
+            self.assertEqual(
+                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence, timeout=60), 130
+            )
+            canceller.join(timeout=10)
+        # The first runner signal reaches the whole tool session as an interrupt.
+        self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGINT))
+        self.assertEqual(self.downs(), [])
+        self.assertEqual(json.loads((self.evidence / "execution.json").read_text())["result"]["outcome"]["exitCode"], "Cancelled")
 
     def test_missing_package_preparation_refuses_before_process(self):
         with patch.object(helper, "verify_tool"), patch.object(helper.subprocess, "Popen") as process, patch.dict(
@@ -820,7 +1076,9 @@ while True:
     def test_evidence_refuses_parent_traversal_and_foreign_roots_before_creating_directories(self):
         for destination in (self.root / "foreign", self.evidence / ".." / "escape"):
             with self.subTest(destination=destination), self.assertRaises(ValueError):
-                helper.write_evidence(destination, "cleanup.json", {})
+                helper.write_evidence(destination, "execution.json", {})
+            with self.subTest(cleanup=destination), self.assertRaises(ValueError):
+                helper.write_cleanup_record(destination, {})
         self.assertFalse((self.root / "foreign").exists())
         self.assertFalse((self.root / "TestResults").exists())
 
@@ -829,16 +1087,18 @@ while True:
         outside.mkdir()
         (self.root / "TestResults").symlink_to(outside, target_is_directory=True)
         with self.assertRaises(ValueError):
-            helper.write_evidence(self.evidence, "cleanup.json", {})
+            helper.write_evidence(self.evidence, "execution.json", {})
         with self.assertRaises(ValueError):
             helper.write_evidence(self.evidence, "../sentinel.json", {})
+        with self.assertRaises(ValueError):
+            helper.write_evidence(self.evidence, "cleanup.json", {})
         self.assertEqual(list(outside.iterdir()), [])
 
     def test_evidence_refuses_file_links_without_truncating_the_external_file(self):
         self.evidence.mkdir(parents=True)
         sentinel = self.root / "sentinel.json"
         sentinel.write_text("original")
-        target = self.evidence / "cleanup.json"
+        target = self.evidence / "execution.json"
         for hard_link in (False, True):
             with self.subTest(hard_link=hard_link):
                 if hard_link:
@@ -846,9 +1106,22 @@ while True:
                 else:
                     target.symlink_to(sentinel)
                 with self.assertRaises((OSError, ValueError)):
-                    helper.write_evidence(self.evidence, "cleanup.json", {})
+                    helper.write_evidence(self.evidence, "execution.json", {})
                 self.assertEqual(sentinel.read_text(), "original")
                 target.unlink()
+
+    def test_evidence_publication_is_atomic_and_each_down_attempt_keeps_its_record(self):
+        helper.write_evidence(self.evidence, "execution.json", {"first": True})
+        with patch.object(helper.os, "replace", side_effect=OSError(errno.EIO, "interrupted")):
+            with self.assertRaises(OSError):
+                helper.write_evidence(self.evidence, "execution.json", {"second": True})
+        self.assertEqual(json.loads((self.evidence / "execution.json").read_text()), {"first": True})
+        self.assertEqual([path.name for path in self.evidence.iterdir() if path.name.startswith(".evidence-")], [])
+        self.assertEqual(helper.write_cleanup_record(self.evidence, {"attempt": 1}), "cleanup-1.json")
+        self.assertEqual(helper.write_cleanup_record(self.evidence, {"attempt": 2}), "cleanup-2.json")
+        self.assertEqual(self.cleanup_record(1), {"attempt": 1})
+        with self.assertRaises(ValueError):
+            helper.write_cleanup_record(self.evidence, {}, "cleanup.json")
 
     def test_receipt_must_stay_under_actual_runner_temp_without_link_ancestors(self):
         foreign = self.root / "foreign"
@@ -856,7 +1129,7 @@ while True:
         link = self.runner_temp / "link"
         link.symlink_to(foreign, target_is_directory=True)
         for receipt in (foreign / "owner.json", link / "owner.json", self.runner_temp / ".." / "owner.json"):
-            with self.subTest(receipt=receipt), patch.object(helper.subprocess, "run") as tool:
+            with self.subTest(receipt=receipt), patch.object(helper, "run_down") as tool:
                 with self.assertRaises(ValueError):
                     helper.finalize(self.root, receipt, self.evidence)
                 tool.assert_not_called()
@@ -875,7 +1148,7 @@ while True:
         alternate = self.runner_temp / "alternate.json"
         original = json.dumps(self.owner)
         alternate.write_text(original)
-        with patch.object(helper.subprocess, "run") as process:
+        with patch.object(helper, "run_down") as process:
             with self.assertRaises(ValueError):
                 helper.finalize(self.root, alternate, self.evidence)
             self.receipt.symlink_to(alternate)
@@ -908,24 +1181,11 @@ while True:
     def test_manifest_looking_like_an_option_is_bound_to_one_literal_manifest_value(self):
         manifest = "--mode=source.json"
         (self.root / manifest).write_text((self.root / "module.json").read_text())
-
-        class Child:
-            returncode = 0
-
-            def communicate(child, timeout):
-                self.write_receipt()
-                return '{"outcome":{"exitCode":"Success"}}', None
-
-        with patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"):
-            with patch.object(helper.subprocess, "Popen", return_value=Child()) as start:
-                with patch.object(helper, "finalize", return_value=0):
-                    self.assertEqual(
-                        helper.run_integration(self.root, manifest, ["real"], self.receipt, self.evidence), 0
-                    )
-        arguments = start.call_args.args[0]
+        with self.fake_tool("success"), patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"):
+            self.assertEqual(helper.run_integration(self.root, manifest, ["real"], self.receipt, self.evidence, timeout=60), 0)
         self.assertEqual(
-            arguments,
-            helper.TOOL
+            json.loads((self.root / "actual-tool-args.json").read_text()),
+            helper.TOOL[1:]
             + [
                 "test",
                 "--manifest=" + str(self.root / manifest),
@@ -935,6 +1195,11 @@ while True:
                 "--profile=real",
             ],
         )
+        # The tool runs in its own recorded session with an empty standard input.
+        self.assertEqual(json.loads((self.root / "actual-tool-stdin.json").read_text()), "")
+        record = json.loads(helper.process_record_path(self.receipt).read_text())
+        self.assertEqual(record["pid"], record["session"])
+        self.assertEqual(record["executionContext"], helper.ci_context())
 
     def test_preparation_binds_release_and_actual_package_mapping(self):
         workspace = self.root / "prepared"
@@ -955,19 +1220,340 @@ while True:
                 helper.verify_preparation()
 
     def test_passing_execution_requires_verified_cleanup(self):
-        class Child:
-            returncode = 0
-
-            def communicate(child, timeout):
-                self.write_receipt()
-                return '{"outcome":{"exitCode":"Success"}}', None
-
-        with patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
-            helper.subprocess, "Popen", return_value=Child()
-        ), patch.object(helper, "finalize", return_value=1):
+        with self.fake_tool("success"), patch.object(helper, "verify_tool"), patch.object(helper, "verify_preparation"), patch.object(
+            helper, "finalize", return_value=1
+        ):
             self.assertEqual(
-                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence), 1
+                helper.run_integration(self.root, "module.json", ["real"], self.receipt, self.evidence, timeout=60), 1
             )
+
+    def test_cleanup_verification_requires_exit_owner_and_success(self):
+        result = json.loads(self.down_result().stdout)
+        self.assertTrue(helper.cleanup_verified(self.down_result(), result, self.owner))
+        for completed, changed in (
+            (self.down_result(exit_code=3), result),
+            (self.down_result(), dict(result, runId="f" * 32)),
+            (self.down_result(), dict(result, outcome={"exitCode": "TopologyOrLifecycle"})),
+            (self.down_result(), dict(result, outcome="Success")),
+            (self.down_result(), dict(result, remainingResources=[])),
+            (self.down_result(), ["not", "an", "object"]),
+        ):
+            with self.subTest(changed=changed):
+                self.assertFalse(helper.cleanup_verified(completed, changed, self.owner))
+
+    def test_receipt_with_a_foreign_state_directory_refuses(self):
+        foreign = self.root / "foreign-state"
+        foreign.mkdir()
+        self.owner["stateDirectory"] = str(foreign)
+        self.write_receipt()
+        with self.assertRaises(ValueError):
+            helper.receipt_owner(self.receipt, helper.ci_context())
+        with patch.object(helper, "run_down") as run, self.assertRaises(ValueError):
+            helper.finalize(self.root, self.receipt, self.evidence)
+        run.assert_not_called()
+
+    def test_down_timeout_malformed_or_non_json_output_is_unverified_and_still_retains(self):
+        self.write_receipt()
+        self.published_diagnostics()
+        expired = subprocess.TimeoutExpired(["down"], 150, output="", stderr="token=abcdef stalled")
+        cases = (
+            ("timed-out", expired),
+            ("non-json", subprocess.CompletedProcess([], 0, "not json", "")),
+            ("malformed", subprocess.CompletedProcess([], 0, json.dumps({"runId": self.owner["runId"], "outcome": "Success",
+                                                                         "remainingResources": []}), "")),
+        )
+        for number, (name, outcome) in enumerate(cases, start=1):
+            with self.subTest(name=name), patch.object(helper, "verify_tool"), patch.object(
+                helper, "run_down", side_effect=[outcome] if isinstance(outcome, Exception) else None,
+                return_value=None if isinstance(outcome, Exception) else outcome,
+            ):
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+                record = self.cleanup_record(number)
+                self.assertFalse(record["verified"])
+                self.assertTrue((self.evidence / "test-result.json").exists())
+                if name == "timed-out":
+                    self.assertEqual(record["status"], "timed-out")
+                    self.assertNotIn("abcdef", record["stderr"]["excerpt"])
+                else:
+                    self.assertEqual(record["outputParsed"], name == "malformed")
+
+    def test_malformed_published_result_is_a_classified_retention_refusal(self):
+        self.write_receipt()
+        directory = self.state / "diagnostics" / self.owner["runId"]
+        directory.mkdir(parents=True)
+        (directory / "test-result.json").write_text("[1, 2]")
+        (directory / "test-result.json").chmod(0o600)
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+        self.assertTrue(self.cleanup_record(1)["verified"])
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_runner_cancellation_reaches_only_the_tool_so_withdrawal_precedes_every_composed_stop(self):
+        step = self.start_step("muxer-apphost")
+        try:
+            self.wait_for(self.root / "actual-tool-ready")
+            # The hosted runner signals only the step process; the composed AppHost shares the tool's group.
+            step.send_signal(signal.SIGINT)
+            output, errors = step.communicate(timeout=20)
+        finally:
+            self.stop_step(step)
+        self.assertEqual(step.returncode, 130, output + errors)
+        self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGINT))
+        withdrawn = int((self.root / "actual-withdrawn").read_text())
+        number, observed = (self.root / "actual-apphost-signal").read_text().split()
+        self.assertEqual(int(number), signal.SIGTERM, "Only the tool's own stop may reach the AppHost.")
+        self.assertGreaterEqual(int(observed), withdrawn, "No signal may reach a composed process before withdrawal.")
+        finalizer = self.run_finalizer_step("cancelled")
+        self.assertEqual(finalizer.returncode, 0, finalizer.stdout + finalizer.stderr)
+        self.assertEqual((self.latest_cleanup()["status"], self.latest_cleanup()["verified"]), ("completed", True))
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_finalizer_leaves_an_owned_surviving_apphost_to_the_exact_down(self):
+        step = self.start_step("owned-survivor")
+        try:
+            output, errors = step.communicate(timeout=30)
+        finally:
+            self.stop_step(step)
+        self.assertEqual(step.returncode, 1, output + errors)
+        [down] = self.downs()
+        self.assertTrue(down["appHostAlive"], "The exact down must find the owned AppHost still alive.")
+        self.assertTrue(down["appHostChildAlive"], "An untagged descendant of the owned AppHost is owned too.")
+        number, observed = (self.root / "actual-apphost-signal").read_text().split()
+        self.assertEqual(int(number), signal.SIGTERM)
+        self.assertGreaterEqual(int(observed), down["startedAtNs"], "Nothing may signal the owned AppHost before the down.")
+        self.assertFalse((self.root / "actual-apphost-alive").exists())
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_cancellation_escalates_on_a_tool_that_ignores_interrupt_and_terminate(self):
+        for runner_signals in (1, 2):
+            with self.subTest(runner_signals=runner_signals), self.fake_tool("ignore-all"), patch.object(
+                helper, "CANCELLATION_ESCALATION_SECONDS", 2.5
+            ), patch.object(helper, "CANCELLATION_FINAL_SECONDS", 4.0), tempfile.TemporaryFile() as output, \
+                    tempfile.TemporaryFile() as errors:
+                self.reset_job_records()
+                session = helper.ToolSession()
+                session.launch(helper.TOOL + ["test", "--ci-owner-receipt=" + str(self.receipt)], self.root, self.receipt,
+                               helper.ci_context(), output, errors)
+                self.wait_for(self.root / "actual-tool-ready")
+                started = time.monotonic()
+                for _ in range(runner_signals):
+                    session.handle(signal.SIGINT, None)
+                self.assertFalse(session.wait(30))
+                self.assertEqual(session.child.returncode, -signal.SIGKILL)
+                logged = [line.split() for line in (self.root / "actual-tool-signals").read_text().splitlines()]
+                self.assertEqual([int(number) for number, _ in logged], [signal.SIGINT, signal.SIGTERM])
+                terminated = float(logged[1][1]) - started
+                if runner_signals == 2:
+                    self.assertLess(terminated, 2.0, "A second runner signal escalates to SIGTERM at once.")
+                else:
+                    self.assertGreaterEqual(terminated, 2.5, "SIGTERM waits for the in-grace escalation time.")
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_a_reused_or_other_boot_session_is_never_signalled(self):
+        survivor = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"], start_new_session=True)  # nosec B603
+        try:
+            self.wait_until(lambda: helper.process_identity(survivor.pid) is not None)
+            exact = {"session": survivor.pid, "startTime": helper.process_identity(survivor.pid)["startTime"],
+                     "bootId": helper.boot_identity()}
+            self.assertIn(survivor.pid, helper.tool_processes(exact))
+            for name, record in (("start-time", dict(exact, startTime=str(int(exact["startTime"]) + 1))),
+                                 ("boot", dict(exact, bootId="another-boot"))):
+                with self.subTest(name=name):
+                    self.assertEqual(helper.session_processes(record), {})
+                    self.assertEqual(helper.tool_processes(record), {})
+                    self.assertEqual(helper.unowned_survivors(record, self.owner["runId"]), {})
+                    self.assertTrue(helper.terminate_processes(lambda: helper.session_processes(record), survivor.pid,
+                                                               wait=0.2))
+                    if name == "start-time":
+                        helper.signal_processes({survivor.pid: record["startTime"]}, survivor.pid, signal.SIGKILL)
+                    time.sleep(0.1)
+                    self.assertIsNone(survivor.poll(), "An unrelated session must never be signalled.")
+        finally:
+            survivor.kill()
+            survivor.wait(timeout=10)
+
+    def test_a_failed_cleanup_record_never_prevents_the_exact_down(self):
+        self.write_receipt()
+        original = helper.write_cleanup_record
+        for failing, failure in ((1, OSError(errno.ENOSPC, "no space")), (1, ValueError("evidence path refused")),
+                                 (3, OSError(errno.EIO, "final verified record lost"))):
+            calls = []
+
+            def first_write_fails(*args, **kwargs):
+                calls.append(args)
+                if len(calls) == failing:
+                    raise failure
+                return original(*args, **kwargs)
+
+            with self.subTest(write=failing, failure=type(failure).__name__), patch.object(helper, "verify_tool"), patch.object(
+                helper, "write_cleanup_record", side_effect=first_write_fails
+            ), patch.object(helper, "run_down", return_value=self.down_result()) as down:
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1,
+                                 "Unrecorded cleanup stays non-success.")
+                down.assert_called_once()
+
+    def test_stderr_is_redacted_before_the_excerpt_and_across_joined_keywords(self):
+        straddling = "plain " * 1000 + "\ntoken=" + "v1 " * 3000
+        record = helper.stderr_record(straddling + "\nDB_PASSWORD=hunter2\nAPI-TOKEN: abc\ndbPassword=camel1\n"
+                                      "clientSecret=camel2\naccessToken=camel3\nplain line\n")
+        self.assertNotIn("v1", record["excerpt"])
+        self.assertNotIn("hunter2", record["excerpt"])
+        self.assertNotIn("abc", record["excerpt"])
+        for value in ("camel1", "camel2", "camel3"):
+            self.assertNotIn(value, record["excerpt"])
+        self.assertIn("plain line", record["excerpt"])
+        self.assertTrue(record["truncated"])
+
+    def test_non_utf8_down_output_and_a_missing_tool_are_unverified_and_still_retain(self):
+        self.write_receipt()
+        self.published_diagnostics()
+        with self.fake_tool("binary-down"), patch.object(helper, "verify_tool"):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+        record = self.cleanup_record(1)
+        self.assertEqual((record["status"], record["outputParsed"], record["verified"]), ("completed", False, False))
+        self.assertTrue((self.evidence / "test-result.json").exists())
+        (self.evidence / "test-result.json").unlink()
+        self._real_helper_environment()
+        empty = self.root / "no-dotnet"
+        empty.mkdir()
+        with patch.dict(os.environ, {"PATH": str(empty)}):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+        record = self.cleanup_record(2)
+        self.assertEqual((record["status"], record["reason"], record["verified"]), ("tool-unavailable", "FileNotFoundError", False))
+        self.assertTrue((self.evidence / "test-result.json").exists(), "Declared diagnostics are retained without the tool.")
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_a_timed_out_down_leaves_no_orphan_in_its_session(self):
+        marker = self.root / "actual-down-grandchild"
+        code = ("import subprocess, sys, time\n"
+                "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+                "open(sys.argv[1], 'w').write(str(child.pid))\n"
+                "time.sleep(60)\n")
+        with self.assertRaises(subprocess.TimeoutExpired):
+            helper.run_down([sys.executable, "-c", code, str(marker)], cwd=self.root, env=os.environ.copy(), timeout=2)
+        grandchild = int(marker.read_text())
+        self.wait_until(lambda: helper.process_identity(grandchild) is None)
+
+    def test_timeout_derives_from_the_step_and_the_job_remaining_time(self):
+        now = 2_000_000_000.0
+        reserve = helper.STEP_RESERVE_SECONDS
+        self.assertEqual(helper.derived_timeout(40, 360, int(now) - 10, now=now), 40 * 60 - reserve)
+        started = int(now) - 8 * 60
+        expected = int(started - helper.JOB_SETUP_ALLOWANCE_SECONDS + 45 * 60 - now - reserve - helper.FINALIZER_STEP_SECONDS)
+        self.assertEqual(helper.derived_timeout(40, 45, started, now=now), expected)
+        # The timeout path and the always() finalizer both still end before the job deadline.
+        job_deadline = started - helper.JOB_SETUP_ALLOWANCE_SECONDS + 45 * 60
+        self.assertLessEqual(now + expected + reserve + helper.FINALIZER_STEP_SECONDS, job_deadline)
+        for started, minutes in ((int(now) - 40 * 60, 45), (int(now) + 60, 45), (int(now) - 46 * 60, 45)):
+            with self.subTest(started=started), self.assertRaises(ValueError):
+                helper.derived_timeout(40, minutes, started, now=now)
+        for invalid in (0, -1, True, 1.5):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                helper.derived_timeout(invalid, 45, int(now), now=now)
+
+    def test_an_exhausted_job_budget_refuses_before_any_allocation(self):
+        with self.fake_tool("success"):
+            environment = self._real_helper_environment()
+            base = [sys.executable, str(Path(helper.__file__).resolve()), "run", "--manifest", "module.json", "--profiles",
+                    "real", "--receipt", str(self.receipt), "--evidence", str(self.evidence)]
+            exhausted = ["--step-timeout-minutes", "40", "--job-timeout-minutes", "45", "--job-started-epoch",
+                         str(int(time.time()) - 41 * 60)]
+            cases = ((exhausted, "cannot hold the minimum integration timeout"),
+                     (exhausted + ["--timeout-seconds", "600"], "derive the integration timeout from all"),
+                     (exhausted[:4], "derive the integration timeout from all"))
+            for extra, reason in cases:
+                with self.subTest(extra=extra):
+                    refused = subprocess.run(base + extra, cwd=self.root, env=environment, capture_output=True,  # nosec B603
+                                             text=True, timeout=60, check=False)
+                    self.assertEqual(refused.returncode, 1, refused.stdout + refused.stderr)
+                    self.assertIn(reason, refused.stderr)
+                    self.assertFalse((self.root / "actual-tool-args.json").exists())
+                    self.assertFalse(self.receipt.exists() or helper.process_record_path(self.receipt).exists())
+                    self.assertFalse((self.evidence / "invocation.json").exists())
+
+    def test_the_v2_step_passes_its_derived_budget_into_the_invocation(self):
+        started = int(time.time()) - 300
+        latest = helper.derived_timeout(40, 45, started, now=time.time())
+        step = self.start_step("success", JOB_STARTED_EPOCH=str(started))
+        output, errors = step.communicate(timeout=60)
+        earliest = helper.derived_timeout(40, 45, started, now=time.time())
+        self.assertEqual(step.returncode, 0, output + errors)
+        invocation = json.loads((self.evidence / "invocation.json").read_text())
+        self.assertIsInstance(invocation["timeoutSeconds"], int)
+        # The exact derived value for this step's inputs, bounded by the step's own run time.
+        self.assertTrue(earliest <= invocation["timeoutSeconds"] <= latest, (earliest, invocation["timeoutSeconds"], latest))
+        self.assertLess(latest - earliest, 5)
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_helper_timeout_interrupts_the_tool_so_withdrawal_precedes_every_composed_stop(self):
+        with self.fake_tool("muxer-apphost"), patch.object(helper, "verify_tool"):
+            code = helper.execute_integration(helper.TOOL + ["test", "--ci-owner-receipt=" + str(self.receipt)],
+                                              self.root, self.receipt, self.evidence, 3)
+        self.assertEqual(code, 124)
+        self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGINT))
+        withdrawn = int((self.root / "actual-withdrawn").read_text())
+        number, observed = (self.root / "actual-apphost-signal").read_text().split()
+        self.assertEqual(int(number), signal.SIGTERM, "Only the tool's own stop may reach the AppHost.")
+        self.assertGreaterEqual(int(observed), withdrawn, "No signal may reach a composed process before withdrawal.")
+        execution = json.loads((self.evidence / "execution.json").read_text())
+        self.assertEqual((execution["timedOut"], execution["cancelled"]), (True, False))
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_a_tool_orphaned_by_its_muxer_is_stopped_before_any_not_allocated_decision(self):
+        marker = self.root / "actual-orphan-tool"
+        code = ("import json, os, pathlib, signal, subprocess, sys, time\n"
+                "receipt, marker, owner, late = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3], sys.argv[4]\n"
+                "child = os.fork()\n"
+                "if child == 0:\n"
+                "    def stop(signum, frame):\n"
+                "        if late == 'late':\n"
+                "            receipt.write_text(owner)\n"
+                "        os._exit(0)\n"
+                "    signal.signal(signal.SIGINT, stop)\n"
+                "    marker.write_text(str(os.getpid()))\n"
+                "    while True:\n"
+                "        time.sleep(0.02)\n"
+                "sys.stdin.readline()\n")
+        for late in ("none", "late"):
+            with self.subTest(late=late):
+                self.reset_job_records()
+                leader = subprocess.Popen([sys.executable, "-c", code, str(self.receipt), str(marker), json.dumps(self.owner), late],  # nosec B603
+                                          stdin=subprocess.PIPE, start_new_session=True)
+                tool = int(self.wait_for(marker).read_text())
+                helper.write_process_record(self.receipt, helper.ci_context(), leader.pid)
+                leader.communicate(b"exit\n", timeout=10)
+                self.assertIsNotNone(helper.process_identity(tool), "The tool must outlive its muxer.")
+                with patch.object(helper, "SESSION_SIGNAL_WAIT_SECONDS", 0.5), patch.object(helper, "verify_tool"), patch.object(
+                    helper, "run_down", return_value=self.down_result()
+                ) as down:
+                    self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence, job_status="cancelled"), 0)
+                self.wait_until(lambda: helper.process_identity(tool) is None)
+                statuses = [json.loads(path.read_text())["status"] for path in self.evidence.glob("cleanup-*.json")]
+                if late == "late":
+                    self.assertNotIn("not-allocated", statuses, "A receipt written while stopping requires the exact down.")
+                    down.assert_called_once()
+                else:
+                    self.assertEqual(statuses, ["not-allocated"])
+                    down.assert_not_called()
+
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_a_timed_out_down_never_waits_on_a_descendant_in_another_process_group(self):
+        marker = self.root / "actual-detached-descendant"
+        code = ("import subprocess, sys, time\n"
+                "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], start_new_session=True)\n"
+                "open(sys.argv[1], 'w').write(str(child.pid))\n"
+                "time.sleep(60)\n")
+        started = time.monotonic()
+        try:
+            with patch.object(helper, "POST_KILL_WAIT_SECONDS", 1), self.assertRaises(subprocess.TimeoutExpired):
+                helper.run_down([sys.executable, "-c", code, str(marker)], cwd=self.root, env=os.environ.copy(), timeout=2)
+            self.assertLess(time.monotonic() - started, 15)
+        finally:
+            if marker.exists():
+                try:
+                    os.kill(int(marker.read_text()), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
 
 
 if __name__ == "__main__":

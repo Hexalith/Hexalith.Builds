@@ -1395,9 +1395,21 @@ public static class ModuleCommandExecutionService
             {
                 try
                 {
-                    using CancellationTokenSource withdrawalMetadata = new(TimeSpan.FromSeconds(5));
-                    await engine!.RecordOwnerCancellationAsync(ownedRunId!, withdrawalMetadata.Token).ConfigureAwait(false);
-                    IReadOnlyList<CompositionAttachment> ended = await CompositionAttachmentStore.WithdrawAsync(attachmentDirectory, ownedRunId!, cancellationToken.IsCancellationRequested || withdrawn ? "ci-job-cancelled" : "ci-job-completed", DateTimeOffset.UtcNow, withdrawalMetadata.Token).ConfigureAwait(false);
+                    // The withdrawal allowance is part of the remaining stop allowance, never an extension of it.
+                    using CancellationTokenSource withdrawalMetadata = CancellationTokenSource.CreateLinkedTokenSource(stopping.Token);
+                    withdrawalMetadata.CancelAfter(TimeSpan.FromSeconds(5));
+                    bool jobCancelled = cancellationToken.IsCancellationRequested || withdrawn;
+                    if (jobCancelled)
+                    {
+                        await engine!.RecordOwnerCancellationAsync(ownedRunId!, withdrawalMetadata.Token).ConfigureAwait(false);
+                    }
+                    else if (record is null)
+                    {
+                        // Without a durable terminal the owner still closes admission, as failed; it is never recorded as cancelled.
+                        await engine!.RecordOwnerStatusAsync(ownedRunId!, CompositionRunStatus.Failed, withdrawalMetadata.Token).ConfigureAwait(false);
+                    }
+
+                    IReadOnlyList<CompositionAttachment> ended = await CompositionAttachmentStore.WithdrawAsync(attachmentDirectory, ownedRunId!, jobCancelled ? "ci-job-cancelled" : "ci-job-completed", DateTimeOffset.UtcNow, withdrawalMetadata.Token).ConfigureAwait(false);
                     result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(ended)] };
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException)

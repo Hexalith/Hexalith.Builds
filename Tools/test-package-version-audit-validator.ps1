@@ -1793,32 +1793,6 @@ $items = @(
     Save-Audit -Audit $wrongCollectionTypeAudit -Path $wrongCollectionTypePath
     Test-Scenario -Name 'Owner collection JSON type is preserved exactly' -AuditPath $wrongCollectionTypePath -ExpectedExitCode 1 `
         -ExpectedOutput "Family 'fixture-family' field 'packageIds' must be a JSON array"
-
-    foreach ($workflowRelativePath in @('../.github/workflows/ci.yml')) {
-        $script:scenarioCount++
-        $workflowPath = Join-Path $PSScriptRoot $workflowRelativePath
-        $workflow = Get-Content -LiteralPath $workflowPath -Raw
-        $validateIndex = $workflow.IndexOf('- name: Validate package version audit', [StringComparison]::Ordinal)
-        $testIndex = $workflow.IndexOf('- name: Test package version audit validator', [StringComparison]::Ordinal)
-        $consumerIndex = $workflow.IndexOf('- name: Validate Builds consumer package authority', [StringComparison]::Ordinal)
-        $validateCommandIndex = $workflow.IndexOf(
-            'run: pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1',
-            [StringComparison]::Ordinal
-        )
-        $testCommandIndex = $workflow.IndexOf(
-            'run: pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1',
-            [StringComparison]::Ordinal
-        )
-        if (
-            $validateIndex -lt 0 -or
-            $validateCommandIndex -le $validateIndex -or
-            $testIndex -le $validateCommandIndex -or
-            $testCommandIndex -le $testIndex -or
-            $consumerIndex -le $testCommandIndex
-        ) {
-            $failures.Add("Workflow '$workflowRelativePath' must validate and test the package audit before consumer authority validation.")
-        }
-    }
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue

@@ -1,361 +1,108 @@
-name: CI
-
-# Validate the shared actions, reusable workflows, and PowerShell/Python tooling
-# consumed by Hexalith modules.
-# Release consumes successful push CI for the exact source revision, then builds
-# and qualifies only the actual release version before publication.
+name: Shared CI
 
 on:
-  pull_request:
-    branches: [main, prerelease]
-  push:
-    branches: [main, prerelease]
+  workflow_call:
+    inputs:
+      module-root:
+        description: Test-only module fixture root in the Builds repository.
+        type: string
+        default: ''
+      expected-source:
+        description: Test-only expected-state fixture directory in Builds.
+        type: string
+        default: ''
+    secrets:
+      registry-pull-username:
+        description: Dedicated pull-only registry identity, required only with registry enabled.
+        required: false
+      registry-pull-password:
+        description: Password for the dedicated pull-only registry identity.
+        required: false
+    outputs:
+      solution:
+        description: Validated workspace-relative solution path, or none.
+        value: ${{ jobs.ci.outputs.solution }}
+      submodules:
+        description: JSON array of validated workspace-relative direct submodule paths.
+        value: ${{ jobs.ci.outputs.submodules }}
+      global-json:
+        description: Validated workspace-relative module SDK path, empty for solution none.
+        value: ${{ jobs.ci.outputs.global-json }}
 
-concurrency:
-  # Unlike the release workflow, superseded CI runs carry no publication risk.
-  group: builds-ci-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  build-and-test:
-    name: Build and test
+  ci:
+    name: Build and tests
     runs-on: ubuntu-latest
-    needs: [catalog, contracts, dotnet, python-tests]
-    if: always()
-    timeout-minutes: 5
-    steps:
-      - name: Require every validation job to pass
-        env:
-          CATALOG_RESULT: ${{ needs.catalog.result }}
-          CONTRACTS_RESULT: ${{ needs.contracts.result }}
-          DOTNET_RESULT: ${{ needs.dotnet.result }}
-          PYTHON_RESULT: ${{ needs.python-tests.result }}
-        shell: bash
-        run: |
-          [[ "$CATALOG_RESULT" == "success" && "$CONTRACTS_RESULT" == "success" && "$DOTNET_RESULT" == "success" && "$PYTHON_RESULT" == "success" ]]
-
-  dotnet:
-    runs-on: ubuntu-latest
-    name: .NET tests
     timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-          submodules: false
-          persist-credentials: false
-
-      - name: Initialize .NET
-        uses: ./Github/initialize-dotnet
-        with:
-          global-json-file: global.json
-
-      - name: Restore
-        run: dotnet restore Hexalith.Builds.slnx
-
-      - name: Build
-        run: dotnet build Hexalith.Builds.slnx --no-restore --configuration Release -warnaserror -p:GeneratePackageOnBuild=false
-
-      # One project at a time: solution-level `dotnet test` is not used in this
-      # repository (see the validation harness in DEVELOPMENT.md).
-      - name: Test Hexalith.Builds.Module.Tests
-        run: dotnet test test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj --no-restore --configuration Release
-
-      - name: Test Hexalith.Builds.Evidence.Tests
-        run: dotnet test test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj --no-restore --configuration Release
-
-      - name: Test Hexalith.Builds.Tooling.IntegrationTests
-        run: dotnet test test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj --no-restore --configuration Release
-
-  catalog:
-    runs-on: ubuntu-latest
-    name: Package catalog contracts
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-          submodules: false
-          persist-credentials: false
-
-      - name: Initialize .NET
-        uses: ./Github/initialize-dotnet
-        with:
-          global-json-file: global.json
-
-      - name: Validate central package versions
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1
-
-      - name: Test authoritative package catalog
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1
-
-      - name: Test central package version validator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1
-
-      - name: Validate package version audit
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1
-
-      - name: Test package version audit generator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-package-version-audit-generator.ps1
-
-      - name: Test package version audit validator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1
-
-      - name: Validate Builds consumer package authority
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/validate-consumer-package-authority.ps1 -RepositoryRoot . -CatalogPath ./Props/Directory.Packages.props
-
-      - name: Test consumer package authority validator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-consumer-package-authority-validator.ps1
-
-      - name: Validate package version exception inventory
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/validate-package-version-exceptions.ps1 -InventoryPath ./Tools/package-version-exceptions.json -CatalogPath ./Props/Directory.Packages.props
-
-      - name: Test package version exception validator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-package-version-exception-validator.ps1
-
-      - name: Validate Platform version catalog and hosting compatibility
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/validate-platform-version-catalog.ps1
-
-      - name: Test Platform version catalog contracts
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-platform-version-catalog.ps1
-
-      - name: Validate Dapr package versions
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1
-
-      - name: Test Dapr package validator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1
-
-  contracts:
-    runs-on: ubuntu-latest
-    name: Build and package contracts
-    timeout-minutes: 60
     permissions:
       contents: read
+    env:
+      CI_REPOSITORY: ${{ github.repository }}
+      CI_MODULE_ROOT: ${{ inputs.module-root }}
+      CI_EXPECTED_SOURCE: ${{ inputs.expected-source }}
+    outputs:
+      solution: ${{ steps.prepare.outputs.solution }}
+      submodules: ${{ steps.prepare.outputs.submodules }}
+      global-json: ${{ steps.prepare.outputs.global-json }}
     steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-          submodules: false
-          persist-credentials: false
+      # Stage 1 must stay first. Story 5-1 supplies the guard and commitlint.
+      # Builds' own call never runs a delivered-ref guard (AD-19).
+      - name: Stage 1 reserved for guard and commit format
+        run: ':'
 
-      - name: Initialize .NET
-        uses: ./Github/initialize-dotnet
-        with:
-          global-json-file: global.json
-
-      - name: Test domain workflow test-platform contracts
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
-
-      - name: Test strict v2 workflow contracts
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1 -Contract v2
-
-      - name: Test caller-owned domain release preparation
-        shell: bash
-        run: python3 Tools/test-prepare-domain-release.py
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
-        with:
-          # Must match the release pin so CI proves the toolchain the release uses.
-          node-version: '24'
-
-      # --ignore-scripts: nothing in this lockfile declares an install script, so
-      # skipping them changes no behavior and denies a compromised transitive
-      # dependency arbitrary code execution on the runner.
-      - name: Install Node.js dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Verify npm dependency provenance and signatures
-        run: npm audit signatures
-
-      - name: Test commitlint workflow contracts
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-commitlint-workflow.ps1
-
-      - name: Test legacy package publisher contracts
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-publish-packages.ps1
-
-      - name: Test G-4 tool package publisher contracts
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
-
-      - name: Test G-4 release lifecycle contracts
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-g4-release-contract.ps1
-
-      - name: Test G-4 release source guard
-        shell: bash
-        run: bash ./Tools/test-g4-release-source.sh
-
-      - name: Test G-4 source CI verification
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-g4-source-ci.ps1
-
-      # Each job owns a disposable runner. Keep build gates independent of a
-      # missing or empty user NuGet.Config inherited from the runner image.
-      - name: Initialize runner NuGet configuration
-        shell: bash
-        run: install -D -m 600 test/fixtures/package-consumer/NuGet.Config "$HOME/.nuget/NuGet/NuGet.Config"
-
-      - name: Test G-4 tool package qualification gate
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1
-
-      - name: Test G-4 tool package artifact validator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-artifact-validator.ps1
-
-      - name: Restore
-        run: dotnet restore Hexalith.Builds.slnx
-
-      - name: Build
-        run: dotnet build Hexalith.Builds.slnx --no-restore --configuration Release -warnaserror -p:GeneratePackageOnBuild=false
-
-      # Runs the packaged-tool qualification exactly as the release does, so a
-      # missing control fixture or a broken packaged CLI fails on the pull
-      # request rather than at release time.
-      - name: Qualify G-4 tool source and Release packages
-        id: g4_qualification
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -PackageDirectory artifacts/g4-ci-qualification -RetainPackageDirectory -RequireControls -SkipSourceValidation
-
-      - name: Archive CI qualification evidence
-        run: python3 Tools/archive-g4-qualification-evidence.py --package-directory artifacts/g4-ci-qualification --kind ci
-
-      - name: Record CI qualification attempt
-        if: always()
-        env:
-          G4_PRODUCER_STEP_OUTCOME: ${{ steps.g4_qualification.outcome }}
-        run: python3 Tools/archive-g4-qualification-evidence.py --package-directory artifacts/g4-ci-qualification --kind ci --record-attempt
-
-      - name: Retain CI qualification evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: g4-ci-qualification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            artifacts/g4-ci-qualification/producer-attempt.json
-            artifacts/g4-ci-qualification/g4-tool-qualification-evidence.zip
-            artifacts/g4-ci-qualification/g4-tool-package-inventory.json
-            artifacts/g4-ci-qualification/qualification-evidence/
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Test multi-platform container publisher contracts
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1
-
-      - name: Test governed workflow provenance
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-governed-provenance.ps1
-
-  python-tests:
-    runs-on: ubuntu-latest
-    name: Python contract tests
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Checkout module
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: false
           persist-credentials: false
 
-      - name: Initialize .NET SDK
-        uses: ./Github/initialize-dotnet
+      # $/ resolves the running workflow's commit, independently of the module
+      # gitlink. Each composite locates scripts using GITHUB_ACTION_PATH.
+      - name: Validate and prepare module
+        id: prepare
+        uses: $/Github/ci-prepare
+
+      - name: Setup module SDK
+        if: steps.prepare.outputs.solution != 'none'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
-          global-json-file: global.json
+          global-json-file: ${{ steps.prepare.outputs.global-json }}
 
-      - name: Test self-CI required status
-        run: python3 Tools/test-self-ci.py
+      - name: Stage 2 restore and Release build
+        if: steps.prepare.outputs.solution != 'none'
+        uses: $/Github/ci-build
 
-      - name: Test qualification evidence retention
-        run: python3 Tools/test-archive-g4-qualification-evidence.py
-
-      - name: Test qualification file boundaries
-        run: |
-          python3 Tools/test-g6-cli-paths.py
-          python3 -m unittest discover -s test/qualification -p test_stage3_live_qualification.py -v
-
-      - name: Test G-6 runtime/toolchain evidence validator
+      - name: Stage 3 unit tests
+        id: unit
+        if: steps.prepare.outputs.solution != 'none'
+        uses: $/Github/ci-unit-tests
         env:
-          PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 Tools/test-runtime-toolchain-evidence-validator.py
+          CI_STAGE_STATE: ${{ runner.temp }}/hexalith-ci-stage-state.json
 
-      - name: Test historical runtime/toolchain disposition validator
-        env:
-          PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 Tools/test-runtime-toolchain-disposition.py
-
-      - name: Test container publisher helpers
-        working-directory: Github/publish-containers/tests
-        run: python3 -m unittest discover -v
-
-      - name: Test CI integration lifecycle helper
-        run: python3 -m unittest discover -s Github/run-module-integration/tests -v
-
-      # Native preparation fixtures validate commits with the pinned CLI, and
-      # commitlint helper tests import @commitlint/lint from the Node toolchain.
-      - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
+      - name: Stage 4 environment setup
+        if: steps.prepare.outputs.solution != 'none'
+        uses: $/Github/ci-environment
         with:
-          node-version: '24'
-
-      - name: Install Node.js dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Test module build preparation helper
-        run: python3 -m unittest discover -s Github/prepare-module-build/tests -v
-
-      - name: Test governed workflow provenance evaluator
-        working-directory: Github/governed-provenance/tests
-        run: python3 -m unittest discover -v
-
-      - name: Test split publication contract
-        working-directory: Github/split-publication/tests
+          solution: ${{ steps.prepare.outputs.solution }}
+          dapr: ${{ steps.unit.outputs.dapr }}
+          browsers: ${{ steps.unit.outputs.browsers }}
+          registry: ${{ steps.unit.outputs.registry }}
         env:
-          PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -m unittest discover -v
+          REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}
+          REGISTRY_PULL_PASSWORD: ${{ secrets.registry-pull-password }}
 
-      - name: Test commitlint helpers
-        working-directory: Github/commitlint/tests
-        run: python3 -m unittest discover -v
+      - name: After unit tests hook
+        if: steps.unit.outputs.after-unit-tests == 'true'
+        uses: ./.github/actions/after-unit-tests
 
-  codeql:
-    name: CodeQL
-    uses: ./.github/workflows/codeql.yml
-    permissions:
-      contents: read
-      security-events: write
-    with:
-      languages: csharp
+      - name: Stage 4 integration tests
+        if: steps.prepare.outputs.solution != 'none'
+        uses: $/Github/ci-integration-tests
+        env:
+          CI_STAGE_STATE: ${{ runner.temp }}/hexalith-ci-stage-state.json
 
-  dependency-review:
-    name: Dependency review
-    # Dependency review compares a pull request against its base, so it has
-    # nothing to diff on a push.
-    if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/dependency-review.yml
-    permissions:
-      contents: read
-      pull-requests: write
+      - name: After integration tests hook
+        if: steps.unit.outputs.after-integration-tests == 'true'
+        uses: ./.github/actions/after-integration-tests

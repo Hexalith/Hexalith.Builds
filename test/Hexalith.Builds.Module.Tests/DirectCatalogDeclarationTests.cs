@@ -7,6 +7,7 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
+using System.Xml.Linq;
 
 using Hexalith.Builds.ModuleTool.Tests.Workspace;
 using Hexalith.Builds.Tooling.Runtime;
@@ -21,13 +22,16 @@ public sealed class DirectCatalogDeclarationTests
 {
     /// <summary>Uses default release authorities after the actual public Git workspace resolver.</summary>
     /// <param name="platformRoot">Whether the command starts at Platform rather than its consuming module.</param>
+    /// <param name="sdkVersion">The independently retained released SDK declaration.</param>
     /// <returns>The verified cold-start closure assertions.</returns>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ColdStartUsesVerifiedCatalogWithoutNestedModuleDependenciesAsync(bool platformRoot)
+    [InlineData(false, "4.1.0")]
+    [InlineData(true, "4.1.0")]
+    [InlineData(false, "4.2.0")]
+    [InlineData(true, "4.2.0")]
+    public async Task ColdStartUsesVerifiedCatalogWithoutNestedModuleDependenciesAsync(bool platformRoot, string sdkVersion)
     {
-        using WorkspaceGitFixture fixture = await CreateReleasedWorkspaceAsync(false).ConfigureAwait(true);
+        using WorkspaceGitFixture fixture = await CreateReleasedWorkspaceAsync(false, sdkVersion).ConfigureAwait(true);
         string manifest = platformRoot ? Path.Combine(fixture.Directory, "platform", "hexalith-platform.json") : fixture.Manifest;
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
         mapping.IdentityFindings.ShouldBeEmpty();
@@ -146,24 +150,23 @@ public sealed class DirectCatalogDeclarationTests
         Directory.Exists(Path.Combine(fixture.Checkout, "source-mapping")).ShouldBeFalse();
     }
 
-    private static async Task<WorkspaceGitFixture> CreateReleasedWorkspaceAsync(bool unknownVersion)
+    private static async Task<WorkspaceGitFixture> CreateReleasedWorkspaceAsync(bool unknownVersion, string sdkVersion = "4.2.0")
     {
         WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         try
         {
             string builds = Path.Combine(fixture.Directory, "builds");
             string catalog = await File.ReadAllTextAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            if (unknownVersion)
-            {
-                catalog = catalog.Replace(">4.1.0</HexalithEventStoreVersion>", ">999.0.0</HexalithEventStoreVersion>", StringComparison.Ordinal);
-            }
+            XDocument selectedCatalog = XDocument.Parse(catalog);
+            selectedCatalog.Descendants("HexalithEventStoreVersion").Single().Value = unknownVersion ? "999.0.0" : sdkVersion;
+            catalog = selectedCatalog.ToString();
 
             await File.WriteAllTextAsync(Path.Combine(builds, "Props", "Directory.Packages.props"), catalog, TestContext.Current.CancellationToken).ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(builds, "commit", "-am", "test: bind catalog fixture").ConfigureAwait(true);
             string catalogCommit = (await WorkspaceGitFixture.RunGitAsync(builds, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
             string platform = Path.Combine(fixture.Directory, "platform");
             await SelectAsync(Path.Combine(platform, "references", "Hexalith.Builds"), catalogCommit).ConfigureAwait(true);
-            await WriteReleasedDeclarationsAsync(platform).ConfigureAwait(true);
+            await WriteReleasedDeclarationsAsync(platform, sdkVersion).ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(platform, "add", "src", "references/Hexalith.Builds").ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(platform, "commit", "-m", "test: bind catalog fixture").ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(platform, "tag", "v1.0.1").ConfigureAwait(true);
@@ -182,12 +185,12 @@ public sealed class DirectCatalogDeclarationTests
         }
     }
 
-    private static async Task WriteReleasedDeclarationsAsync(string platform)
+    private static async Task WriteReleasedDeclarationsAsync(string platform, string sdkVersion)
     {
         string declarations = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "Declarations");
         _ = Directory.CreateDirectory(declarations);
         JsonObject provenance = [];
-        foreach ((string owner, string version) in new[] { ("eventstore", "4.1.0"), ("tenants", "7.0.5"), ("memories", "3.0.25") })
+        foreach ((string owner, string version) in new[] { ("eventstore", sdkVersion), ("tenants", "7.0.5"), ("memories", "3.0.25") })
         {
             byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", owner + "-" + version + ".json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             string key = owner + "/" + version;

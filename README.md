@@ -109,7 +109,8 @@ This repository:
 
 ### Reusable Workflows
 
-- `.github/workflows/build-release.yml`: Releases this repository with
+- `.github/workflows/builds-ci.yml`: Validates this repository on pushes and pull requests.
+- `.github/workflows/builds-release.yml`: Releases this repository with
   `Github/create-release`.
 - `.github/workflows/domain-ci.yml`: Existing reusable domain module CI contract. See
   [domain-ci.md](.github/workflows/domain-ci.md).
@@ -332,6 +333,11 @@ catalog, a generated guard compares the effective version, including
 The catalog is evaluated for the consumer project name, so conditional pins
 apply to that project. Equivalent exact NuGet ranges are accepted before
 restore; the guard checks the resolved package version after restore.
+Composition can resolve an extension package with
+`CompositionDeclarationOptions.CatalogPackageVersion(packageId, source, projectName)`.
+A named consumer requires its recorded view in the Builds-materialized pinned
+snapshot; an absent snapshot, absent view or changed snapshot refuses selection.
+The two-argument overload retains the default snapshot/catalog behavior.
 
 McpCli is a short-lived tool, not a server, so its v2 declaration lists no
 server. When the active v2 module is `mcpcli`, source-mode `run` and `debug`
@@ -588,13 +594,21 @@ attachments are refused for this opt-in until they have a matching scope contrac
 The shared v2 workflow exposes the same request as the optional
 `integration-test-reference-owners` input. Selection grants no package capability:
 Platform must independently admit the exact published cohort. In particular,
-Memories package catalog runtime remains unqualified. The catalog now selects the
-published Memories 3.0.23/source `82c0aa0a7046d7bd91569ac1c9a38a3ed0386d0f`
-with its unchanged released declaration snapshot. This selection does not extend
-Platform's finite package admission or prove full Parties runtime compatibility.
+Memories package catalog runtime remains unqualified. The Memories version that
+the catalog selects is the `HexalithMemoriesVersion` pin in
+`Props/Directory.Packages.props`. That selection does not extend Platform's finite
+package admission or prove full Parties runtime compatibility.
 The package EventStore seed
 enables its technical catalog receiver only for the actual resolved public Gateway
-4.0.4 assembly; unknown and near-miss versions retain the existing finite receiver.
+4.0.4, 4.1.0 or 4.2.0 assembly; unknown and near-miss versions retain the existing finite receiver.
+
+The current catalog selects EventStore 4.2.0 from released source
+`aa16227bd07f0564a3026d619a5abd973e02656f`. Its v2 declaration retains SHA-256
+`21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495`; the older
+4.1.0 release authority remains separately recorded. This adoption retains the
+upstream Dapr runtime and CLI 1.19.1, Dapr .NET SDK 1.19.0 and Aspire 13.6.4
+with Toolkit 13.6.2-beta.959. Platform must independently enroll and qualify the
+new package cohort before a sealed runtime run can use it.
 
 Withdrawal records outcomes; termination of attached processes at expiry is deferred to
 the Platform follow-up `attached-test-execution-and-expiry-enforcement`.
@@ -1255,7 +1269,7 @@ Package publishing behavior:
 
 The NuGet.org `Hexalith` owner must have a Trusted Publishing policy for GitHub
 repository owner `Hexalith`, repository `Hexalith.Builds`, workflow file
-`build-release.yml`, and environment `production`. Grant publication of new
+`builds-release.yml`, and environment `production`. Grant publication of new
 versions for `Hexalith.Builds.Evidence.Cli` and `Hexalith.Builds.Module.Cli`;
 grant new-package publication only if those package IDs have not yet been
 created. Set the repository variable `NUGET_USER` to the individual NuGet.org

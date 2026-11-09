@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.com/schemas/hexalith.ci.v1.json",
+  "title": "Hexalith CI configuration v1",
+  "description": "Complete materialized configuration. Defaults describe renderer output; readers never insert them. Repository identity and enabled exclusion targets are checked by the loader.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "solution", "dapr", "browsers", "registry", "codeql", "tests", "hooks", "jobs", "submodules"],
+  "properties": {
+    "schema": { "const": "hexalith.ci.v1" },
+    "buildsTag": {
+      "type": "string",
+      "description": "Exact stable release tag. Required by the loader outside Builds itself, including samples.",
+      "pattern": "^v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
+    },
+    "solution": {
+      "anyOf": [{ "const": "none" }, { "$ref": "#/$defs/solutionPath" }],
+      "default": "none"
+    },
+    "dapr": { "type": "boolean", "default": false },
+    "browsers": { "type": "boolean", "default": false },
+    "registry": { "type": "boolean", "default": false },
+    "codeql": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["c-cpp", "csharp", "go", "java-kotlin", "javascript-typescript", "python", "ruby", "rust", "swift"] },
+      "description": "Renderer default is csharp with a solution, or empty with solution=none. An explicit empty list skips analysis; actions is forbidden."
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["integration", "exclude"],
+      "properties": {
+        "integration": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/projectPath" }, "default": [] },
+        "exclude": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/projectPath" },
+          "additionalProperties": { "$ref": "#/$defs/actionName" },
+          "default": {},
+          "description": "Project to enabled hook or job. The loader checks dynamic membership; an exclusion is never a plain skip."
+        }
+      },
+      "default": { "integration": [], "exclude": {} }
+    },
+    "hooks": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["after-unit-tests", "after-integration-tests", "nightly"] },
+      "default": []
+    },
+    "jobs": {
+      "type": "object",
+      "propertyNames": {
+        "allOf": [
+          { "$ref": "#/$defs/actionName" },
+          { "not": { "enum": ["ci", "after-unit-tests", "after-integration-tests", "nightly"] } }
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["runner"],
+        "properties": { "runner": { "const": "windows-latest" } }
+      },
+      "default": {}
+    },
+    "submodules": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/repositoryPath" },
+      "default": [],
+      "description": "Additional direct submodule paths relative to the repository. Builds checkout is implicit. No nested or recursive initialization."
+    }
+  },
+  "allOf": [{
+    "if": { "properties": { "solution": { "const": "none" } }, "required": ["solution"] },
+    "then": {
+      "properties": {
+        "dapr": { "const": false },
+        "browsers": { "const": false },
+        "tests": { "const": { "integration": [], "exclude": {} } },
+        "hooks": { "const": [] },
+        "jobs": { "const": {} },
+        "codeql": { "default": [] }
+      }
+    },
+    "else": { "properties": { "codeql": { "default": ["csharp"] } } }
+  }],
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?![\\s\\S]*\\\\)(?![\\s\\S]*//)(?![\\s\\S]*(?:^|/)\\.{1,2}(?:/|(?![\\s\\S])))(?![\\s\\S]*/(?![\\s\\S]))(?![\\s\\S]*[\\u0000-\\u001f\\u007f-\\u009f])(?![\\s\\S]*\\$\\{\\{)[\\s\\S]+(?![\\s\\S])"
+    },
+    "solutionPath": { "allOf": [{ "$ref": "#/$defs/repositoryPath" }, { "pattern": "\\.slnx(?![\\s\\S])" }] },
+    "projectPath": { "allOf": [{ "$ref": "#/$defs/repositoryPath" }, { "pattern": "\\.csproj(?![\\s\\S])" }] },
+    "actionName": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])" }
+  }
+}
