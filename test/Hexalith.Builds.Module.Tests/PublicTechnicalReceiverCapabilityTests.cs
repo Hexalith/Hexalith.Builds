@@ -17,7 +17,7 @@ using Xunit;
 /// <summary>Exercises the actual compiler capability target against resolved package identities.</summary>
 public sealed class PublicTechnicalReceiverCapabilityTests
 {
-    /// <summary>Only one resolved public Gateway 4.0.4 or 4.1.0 enables the technical receiver; aliases and near misses do not.</summary>
+    /// <summary>Only one resolved public Gateway 4.0.4, 4.1.0 or 4.2.0 enables the technical receiver; aliases and near misses do not.</summary>
     /// <param name="version">The actual resolved package version.</param>
     /// <param name="package">The actual resolved package identity.</param>
     /// <param name="count">The number of matching resolved assemblies.</param>
@@ -30,6 +30,15 @@ public sealed class PublicTechnicalReceiverCapabilityTests
     [InlineData("4.0.5", "Hexalith.EventStore.Gateway", 1, false, false)]
     [InlineData("4.1.0", "Hexalith.EventStore.Gateway", 1, false, true)]
     [InlineData("4.1.1", "Hexalith.EventStore.Gateway", 1, false, false)]
+    [InlineData("4.2.0", "Hexalith.EventStore.Gateway", 1, false, true)]
+    [InlineData("4.2.1", "Hexalith.EventStore.Gateway", 1, false, false)]
+    [InlineData("4.2.0-preview.1", "Hexalith.EventStore.Gateway", 1, false, false)]
+    [InlineData("4.2.0.0", "Hexalith.EventStore.Gateway", 1, false, false)]
+    [InlineData("4.2.0+foreign", "Hexalith.EventStore.Gateway", 1, false, false)]
+    [InlineData("4.2.0", "Hexalith.EventStore.Gateway.Alias", 1, false, false)]
+    [InlineData("4.2.0", "Hexalith.EventStore.Gateway", 0, false, false)]
+    [InlineData("4.2.0", "Hexalith.EventStore.Gateway", 2, false, false)]
+    [InlineData("4.2.0", "Hexalith.EventStore.Gateway", 1, true, false)]
     [InlineData("4.1.0-preview.1", "Hexalith.EventStore.Gateway", 1, false, false)]
     [InlineData("4.1.0.0", "Hexalith.EventStore.Gateway", 1, false, false)]
     [InlineData("4.1.0+foreign", "Hexalith.EventStore.Gateway", 1, false, false)]

@@ -600,7 +600,15 @@ the catalog selects is the `HexalithMemoriesVersion` pin in
 package admission or prove full Parties runtime compatibility.
 The package EventStore seed
 enables its technical catalog receiver only for the actual resolved public Gateway
-4.0.4 assembly; unknown and near-miss versions retain the existing finite receiver.
+4.0.4, 4.1.0 or 4.2.0 assembly; unknown and near-miss versions retain the existing finite receiver.
+
+The current catalog selects EventStore 4.2.0 from released source
+`aa16227bd07f0564a3026d619a5abd973e02656f`. Its v2 declaration retains SHA-256
+`21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495`; the older
+4.1.0 release authority remains separately recorded. This adoption retains the
+upstream Dapr runtime and CLI 1.19.1, Dapr .NET SDK 1.19.0 and Aspire 13.6.4
+with Toolkit 13.6.2-beta.959. Platform must independently enroll and qualify the
+new package cohort before a sealed runtime run can use it.
 
 Withdrawal records outcomes; termination of attached processes at expiry is deferred to
 the Platform follow-up `attached-test-execution-and-expiry-enforcement`.
