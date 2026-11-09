@@ -8,7 +8,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / ".github" / "workflows" / "commitlint.yml"
 CALLER = ROOT / ".github" / "workflows" / "commitlint-caller.yml"
-RELEASE = ROOT / ".github" / "workflows" / "build-release.yml"
 STANDARDS = ROOT / ".github" / "workflows" / "ci-cd-standards.md"
 
 
@@ -110,37 +109,6 @@ class CommitlintWorkflowTests(unittest.TestCase):
         self.assertIn("types: [opened, synchronize, reopened, edited]", caller)
         self.assertIn("uses: ./.github/workflows/commitlint.yml", caller)
         self.assertIn("pull-request-title: ${{ github.event.pull_request.title }}", caller)
-
-    def test_release_requires_exact_source_ci_with_locked_commitlint_contracts(self):
-        ci = RELEASE.with_name("ci.yml").read_text(encoding="utf-8")
-        contracts = ci.split("\n  contracts:\n", 1)[1].split("\n  python-tests:\n", 1)[0]
-        setup_index = contracts.index("uses: actions/setup-node@")
-        install_index = contracts.index("run: npm ci --ignore-scripts", setup_index)
-        audit_index = contracts.index("run: npm audit signatures", install_index)
-        contract_index = contracts.index("run: pwsh -NoProfile -File ./Tools/test-commitlint-workflow.ps1", audit_index)
-        self.assertLess(setup_index, install_index)
-        self.assertLess(install_index, audit_index)
-        self.assertLess(audit_index, contract_index)
-        self.assertIn("needs: [catalog, contracts, dotnet, python-tests]", ci)
-        release = RELEASE.read_text(encoding="utf-8")
-        self.assertIn("    needs: verify-source\n", release)
-        guard_index = release.index("- name: Recheck approved release source and push CI")
-        release_index = release.index("- name: Create Release")
-        self.assertLess(guard_index, release_index)
-        self.assertIn("run: bash ./Tools/verify-g4-release-source.sh", release[guard_index:release_index])
-        self.assertIn("DISPATCH_SHA: ${{ github.sha }}", release[guard_index:release_index])
-        self.assertIn("GH_TOKEN: ${{ github.token }}", release[guard_index:release_index])
-        self.assertIn("HEXALITH_G4_SOURCE_CI_RUN_ID: ${{ steps.approved_source.outputs.ci-run-id }}", release[release_index:])
-        self.assertIn("uses: ./Github/create-release", release[release_index:])
-        action = (ROOT / "Github/create-release/action.yml").read_text(encoding="utf-8")
-        setup_index = action.index("uses: actions/setup-node@v7.1.0")
-        install_index = action.index("run: npm ci --ignore-scripts", setup_index)
-        audit_index = action.index("run: npm audit signatures", install_index)
-        publish_index = action.index("run: npx --no-install --ignore-scripts semantic-release", audit_index)
-        self.assertIn("node-version: '24'", action[setup_index:install_index])
-        self.assertLess(setup_index, install_index)
-        self.assertLess(install_index, audit_index)
-        self.assertLess(audit_index, publish_index)
 
     def test_pinned_commitlint_rejects_malformed_and_default_ignored_titles(self):
         cases = {

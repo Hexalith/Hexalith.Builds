@@ -132,7 +132,7 @@ These are **future steps requiring authorization**, not actions performed here.
    semantic-release select the version rather than assigning a published version
    to these local bytes. Obtain successful push CI for the exact current branch
    SHA.
-2. Manually dispatch [Builds Release](../.github/workflows/build-release.yml) for
+2. Manually dispatch [Builds Release](../.github/workflows/builds-release.yml) for
    that exact current `main` SHA and approve its protected `production`
    environment. Push/merge alone does not release. The existing prerelease route
    uses its own branch/environment. Keep source-tip/CI checks intact.

@@ -1,8 +1,9 @@
 # Dependency surveillance for every ecosystem this repository actually ships.
 #
-# github-actions: "/" only covers .github/workflows, so the composite actions under
-# Github/*/action.yml need their own directory glob. Without it the version tags in
-# the composite actions are never refreshed.
+# github-actions: scan root workflows only during the AD-20 migration freeze.
+# Legacy reusable workflows and all existing Github/* composites must stay
+# unchanged until the last managed module has moved to the shared pipeline.
+# Restore composite scanning and remove these exclusions after the final deletion.
 # nuget: central package versions live in Props/Directory.Packages.props.
 # npm: the semantic-release and commitlint toolchain in package.json.
 #
@@ -11,9 +12,14 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directories:
-      - "/"
-      - "/Github/*"
+    directory: "/"
+    exclude-paths:
+      - ".github/workflows/domain-ci.yml"
+      - ".github/workflows/domain-ci-v2.yml"
+      - ".github/workflows/domain-release.yml"
+      - ".github/workflows/codeql.yml"
+      - ".github/workflows/commitlint.yml"
+      - ".github/workflows/dependency-review.yml"
     schedule:
       interval: weekly
     open-pull-requests-limit: 10

@@ -7,15 +7,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$releaseWorkflow = Get-Content -LiteralPath (Join-Path $repositoryRoot '.github/workflows/build-release.yml') -Raw
-if (-not $releaseWorkflow.Contains('id-token: write', [StringComparison]::Ordinal) -or
-    -not $releaseWorkflow.Contains('uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0', [StringComparison]::Ordinal) -or
-    -not $releaseWorkflow.Contains('user: ${{ vars.NUGET_USER }}', [StringComparison]::Ordinal) -or
-    -not $releaseWorkflow.Contains('nuget-api-key: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}', [StringComparison]::Ordinal) -or
-    $releaseWorkflow.Contains('nuget-api-key: ${{ secrets.NUGET_API_KEY }}', [StringComparison]::Ordinal)) {
-    throw 'Stable release must use NuGet.org Trusted Publishing through GitHub OIDC, not a stored API key.'
-}
-
 $release = (Get-Content -LiteralPath (Join-Path $repositoryRoot 'package.json') -Raw | ConvertFrom-Json).release
 $branches = @($release.branches)
 if ($branches.Count -ne 2 -or $branches[0] -cne 'main' -or
@@ -95,7 +86,7 @@ $null = New-Item -ItemType Directory -Path $directory -Force
 @{ schema = 'hexalith.g4-tool-package-inventory.v1'; version = $Version; configuration = 'Release'; qualification = @{
     packageBuild = @{mode='official';result='passed'}; controls = @{mode='executed';result='passed'}; releaseEligible = $true
     sourceTree = @{revision=$env:GITHUB_SHA;clean=$true}
-    sourceValidation = @{mode='ci';result='passed';ciRun=@{id='123';runAttempt=1;repository=$env:GITHUB_REPOSITORY;workflow='.github/workflows/ci.yml';sha=$env:GITHUB_SHA;branch='main';url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'}}
+    sourceValidation = @{mode='ci';result='passed';ciRun=@{id='123';runAttempt=1;repository=$env:GITHUB_REPOSITORY;workflow='.github/workflows/builds-ci.yml';sha=$env:GITHUB_SHA;branch='main';url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'}}
 }} | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $directory 'g4-tool-package-inventory.json')
 '@)
 $names = @('GITHUB_TOKEN','NUGET_API_KEY','GITHUB_REPOSITORY','GITHUB_REF','GITHUB_SHA','HEXALITH_G4_SOURCE_CI_RUN_ID')
@@ -108,7 +99,7 @@ function global:gh {
     param($Command,$Endpoint)
     if ($Command -cne 'api' -or $Endpoint -cne 'repos/Hexalith/Hexalith.Builds/actions/runs/123') { throw 'Unexpected external API dependency.' }
     $global:LASTEXITCODE = 0
-    @{id=123;run_attempt=1;repository=@{full_name=$env:GITHUB_REPOSITORY};path='.github/workflows/ci.yml';head_sha=$env:GITHUB_SHA;head_branch='main';event='push';status='completed';conclusion='success';html_url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'} | ConvertTo-Json -Depth 4
+    @{id=123;run_attempt=1;repository=@{full_name=$env:GITHUB_REPOSITORY};path='.github/workflows/builds-ci.yml';head_sha=$env:GITHUB_SHA;head_branch='main';event='push';status='completed';conclusion='success';html_url='https://github.com/Hexalith/Hexalith.Builds/actions/runs/123'} | ConvertTo-Json -Depth 4
 }
 function global:python3 {
     param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Arguments)

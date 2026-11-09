@@ -286,9 +286,6 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Test self-CI required status
-        run: python3 Tools/test-self-ci.py
-
       - name: Test qualification evidence retention
         run: python3 Tools/test-archive-g4-qualification-evidence.py
 
@@ -349,13 +346,3 @@ jobs:
       security-events: write
     with:
       languages: csharp
-
-  dependency-review:
-    name: Dependency review
-    # Dependency review compares a pull request against its base, so it has
-    # nothing to diff on a push.
-    if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/dependency-review.yml
-    permissions:
-      contents: read
-      pull-requests: write

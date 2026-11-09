@@ -42,7 +42,7 @@ function global:gh {
     $global:LASTEXITCODE = 0
     @{
         id = 456; run_attempt = $global:HexalithG4PublisherCiAttempt; repository = @{ full_name = $env:GITHUB_REPOSITORY }
-        path = '.github/workflows/ci.yml'; head_sha = $env:GITHUB_SHA; head_branch = $(if ($null -ne $global:HexalithG4PublisherCiBranch) { $global:HexalithG4PublisherCiBranch } else { $env:GITHUB_REF -creplace '^refs/heads/', '' })
+        path = '.github/workflows/builds-ci.yml'; head_sha = $env:GITHUB_SHA; head_branch = $(if ($null -ne $global:HexalithG4PublisherCiBranch) { $global:HexalithG4PublisherCiBranch } else { $env:GITHUB_REF -creplace '^refs/heads/', '' })
         event = 'push'; status = 'completed'; conclusion = 'success'
         html_url = 'https://github.com/Hexalith/Hexalith.Builds/actions/runs/456'
     } | ConvertTo-Json -Depth 4 -Compress
@@ -587,7 +587,7 @@ function New-PackageInventory {
             mode = 'ci'; result = 'passed'
             ciRun = [ordered] @{
                 id = '456'; runAttempt = 1; repository = 'Hexalith/Hexalith.Builds'
-                workflow = '.github/workflows/ci.yml'; sha = $qualifiedRevision; branch = ($env:GITHUB_REF -creplace '^refs/heads/', '')
+                workflow = '.github/workflows/builds-ci.yml'; sha = $qualifiedRevision; branch = ($env:GITHUB_REF -creplace '^refs/heads/', '')
                 url = 'https://github.com/Hexalith/Hexalith.Builds/actions/runs/456'
             }
         }
@@ -757,7 +757,7 @@ try {
     $env:GITHUB_RUN_ID = '123'
     $env:GITHUB_RUN_ATTEMPT = '1'
     $env:GITHUB_JOB = 'release'
-    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/main'
+    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@refs/heads/main'
     $env:GITHUB_WORKFLOW_SHA = $env:GITHUB_SHA
     $env:GITHUB_EVENT_NAME = 'workflow_dispatch'
 
@@ -824,7 +824,7 @@ try {
     $env:GITHUB_TOKEN = 'prerelease-test-token'
     Invoke-PublisherCase -PublishedVersion '9.8.7-preview.1' -ExpectedSource 'https://nuget.pkg.github.com/Hexalith/index.json'
     $env:GITHUB_REF = 'refs/heads/prerelease'
-    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/prerelease'
+    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@refs/heads/prerelease'
     Invoke-PublisherCase -PublishedVersion '9.8.7-preview.2' -ExpectedSource 'https://nuget.pkg.github.com/Hexalith/index.json' -SourceCi
     $prereleaseDirectory = New-PackageInventory -PublishedVersion '9.8.7-preview.3' -SourceCi
     foreach ($fault in @('branch','attempt')) {
@@ -846,7 +846,7 @@ try {
         }
     }
     $env:GITHUB_REF = 'refs/heads/main'
-    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/main'
+    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@refs/heads/main'
     Write-Host 'CI-backed prerelease controls passed: exact channel/credential and branch/attempt refusals.'
 
 

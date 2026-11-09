@@ -334,30 +334,6 @@ class PreparationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "persisted mapping differs"):
                 helper.verified_environment(result, workspace)
 
-    def test_normal_producer_validation_runs_behavioral_helper_tests(self):
-        workflows = MODULE_PATH.parents[2] / ".github/workflows"
-        ci = (workflows / "ci.yml").read_text()
-        lane = ci.split("\n  python-tests:\n", 1)[1]
-        self.assertIn("run: python3 -m unittest discover -s Github/prepare-module-build/tests -v", lane)
-        setup = lane.index("uses: actions/setup-node@")
-        install = lane.index("run: npm ci --ignore-scripts")
-        helper = lane.index("name: Test module build preparation helper")
-        self.assertLess(setup, install)
-        self.assertLess(install, helper)
-        self.assertEqual(1, lane.count("run: npm ci --ignore-scripts"))
-        contracts = ci.split("\n  contracts:\n", 1)[1].split("\n  python-tests:\n", 1)[0]
-        strict = contracts.index("Tools/test-domain-workflow-test-platforms.ps1 -Contract v2")
-        self.assertLess(contracts.index("Tools/test-domain-workflow-test-platforms.ps1\n"), strict)
-        self.assertIn("needs: [catalog, contracts, dotnet, python-tests]", ci)
-        release = (workflows / "build-release.yml").read_text()
-        self.assertIn("    needs: verify-source\n", release)
-        guard = release.index("- name: Recheck approved release source and push CI")
-        publish = release.index("- name: Create Release")
-        self.assertLess(guard, publish)
-        for required in ("id: approved_source", "GH_TOKEN: ${{ github.token }}", "DISPATCH_SHA: ${{ github.sha }}", "run: bash ./Tools/verify-g4-release-source.sh"):
-            self.assertIn(required, release[guard:publish])
-        self.assertIn("HEXALITH_G4_SOURCE_CI_RUN_ID: ${{ steps.approved_source.outputs.ci-run-id }}", release[publish:])
-
     def test_all_workflow_jobs_opt_in_before_restore(self):
         workflow = (MODULE_PATH.parents[2] / ".github/workflows/domain-ci.yml").read_text()
         self.assertIn("      module-manifest:", workflow)

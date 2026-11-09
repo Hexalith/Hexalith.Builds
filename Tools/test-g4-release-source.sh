@@ -16,7 +16,7 @@ case "$2" in
   repos/Hexalith/Hexalith.Builds/actions/runs/123)
     [ "$#" = 2 ] || exit 92
     printf '%s\n' "$MOCK_RUN" ;;
-  "repos/Hexalith/Hexalith.Builds/actions/workflows/ci.yml/runs?head_sha=${DISPATCH_SHA}&event=push&status=completed&per_page=100")
+  "repos/Hexalith/Hexalith.Builds/actions/workflows/builds-ci.yml/runs?head_sha=${DISPATCH_SHA}&event=push&status=completed&per_page=100")
     [ "$#" = 2 ] || exit 92
     printf '%s\n' "$MOCK_RUNS" ;;
   *) exit 91 ;;
@@ -110,7 +110,7 @@ DISPATCH_REF=refs/heads/main
 export DISPATCH_REF
 set_live_ref "$DISPATCH_SHA"
 export EXPECTED_CI_RUN_ID=123 EXPECTED_CI_RUN_ATTEMPT=1
-export MOCK_RUN='{"id":123,"run_attempt":1,"repository":{"full_name":"Hexalith/Hexalith.Builds"},"path":".github/workflows/ci.yml","head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","status":"completed","conclusion":"success"}'
+export MOCK_RUN='{"id":123,"run_attempt":1,"repository":{"full_name":"Hexalith/Hexalith.Builds"},"path":".github/workflows/builds-ci.yml","head_sha":"0123456789abcdef0123456789abcdef01234567","head_branch":"main","event":"push","status":"completed","conclusion":"success"}'
 MOCK_RUNS="$(jq -cn --argjson run "$MOCK_RUN" '{workflow_runs:[$run]}')"
 export MOCK_RUNS
 expect_pass

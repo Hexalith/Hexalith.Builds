@@ -26,7 +26,7 @@ if ! jq -e --arg repository "$REPOSITORY" --arg ref "$DISPATCH_REF" --arg sha "$
   exit 1
 fi
 
-runs="$(gh api "repos/${REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${DISPATCH_SHA}&event=push&status=completed&per_page=100")"
+runs="$(gh api "repos/${REPOSITORY}/actions/workflows/builds-ci.yml/runs?head_sha=${DISPATCH_SHA}&event=push&status=completed&per_page=100")"
 if ! ci_run_id="$(jq -er --arg sha "$DISPATCH_SHA" --arg branch "$branch" \
   '[.workflow_runs[] | select(.head_sha == $sha and .head_branch == $branch and .event == "push" and .conclusion == "success" and (.id | type == "number"))] | max_by(.id).id // empty' <<< "$runs")"; then
   echo "Builds Release requires successful push CI for exact ${branch} SHA ${DISPATCH_SHA}." >&2
@@ -42,7 +42,7 @@ if [[ -n "${EXPECTED_CI_RUN_ID:-}${EXPECTED_CI_RUN_ATTEMPT:-}" ]]; then
   fi
   recorded_run="$(gh api "repos/${REPOSITORY}/actions/runs/${EXPECTED_CI_RUN_ID}")"
   if ! jq -e --arg id "$EXPECTED_CI_RUN_ID" --arg attempt "$EXPECTED_CI_RUN_ATTEMPT" --arg sha "$DISPATCH_SHA" --arg branch "$branch" --arg repository "$REPOSITORY" \
-    '(.id | tostring) == $id and (.run_attempt | tostring) == $attempt and .head_sha == $sha and .head_branch == $branch and .repository.full_name == $repository and .path == ".github/workflows/ci.yml" and .event == "push" and .status == "completed" and .conclusion == "success"' <<< "$recorded_run" >/dev/null; then
+    '(.id | tostring) == $id and (.run_attempt | tostring) == $attempt and .head_sha == $sha and .head_branch == $branch and .repository.full_name == $repository and .path == ".github/workflows/builds-ci.yml" and .event == "push" and .status == "completed" and .conclusion == "success"' <<< "$recorded_run" >/dev/null; then
     echo 'Late release CI run is no longer the qualified successful attempt.' >&2
     exit 1
   fi

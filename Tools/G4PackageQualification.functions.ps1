@@ -42,7 +42,7 @@ function Get-VerifiedSourceCiRun {
     $run = ($output -join "`n") | ConvertFrom-Json
     if ([string]$run.id -cne $RunId -or [string]$run.run_attempt -cnotmatch '^[1-9][0-9]*$' -or
         [string]$run.repository.full_name -cne $repository -or
-        [string]$run.path -cne '.github/workflows/ci.yml' -or
+        [string]$run.path -cne '.github/workflows/builds-ci.yml' -or
         [string]$run.head_sha -cne $Revision -or [string]$run.head_branch -cne $branch -or
         [string]$run.event -cne 'push' -or [string]$run.status -cne 'completed' -or
         [string]$run.conclusion -cne 'success' -or
@@ -54,7 +54,7 @@ function Get-VerifiedSourceCiRun {
         id = $RunId
         runAttempt = $run.run_attempt
         repository = $repository
-        workflow = '.github/workflows/ci.yml'
+        workflow = '.github/workflows/builds-ci.yml'
         sha = $Revision
         branch = $branch
         url = [string]$run.html_url
@@ -97,7 +97,7 @@ function Assert-CurrentReleaseSource {
         $env:GITHUB_REPOSITORY -cne 'Hexalith/Hexalith.Builds' -or
         $env:GITHUB_REF -cnotin @('refs/heads/main', 'refs/heads/prerelease') -or
         $env:GITHUB_EVENT_NAME -cne 'workflow_dispatch' -or
-        $env:GITHUB_WORKFLOW_REF -cne "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@$($env:GITHUB_REF)" -or
+        $env:GITHUB_WORKFLOW_REF -cne "Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@$($env:GITHUB_REF)" -or
         $env:GITHUB_WORKFLOW_SHA -cne [string]$Qualification.sourceTree.revision -or
         $env:GITHUB_RUN_ID -cnotmatch '^[1-9][0-9]*$' -or
         $env:GITHUB_RUN_ATTEMPT -cnotmatch '^[1-9][0-9]*$')) {

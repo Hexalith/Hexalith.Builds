@@ -109,7 +109,8 @@ This repository:
 
 ### Reusable Workflows
 
-- `.github/workflows/build-release.yml`: Releases this repository with
+- `.github/workflows/builds-ci.yml`: Validates this repository on pushes and pull requests.
+- `.github/workflows/builds-release.yml`: Releases this repository with
   `Github/create-release`.
 - `.github/workflows/domain-ci.yml`: Existing reusable domain module CI contract. See
   [domain-ci.md](.github/workflows/domain-ci.md).
@@ -1255,7 +1256,7 @@ Package publishing behavior:
 
 The NuGet.org `Hexalith` owner must have a Trusted Publishing policy for GitHub
 repository owner `Hexalith`, repository `Hexalith.Builds`, workflow file
-`build-release.yml`, and environment `production`. Grant publication of new
+`builds-release.yml`, and environment `production`. Grant publication of new
 versions for `Hexalith.Builds.Evidence.Cli` and `Hexalith.Builds.Module.Cli`;
 grant new-package publication only if those package IDs have not yet been
 created. Set the repository variable `NUGET_USER` to the individual NuGet.org

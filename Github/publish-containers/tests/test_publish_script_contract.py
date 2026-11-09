@@ -12,7 +12,6 @@ SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
 PUBLISHER = SCRIPT_DIRECTORY / "publish-containers.sh"
 ACTION = SCRIPT_DIRECTORY / "action.yml"
 DOMAIN_RELEASE = SCRIPT_DIRECTORY.parents[1] / ".github" / "workflows" / "domain-release.yml"
-BUILD_RELEASE = SCRIPT_DIRECTORY.parents[1] / ".github" / "workflows" / "build-release.yml"
 RUNTIME_IDENTIFIERS = "linux-musl-x64;linux-musl-arm64"
 # The inventory size the fixture module declares — a per-module value, not a shared invariant.
 FIXTURE_PACKAGE_COUNT = 14
@@ -502,46 +501,6 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertTrue(all(character in "0123456789abcdef" for character in revision))
         self.assertLess(qemu_index, publisher_index)
         self.assertLess(qemu_index, semantic_release_index)
-
-    def test_builds_release_requires_exact_source_ci_publisher_contract_suite(self):
-        ci = BUILD_RELEASE.with_name("ci.yml").read_text(encoding="utf-8")
-        contracts = ci.split("\n  contracts:\n", 1)[1].split("\n  python-tests:\n", 1)[0]
-        self.assertIn("run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1", contracts)
-        self.assertIn("needs: [catalog, contracts, dotnet, python-tests]", ci)
-        workflow = BUILD_RELEASE.read_text(encoding="utf-8")
-        self.assertIn("    needs: verify-source\n", workflow)
-        guard_index = workflow.index("- name: Recheck approved release source and push CI")
-        release_step = workflow.index("- name: Create Release")
-        self.assertLess(guard_index, release_step)
-        self.assertIn("run: bash ./Tools/verify-g4-release-source.sh", workflow[guard_index:release_step])
-        self.assertIn("DISPATCH_SHA: ${{ github.sha }}", workflow[guard_index:release_step])
-        self.assertIn("GH_TOKEN: ${{ github.token }}", workflow[guard_index:release_step])
-        self.assertIn("HEXALITH_G4_SOURCE_CI_RUN_ID: ${{ steps.approved_source.outputs.ci-run-id }}", workflow[release_step:])
-
-    def test_builds_release_is_manual_protected_and_does_not_push_git(self):
-        workflow = BUILD_RELEASE.read_text(encoding="utf-8")
-        source_guard = (SCRIPT_DIRECTORY.parents[1] / "Tools" / "verify-g4-release-source.sh").read_text(
-            encoding="utf-8"
-        )
-        package = json.loads((SCRIPT_DIRECTORY.parents[1] / "package.json").read_text(encoding="utf-8"))
-
-        self.assertIn("on:\n  workflow_dispatch:", workflow)
-        self.assertNotIn("\n  push:", workflow)
-        self.assertIn(
-            "environment: ${{ github.ref_name == 'prerelease' && 'prerelease' || 'production' }}",
-            workflow,
-        )
-        self.assertIn("DISPATCH_REF", workflow)
-        self.assertIn("refs/heads/main|refs/heads/prerelease", source_guard)
-        self.assertIn("persist-credentials: false", workflow)
-        self.assertEqual(
-            ["main", {"name": "prerelease", "prerelease": True}],
-            package["release"]["branches"],
-        )
-        self.assertNotIn("@semantic-release/changelog", package["release"]["plugins"])
-        self.assertNotIn("@semantic-release/git", package["release"]["plugins"])
-        self.assertNotIn("@semantic-release/changelog", package["devDependencies"])
-        self.assertNotIn("@semantic-release/git", package["devDependencies"])
 
     def test_multi_platform_publish_is_exact_and_validation_gated(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

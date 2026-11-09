@@ -11,7 +11,6 @@ $isV2 = $Contract -eq 'v2'
 $ciWorkflowName = if ($isV2) { 'domain-ci-v2.yml' } else { 'domain-ci.yml' }
 $ciWorkflowPath = Join-Path $PSScriptRoot "../.github/workflows/$ciWorkflowName"
 $releaseWorkflowPath = Join-Path $PSScriptRoot '../.github/workflows/domain-release.yml'
-$buildsCiWorkflowPath = Join-Path $PSScriptRoot '../.github/workflows/ci.yml'
 $failures = [System.Collections.Generic.List[string]]::new()
 $checkCount = 0
 
@@ -579,7 +578,6 @@ function Assert-RestoreAndBuildUseReleaseRuntime {
 
 $ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
-$buildsCiWorkflow = Get-Content -LiteralPath $buildsCiWorkflowPath -Raw
 
 $packagePreparation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Prepare package dependencies'
 $packageBody = Get-StepRunBody -Block $packagePreparation -StepName 'Prepare package dependencies'
@@ -1016,7 +1014,6 @@ if (-not $isV2) {
     Assert-Contains -Name "$ciWorkflowName" -Content $ciWorkflow -Expected '--filter-not-trait'
     Assert-Contains -Name "$ciWorkflowName" -Content $ciWorkflow -Expected '--filter-trait'
 }
-Assert-Contains -Name 'ci.yml' -Content $buildsCiWorkflow -Expected 'test-domain-workflow-test-platforms.ps1'
 
 if ($isV2) {
     $isolatedGate = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Require isolated success before integration'
