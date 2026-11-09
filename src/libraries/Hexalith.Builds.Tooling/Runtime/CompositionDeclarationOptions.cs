@@ -133,17 +133,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         string? snapshotPath = Workspace is null ? null : Path.Combine(Workspace, "source-mapping", "catalog-versions.json");
         if (snapshotPath is not null && File.Exists(snapshotPath))
         {
-            CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
-                ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot is null.");
-            ValidateSnapshot(snapshot, source, packageId, snapshotPath);
-            IReadOnlyDictionary<string, string> selected = snapshot.Versions;
-            if (!string.IsNullOrWhiteSpace(projectName))
-            {
-                selected = snapshot.ProjectVersions.FirstOrDefault(pair => string.Equals(pair.Key, projectName, StringComparison.OrdinalIgnoreCase)).Value
-                    ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot has no recorded view for consumer '{projectName}'.");
-            }
-
-            return selected.FirstOrDefault(pair => string.Equals(pair.Key, packageId, StringComparison.OrdinalIgnoreCase)).Value;
+            return ReadRecordedPackageVersion(packageId, source, projectName, snapshotPath);
         }
 
         if (!string.IsNullOrWhiteSpace(projectName))
@@ -162,6 +152,21 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
 
         string property = version[2..^1];
         return catalog.Descendants(property).FirstOrDefault()?.Value.Trim();
+    }
+
+    private string? ReadRecordedPackageVersion(string packageId, string source, string? projectName, string snapshotPath)
+    {
+        CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
+            ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot is null.");
+        ValidateSnapshot(snapshot, source, packageId, snapshotPath);
+        IReadOnlyDictionary<string, string> selected = snapshot.Versions;
+        if (!string.IsNullOrWhiteSpace(projectName))
+        {
+            selected = snapshot.ProjectVersions.FirstOrDefault(pair => string.Equals(pair.Key, projectName, StringComparison.OrdinalIgnoreCase)).Value
+                ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot has no recorded view for consumer '{projectName}'.");
+        }
+
+        return selected.FirstOrDefault(pair => string.Equals(pair.Key, packageId, StringComparison.OrdinalIgnoreCase)).Value;
     }
 
     private string CatalogPath(string module, string source)
