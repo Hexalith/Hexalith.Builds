@@ -623,6 +623,7 @@ def terminate_recorded_session(record: dict, wait: float | None = None) -> bool:
 
 
 def unverified_allocation(evidence: Path, context: dict, job_status: str, reason: str) -> None:
+    """Record that this job's allocation could not be verified, so cleanup stays non-success."""
     write_cleanup_record(evidence, {"schema": CLEANUP_SCHEMA, "status": "allocation-unverified", "reason": reason,
                                     "executionContext": context, "jobStatus": job_status, "verified": False})
 
@@ -739,6 +740,7 @@ class ToolSession:
     """One gated tool session: records it before launch, forwards runner signals to its group, bounds every stop."""
 
     def __init__(self):
+        """Start with no tool process, no observed signal and nothing released or sent."""
         self.child = None
         self.signals = []
         self.released = False
@@ -746,6 +748,7 @@ class ToolSession:
         self.terminated = False
 
     def handle(self, signum, frame):
+        """Record one runner signal and forward it at once."""
         self.signals.append({"signal": signum, "observedAt": time.monotonic()})
         self.forward()
 
@@ -760,6 +763,7 @@ class ToolSession:
             self.terminate()
 
     def terminate(self) -> None:
+        """Send SIGTERM to the tool session once."""
         if not self.terminated:
             self.terminated = True
             signal_groups([self.child.pid], signal.SIGTERM)
