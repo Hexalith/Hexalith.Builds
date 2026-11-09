@@ -102,6 +102,44 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion(package, "probe", "Hexalith.Folders.Aspire").ShouldBe("13.0.0");
     }
 
+    /// <summary>Materializes the actual composed-host view from the owning catalog without enrolling an unpublished fixture.</summary>
+    /// <returns>The exact host-view and missing-fixture assertions.</returns>
+    [Fact]
+    public async Task OwningCatalogMaterializesTheEventStoreHostViewWithoutAPrematureFixturePinAsync()
+    {
+        string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(catalogOverride: catalog).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "actual-host-consumer");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
+        snapshot.ProjectVersions.ContainsKey("Hexalith.Platform.EventStoreHost").ShouldBeTrue();
+        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
+        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
+        options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
+        options.CatalogPackageVersion("Hexalith.Platform.TestExtension", "probe", "Hexalith.Platform.EventStoreHost").ShouldBeNull();
+    }
+
+    /// <summary>Preserves an explicitly selected historical SDK while recording the actual composed-host view.</summary>
+    /// <param name="selected">The explicit historical SDK selection.</param>
+    /// <returns>The materialized host-view version assertion.</returns>
+    [Theory]
+    [InlineData("4.0.4")]
+    [InlineData("4.1.0")]
+    public async Task OwningHostViewPreservesExplicitHistoricalSdkSelectionAsync(string selected)
+    {
+        string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        System.Xml.Linq.XDocument document = System.Xml.Linq.XDocument.Parse(catalog);
+        document.Root!.AddFirst(new System.Xml.Linq.XElement("PropertyGroup", new System.Xml.Linq.XElement("HexalithEventStoreVersion", selected)));
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(catalogOverride: document.ToString()).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "historical-host-consumer");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
+        options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe(selected);
+        options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe").ShouldBe(selected);
+    }
+
     private static CompositionDeclarationOptions Options(string root)
     {
         SourceMapping mapping = new(WorkspaceMode.Package, root, "Hexalith.Platform", [], false);

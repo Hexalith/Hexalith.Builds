@@ -53,8 +53,9 @@ internal sealed class WorkspaceGitFixture : IDisposable
     /// <param name="emptyCatalogVersion">Whether the catalog evaluates an empty package version.</param>
     /// <param name="onDemandCatalogFailure">Whether one project name fails during isolated evaluation.</param>
     /// <param name="conditionalPackageId">The local package sentinel used by the conditional catalog fixture.</param>
+    /// <param name="catalogOverride">An exact repository-owned catalog to commit for an actual consumer-view test.</param>
     /// <returns>The fixture.</returns>
-    public static async Task<WorkspaceGitFixture> CreateAsync(bool withNested = false, bool withSecond = false, bool withDirectManifest = false, bool conditionalCatalog = false, bool largeCatalog = false, bool relativeCatalogImport = false, bool compoundCatalogCondition = false, bool optionalCatalogImport = false, bool malformedCatalog = false, bool functionCatalogCondition = false, string? toolVersionRange = null, bool emptyCatalogVersion = false, bool onDemandCatalogFailure = false, string conditionalPackageId = "Hexalith.Dep")
+    public static async Task<WorkspaceGitFixture> CreateAsync(bool withNested = false, bool withSecond = false, bool withDirectManifest = false, bool conditionalCatalog = false, bool largeCatalog = false, bool relativeCatalogImport = false, bool compoundCatalogCondition = false, bool optionalCatalogImport = false, bool malformedCatalog = false, bool functionCatalogCondition = false, string? toolVersionRange = null, bool emptyCatalogVersion = false, bool onDemandCatalogFailure = false, string conditionalPackageId = "Hexalith.Dep", string? catalogOverride = null)
     {
         string directory = Path.Combine(Path.GetTempPath(), "hexalith-workspace-tests", Guid.NewGuid().ToString("N"));
         _ = System.IO.Directory.CreateDirectory(directory);
@@ -91,6 +92,11 @@ internal sealed class WorkspaceGitFixture : IDisposable
             string catalog = conditionalCatalog
                 ? "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(msbuildprojectname)' == 'Hexalith.Folders.Aspire'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>".Replace("Hexalith.Dep", conditionalPackageId, StringComparison.Ordinal)
                 : "<Project><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /></ItemGroup></Project>";
+            if (catalogOverride is not null)
+            {
+                catalog = catalogOverride;
+            }
+
             if (compoundCatalogCondition)
             {
                 catalog = "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(MSBuildProjectName)' == 'Hexalith.Folders.Aspire' Or '$(Configuration)' == '__never__'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>";
