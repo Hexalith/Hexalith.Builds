@@ -8,6 +8,7 @@ name: CI
 on:
   pull_request:
     branches: [main, prerelease]
+  workflow_dispatch:
   push:
     branches: [main, prerelease]
 
@@ -38,39 +39,10 @@ jobs:
           [[ "$CATALOG_RESULT" == "success" && "$CONTRACTS_RESULT" == "success" && "$DOTNET_RESULT" == "success" && "$PYTHON_RESULT" == "success" && "$QUALITY_RESULT" == "success" ]]
 
   dotnet:
-    runs-on: ubuntu-latest
     name: .NET tests
-    timeout-minutes: 30
+    uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          submodules: false
-          persist-credentials: false
-
-      - name: Initialize .NET
-        uses: ./Github/initialize-dotnet
-        with:
-          global-json-file: global.json
-
-      - name: Restore
-        run: dotnet restore Hexalith.Builds.slnx
-
-      - name: Build
-        run: dotnet build Hexalith.Builds.slnx --no-restore --configuration Release -warnaserror -p:GeneratePackageOnBuild=false
-
-      # One project at a time: solution-level `dotnet test` is not used in this
-      # repository (see the validation harness in DEVELOPMENT.md).
-      - name: Test Hexalith.Builds.Module.Tests
-        run: dotnet test test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj --no-restore --configuration Release
-
-      - name: Test Hexalith.Builds.Evidence.Tests
-        run: dotnet test test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj --no-restore --configuration Release
-
-      - name: Test Hexalith.Builds.Tooling.IntegrationTests
-        run: dotnet test test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj --no-restore --configuration Release
 
   catalog:
     runs-on: ubuntu-latest

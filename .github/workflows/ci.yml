@@ -1,0 +1,68 @@
+name: Shared CI
+
+on:
+  workflow_call:
+    inputs:
+      module-root:
+        description: Test-only module fixture root in the Builds repository.
+        type: string
+        default: ''
+      expected-source:
+        description: Test-only expected-state fixture directory in Builds.
+        type: string
+        default: ''
+    outputs:
+      solution:
+        description: Validated workspace-relative solution path, or none.
+        value: ${{ jobs.ci.outputs.solution }}
+      submodules:
+        description: JSON array of validated workspace-relative direct submodule paths.
+        value: ${{ jobs.ci.outputs.submodules }}
+
+permissions: {}
+
+jobs:
+  ci:
+    name: Build and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CI_REPOSITORY: ${{ github.repository }}
+      CI_MODULE_ROOT: ${{ inputs.module-root }}
+      CI_EXPECTED_SOURCE: ${{ inputs.expected-source }}
+    outputs:
+      solution: ${{ steps.prepare.outputs.solution }}
+      submodules: ${{ steps.prepare.outputs.submodules }}
+    steps:
+      # Stage 1 must stay first. Story 5-1 supplies the guard and commitlint.
+      # Builds' own call never runs a delivered-ref guard (AD-19).
+      - name: Stage 1 reserved for guard and commit format
+        run: ':'
+
+      - name: Checkout module
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: false
+          persist-credentials: false
+
+      # $/ resolves the running workflow's commit, independently of the module
+      # gitlink. Each composite locates scripts using GITHUB_ACTION_PATH.
+      - name: Validate and prepare module
+        id: prepare
+        uses: $/Github/ci-prepare
+
+      - name: Setup module SDK
+        if: steps.prepare.outputs.solution != 'none'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: ${{ steps.prepare.outputs.global-json }}
+
+      - name: Stage 2 restore and Release build
+        if: steps.prepare.outputs.solution != 'none'
+        uses: $/Github/ci-build
+
+      - name: Stage 3 unit tests
+        if: steps.prepare.outputs.solution != 'none'
+        uses: $/Github/ci-unit-tests

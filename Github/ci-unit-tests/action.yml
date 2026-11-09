@@ -1,0 +1,8 @@
+name: Run shared CI unit tests
+description: Evaluate solution test projects and stop after the first failing unit project.
+runs:
+  using: composite
+  steps:
+    - name: Run unit projects in ordinal path order
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_pipeline.py" --phase unit

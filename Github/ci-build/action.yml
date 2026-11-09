@@ -1,0 +1,8 @@
+name: Build shared CI
+description: Restore once and build Release in package mode with analyzers.
+runs:
+  using: composite
+  steps:
+    - name: Restore and build
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_pipeline.py" --phase build

@@ -1,8 +1,0 @@
-name: CI runtime probe
-description: Verify hosted self-reference and composite action path resolution.
-runs:
-  using: composite
-  steps:
-    - name: Verify GITHUB_ACTION_PATH
-      shell: bash
-      run: python3 -c 'import os, pathlib; path = pathlib.Path(os.environ["GITHUB_ACTION_PATH"]); assert (path / "action.yml").is_file(); print("SELF_REFERENCE_OK " + str(path))'

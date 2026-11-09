@@ -1,0 +1,19 @@
+name: Prepare shared CI
+description: Validate module configuration and initialize explicit direct dependencies.
+outputs:
+  solution:
+    description: Validated workspace-relative solution path, or none.
+    value: ${{ steps.prepare.outputs.solution }}
+  submodules:
+    description: JSON array of validated workspace-relative direct submodule paths.
+    value: ${{ steps.prepare.outputs.submodules }}
+  global-json:
+    description: Workspace-relative module global.json path, empty for solution none.
+    value: ${{ steps.prepare.outputs.global-json }}
+runs:
+  using: composite
+  steps:
+    - name: Read validated module configuration
+      id: prepare
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_pipeline.py" --phase prepare
