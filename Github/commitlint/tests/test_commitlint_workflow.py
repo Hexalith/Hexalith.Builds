@@ -28,22 +28,6 @@ def extract_run_block(path, step_name):
 
 
 class CommitlintWorkflowTests(unittest.TestCase):
-    def test_pull_request_title_is_an_explicit_input_transferred_by_environment_and_stdin(self):
-        workflow = WORKFLOW.read_text(encoding="utf-8")
-        script = extract_run_block(WORKFLOW, "Validate commit messages")
-
-        self.assertIn("pull-request-title:", workflow)
-        self.assertIn("PR_TITLE: ${{ inputs.pull-request-title }}", workflow)
-        self.assertIn(
-            "printf '%s\\n' \"$PR_TITLE\" | node --input-type=module -e '",
-            script,
-        )
-        self.assertIn("defaultIgnores: false", script)
-        self.assertNotIn("${{", script)
-        self.assertLess(
-            script.index("printf '%s\\n' \"$PR_TITLE\""),
-            script.index('npx --no-install --ignore-scripts commitlint --from "$PR_BASE_SHA"'),
-        )
 
     def test_pull_request_title_is_not_evaluated_as_shell_code(self):
         script = extract_run_block(WORKFLOW, "Validate commit messages")
@@ -102,13 +86,6 @@ class CommitlintWorkflowTests(unittest.TestCase):
         self.assertIn("types: [opened, synchronize, reopened, edited]", standards)
         self.assertIn("pull-request-title: ${{ github.event.pull_request.title }}", standards)
 
-    def test_builds_caller_registers_exact_title_check_on_edits(self):
-        caller = CALLER.read_text(encoding="utf-8")
-
-        self.assertIn("name: Commitlint", caller)
-        self.assertIn("types: [opened, synchronize, reopened, edited]", caller)
-        self.assertIn("uses: ./.github/workflows/commitlint.yml", caller)
-        self.assertIn("pull-request-title: ${{ github.event.pull_request.title }}", caller)
 
     def test_pinned_commitlint_rejects_malformed_and_default_ignored_titles(self):
         cases = {

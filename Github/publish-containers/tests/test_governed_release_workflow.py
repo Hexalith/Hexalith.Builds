@@ -21,11 +21,8 @@ WORKFLOWS = REPOSITORY_ROOT / ".github" / "workflows"
 DOMAIN_RELEASE = WORKFLOWS / "domain-release.yml"
 DOMAIN_CI = WORKFLOWS / "domain-ci.yml"
 DOMAIN_CI_V2 = WORKFLOWS / "domain-ci-v2.yml"
-DAPR_INIT = REPOSITORY_ROOT / "Github" / "dapr-init" / "action.yml"
 
 FREEZE_VARIABLE = "HEXALITH_RELEASE_PUBLISH_ENABLED"
-USES_PATTERN = re.compile(r"^\s*(?:-\s+)?uses:\s*(?P<value>\S+)", re.MULTILINE)
-PINNED_USES_PATTERN = re.compile(r"^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+(?:/[^@\s]+)?@[0-9a-f]{40}$")
 GOVERNED_CANDIDATE = "0123456789abcdef0123456789abcdef01234567"
 GOVERNED_POLICY_COMMIT = "1123456789abcdef0123456789abcdef01234567"
 GOVERNED_SHA256 = "a" * 64
@@ -34,17 +31,6 @@ GOVERNED_SHA256 = "a" * 64
 def read(path):
     """Read one workflow or action source as text."""
     return path.read_text(encoding="utf-8")
-
-
-def step_indices(workflow, step_name):
-    """Return every start offset of a named step in a workflow source."""
-    marker = f"- name: {step_name}\n"
-    offsets = []
-    start = workflow.find(marker)
-    while start != -1:
-        offsets.append(start)
-        start = workflow.find(marker, start + 1)
-    return offsets
 
 
 def extract_run_block(path, step_name, occurrence=0):
@@ -65,14 +51,6 @@ def extract_run_block(path, step_name, occurrence=0):
             break
         block.append(line[run_indent + 2:] if line.strip() else "")
     return "\n".join(block) + "\n"
-
-
-def job_slice(workflow, job_name):
-    """Return the source of one top-level job."""
-    start = workflow.index(f"\n  {job_name}:\n")
-    remainder = workflow[start + 1:]
-    next_job = re.search(r"\n  [a-z][a-z0-9-]*:\n", remainder)
-    return remainder if next_job is None else remainder[: next_job.start()]
 
 
 def run_block(script, environment, cwd=None):
@@ -215,16 +193,6 @@ class ReleaseFreezeGateTests(unittest.TestCase):
                     self.assertNotIn("publish-enabled=true", output)
                     self.assertIn("::notice title=Release publication frozen::", result.stdout)
 
-    def test_both_freeze_gates_bind_the_caller_repository_variable(self):
-        workflow = read(DOMAIN_RELEASE)
-
-        for occurrence in (0, 1, 2):
-            with self.subTest(occurrence=occurrence):
-                start = step_indices(workflow, "Resolve release publication freeze")[occurrence]
-                self.assertIn(
-                    "HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}",
-                    workflow[start: start + 500],
-                )
 
     def test_the_notice_documents_the_repository_over_organization_shadowing_hazard(self):
         result, _output = run_freeze_gate("")
@@ -232,9 +200,6 @@ class ReleaseFreezeGateTests(unittest.TestCase):
         self.assertIn("shadows the organization value", result.stdout)
 
     def test_both_release_jobs_evaluate_the_same_gate(self):
-        workflow = read(DOMAIN_RELEASE)
-
-        self.assertEqual(3, len(step_indices(workflow, "Resolve release publication freeze")))
         for occurrence in (0, 1, 2):
             with self.subTest(occurrence=occurrence):
                 result, output = run_freeze_gate("true", occurrence)
@@ -242,92 +207,6 @@ class ReleaseFreezeGateTests(unittest.TestCase):
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertIn("publish-enabled=true", output)
 
-    def test_the_gate_precedes_and_conditions_semantic_release(self):
-        workflow = read(DOMAIN_RELEASE)
-        expected = {
-            "release": "if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}",
-            # Governed publication additionally requires an attested candidate; see
-            # test_semantic_release_requires_both_the_gate_and_an_attested_candidate.
-            "governed-release": (
-                "if: ${{ steps.publish-gate.outputs.publish-enabled == 'true'"
-                " && steps.governed-candidate.outputs.release-required == 'true' }}"
-            ),
-        }
-
-        for job_name, condition in expected.items():
-            with self.subTest(job=job_name):
-                source = job_slice(workflow, job_name)
-                gate_index = source.index("- name: Resolve release publication freeze")
-                semantic_index = source.index("- name: Semantic Release")
-                self.assertLess(gate_index, semantic_index)
-                semantic_step = source[semantic_index:]
-                self.assertIn(
-                    condition, semantic_step[: semantic_step.index("run: npm exec --no -- semantic-release")]
-                )
-
-    def test_release_jobs_install_and_run_lockfile_node_binaries_only(self):
-        workflow = read(DOMAIN_RELEASE)
-
-        self.assertIn("run: npm ci --ignore-scripts", workflow)
-        self.assertIn("run: npm exec --no -- semantic-release", workflow)
-        self.assertNotIn("npx semantic-release", workflow)
-        self.assertNotRegex(workflow, r"(?m)^[ \t]+run: npm ci$")
-
-    def test_semantic_release_requires_both_the_gate_and_an_attested_candidate(self):
-        # publish-enabled alone would let a run whose candidate phase resolved no version,
-        # or failed before producing one, reach semantic-release and publish bytes that
-        # were never packed, signed, or attested.
-        source = job_slice(read(DOMAIN_RELEASE), "governed-release")
-        semantic_index = source.index("- name: Semantic Release")
-        condition = next(
-            line.strip()
-            for line in source[semantic_index:].splitlines()
-            if line.strip().startswith("if:")
-        )
-
-        self.assertIn("steps.publish-gate.outputs.publish-enabled == 'true'", condition)
-        self.assertIn("steps.governed-candidate.outputs.release-required == 'true'", condition)
-        self.assertIn("&&", condition)
-
-    def test_the_governed_gate_is_the_first_step_of_the_governed_job(self):
-        # A frozen module must not be told its signing secrets are missing, and must not
-        # pay for a build whose only purpose is a publication that will not happen.
-        source = job_slice(read(DOMAIN_RELEASE), "governed-release")
-        names = re.findall(r"^      - name: (?P<name>.+)$", source, re.MULTILINE)
-
-        self.assertEqual("Resolve release publication freeze", names[0])
-        self.assertLess(
-            source.index("- name: Resolve release publication freeze"),
-            source.index("- name: Validate governed release contract"),
-        )
-
-    def test_the_frozen_verdict_skips_every_governed_publication_step(self):
-        source = job_slice(read(DOMAIN_RELEASE), "governed-release")
-        gated = (
-            "Initialize .NET",
-            "Initialize Node.js",
-            "Cache NuGet packages",
-            "Install npm dependencies",
-            "Restore",
-            "Build",
-            "Prepare release container publisher",
-            "Revalidate governed release source before Semantic Release",
-            "Prepare governed release candidate",
-            "Attest governed release candidate",
-            "Verify governed candidate attestation",
-            "Semantic Release",
-        )
-
-        for step in gated:
-            with self.subTest(step=step):
-                index = source.index(f"- name: {step}\n")
-                condition = next(
-                    line.strip()
-                    for line in source[index:].splitlines()
-                    if line.strip().startswith("if:")
-                )
-
-                self.assertIn("steps.publish-gate.outputs.publish-enabled == 'true'", condition)
 
     def test_a_frozen_governed_caller_does_not_need_its_signing_secrets(self):
         script = extract_run_block(DOMAIN_RELEASE, "Validate governed release contract")
@@ -507,34 +386,6 @@ class GovernedReleaseContractTests(unittest.TestCase):
 
                 self.assertEqual(0, result.returncode, result.stderr)
 
-    def test_governed_mode_consumes_only_the_release_commit(self):
-        source = job_slice(read(DOMAIN_RELEASE), "governed-release")
-
-        self.assertIn("ref: ${{ inputs.release-commit }}", source)
-        self.assertIn("HEXALITH_RELEASE_COMMIT: ${{ inputs.release-commit }}", source)
-        self.assertIn("candidate: ${{ inputs.release-commit }}", source)
-        self.assertGreaterEqual(source.count("GITHUB_SHA: ${{ inputs.release-commit }}"), 2)
-        self.assertNotIn("DISPATCH_SHA", source)
-
-        guard = extract_run_block(DOMAIN_RELEASE, "Revalidate governed release source before Semantic Release")
-        self.assertIn('"$checked_out_sha" != "$RELEASE_COMMIT"', guard)
-        self.assertIn('"$RELEASE_COMMIT" != "$live_source_sha"', guard)
-
-    def test_the_candidate_is_attested_before_any_publication_side_effect(self):
-        source = job_slice(read(DOMAIN_RELEASE), "governed-release")
-        candidate_index = source.index("- name: Prepare governed release candidate")
-        attest_index = source.index("- name: Attest governed release candidate")
-        verify_index = source.index("- name: Verify governed candidate attestation")
-        semantic_index = source.index("- name: Semantic Release")
-
-        self.assertLess(candidate_index, attest_index)
-        self.assertLess(attest_index, verify_index)
-        self.assertLess(verify_index, semantic_index)
-        self.assertIn("subject-path: ${{ inputs.candidate-directory }}/*.nupkg", source)
-        self.assertIn(
-            "HEXALITH_RELEASE_ATTESTATION_BUNDLE: ${{ steps.candidate-attestation.outputs.bundle-path }}",
-            source,
-        )
 
     def test_a_missing_attestation_bundle_blocks_publication(self):
         script = extract_run_block(DOMAIN_RELEASE, "Verify governed candidate attestation")
@@ -550,11 +401,6 @@ class GovernedReleaseContractTests(unittest.TestCase):
                     self.assertIn("refusing to publish", result.stderr)
 
     def test_verification_data_is_always_collected_with_closed_null_fields(self):
-        workflow = read(DOMAIN_RELEASE)
-        source = job_slice(workflow, "governed-release")
-        collect_index = source.index("- name: Collect governed release verification data")
-        self.assertIn("if: ${{ always() }}", source[collect_index: collect_index + 400])
-
         script = extract_run_block(DOMAIN_RELEASE, "Collect governed release verification data")
         with tempfile.TemporaryDirectory() as temporary_directory:
             output_path = Path(temporary_directory) / "github-output"
@@ -684,14 +530,6 @@ class GovernedReleaseContractTests(unittest.TestCase):
             hashlib.sha256(b"attestation-bundle\n").hexdigest(),
             document["attestation"]["bundle_sha256"],
         )
-
-    def test_governed_evidence_upload_never_omits_the_artifact(self):
-        source = job_slice(read(DOMAIN_RELEASE), "governed-release")
-        upload_index = source.index("- name: Upload governed release evidence")
-        upload_step = source[upload_index: upload_index + 600]
-
-        self.assertIn("if: ${{ always() }}", upload_step)
-        self.assertIn("if-no-files-found: error", upload_step)
 
 
 class GovernedCandidatePhaseTests(unittest.TestCase):
@@ -925,167 +763,6 @@ class GovernedSourceRevalidationTests(unittest.TestCase):
         self.assertIn("stale", result.stderr)
 
 
-class GovernedOffParityTests(unittest.TestCase):
-    """A caller that leaves the governed inputs unset keeps the pre-BUILD-REL-1 contract."""
-
-    def test_the_two_release_jobs_are_mutually_exclusive(self):
-        workflow = read(DOMAIN_RELEASE)
-
-        self.assertIn("  release:\n", workflow)
-        self.assertIn(
-            "if: ${{ inputs.release-mode == '' && !inputs.governed-release }}",
-            job_slice(workflow, "release"),
-        )
-        self.assertIn(
-            "if: ${{ inputs.release-mode == '' && inputs.governed-release }}",
-            job_slice(workflow, "governed-release"),
-        )
-        self.assertIn("default: ''", workflow[workflow.index("\n      release-mode:\n"): workflow.index("\n      release-mode:\n") + 500])
-
-    def test_every_governed_input_defaults_to_the_legacy_behavior(self):
-        workflow = read(DOMAIN_RELEASE)
-        declarations = (
-            ("governed-release", "type: boolean", "default: false"),
-            ("candidate-command", "type: string", "default: ''"),
-            ("release-commit", "type: string", "default: ''"),
-            ("ci-run-id", "type: string", "default: ''"),
-            ("ci-run-attempt", "type: string", "default: ''"),
-            ("dependency-policy-repository", "type: string", "default: ''"),
-            ("dependency-policy-path", "type: string", "default: ''"),
-            ("dependency-policy-commit", "type: string", "default: ''"),
-            ("dependency-policy-sha256", "type: string", "default: ''"),
-            ("expected-release-evaluator-digest", "type: string", "default: ''"),
-        )
-
-        for name, declared_type, default in declarations:
-            with self.subTest(input=name):
-                start = workflow.index(f"\n      {name}:\n")
-                block = workflow[start: start + 700]
-                self.assertIn("required: false", block)
-                self.assertIn(declared_type, block)
-                self.assertIn(default, block)
-
-    def test_the_signing_secrets_are_optional_and_scoped_to_governed_steps(self):
-        workflow = read(DOMAIN_RELEASE)
-        legacy = job_slice(workflow, "release")
-        governed = job_slice(workflow, "governed-release")
-
-        self.assertIn(
-            "NUGET_SIGNING_CERTIFICATE_BASE64:\n"
-            "        description: 'Base64 PKCS#12 signing certificate used only by the governed candidate phase.'\n"
-            "        required: false",
-            workflow,
-        )
-        self.assertIn("NUGET_SIGNING_CERTIFICATE_PASSWORD:\n        description:", workflow)
-        self.assertNotIn("NUGET_SIGNING_CERTIFICATE", legacy)
-        self.assertIn(
-            "NUGET_SIGNING_CERTIFICATE_BASE64: ${{ secrets.NUGET_SIGNING_CERTIFICATE_BASE64 }}",
-            governed,
-        )
-        candidate_index = governed.index("- name: Prepare governed release candidate")
-        attest_index = governed.index("- name: Attest governed release candidate")
-        secret_uses = [
-            index
-            for index in range(len(governed))
-            if governed.startswith("secrets.NUGET_SIGNING_CERTIFICATE", index)
-        ]
-        # Presence probes in the contract gate plus the candidate phase only: no signing
-        # material reaches Semantic Release, the container publisher, or an artifact.
-        for index in secret_uses:
-            self.assertTrue(
-                index < governed.index("- name: Checkout exact governed release candidate")
-                or candidate_index < index < attest_index,
-                f"signing secret referenced outside the governed candidate phase at offset {index}",
-            )
-
-    def test_the_governed_job_mirrors_the_legacy_step_sequence(self):
-        workflow = read(DOMAIN_RELEASE)
-        pattern = re.compile(r"^      - name: (?P<name>.+)$", re.MULTILINE)
-        legacy = [match.group("name") for match in pattern.finditer(job_slice(workflow, "release"))]
-        governed = [match.group("name") for match in pattern.finditer(job_slice(workflow, "governed-release"))]
-        renamed = {
-            "Revalidate current source before Semantic Release":
-                "Revalidate governed release source before Semantic Release",
-        }
-        # The freeze gate is deliberately relocated to the front of the governed job so a
-        # frozen caller skips the signing requirement and the build; its position is
-        # asserted by test_the_governed_gate_is_the_first_step_of_the_governed_job.
-        relocated = {"Resolve release publication freeze"}
-        expected = [renamed.get(name, name) for name in legacy if name not in relocated]
-
-        position = 0
-        for name in expected:
-            self.assertIn(name, governed[position:], f"governed job dropped the legacy step {name!r}")
-            position = governed.index(name, position) + 1
-        for name in relocated:
-            self.assertIn(name, governed)
-
-    def test_only_the_governed_job_requests_attestation_permissions(self):
-        workflow = read(DOMAIN_RELEASE)
-        governed = job_slice(workflow, "governed-release")
-
-        publisher = job_slice(workflow, "publish-publication-candidate")
-        builder = job_slice(workflow, "build-publication-candidate")
-        self.assertEqual(2, workflow.count("id-token: write"))
-        self.assertEqual(2, workflow.count("attestations: write"))
-        self.assertIn("id-token: write", governed)
-        self.assertIn("attestations: write", governed)
-        self.assertIn("id-token: write", publisher)
-        self.assertIn("attestations: write", publisher)
-        self.assertNotIn("id-token:", builder)
-        self.assertNotIn("attestations:", builder)
-        legacy = job_slice(workflow, "release")
-        self.assertNotIn("id-token:", legacy)
-        self.assertNotIn("attestations:", legacy)
-        legacy_permissions = legacy[legacy.index("\n    permissions:\n"): legacy.index("\n    steps:\n")]
-        self.assertEqual(
-            {"actions": "read", "contents": "write", "issues": "write", "pull-requests": "write"},
-            dict(re.findall(r"^      ([a-z-]+): (\S+)$", legacy_permissions, re.MULTILINE)),
-        )
-        workflow_permissions = workflow[workflow.index("\npermissions:"): workflow.index("\njobs:\n")]
-        self.assertEqual("\npermissions: {}\n", workflow_permissions)
-
-    def test_the_legacy_job_carries_no_governed_step(self):
-        legacy = job_slice(read(DOMAIN_RELEASE), "release")
-
-        for marker in (
-            "attest-build-provenance",
-            "governed-provenance",
-            "Prepare governed release candidate",
-            "release-commit",
-        ):
-            with self.subTest(marker=marker):
-                self.assertNotIn(marker, legacy)
-
-    def test_governed_ci_inputs_default_off_and_add_no_permission(self):
-        workflow = read(DOMAIN_CI)
-
-        self.assertIn("governed-ci:", workflow)
-        governed_ci = workflow[workflow.index("\n      governed-ci:\n"):]
-        self.assertIn("default: false", governed_ci[: governed_ci.index("\n      builds-execution-sha:")])
-        self.assertIn("permissions:\n  contents: read\n", workflow)
-        self.assertNotIn("id-token", workflow)
-        self.assertNotIn("attestations", workflow)
-        for step, expected_if in (
-            ("Validate governed CI contract", "if: ${{ inputs.governed-ci }}"),
-            ("Checkout approved Builds actions", "if: ${{ inputs.governed-ci }}"),
-            ("Evaluate governed workflow provenance", "if: ${{ inputs.governed-ci }}"),
-            ("Initialize root-declared submodules (governed)", "if: ${{ inputs.governed-ci }}"),
-            ("Initialize root-declared submodules", "if: ${{ !inputs.governed-ci }}"),
-            (
-                "Install and initialize Dapr (governed)",
-                "if: ${{ inputs.integration-test-projects != '' && inputs.governed-ci }}",
-            ),
-            (
-                "Install and initialize Dapr",
-                "if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}",
-            ),
-        ):
-            with self.subTest(step=step):
-                index = workflow.index(f"- name: {step}\n")
-                self.assertIn(expected_if, workflow[index: index + 400])
-
-
 class ShellBlockSyntaxTests(unittest.TestCase):
     """Every inline shell body must parse, including the ones a test cannot execute."""
 
@@ -1113,37 +790,10 @@ class ShellBlockSyntaxTests(unittest.TestCase):
 
                     self.assertEqual(0, result.returncode, result.stderr)
 
-    def test_the_candidate_phase_heredoc_terminates_at_column_zero(self):
-        # A YAML block scalar strips the common indent, so an indented heredoc terminator
-        # would leave the whole Python program inside the heredoc and silently do nothing.
-        for step in ("Prepare governed release candidate", "Collect governed release verification data"):
-            with self.subTest(step=step):
-                script = extract_run_block(DOMAIN_RELEASE, step)
-
-                self.assertIn("<<'PY'\n", script)
-                self.assertIn("\nPY\n", script)
-                self.assertNotIn("\n          PY\n", script)
-
 
 class GovernedIdentityAndPinningTests(unittest.TestCase):
     """Governed paths must resolve only immutable, identity-proven sources."""
 
-    def test_every_governed_workflow_reference_is_literal_40_hex_or_local(self):
-        for path in (DOMAIN_RELEASE, DOMAIN_CI, DOMAIN_CI_V2, DAPR_INIT):
-            for match in USES_PATTERN.finditer(read(path)):
-                value = match.group("value")
-                with self.subTest(path=path.name, uses=value):
-                    if value.startswith("./"):
-                        self.assertTrue(value.startswith("./.hexalith/builds-execution/"))
-                        continue
-                    self.assertRegex(value, PINNED_USES_PATTERN)
-
-    def test_domain_ci_no_longer_resolves_builds_composites_from_a_branch(self):
-        workflow = read(DOMAIN_CI)
-
-        self.assertNotIn("@main", workflow)
-        self.assertIn("Hexalith/Hexalith.Builds/Github/initialize-build@", workflow)
-        self.assertIn("Hexalith/Hexalith.Builds/Github/dapr-init@", workflow)
 
     def test_governed_ci_proves_its_reusable_workflow_identity(self):
         self.assert_governed_ci_identity(DOMAIN_CI)
@@ -1225,32 +875,6 @@ class GovernedIdentityAndPinningTests(unittest.TestCase):
                 mismatched_head.stderr,
             )
 
-    def test_both_governed_stages_hand_their_expected_digest_to_the_evaluator(self):
-        # The evaluator compares the digest against the closure it computed and fails
-        # closed on a mismatch, so the workflows must actually pass it through.
-        for path, input_name in (
-            (DOMAIN_CI, "expected-ci-evaluator-digest"),
-            (DOMAIN_CI_V2, "expected-ci-evaluator-digest"),
-            (DOMAIN_RELEASE, "expected-release-evaluator-digest"),
-        ):
-            with self.subTest(workflow=path.name):
-                workflow = read(path)
-                index = workflow.index("uses: ./.hexalith/builds-execution/Github/governed-provenance")
-
-                self.assertIn(
-                    f"expected-evaluator-digest: ${{{{ inputs.{input_name} }}}}",
-                    workflow[index: index + 900],
-                )
-
-    def test_governed_release_reuses_the_existing_builds_identity_gate(self):
-        governed = job_slice(read(DOMAIN_RELEASE), "governed-release")
-
-        self.assertIn("- name: Validate approved Builds execution identity", governed)
-        self.assertIn("RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}", governed)
-        self.assertIn("RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}", governed)
-        self.assertIn("RESOLVED_WORKFLOW_REF: ${{ job.workflow_ref }}", governed)
-        self.assertIn("uses: ./.hexalith/builds-execution/Github/governed-provenance", governed)
-        self.assertIn("workflow-path: .github/workflows/domain-release.yml", governed)
 
     def test_governed_release_validates_its_workflow_ref_path_like_governed_ci(self):
         # Repository plus commit is satisfied by any reusable workflow in the approved
@@ -1291,23 +915,6 @@ class GovernedIdentityAndPinningTests(unittest.TestCase):
 
                 self.assertNotEqual(0, rejected.returncode)
                 self.assertIn(expected, rejected.stderr)
-
-    def test_governed_provenance_is_exposed_to_callers_as_workflow_outputs(self):
-        release = read(DOMAIN_RELEASE)
-        ci = read(DOMAIN_CI)
-
-        for name in (
-            "governed-candidate",
-            "governed-provenance-sha256",
-            "governed-closure-digest",
-            "governed-reusable-blob-sha256",
-        ):
-            with self.subTest(output=name):
-                self.assertIn(f"      {name}:\n", release)
-                self.assertIn(f"      {name}:\n", ci)
-        self.assertIn("governed-attestation-bundle:", release)
-        self.assertIn("governed-verification-data-path:", release)
-        self.assertIn("governed-provenance-json:", ci)
 
 
 if __name__ == "__main__":

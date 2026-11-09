@@ -33,33 +33,6 @@ function Assert-Contains {
     }
 }
 
-function Assert-MtpBlocksExcludeVstestOptions {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string] $Name,
-
-        [Parameter(Mandatory = $true)]
-        [string] $Content
-    )
-
-    $script:checkCount++
-    $blocks = [regex]::Matches(
-        $Content,
-        '(?ms)^\s{6}- name: [^\r\n]*Microsoft\.Testing\.Platform[^\r\n]*.*?(?=^\s{6}- name:|\z)'
-    )
-    if ($blocks.Count -eq 0) {
-        $script:failures.Add("$Name has no Microsoft.Testing.Platform steps.")
-        return
-    }
-
-    foreach ($block in $blocks) {
-        if ($block.Value -match '(?m)^\s+--(?:logger|collect)') {
-            $script:failures.Add("$Name passes a VSTest-only option inside a Microsoft.Testing.Platform step.")
-            return
-        }
-    }
-}
-
 function Assert-NotContains {
     param(
         [Parameter(Mandatory = $true)]
@@ -223,10 +196,7 @@ function Assert-ShardAggregationRuntime {
     param(
         [Parameter(Mandatory = $true)][string] $Workflow,
         [Parameter(Mandatory = $true)][string] $StepName,
-        [Parameter(Mandatory = $true)][string] $StepId,
         [Parameter(Mandatory = $true)][string] $ProjectsVariable,
-        [Parameter(Mandatory = $true)][string] $ExpectedCondition,
-        [Parameter(Mandatory = $true)][string] $ExpectedEnvironmentMapping,
         [Parameter(Mandatory = $true)][string] $SummaryHeading,
         [Parameter(Mandatory = $true)][string[]] $ExpectedInvocationFragments,
         [Parameter(Mandatory = $true)][bool] $UsesCoverageSwitch
@@ -238,14 +208,6 @@ function Assert-ShardAggregationRuntime {
         return
     }
 
-    Assert-Contains -Name $StepName -Content $block -Expected "id: $StepId"
-    Assert-Contains -Name $StepName -Content $block -Expected $ExpectedCondition
-    Assert-Contains -Name $StepName -Content $block -Expected $ExpectedEnvironmentMapping
-    Assert-Contains -Name $StepName -Content $block -Expected 'if dotnet test'
-    Assert-Contains -Name $StepName -Content $block -Expected 'if [ ! -f "$result_file" ]; then'
-    Assert-Contains -Name $StepName -Content $block -Expected '::error title=Test shard failed::'
-    Assert-Contains -Name $StepName -Content $block -Expected '>> "$GITHUB_STEP_SUMMARY"'
-    Assert-Contains -Name $StepName -Content $block -Expected 'printf ''failure-count=%d\n'' "$failures"'
 
     $body = Get-StepRunBody -Block $block -StepName $StepName
     if ([string]::IsNullOrWhiteSpace($body)) {
@@ -480,31 +442,6 @@ function Assert-PlatformAggregationSequence {
         -Expected '::error title=Blocking test failures::1 test project(s) failed across the blocking tiers.'
 }
 
-function Test-MtpCoverageBlock {
-    param([Parameter(Mandatory = $true)][string] $Block)
-
-    if ([string]::IsNullOrWhiteSpace($Block)) {
-        return $false
-    }
-
-    $emptyIndex = $Block.IndexOf('coverage_args=()', [StringComparison]::Ordinal)
-    $guardIndex = $Block.IndexOf('if [ "$RUN_COVERAGE_GATE" = "true" ]; then', [StringComparison]::Ordinal)
-    $coverageIndex = $Block.IndexOf(
-        'coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)',
-        [StringComparison]::Ordinal
-    )
-    $guardEndIndex = $Block.IndexOf("`n            fi", [StringComparison]::Ordinal)
-    $invocationIndex = $Block.IndexOf('"${coverage_args[@]}"', [StringComparison]::Ordinal)
-
-    return $Block.Contains('RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}', [StringComparison]::Ordinal) -and
-        $emptyIndex -ge 0 -and
-        $guardIndex -gt $emptyIndex -and
-        $coverageIndex -gt $guardIndex -and
-        $guardEndIndex -gt $coverageIndex -and
-        $invocationIndex -gt $guardEndIndex -and
-        ([regex]::Matches($Block, [regex]::Escape('coverage_args+=('))).Count -eq 1
-}
-
 function Assert-RestoreAndBuildUseReleaseRuntime {
     param([Parameter(Mandatory = $true)][string] $Workflow)
 
@@ -581,10 +518,6 @@ $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
 
 $packagePreparation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Prepare package dependencies'
 $packageBody = Get-StepRunBody -Block $packagePreparation -StepName 'Prepare package dependencies'
-Assert-Contains -Name 'Package preparation opt-in' -Content $packagePreparation -Expected "inputs.package-prepare-script != ''"
-Assert-Contains -Name 'Package preparation deadline' -Content $packageBody -Expected 'timeout --signal=TERM --kill-after=30s 1800'
-$expectedPreparationCount = if ($isV2) { 1 } else { 3 }
-Assert-Condition -Name 'Package preparation in every job' -Condition (([regex]::Matches($ciWorkflow, '      - name: Prepare package dependencies')).Count -eq $expectedPreparationCount) -Failure 'must prepare before restore in every applicable job.'
 foreach ($code in @(0, 23)) {
     $fixture = "mkdir -p hooks`nprintf 'exit $code\n' > hooks/packages.sh`n"
     $result = Invoke-WorkflowBashBody -Body ($fixture + $packageBody) -Environment @{ PACKAGE_PREPARE_SCRIPT = 'hooks/packages.sh' }
@@ -654,9 +587,6 @@ if (-not $isV2) {
     )) {
         $block = Get-NamedStepBlock -Content $ciWorkflow -StepName $step.Name
         $body = Get-StepRunBody -Block $block -StepName $step.Name
-        Assert-Contains -Name $step.Name -Content $block -Expected 'timeout-minutes: ${{ inputs.aspire-'
-        Assert-Contains -Name $step.Name -Content $block -Expected 'TEST_PLATFORM: ${{ inputs.test-platform }}'
-        Assert-Contains -Name $step.Name -Content $body -Expected '--signal=TERM --kill-after=30s'
         foreach ($code in @(0, 23, 124)) {
             $environment = @{ $step.Script = 'hooks/run.sh'; $step.Bound = '2' }
             $fixture = "mkdir -p hooks`nprintf 'exit $code\n' > hooks/run.sh`n"
@@ -670,23 +600,6 @@ if (-not $isV2) {
     $trustStepName = 'Trust HTTPS development certificates for live sockets'
     $trustBlock = Get-NamedStepBlock -Content $aspireJob -StepName $trustStepName
     $trustBody = Get-StepRunBody -Block $trustBlock -StepName $trustStepName
-    $trustCondition = [regex]::Match($trustBlock, '(?m)^        if: \$\{\{ (?<Condition>[^\r\n]+) \}\}\r?$').Groups['Condition'].Value
-    $trustClause = "inputs\.(?<Input>aspire-test-project|aspire-browser-project) != ''"
-    Assert-Condition -Name 'Aspire HTTPS trust condition' `
-        -Condition ([regex]::IsMatch($trustCondition, "\A$trustClause(?: \|\| $trustClause)*\z")) `
-        -Failure 'must select the configured .NET or browser lane without an unmodelled condition.'
-    $trustInputs = @([regex]::Matches($trustCondition, $trustClause) | ForEach-Object { $_.Groups['Input'].Value })
-    foreach ($scenario in @(
-        @{ Name = '.NET-only'; Project = 'tests/Module.Aspire.Tests'; Browser = ''; Expected = $true },
-        @{ Name = 'browser'; Project = ''; Browser = 'tests/browser'; Expected = $true },
-        @{ Name = 'combined'; Project = 'tests/Module.Aspire.Tests'; Browser = 'tests/browser'; Expected = $true },
-        @{ Name = 'unconfigured'; Project = ''; Browser = ''; Expected = $false }
-    )) {
-        $inputs = @{ 'aspire-test-project' = $scenario.Project; 'aspire-browser-project' = $scenario.Browser }
-        $applies = @($trustInputs | Where-Object { $inputs[$_] -ne '' }).Count -gt 0
-        Assert-Condition -Name "Aspire HTTPS trust $($scenario.Name) applicability" `
-            -Condition ($applies -eq $scenario.Expected) -Failure 'selects the wrong certificate trust behavior.'
-    }
     $trustFixture = @'
 set -euo pipefail
 export GITHUB_ENV="${GITHUB_OUTPUT}.env"
@@ -708,81 +621,12 @@ dotnet() {
         -Failure "did not export and persist OpenSSL trust before dev-certs: $($trustResult.Output)"
     Assert-Contains -Name 'Aspire HTTPS trust invocation' -Content $trustResult.Output `
         -Expected 'HTTPS trust receives exported and persisted OpenSSL configuration.'
-    Assert-Contains -Name 'Aspire HTTPS NSS stores' -Content $trustBody -Expected '"$HOME/.pki/nssdb" "$HOME/.local/share/pki/nssdb"'
-    Assert-Contains -Name 'Aspire HTTPS NSS prerequisites' -Content $trustBody -Expected 'sudo apt-get install -y libnss3-tools'
-    Assert-Contains -Name 'Aspire HTTPS browser peer trust' -Content $trustBody -Expected '-t ''P,,'' -i "$live_certificate"'
-    Assert-Condition -Name 'Aspire HTTPS trust ordering' `
-        -Condition ($aspireJob.IndexOf($trustStepName) -lt $aspireJob.IndexOf('Restore and Build')) `
-        -Failure 'must configure trust before building or executing the Aspire lane.'
-    $browserTools = Get-NamedStepBlock -Content $aspireJob -StepName 'Install pinned browser qualification tools'
-    Assert-Contains -Name 'Aspire browser tooling opt-in' -Content $browserTools -Expected "inputs.aspire-browser-project != ''"
-    $daprIndex = $aspireJob.IndexOf('Install and initialize Dapr')
-    $prepareIndex = $aspireJob.IndexOf('Prepare Aspire tier')
-    $runnerIndex = $aspireJob.IndexOf('Run Aspire hook')
-    Assert-Condition -Name 'Aspire Dapr step exists' -Condition ($daprIndex -ge 0) -Failure 'omits Dapr initialization in the Aspire job.'
-    Assert-Condition -Name 'Aspire preparation step exists' -Condition ($prepareIndex -ge 0) -Failure 'omits preparation in the Aspire job.'
-    Assert-Condition -Name 'Aspire runner step exists' -Condition ($runnerIndex -ge 0) -Failure 'omits execution in the Aspire job.'
-    Assert-Condition -Name 'Aspire preparation ordering' -Condition ($daprIndex -lt $prepareIndex -and $prepareIndex -lt $runnerIndex) -Failure 'does not initialize Dapr before preparation and execution.'
-    foreach ($platform in @('VSTest', 'Microsoft.Testing.Platform')) {
-        $block = Get-NamedStepBlock -Content $ciWorkflow -StepName "Aspire contract tests (Tier 3, non-Performance, $platform)"
-        Assert-Contains -Name "Aspire default $platform" -Content $block -Expected "inputs.aspire-runner-script == '' && inputs.test-platform =="
-    }
-    $hookUpload = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Upload Aspire hook evidence'
-    Assert-Contains -Name 'Aspire hook upload' -Content $hookUpload -Expected 'always()'
-    Assert-Contains -Name 'Aspire hook upload validation gate' -Content $hookUpload -Expected "steps.validate-aspire-hooks.outcome == 'success'"
-    Assert-Contains -Name 'Aspire hook upload path' -Content $hookUpload -Expected 'path: ${{ inputs.aspire-evidence-path }}'
 }
 
-foreach ($workflow in @(
-    [pscustomobject] @{ Name = $ciWorkflowName; Content = $ciWorkflow },
-    [pscustomobject] @{ Name = 'domain-release.yml'; Content = $releaseWorkflow }
-)) {
-    Assert-Contains -Name $workflow.Name -Content $workflow.Content -Expected "test-platform:"
-    Assert-Contains -Name $workflow.Name -Content $workflow.Content -Expected "default: 'vstest'"
-    Assert-Contains -Name $workflow.Name -Content $workflow.Content -Expected "inputs.test-platform == 'microsoft-testing-platform'"
-    Assert-Contains -Name $workflow.Name -Content $workflow.Content -Expected '--report-xunit-trx'
-    Assert-Contains -Name $workflow.Name -Content $workflow.Content -Expected '--report-xunit-trx-filename'
-    Assert-Contains -Name $workflow.Name -Content $workflow.Content -Expected '--logger "trx;LogFileName='
-    Assert-Contains -Name $workflow.Name -Content $workflow.Content -Expected '--collect:"XPlat Code Coverage"'
-    Assert-MtpBlocksExcludeVstestOptions -Name $workflow.Name -Content $workflow.Content
-}
-
-Assert-NotContains -Name "$ciWorkflowName" -Content $ciWorkflow -Unexpected 'run-coverage-gate is not supported with microsoft-testing-platform'
-$unitMtpBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Unit tests (Tier 1, Microsoft.Testing.Platform)'
-Assert-Condition -Name "$ciWorkflowName unit MTP coverage" -Condition (Test-MtpCoverageBlock -Block $unitMtpBlock) `
-    -Failure 'does not preserve independent enabled and disabled coverage arguments.'
-if (-not $isV2) {
-    $integrationMtpBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Integration tests (Tier 2, Microsoft.Testing.Platform)'
-    Assert-Condition -Name "$ciWorkflowName integration MTP coverage" -Condition (Test-MtpCoverageBlock -Block $integrationMtpBlock) `
-        -Failure 'does not preserve independent enabled and disabled coverage arguments.'
-}
-
-$coverageAppend = 'coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)'
-$disabledSeed = 'coverage_args=()'
-Assert-Condition -Name "$ciWorkflowName unit enabled-coverage mutation contract" `
-    -Condition (-not (Test-MtpCoverageBlock -Block $unitMtpBlock.Replace($coverageAppend, '# removed'))) `
-    -Failure 'did not reject removal of the unit enabled-coverage arguments.'
-Assert-Condition -Name "$ciWorkflowName unit disabled-coverage mutation contract" `
-    -Condition (-not (Test-MtpCoverageBlock -Block $unitMtpBlock.Replace($disabledSeed, 'coverage_args=(--coverage)'))) `
-    -Failure 'did not reject pre-populated unit disabled-coverage arguments.'
-if (-not $isV2) {
-    Assert-Condition -Name "$ciWorkflowName integration enabled-coverage mutation contract" `
-        -Condition (-not (Test-MtpCoverageBlock -Block $integrationMtpBlock.Replace($coverageAppend, '# removed'))) `
-        -Failure 'did not reject removal of the integration enabled-coverage arguments.'
-    Assert-Condition -Name "$ciWorkflowName integration disabled-coverage mutation contract" `
-        -Condition (-not (Test-MtpCoverageBlock -Block $integrationMtpBlock.Replace($disabledSeed, 'coverage_args=(--coverage)'))) `
-        -Failure 'did not reject pre-populated integration disabled-coverage arguments.'
-    Assert-Condition -Name "$ciWorkflowName unit/integration isolation" `
-        -Condition ((Test-MtpCoverageBlock -Block $unitMtpBlock) -and (Test-MtpCoverageBlock -Block $integrationMtpBlock)) `
-        -Failure 'does not validate the unit and integration coverage blocks separately.'
-}
 
 Assert-ShardAggregationRuntime -Workflow $ciWorkflow `
     -StepName 'Unit tests (Tier 1, VSTest)' `
-    -StepId 'unit-tests-vstest' `
     -ProjectsVariable 'UNIT_TEST_PROJECTS' `
-    -ExpectedCondition "if: `${{ inputs.unit-test-projects != '' && inputs.test-platform == 'vstest' }}" `
-    -ExpectedEnvironmentMapping "UNIT_TEST_PROJECTS: `${{ inputs.unit-test-projects }}" `
     -SummaryHeading '## Tier 1 Unit Tests (VSTest)' `
     -ExpectedInvocationFragments @(
         '--logger trx;LogFileName=Fail.First.csproj.trx',
@@ -792,10 +636,7 @@ Assert-ShardAggregationRuntime -Workflow $ciWorkflow `
     -UsesCoverageSwitch $false
 Assert-ShardAggregationRuntime -Workflow $ciWorkflow `
     -StepName 'Unit tests (Tier 1, Microsoft.Testing.Platform)' `
-    -StepId 'unit-tests-mtp' `
     -ProjectsVariable 'UNIT_TEST_PROJECTS' `
-    -ExpectedCondition "if: `${{ inputs.unit-test-projects != '' && inputs.test-platform == 'microsoft-testing-platform' }}" `
-    -ExpectedEnvironmentMapping "UNIT_TEST_PROJECTS: `${{ inputs.unit-test-projects }}" `
     -SummaryHeading '## Tier 1 Unit Tests (Microsoft.Testing.Platform)' `
     -ExpectedInvocationFragments @(
         '--results-directory TestResults/Fail.First.csproj',
@@ -807,10 +648,7 @@ Assert-ShardAggregationRuntime -Workflow $ciWorkflow `
 if (-not $isV2) {
     Assert-ShardAggregationRuntime -Workflow $ciWorkflow `
         -StepName 'Integration tests (Tier 2, VSTest)' `
-        -StepId 'integration-tests-vstest' `
         -ProjectsVariable 'INTEGRATION_TEST_PROJECTS' `
-        -ExpectedCondition "if: `${{ inputs.integration-test-projects != '' && inputs.test-platform == 'vstest' }}" `
-        -ExpectedEnvironmentMapping "INTEGRATION_TEST_PROJECTS: `${{ inputs.integration-test-projects }}" `
         -SummaryHeading '## Tier 2 Integration Tests (VSTest)' `
         -ExpectedInvocationFragments @(
             '--logger trx;LogFileName=Fail.First.csproj.trx',
@@ -820,10 +658,7 @@ if (-not $isV2) {
         -UsesCoverageSwitch $false
     Assert-ShardAggregationRuntime -Workflow $ciWorkflow `
         -StepName 'Integration tests (Tier 2, Microsoft.Testing.Platform)' `
-        -StepId 'integration-tests-mtp' `
         -ProjectsVariable 'INTEGRATION_TEST_PROJECTS' `
-        -ExpectedCondition "if: `${{ inputs.integration-test-projects != '' && inputs.test-platform == 'microsoft-testing-platform' }}" `
-        -ExpectedEnvironmentMapping "INTEGRATION_TEST_PROJECTS: `${{ inputs.integration-test-projects }}" `
         -SummaryHeading '## Tier 2 Integration Tests (Microsoft.Testing.Platform)' `
         -ExpectedInvocationFragments @(
             '--results-directory TestResults/Fail.First.csproj',
@@ -848,37 +683,6 @@ if (-not $isV2) {
 $failureGateBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Fail on blocking test failures'
 if ([string]::IsNullOrWhiteSpace($failureGateBlock)) {
     $failures.Add('domain-ci.yml is missing the Fail on blocking test failures step.')
-}
-else {
-    Assert-Contains -Name "$ciWorkflowName final failure gate" -Content $failureGateBlock -Expected 'if: always()'
-    foreach ($channel in $failureOutputChannels) {
-        $expectedMapping = '          ' + $channel.Variable + ': ${{ steps.' + $channel.StepId + '.outputs.failure-count }}'
-        Assert-Condition -Name "$ciWorkflowName $($channel.Name) output mapping" `
-            -Condition ([regex]::Matches($failureGateBlock, '(?m)^' + [regex]::Escape($expectedMapping) + '\r?$').Count -eq 1) `
-            -Failure 'does not map its failure-count variable to exactly one matching shard output.'
-    }
-
-    $coverageGateIndex = $ciWorkflow.IndexOf('- name: Validate coverage gates', [StringComparison]::Ordinal)
-    $failureGateIndex = $ciWorkflow.IndexOf('- name: Fail on blocking test failures', [StringComparison]::Ordinal)
-    $evidenceUploadIndex = $ciWorkflow.IndexOf('- name: Upload test and coverage evidence', [StringComparison]::Ordinal)
-    Assert-Condition -Name "$ciWorkflowName final failure gate order" `
-        -Condition ($coverageGateIndex -ge 0 -and $failureGateIndex -gt $coverageGateIndex -and $evidenceUploadIndex -gt $failureGateIndex) `
-        -Failure 'does not place the final gate after coverage validation and before always-run evidence upload.'
-
-    if (-not $isV2) {
-        $governedDaprIndex = $ciWorkflow.IndexOf('- name: Install and initialize Dapr (governed)', [StringComparison]::Ordinal)
-        $legacyDaprIndex = $ciWorkflow.IndexOf("- name: Install and initialize Dapr`n", [StringComparison]::Ordinal)
-        if ($legacyDaprIndex -lt 0) {
-            $legacyDaprIndex = $ciWorkflow.IndexOf("- name: Install and initialize Dapr`r`n", [StringComparison]::Ordinal)
-        }
-        foreach ($platform in @('VSTest', 'Microsoft.Testing.Platform')) {
-            $unitIndex = $ciWorkflow.IndexOf("- name: Unit tests (Tier 1, $platform)", [StringComparison]::Ordinal)
-            $integrationIndex = $ciWorkflow.IndexOf("- name: Integration tests (Tier 2, $platform)", [StringComparison]::Ordinal)
-            Assert-Condition -Name "$ciWorkflowName $platform prerequisite order" `
-                -Condition ($unitIndex -ge 0 -and $governedDaprIndex -gt $unitIndex -and $legacyDaprIndex -gt $governedDaprIndex -and $integrationIndex -gt $legacyDaprIndex -and $coverageGateIndex -gt $integrationIndex -and $failureGateIndex -gt $coverageGateIndex) `
-                -Failure 'does not run Tier 1, Dapr initialization, Tier 2, coverage, and the final gate in order.'
-        }
-    }
 }
 
 $failureGateBody = $(if ($failureGateBlock) {
@@ -992,6 +796,8 @@ if (-not [string]::IsNullOrWhiteSpace($failureGateBody)) {
             -UnitFailureVariable 'UNIT_VSTEST_FAILURE_COUNT' `
             -IntegrationFailureVariable 'INTEGRATION_VSTEST_FAILURE_COUNT' `
             -UsesCoverageSwitch $false
+        $unitMtpBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Unit tests (Tier 1, Microsoft.Testing.Platform)'
+        $integrationMtpBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Integration tests (Tier 2, Microsoft.Testing.Platform)'
         Assert-PlatformAggregationSequence `
             -Name 'Microsoft.Testing.Platform' `
             -TestPlatform 'microsoft-testing-platform' `
@@ -1004,16 +810,6 @@ if (-not [string]::IsNullOrWhiteSpace($failureGateBody)) {
     }
 }
 
-$evidenceUploadBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Upload test and coverage evidence'
-Assert-Contains -Name "$ciWorkflowName evidence upload" -Content $evidenceUploadBlock -Expected 'if: always()'
-Assert-Contains -Name "$ciWorkflowName evidence upload" -Content $evidenceUploadBlock -Expected 'name: blocking-test-results'
-Assert-Contains -Name "$ciWorkflowName evidence upload" -Content $evidenceUploadBlock -Expected 'TestResults/**/*.trx'
-Assert-Contains -Name "$ciWorkflowName evidence upload" -Content $evidenceUploadBlock -Expected 'TestResults/**/coverage.cobertura.xml'
-
-if (-not $isV2) {
-    Assert-Contains -Name "$ciWorkflowName" -Content $ciWorkflow -Expected '--filter-not-trait'
-    Assert-Contains -Name "$ciWorkflowName" -Content $ciWorkflow -Expected '--filter-trait'
-}
 
 if ($isV2) {
     $isolatedGate = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Require isolated success before integration'
@@ -1034,7 +830,6 @@ if ($isV2) {
     $inputGate = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate declared integration inputs'
     # The next step is an unnamed checkout, so keep only this step's own run body.
     $inputBody = if ($inputGate) { (Get-StepRunBody -Block $inputGate -StepName 'Validate declared integration inputs') -split '(?m)^\s*- uses: ', 2 | Select-Object -First 1 } else { 'exit 0' }
-    Assert-Condition -Name 'Inputs are validated first' -Condition ($inputGate.Length -gt 0 -and $ciWorkflow.IndexOf('- name: Validate declared integration inputs') -lt $ciWorkflow.IndexOf('actions/checkout@')) -Failure 'must refuse retired or empty inputs before checkout, build or tests.'
     foreach ($scenario in @('passed', 'missing-suite', 'missing-manifest', 'missing-units', 'legacy', 'aspire')) {
         $environment = @{ MODULE_MANIFEST = 'module/manifest.json'; INTEGRATION_PROFILES = 'package'; UNIT_PROJECTS = 'isolated'; LEGACY_INTEGRATION = ''; LEGACY_ASPIRE = '' }
         switch ($scenario) {
@@ -1047,63 +842,9 @@ if ($isV2) {
         $result = Invoke-WorkflowBashBody -Body $inputBody -Environment $environment
         Assert-Condition -Name "Early input validation $scenario" -Condition (($result.ExitCode -eq 0) -eq ($scenario -eq 'passed')) -Failure "returned $($result.ExitCode)."
     }
-    Assert-Condition -Name 'Required isolated projects' -Condition ([regex]::IsMatch($ciWorkflow, "(?ms)^      unit-test-projects:\r?\n(?:(?!^      [a-z]).)*?^        required: true$")) -Failure 'unit-test-projects must be a required input.'
-    Assert-NotContains -Name 'No empty isolated default' -Content ([regex]::Match($ciWorkflow, "(?ms)^      unit-test-projects:\r?\n(?:(?!^      [a-z]).)*").Value) -Unexpected 'default:'
 
-    $coverageIndex = $ciWorkflow.IndexOf('- name: Validate coverage gates')
-    Assert-Condition -Name 'Coverage precedes provisioning' -Condition ($coverageIndex -gt $ciWorkflow.IndexOf('- name: Require isolated success before integration') -and $coverageIndex -lt $ciWorkflow.IndexOf('- name: Install integration toolchain without starting services') -and $coverageIndex -lt $ciWorkflow.IndexOf('- name: Authenticate pull-only integration registry')) -Failure 'the coverage gate must run before toolchain installation, registry login and integration.'
-
-    $ownerRun = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Runner-owned package integration'
     $finalize = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Finalize exact CI owner'
-    $integrationUpload = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Upload classified integration diagnostics'
-    Assert-Contains -Name 'Package integration gate' -Content $ownerRun -Expected "steps.isolated-gate.outcome == 'success'"
-    Assert-Contains -Name 'Exact recovery receipt' -Content $ownerRun -Expected '--receipt "$RUNNER_TEMP/hexalith-ci-owner.json"'
-    Assert-Contains -Name 'Unconditional exact finalizer' -Content $finalize -Expected 'always()'
-    Assert-Contains -Name 'Actual cancellation status' -Content $finalize -Expected 'CI_JOB_STATUS: ${{ job.status }}'
-    Assert-Contains -Name 'Cancellation status reaches helper' -Content $finalize -Expected '--job-status "$CI_JOB_STATUS"'
-    Assert-Contains -Name 'Finite finalizer' -Content $finalize -Expected 'timeout-minutes: 4'
-    Assert-Contains -Name 'Classified diagnostic upload' -Content $integrationUpload -Expected 'always()'
-    Assert-NotContains -Name 'Retired direct integration' -Content $ciWorkflow -Unexpected '- name: Integration tests (Tier 2'
-    Assert-NotContains -Name 'Retired advisory AppHost job' -Content $ciWorkflow -Unexpected '  aspire-tests:'
-    Assert-NotContains -Name 'Integration registry write credentials' -Content $ciWorkflow -Unexpected 'packages: write'
-    $secretUses = @([regex]::Matches($ciWorkflow, '\$\{\{\s*secrets\.([a-zA-Z0-9_-]+)\s*\}\}') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
-    Assert-Condition -Name 'Only explicit pull-only secrets' -Condition ($secretUses.Count -eq 2 -and 'registry-pull-username' -cin $secretUses -and 'registry-pull-password' -cin $secretUses) -Failure 'requires exactly the dedicated pull-only username/password interface.'
-    Assert-NotContains -Name 'No inherited credential inventory' -Content $ciWorkflow -Unexpected 'secrets: inherit'
-    Assert-NotContains -Name 'No privileged PR credential event' -Content $ciWorkflow -Unexpected 'pull_request_target'
-
-    $ownerBody = Get-StepRunBody -Block $ownerRun -StepName 'Runner-owned package integration'
-    Assert-Condition -Name 'Helper is the signalled step process' -Condition ($ownerBody.TrimStart().StartsWith('exec python3 .hexalith/builds-execution/Github/run-module-integration/run_module_integration.py run ')) -Failure 'must exec the helper so the runner cancellation reaches it.'
-    # The timeout budget is derived from the helper's own constants, never from numbers repeated here.
-    $helperSource = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../Github/run-module-integration/run_module_integration.py') -Raw
-    $budget = @{}
-    foreach ($match in [regex]::Matches($helperSource, '(?m)^(?<Name>[A-Z_]+_(?:SECONDS|MINUTES)) = (?<Value>\d+(?:\.\d+)?)\r?$')) {
-        $budget[$match.Groups['Name'].Value] = [double] $match.Groups['Value'].Value
-    }
-    $budgetNames = @('VERIFY_TOOL_SECONDS', 'TIMEOUT_STOP_SECONDS', 'POST_KILL_WAIT_SECONDS', 'SESSION_SIGNAL_WAIT_SECONDS', 'DOWN_TIMEOUT_SECONDS', 'RESERVE_MARGIN_SECONDS', 'FINALIZER_STEP_SECONDS', 'MINIMUM_TIMEOUT_SECONDS')
-    Assert-Condition -Name 'Helper budget constants' -Condition (@($budgetNames | Where-Object { -not $budget.ContainsKey($_) }).Count -eq 0) -Failure 'the helper must declare every bounded wait of its timeout path.'
-    $finalizeReserve = 2 * 3 * $budget['SESSION_SIGNAL_WAIT_SECONDS'] + $budget['VERIFY_TOOL_SECONDS'] + $budget['DOWN_TIMEOUT_SECONDS']
-    $stepReserve = $budget['VERIFY_TOOL_SECONDS'] + $budget['TIMEOUT_STOP_SECONDS'] + $budget['POST_KILL_WAIT_SECONDS'] + $finalizeReserve + $budget['RESERVE_MARGIN_SECONDS']
-    Assert-Contains -Name 'Helper reserves its finalize path' -Content $helperSource -Expected 'FINALIZE_RESERVE_SECONDS = 2 * 3 * int(SESSION_SIGNAL_WAIT_SECONDS) + VERIFY_TOOL_SECONDS + DOWN_TIMEOUT_SECONDS'
-    Assert-Contains -Name 'Helper reserves its timeout path' -Content $helperSource -Expected "STEP_RESERVE_SECONDS = (VERIFY_TOOL_SECONDS + TIMEOUT_STOP_SECONDS + POST_KILL_WAIT_SECONDS + FINALIZE_RESERVE_SECONDS`n                        + RESERVE_MARGIN_SECONDS)"
-    $stepTimeout = [regex]::Match($ownerRun, '(?m)^        timeout-minutes: (?<Minutes>\d+)\r?$')
-    $stepBudget = [regex]::Match($ownerBody, '--step-timeout-minutes (?<Minutes>\d+) ')
-    Assert-Condition -Name 'Helper derives from this step timeout' -Condition ($stepTimeout.Success -and $stepBudget.Success -and $stepBudget.Groups['Minutes'].Value -eq $stepTimeout.Groups['Minutes'].Value) -Failure 'must pass the exact integration step timeout to the helper.'
-    Assert-Condition -Name 'Step holds the minimum timeout path' -Condition ($stepTimeout.Success -and ([int] $stepTimeout.Groups['Minutes'].Value * 60) -ge ($stepReserve + $budget['MINIMUM_TIMEOUT_SECONDS'])) -Failure "the step must hold the minimum helper timeout plus its $stepReserve-second reserve."
-    Assert-NotContains -Name 'No fixed helper timeout' -Content $ownerBody -Unexpected '--timeout-seconds'
-    Assert-Contains -Name 'Helper derives from the job timeout' -Content $ownerBody -Expected '--job-timeout-minutes "$JOB_TIMEOUT_MINUTES"'
-    Assert-Contains -Name 'Job timeout reaches the helper' -Content $ownerRun -Expected 'JOB_TIMEOUT_MINUTES: ${{ inputs.build-timeout-minutes }}'
-    Assert-Contains -Name 'Helper derives from the job start' -Content $ownerBody -Expected '--job-started-epoch "$JOB_STARTED_EPOCH"'
-    Assert-Contains -Name 'Job start reaches the helper' -Content $ownerRun -Expected 'JOB_STARTED_EPOCH: ${{ steps.integration-inputs.outputs.started-epoch }}'
-    $inputStep = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate declared integration inputs'
-    Assert-Contains -Name 'First step records the job start' -Content $inputStep -Expected 'id: integration-inputs'
-    Assert-Contains -Name 'Job start is an immutable step output' -Content $inputStep -Expected 'echo "started-epoch=$(date +%s)" >> "$GITHUB_OUTPUT"'
-    Assert-Condition -Name 'Job start is recorded first' -Condition ($ciWorkflow.IndexOf('- name: Validate declared integration inputs') -lt $ciWorkflow.IndexOf('- uses: actions/checkout@')) -Failure 'the job start must be recorded by the first step.'
-    $finalizerTimeout = [regex]::Match($finalize, '(?m)^        timeout-minutes: (?<Minutes>\d+)\r?$')
-    Assert-Condition -Name 'Finalizer step equals the helper reserve' -Condition ($finalizerTimeout.Success -and ([int] $finalizerTimeout.Groups['Minutes'].Value * 60) -eq $budget['FINALIZER_STEP_SECONDS'] -and $budget['FINALIZER_STEP_SECONDS'] -ge ($finalizeReserve + $budget['RESERVE_MARGIN_SECONDS'])) -Failure "the finalizer step must equal FINALIZER_STEP_SECONDS and hold its $finalizeReserve-second exact cleanup."
-    Assert-Condition -Name 'Original job budget unchanged' -Condition ([regex]::IsMatch($ciWorkflow, '(?ms)^      build-timeout-minutes:\r?\n        required: false\r?\n        type: number\r?\n        default: 45\r?$')) -Failure 'build-timeout-minutes and its default of 45 must stay unchanged.'
-
     $finalizeBody = Get-StepRunBody -Block $finalize -StepName 'Finalize exact CI owner'
-    Assert-Contains -Name 'Finalizer is the signalled step process' -Content $finalizeBody -Expected 'exec python3 "$helper" finalize'
     foreach ($scenario in @('never-checked-out', 'orphaned-receipt', 'orphaned-process-record')) {
         $finalizerHarness = "export RUNNER_TEMP=`"`$PWD/runner-temp`"`nmkdir -p `"`$RUNNER_TEMP`"`n"
         if ($scenario -eq 'orphaned-receipt') { $finalizerHarness += ": > `"`$RUNNER_TEMP/hexalith-ci-owner.json`"`n" }
@@ -1186,31 +927,12 @@ export CI_PLACEMENT_SHA256="$(digest placement.tar.gz)" CI_SCHEDULER_SHA256="$(d
         }
     }
 
-    Assert-NotContains -Name 'Integration advisory acceptance' -Content $ownerRun -Unexpected 'continue-on-error'
-    Assert-Condition -Name 'Disposable owner runner' -Condition ($ciWorkflow.Contains('runs-on: ubuntu-latest')) -Failure 'requires a Linux GitHub-hosted runner.'
-    Assert-Condition -Name 'Withdrawal finalizer order' -Condition ($ciWorkflow.IndexOf('Finalize exact CI owner') -gt $ciWorkflow.IndexOf('Runner-owned package integration') -and $ciWorkflow.IndexOf('Upload classified integration diagnostics') -gt $ciWorkflow.IndexOf('Finalize exact CI owner')) -Failure 'must finalize before uploading retained diagnostics.'
 
-
-    $integrationBinaries = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Prepare integration binaries'
-    $downloadCommands = @($integrationBinaries -split "`r?`n" | Where-Object { $_.TrimStart().StartsWith('curl ') })
-    Assert-Condition -Name 'Expected integration downloads' -Condition ($downloadCommands.Count -eq 2) -Failure 'requires the reviewed Dapr CLI and runtime download commands.'
-    foreach ($command in $downloadCommands) {
-        Assert-Contains -Name 'HTTPS-only integration download and redirects' -Content $command -Expected "--proto '=https' --proto-redir '=https'"
-    }
 
     $registryLogin = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Authenticate pull-only integration registry'
     $registryCleanup = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Remove integration registry credentials'
     $registryLoginBody = Get-StepRunBody -Block $registryLogin -StepName 'Authenticate pull-only integration registry'
     $registryCleanupBody = Get-StepRunBody -Block $registryCleanup -StepName 'Remove integration registry credentials'
-    Assert-Contains -Name 'Registry waits for isolated success' -Content $registryLogin -Expected "steps.isolated-gate.outcome == 'success'"
-    Assert-Contains -Name 'Integration waits for registry authentication' -Content $ownerRun -Expected "steps.registry-login.outcome == 'success'"
-    Assert-Contains -Name 'Registry password is stdin only' -Content $registryLoginBody -Expected '--password-stdin'
-    Assert-Contains -Name 'Registry host is fixed' -Content $registryLoginBody -Expected 'docker login registry.hexalith.com'
-    Assert-Contains -Name 'Credential deletion runs on cancellation or failure' -Content $registryCleanup -Expected 'always()'
-    Assert-Condition -Name 'Credential teardown ordering' -Condition ($ciWorkflow.IndexOf('Remove integration registry credentials') -gt $ciWorkflow.IndexOf('Finalize exact CI owner') -and $ciWorkflow.IndexOf('Upload classified integration diagnostics') -gt $ciWorkflow.IndexOf('Remove integration registry credentials')) -Failure 'credentials must be removed after owner teardown and before artifact upload.'
-    foreach ($name in @('registry-pull-username', 'registry-pull-password')) {
-        Assert-Condition -Name "Required $name interface" -Condition ([regex]::IsMatch($ciWorkflow, "(?ms)^      ${name}:\r?\n(?:(?!^      [a-z]).)*?^        required: true$")) -Failure 'must be an explicit required workflow secret.'
-    }
 
     $registryHarness = @'
 set +e

@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "revision": "25de7a74d14d099faf7baea5da0cbb0b40264592",
+  "findings": [
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/create-release/action.yml",
+          "start": {
+            "row": 14,
+            "column": 6
+          },
+          "end": {
+            "row": 20,
+            "column": 26
+          },
+          "feature_sha256": "966bc77de360a3de417418a6b81a4fd7834999198695136b4049887c93c1a61b"
+        },
+        {
+          "path": "Github/create-release/action.yml",
+          "start": {
+            "row": 15,
+            "column": 12
+          },
+          "end": {
+            "row": 15,
+            "column": 37
+          },
+          "feature_sha256": "7f576795271ba6e2418df00f5a35dd57b01c28959ae384a289796fee0abc492f"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/initialize-dotnet/action.yml",
+          "start": {
+            "row": 18,
+            "column": 6
+          },
+          "end": {
+            "row": 22,
+            "column": 56
+          },
+          "feature_sha256": "e5e0f5e9d6ab888e7e3d3500c51eb57c0e9f266587321d5e26a16213ca88e536"
+        },
+        {
+          "path": "Github/initialize-dotnet/action.yml",
+          "start": {
+            "row": 20,
+            "column": 12
+          },
+          "end": {
+            "row": 20,
+            "column": 39
+          },
+          "feature_sha256": "edd24cd8a3d550683af322a6b557ec57ac05f51ca559e3bb79c39e2dc52c592f"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/initialize-dotnet/action.yml",
+          "start": {
+            "row": 23,
+            "column": 6
+          },
+          "end": {
+            "row": 27,
+            "column": 52
+          },
+          "feature_sha256": "2761f5be5bac0850a7ba585a4c496444f5d9edbc226538befd3db419e9c5cb5b"
+        },
+        {
+          "path": "Github/initialize-dotnet/action.yml",
+          "start": {
+            "row": 25,
+            "column": 12
+          },
+          "end": {
+            "row": 25,
+            "column": 39
+          },
+          "feature_sha256": "edd24cd8a3d550683af322a6b557ec57ac05f51ca559e3bb79c39e2dc52c592f"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "artipacked",
+      "locations": [
+        {
+          "path": "Github/package-release/action.yml",
+          "start": {
+            "row": 6,
+            "column": 6
+          },
+          "end": {
+            "row": 8,
+            "column": 22
+          },
+          "feature_sha256": "36fcc6e21b77201121cdfaf0c8382b8759d65ec0581f9a36b737ce3804756a4a"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/package-release/action.yml",
+          "start": {
+            "row": 6,
+            "column": 6
+          },
+          "end": {
+            "row": 8,
+            "column": 22
+          },
+          "feature_sha256": "36fcc6e21b77201121cdfaf0c8382b8759d65ec0581f9a36b737ce3804756a4a"
+        },
+        {
+          "path": "Github/package-release/action.yml",
+          "start": {
+            "row": 6,
+            "column": 12
+          },
+          "end": {
+            "row": 6,
+            "column": 35
+          },
+          "feature_sha256": "3fd5cfa59e07ccb6d6152b2894f030873a197ab1f042e663fa63ab02aa40a102"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/package-release/action.yml",
+          "start": {
+            "row": 14,
+            "column": 6
+          },
+          "end": {
+            "row": 15,
+            "column": 39
+          },
+          "feature_sha256": "29dd280256271c978f555b001ffa2e788c438f3dfd3985136e8fe611e46bcc91"
+        },
+        {
+          "path": "Github/package-release/action.yml",
+          "start": {
+            "row": 15,
+            "column": 12
+          },
+          "end": {
+            "row": 15,
+            "column": 39
+          },
+          "feature_sha256": "edd24cd8a3d550683af322a6b557ec57ac05f51ca559e3bb79c39e2dc52c592f"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/package-release/action.yml",
+          "start": {
+            "row": 17,
+            "column": 6
+          },
+          "end": {
+            "row": 23,
+            "column": 26
+          },
+          "feature_sha256": "966bc77de360a3de417418a6b81a4fd7834999198695136b4049887c93c1a61b"
+        },
+        {
+          "path": "Github/package-release/action.yml",
+          "start": {
+            "row": 18,
+            "column": 12
+          },
+          "end": {
+            "row": 18,
+            "column": 37
+          },
+          "feature_sha256": "7f576795271ba6e2418df00f5a35dd57b01c28959ae384a289796fee0abc492f"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/publish-azure-container-app/action.yml",
+          "start": {
+            "row": 48,
+            "column": 6
+          },
+          "end": {
+            "row": 55,
+            "column": 36
+          },
+          "feature_sha256": "68d9868667a299bfa38819bc4caf861ca65c4d37e2aaa3a3bfbbbf8e2baf8f55"
+        },
+        {
+          "path": "Github/publish-azure-container-app/action.yml",
+          "start": {
+            "row": 49,
+            "column": 12
+          },
+          "end": {
+            "row": 49,
+            "column": 30
+          },
+          "feature_sha256": "29c8b29e9e06440f51643ca02fd607c804f43f3c1462b4ee7770b9bed876e325"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/publish-container-to-registry/action.yml",
+          "start": {
+            "row": 33,
+            "column": 6
+          },
+          "end": {
+            "row": 38,
+            "column": 40
+          },
+          "feature_sha256": "57608bdadbb4604157049d31bcae77d9b1800901562e70e1b6b7714acbc14a72"
+        },
+        {
+          "path": "Github/publish-container-to-registry/action.yml",
+          "start": {
+            "row": 34,
+            "column": 12
+          },
+          "end": {
+            "row": 34,
+            "column": 38
+          },
+          "feature_sha256": "29e001cccafba9d26272f1a67482ee270654fd060a5aecb40219cbce54a42c9d"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "artipacked",
+      "locations": [
+        {
+          "path": "Github/verify/action.yml",
+          "start": {
+            "row": 11,
+            "column": 6
+          },
+          "end": {
+            "row": 13,
+            "column": 22
+          },
+          "feature_sha256": "36fcc6e21b77201121cdfaf0c8382b8759d65ec0581f9a36b737ce3804756a4a"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/verify/action.yml",
+          "start": {
+            "row": 11,
+            "column": 6
+          },
+          "end": {
+            "row": 13,
+            "column": 22
+          },
+          "feature_sha256": "36fcc6e21b77201121cdfaf0c8382b8759d65ec0581f9a36b737ce3804756a4a"
+        },
+        {
+          "path": "Github/verify/action.yml",
+          "start": {
+            "row": 11,
+            "column": 12
+          },
+          "end": {
+            "row": 11,
+            "column": 35
+          },
+          "feature_sha256": "3fd5cfa59e07ccb6d6152b2894f030873a197ab1f042e663fa63ab02aa40a102"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    },
+    {
+      "rule": "unpinned-uses",
+      "locations": [
+        {
+          "path": "Github/verify/action.yml",
+          "start": {
+            "row": 19,
+            "column": 6
+          },
+          "end": {
+            "row": 23,
+            "column": 78
+          },
+          "feature_sha256": "0ebfb2c4aff9a81c5b04d7b22c6e5a72346576c5ba646d78ac57b9e5d0a5e56e"
+        },
+        {
+          "path": "Github/verify/action.yml",
+          "start": {
+            "row": 20,
+            "column": 12
+          },
+          "end": {
+            "row": 20,
+            "column": 39
+          },
+          "feature_sha256": "edd24cd8a3d550683af322a6b557ec57ac05f51ca559e3bb79c39e2dc52c592f"
+        }
+      ],
+      "rationale": "AD-20 preserves these pre-existing module-executed bytes until the runtime/release rewrite; zizmor 1.32 cannot config-ignore composite actions."
+    }
+  ]
+}

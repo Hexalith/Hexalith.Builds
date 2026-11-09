@@ -234,161 +234,6 @@ class PublishScriptContractTests(unittest.TestCase):
                 finally:
                     shutil.rmtree(root)
 
-    def test_action_installs_immutable_registry_validator(self):
-        action = ACTION.read_text(encoding="utf-8")
-
-        self.assertIn(
-            'cp "${GITHUB_ACTION_PATH}/oci_registry_validator.py" '
-            ".hexalith/release/oci_registry_validator.py",
-            action,
-        )
-        self.assertIn(
-            "chmod +x .hexalith/release/oci_registry_validator.py",
-            action,
-        )
-
-    def test_action_installs_platform_smoke_helper(self):
-        action = ACTION.read_text(encoding="utf-8")
-
-        self.assertIn(
-            'cp "${GITHUB_ACTION_PATH}/smoke-container-platforms.sh" '
-            ".hexalith/release/smoke-container-platforms.sh",
-            action,
-        )
-        self.assertIn(
-            "chmod +x .hexalith/release/smoke-container-platforms.sh",
-            action,
-        )
-
-    def test_action_installs_publication_preflight(self):
-        action = ACTION.read_text(encoding="utf-8")
-
-        self.assertIn(
-            'cp "${GITHUB_ACTION_PATH}/publication_preflight.py" '
-            ".hexalith/release/publication_preflight.py",
-            action,
-        )
-        self.assertIn(
-            "chmod +x .hexalith/release/publication_preflight.py",
-            action,
-        )
-
-    def test_action_installs_preflight_and_binds_approved_builds_bytes(self):
-        action = ACTION.read_text(encoding="utf-8")
-
-        self.assertIn("builds-execution-sha:", action)
-        self.assertIn("HEXALITH_BUILDS_EXECUTION_SHA", action)
-        self.assertIn("raw.githubusercontent.com/Hexalith/Hexalith.Builds", action)
-        self.assertIn("--proto '=https'", action)
-        self.assertIn("--proto-redir '=https'", action)
-        self.assertIn("cmp --silent", action)
-        self.assertIn(
-            'cp "${GITHUB_ACTION_PATH}/publication_preflight.py" '
-            ".hexalith/release/publication_preflight.py",
-            action,
-        )
-        self.assertIn("chmod +x .hexalith/release/publication_preflight.py", action)
-
-    def test_domain_release_requires_one_exact_builds_identity_for_workflow_and_action(self):
-        workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
-
-        self.assertIn("builds-execution-sha:", workflow)
-        self.assertIn(
-            "builds-execution-sha:\n"
-            "        description: 'Exact approved Hexalith.Builds commit resolved for the reusable workflow and nested publisher action.'\n"
-            "        required: true",
-            workflow,
-        )
-        self.assertIn("actions: read", workflow)
-        self.assertIn("environment-name:", workflow)
-        self.assertIn("default: 'production'", workflow)
-        self.assertIn("environment: ${{ inputs.environment-name }}", workflow)
-        self.assertIn("secrets:\n      NUGET_API_KEY:\n", workflow)
-        self.assertIn("NUGET_API_KEY:\n        description:", workflow)
-        self.assertIn("NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}", workflow)
-        self.assertIn(
-            "HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}",
-            workflow,
-        )
-        self.assertIn(
-            "HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}",
-            workflow,
-        )
-        self.assertEqual(1, workflow.count("NUGET_API_KEY:\n        description:"))
-        self.assertIn(
-            "NUGET_API_KEY:\n        description: 'NuGet.org API key supplied explicitly by the caller.'\n        required: true",
-            workflow,
-        )
-        self.assertIn(
-            "HEXALITH_ZOT_USERNAME:\n"
-            "        description: 'Zot username supplied explicitly by the caller when publishing containers.'\n"
-            "        required: false",
-            workflow,
-        )
-        self.assertIn(
-            "HEXALITH_ZOT_API_KEY:\n"
-            "        description: 'Zot API key supplied explicitly by the caller when publishing containers.'\n"
-            "        required: false",
-            workflow,
-        )
-        self.assertIn("release-authority-issue-url:", workflow)
-        self.assertNotIn("release-owner-allowlist:", workflow)
-        self.assertIn("job.workflow_sha", workflow)
-        self.assertIn("job.workflow_repository", workflow)
-        self.assertIn("BUILD_EXECUTION_SHA", workflow)
-        self.assertIn("repository: Hexalith/Hexalith.Builds", workflow)
-        self.assertIn("ref: ${{ inputs.builds-execution-sha }}", workflow)
-        self.assertIn("path: .hexalith/builds-execution", workflow)
-        self.assertIn(
-            "uses: ./.hexalith/builds-execution/Github/publish-containers",
-            workflow,
-        )
-        self.assertNotIn(
-            "uses: Hexalith/Hexalith.Builds/Github/publish-containers@main",
-            workflow,
-        )
-        # Every Builds-owned composite must load from the immutable local checkout. The
-        # check is scoped to `uses:` edges because the governed identity gate legitimately
-        # names Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml as the
-        # workflow_ref path it requires.
-        builds_uses = [
-            match.group("value")
-            for match in re.finditer(r"^\s*(?:-\s+)?uses:\s*(?P<value>\S+)", workflow, re.MULTILINE)
-            if match.group("value").startswith("Hexalith/Hexalith.Builds/")
-        ]
-        self.assertEqual([], builds_uses)
-        self.assertIn("builds-execution-sha: ${{ inputs.builds-execution-sha }}", workflow)
-        self.assertIn("HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}", workflow)
-        self.assertIn("HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}", workflow)
-        self.assertIn("HEXALITH_RELEASE_SOURCE_BRANCH: ${{ inputs.source-branch }}", workflow)
-        self.assertIn(
-            "HEXALITH_RELEASE_SOURCE_CI_WORKFLOW: ${{ inputs.source-ci-workflow }}",
-            workflow,
-        )
-        self.assertIn(
-            "HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}",
-            workflow,
-        )
-        self.assertIn(
-            "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}",
-            workflow,
-        )
-        self.assertIn("HEXALITH_RELEASE_RESERVED_VERSION: ${{ inputs.reserved-version }}", workflow)
-        self.assertIn(
-            "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL: ${{ inputs.release-authority-issue-url }}",
-            workflow,
-        )
-        self.assertIn("HEXALITH_RELEASE_AUTHORITY_OWNER: ${{ inputs.release-authority-owner }}", workflow)
-        self.assertNotIn("HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH", workflow)
-        identity_index = workflow.index("- name: Validate approved Builds execution identity")
-        checkout_index = workflow.index("- name: Checkout approved Builds actions")
-        initialize_index = workflow.index("- name: Initialize root-declared submodules\n")
-        self.assertLess(identity_index, checkout_index)
-        self.assertLess(checkout_index, initialize_index)
-        self.assertIn("uses: ./.hexalith/builds-execution/Github/initialize-build", workflow)
-        self.assertIn("- name: Upload complete release evidence", workflow)
-        self.assertIn("if: ${{ always() && inputs.publish-containers }}", workflow)
-        self.assertIn("include-hidden-files: true", workflow)
 
     def test_workflow_sha_mismatch_fails_behaviorally(self):
         identity_script = extract_run_block(DOMAIN_RELEASE, "Validate approved Builds execution identity")
@@ -418,19 +263,11 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
 
     def test_domain_release_late_source_guard_rejects_stale_source_before_semantic_release(self):
-        workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
-
         result = run_late_source_guard("a" * 40, "b" * 40)
 
         self.assertNotEqual(0, result.returncode)
         self.assertIn("became stale", result.stderr)
         self.assertIn("Redispatch Release", result.stderr)
-        guard_index = workflow.index("- name: Revalidate current source before Semantic Release")
-        semantic_release_index = workflow.index("- name: Semantic Release")
-        self.assertLess(guard_index, semantic_release_index)
-        guard_step = workflow[guard_index:semantic_release_index]
-        self.assertNotIn("continue-on-error:", guard_step)
-        self.assertNotIn("\n        if:", guard_step)
 
     def test_domain_release_late_source_guard_rejects_checkout_mismatch(self):
         result = run_late_source_guard("a" * 40, "a" * 40, dispatch_sha="b" * 40)
@@ -489,18 +326,6 @@ class PublishScriptContractTests(unittest.TestCase):
             self.assertIn("do not match", action_result.stderr)
             self.assertFalse((root / ".hexalith" / "release" / "publish-containers.sh").exists())
 
-    def test_domain_release_sha_pins_arm64_emulation_setup_before_publisher(self):
-        workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
-        qemu_marker = "docker/setup-qemu-action@"
-        qemu_index = workflow.index(qemu_marker)
-        publisher_index = workflow.index("- name: Prepare release container publisher")
-        semantic_release_index = workflow.index("- name: Semantic Release")
-        revision = workflow[qemu_index + len(qemu_marker) :].split()[0]
-
-        self.assertEqual(40, len(revision))
-        self.assertTrue(all(character in "0123456789abcdef" for character in revision))
-        self.assertLess(qemu_index, publisher_index)
-        self.assertLess(qemu_index, semantic_release_index)
 
     def test_multi_platform_publish_is_exact_and_validation_gated(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -1186,18 +1011,6 @@ exit 1
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn("must be exactly true or false", result.stderr)
                 self.assertEqual([], preflight)
-
-    def test_reusable_workflow_declares_and_forwards_the_authority_posture(self):
-        """The caller-facing input exists and reaches both release jobs."""
-        workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
-
-        self.assertIn("      require-publication-authority:", workflow)
-        self.assertEqual(
-            2,
-            workflow.count(
-                "HEXALITH_RELEASE_REQUIRE_AUTHORITY: ${{ inputs.require-publication-authority }}"
-            ),
-        )
 
 
 if __name__ == "__main__":

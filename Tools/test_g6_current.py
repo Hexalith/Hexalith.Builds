@@ -6,6 +6,8 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import re
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,16 +15,87 @@ from unittest.mock import patch
 
 
 TOOLS = Path(__file__).resolve().parent
-WORKSPACE = TOOLS.parents[2]
 SPEC = importlib.util.spec_from_file_location("g6_current", TOOLS / "g6_current.py")
 G6 = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(G6)
 # The policy CI and release select; the legacy g6-current-policy.json still names the retired OQ8 validator.
 POLICY = TOOLS / "g6-current-policy-2026-10-20.json"
-HISTORICAL = WORKSPACE / "_bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20261001/attempt-16"
 
 
 class CurrentG6Tests(unittest.TestCase):
+    def setUp(self) -> None:
+        """Generate hermetic source and retained evidence; neither claims live qualification."""
+        temporary = tempfile.TemporaryDirectory(prefix="g6-current-controls-")
+        self.addCleanup(temporary.cleanup)
+        self.workspace = Path(temporary.name)
+        self.capture_run = self.workspace / "synthetic-run"
+        self.capture = self.capture_run / "capture"
+        self.capture.mkdir(parents=True)
+        workflows = self.workspace / ".github/workflows"
+        workflows.mkdir(parents=True)
+        sha = "1" * 40
+        (workflows / "ci.yml").write_text(
+            "jobs:\n  synthetic:\n    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@" + sha + "\n")
+        (workflows / "release.yml").write_text(
+            "jobs:\n  synthetic:\n    steps:\n      - uses: actions/checkout@" + "2" * 40 + "\n"
+            "        with:\n          repository: Hexalith/Hexalith.Builds\n          ref: " + sha + "\n")
+        focused = {"summary": {"tests": 1, "passed": 1, "failed": 0, "skipped": 0},
+                   "test": {"name": "Hexalith.EventStore.Server.LiveSidecar.Tests.Actors."
+                                    "IdempotencyAdmissionOq8PostgresqlTests."
+                                    "ProductionMatrix_IndependentProcessesPreserveAuthorityReplayExpiryAndLeakageInvariants",
+                            "status": "passed"}}
+        selectors = [f"Hexalith.EventStore.Server.Tests.Synthetic.Case{index}" for index in range(21)]
+        support = {"summary": {"tests": 33, "passed": 33, "failed": 0, "skipped": 0},
+                   "selectors": selectors,
+                   "methods": [{"identity": identity, "observedCases": 2 if index < 12 else 1,
+                                "passedCases": 2 if index < 12 else 1}
+                               for index, identity in enumerate(selectors)]}
+        for name, document in (("test-results.json", focused), ("deterministic-support.json", support),
+                               ("observations.json", {"syntheticFixture": True}),
+                               ("capture-validation.json", {"syntheticFixture": True})):
+            (self.capture / name).write_text(json.dumps(document), encoding="utf-8")
+        logs = self.capture_run / "logs"
+        logs.mkdir()
+        proofs = {
+            "fresh EventStore qualifier build": "Build succeeded.\n0 Error(s)",
+            "fresh EventStore support build": "Build succeeded.\n0 Error(s)",
+            "real PostgreSQL two-sidecar stop/restart qualifier":
+                "Total: 1, Errors: 0, Failed: 0, Skipped: 0, Not Run: 0",
+            "21 exact deterministic support selectors":
+                "Total: 33, Errors: 0, Failed: 0, Skipped: 0, Not Run: 0",
+        }
+        for purpose, proof in proofs.items():
+            name = re.sub(r"[^a-z0-9]+", "-", purpose.lower()).strip("-") + ".log"
+            (logs / name).write_text("Synthetic validator test input\n" + proof + "\n")
+        containers = [{"role": role, "id": f"{index:064x}"}
+                      for index, role in enumerate(("placement", "scheduler", "redis", "postgresql"), 1)]
+        cleanup = {"before": [], "after": [], "ownedContainers": containers,
+                   "removedContainerIds": [item["id"] for item in containers],
+                   "ownedProcessesStopped": True, "scratchRemoved": True, "fixtureScratchRemoved": True}
+        (self.capture_run / "cleanup.json").write_text(json.dumps(cleanup), encoding="utf-8")
+
+    def material_workspace(self, policy: dict) -> None:
+        """Populate real Git inventories covering the selected material paths and prefixes."""
+        paths = set(policy["materialFiles"])
+        paths.update(prefix + "synthetic-source.cs" for prefix in policy["materialPrefixes"])
+        modules = sorted({Path(path).parts[1] for path in paths if path.startswith("references/")})
+        (self.workspace / ".gitmodules").write_text("".join(
+            f'[submodule "{name}"]\n\tpath = references/{name}\n\turl = https://example.invalid/{name}.git\n'
+            for name in modules))
+        for name in sorted(paths):
+            path = self.workspace / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if not path.exists():
+                path.write_text("Synthetic material fingerprint fixture\n", encoding="utf-8")
+        sample = self.workspace / "references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample/Program.cs"
+        sample.write_text("// synthetic live-sample material\n", encoding="utf-8")
+        for root in [self.workspace / "references" / name for name in modules] + [self.workspace]:
+            subprocess.run(["git", "-C", str(root), "init", "-q"], check=True, capture_output=True)
+            command = ["git", "-C", str(root), "add", "--", "."]
+            if root == self.workspace:
+                command.append(":(exclude)references")
+            subprocess.run(command, check=True, capture_output=True)
+
     def test_restored_hosting_previews_are_exact_and_specific_to_the_selected_sdk(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -70,70 +143,67 @@ class CurrentG6Tests(unittest.TestCase):
 
     def test_material_fingerprint_covers_live_sample_and_ignores_unrelated_docs(self) -> None:
         policy = G6.policy_document(POLICY)
-        original = G6.tracked_material(WORKSPACE, policy)
+        self.material_workspace(policy)
+        original = G6.tracked_material(self.workspace, policy)
         sample = "references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample/Program.cs"
-        self.assertTrue((WORKSPACE / sample).is_file())
-        observed = []
-        hash_file = G6.file_hash
-
-        def altered(path: Path) -> str:
-            relative = path.relative_to(WORKSPACE).as_posix()
-            observed.append(relative)
-            return "0" * 64 if relative == sample else hash_file(path)
-
-        with patch.object(G6, "file_hash", side_effect=altered):
-            changed = G6.tracked_material(WORKSPACE, policy)
-        self.assertIn(sample, observed)
+        sample_path = self.workspace / sample
+        self.assertTrue(sample_path.is_file())
+        docs = self.workspace / "_bmad-output/unrelated.md"
+        docs.parent.mkdir(parents=True)
+        docs.write_text("Unrelated documentation must not change qualification material.\n")
+        self.assertEqual(original, G6.tracked_material(self.workspace, policy))
+        sample_path.write_text("// changed synthetic live-sample material\n")
+        changed = G6.tracked_material(self.workspace, policy)
         self.assertNotEqual(original["fingerprint"], changed["fingerprint"])
-        self.assertFalse(any(path.startswith("_bmad-output/") for path in observed))
+        self.assertEqual(original["fileCount"], changed["fileCount"])
 
-    def test_historical_capture_revalidates_and_tamper_is_rejected(self) -> None:
+    def test_synthetic_capture_revalidates_and_tamper_is_rejected(self) -> None:
         names = ("observations.json", "test-results.json", "deterministic-support.json")
-        directory = HISTORICAL / "capture"
-        relative = directory.relative_to(WORKSPACE).as_posix()
+        directory = self.capture_run / "capture"
+        relative = directory.relative_to(self.workspace).as_posix()
         logs = []
         for purpose in G6.REQUIRED_PURPOSES:
-            name = __import__("re").sub(r"[^a-z0-9]+", "-", purpose.lower()).strip("-") + ".log"
-            path = HISTORICAL / "logs" / name
-            logs.append({"purpose": purpose, "path": path.relative_to(WORKSPACE).as_posix(),
+            name = re.sub(r"[^a-z0-9]+", "-", purpose.lower()).strip("-") + ".log"
+            path = self.capture_run / "logs" / name
+            logs.append({"purpose": purpose, "path": path.relative_to(self.workspace).as_posix(),
                          "sha256": G6.file_hash(path)})
         qualification = {"receipts": {
             "captureDirectory": relative,
             "files": [{"name": name, "sha256": G6.file_hash(directory / name)} for name in names],
             "logs": logs,
-            "cleanup": {"path": (HISTORICAL / "cleanup.json").relative_to(WORKSPACE).as_posix(),
-                        "sha256": G6.file_hash(HISTORICAL / "cleanup.json")},
+            "cleanup": {"path": (self.capture_run / "cleanup.json").relative_to(self.workspace).as_posix(),
+                        "sha256": G6.file_hash(self.capture_run / "cleanup.json")},
         }, "cleanup": {field: True for field in ("ownedProcessesStopped", "scratchRemoved", "fixtureScratchRemoved",
                                                    "sharedResourcesUnchanged", "ownedContainersRemoved")},
             "tests": {"qualifier": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
                       "support": {"total": 33, "passed": 33, "failed": 0, "skipped": 0}}}
-        self.assertFalse((WORKSPACE / "references/Hexalith.EventStore/tools/validate-oq8-platform-evidence.py").exists())
-        G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", qualification)
+        self.assertFalse((self.workspace / "references/Hexalith.EventStore/tools/validate-oq8-platform-evidence.py").exists())
+        G6.validate_receipts(self.workspace, self.capture_run / "packet.json", qualification)
         broken = copy.deepcopy(qualification)
         broken["receipts"]["files"][0]["sha256"] = "0" * 64
         with self.assertRaisesRegex(G6.G6Error, "capture file changed"):
-            G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", broken)
+            G6.validate_receipts(self.workspace, self.capture_run / "packet.json", broken)
         missing = copy.deepcopy(qualification)
         missing["receipts"]["files"].pop()
         with self.assertRaisesRegex(G6.G6Error, "incomplete"):
-            G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", missing)
+            G6.validate_receipts(self.workspace, self.capture_run / "packet.json", missing)
         retired = copy.deepcopy(qualification)
         retired["receipts"]["files"].append({"name": "capture-validation.json",
                                              "sha256": G6.file_hash(directory / "capture-validation.json")})
         with self.assertRaisesRegex(G6.G6Error, "incomplete"):
-            G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", retired)
+            G6.validate_receipts(self.workspace, self.capture_run / "packet.json", retired)
         with self.assertRaisesRegex(G6.G6Error, "not in this result's run directory"):
-            G6.validate_receipts(WORKSPACE, WORKSPACE / "forged-current-result.json", qualification)
+            G6.validate_receipts(self.workspace, self.workspace / "forged-current-result.json", qualification)
         for label, counts in (("qualifier", {"total": 1, "passed": 0, "failed": 1, "skipped": 0}),
                               ("support", {"total": 21, "passed": 21, "failed": 0, "skipped": 0})):
             with self.subTest(contradiction=label):
                 contradicted = copy.deepcopy(qualification)
                 contradicted["tests"][label] = counts
                 with self.assertRaisesRegex(G6.G6Error, "contradict the retained test documents"):
-                    G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", contradicted)
+                    G6.validate_receipts(self.workspace, self.capture_run / "packet.json", contradicted)
 
     def test_retained_test_documents_must_prove_exact_qualifier_and_support_passes(self) -> None:
-        source = HISTORICAL / "capture"
+        source = self.capture_run / "capture"
         tests = {"qualifier": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
                  "support": {"total": 33, "passed": 33, "failed": 0, "skipped": 0}}
         focused = json.loads((source / "test-results.json").read_text(encoding="utf-8"))
@@ -208,7 +278,7 @@ class CurrentG6Tests(unittest.TestCase):
                 "cleanup": {field: True for field in ("ownedProcessesStopped", "scratchRemoved", "fixtureScratchRemoved",
                                                       "sharedResourcesUnchanged", "ownedContainersRemoved")},
                 "environment": {"runner": "test", "executionScope": "ci",
-                                "buildsExecutionSha": G6.builds_execution_sha(WORKSPACE, "ci")},
+                                "buildsExecutionSha": G6.builds_execution_sha(self.workspace, "ci")},
                 "limitations": [], "receipts": {},
             },
             "approval": approved_policy["approval"], "artifactSha256": "",
@@ -219,7 +289,7 @@ class CurrentG6Tests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as directory:
                 path = Path(directory) / "result.json"
                 path.write_text(json.dumps(value))
-                G6.validate(WORKSPACE, POLICY, path, release)
+                G6.validate(self.workspace, POLICY, path, release)
 
         with patch.object(G6, "policy_document", return_value=approved_policy), \
              patch.object(G6, "audit", return_value=current), \
@@ -260,12 +330,12 @@ class CurrentG6Tests(unittest.TestCase):
             with self.assertRaisesRegex(G6.G6Error, "source SHA or gitlinks differ"):
                 check(evidence)
             evidence["qualification"]["environment"].update(
-                executionScope="release", buildsExecutionSha=G6.builds_execution_sha(WORKSPACE, "release"))
+                executionScope="release", buildsExecutionSha=G6.builds_execution_sha(self.workspace, "release"))
             with self.assertRaisesRegex(G6.G6Error, "source SHA or gitlinks differ"):
                 check(evidence, release=True)
             evidence["audit"]["source"] = source
             evidence["qualification"]["environment"].update(
-                executionScope="ci", buildsExecutionSha=G6.builds_execution_sha(WORKSPACE, "ci"))
+                executionScope="ci", buildsExecutionSha=G6.builds_execution_sha(self.workspace, "ci"))
             with self.assertRaisesRegex(G6.G6Error, "execution scope"):
                 check(evidence, release=True)
 

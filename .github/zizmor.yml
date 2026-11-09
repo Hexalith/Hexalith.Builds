@@ -1,0 +1,43 @@
+# AD-20 freezes the existing module runtime. Exact legacy workflow findings are
+# temporary until the release rewrite; composite exceptions live in Tools/ci/.
+# All online audits remain enabled.
+rules:
+  self-repository:
+    # AD-11 permits workspace-relative actions during the runtime freeze.
+    disable: true
+  unpinned-uses:
+    config:
+      policies:
+        "Hexalith/*": ref-pin
+        "*": hash-pin
+    # AD-20: exact existing findings; retain runtime bytes until the rewrite.
+    ignore:
+      - builds-release.yml:19:13
+      - builds-release.yml:45:13
+      - codeql.yml:42:15
+      - codeql.yml:46:15
+      - codeql.yml:52:15
+      - commitlint.yml:31:15
+      - commitlint.yml:35:15
+      - dependency-review.yml:26:15
+      - dependency-review.yml:30:15
+  artipacked:
+    # AD-20: exact existing findings; retain runtime bytes until the rewrite.
+    ignore:
+      - codeql.yml:42:9
+      - commitlint.yml:31:9
+      - dependency-review.yml:26:9
+      - domain-ci-v2.yml:225:9
+      - domain-ci.yml:272:9
+      - domain-ci.yml:983:9
+      - domain-ci.yml:1251:9
+  ref-version-mismatch:
+    # AD-20: exact existing findings; retain runtime bytes until the rewrite.
+    ignore:
+      - domain-ci-v2.yml:326:107
+      - domain-ci.yml:373:107
+      - domain-ci.yml:670:100
+      - domain-ci.yml:996:107
+      - domain-ci.yml:1126:100
+      - domain-ci.yml:1264:107
+      - domain-ci.yml:1316:100
