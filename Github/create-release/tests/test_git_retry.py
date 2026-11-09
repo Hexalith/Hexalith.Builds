@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -34,20 +35,22 @@ class GitNotesRetryTests(unittest.TestCase):
                 "sys.exit(codes[min(i,len(codes)-1)] if codes else bool(error))\n"
             )
             fake_git.chmod(0o755)
+            proxy = root / "git"
+            shutil.copyfile(WRAPPER, proxy)
+            (root / "original-git-path").write_text(str(fake_git) + "\n")
             sleep_log = root / "sleep.log"
             fake_sleep = root / "sleep"
             fake_sleep.write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$*" >> "$SLEEP_LOG"\n')
             fake_sleep.chmod(0o755)
             environment = os.environ.copy()
             environment.update({
-                "HEXALITH_RELEASE_GIT": str(fake_git),
                 "RETRY_STATE": str(state),
                 "SLEEP_LOG": str(sleep_log),
                 "PATH": str(root) + os.pathsep + environment["PATH"],
                 "TMPDIR": str(root),
             })
             result = subprocess.run(
-                ["bash", str(WRAPPER), *arguments], env=environment,
+                ["bash", str(proxy), *arguments], env=environment,
                 capture_output=True, text=True, check=False,
             )
             calls = json.loads(state.read_text())["calls"]
@@ -181,6 +184,38 @@ class GitNotesRetryTests(unittest.TestCase):
                     self.assertEqual(1, sum(line.startswith("npx ") for line in calls))
                     self.assertEqual(2, sum(line.startswith("git ") for line in calls))
                     self.assertEqual([], list(temporary.iterdir()))
+
+    def test_sanitized_child_environment_can_inspect_real_git_repository(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            proxy_directory = root / "proxy"
+            proxy_directory.mkdir()
+            proxy = proxy_directory / "git"
+            shutil.copyfile(WRAPPER, proxy)
+            proxy.chmod(0o755)
+            original_git = shutil.which("git")
+            self.assertIsNotNone(original_git)
+            (proxy_directory / "original-git-path").write_text(original_git + "\n")
+            repository = root / "repository"
+            repository.mkdir()
+            subprocess.run([original_git, "init", "--quiet"], cwd=repository, check=True)
+            # CompositionProcess preserves PATH and selected OS variables but
+            # deliberately removes unrelated release environment variables.
+            environment = {"PATH": str(proxy_directory) + os.pathsep + os.environ["PATH"]}
+            for key in ["HOME", "SYSTEMROOT", "TMPDIR", "TEMP", "TMP"]:
+                if key in os.environ:
+                    environment[key] = os.environ[key]
+            for arguments, expected in [
+                (["rev-parse", "--show-toplevel"], str(repository)),
+                (["rev-parse", "--show-superproject-working-tree"], ""),
+            ]:
+                with self.subTest(arguments=arguments):
+                    result = subprocess.run(
+                        ["git", "-c", "submodule.recurse=false", "-C", str(repository), *arguments],
+                        env=environment, capture_output=True, text=True, check=False,
+                    )
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    self.assertEqual(expected, result.stdout.strip())
 
 
 if __name__ == "__main__":

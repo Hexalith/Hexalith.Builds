@@ -37,8 +37,7 @@ runs:
       run: |
         release_git_directory="$(mktemp -d)"
         trap 'rm -rf "$release_git_directory"' EXIT
-        export HEXALITH_RELEASE_GIT
-        HEXALITH_RELEASE_GIT="$(command -v git)"
+        command -v git > "$release_git_directory/original-git-path"
         install -m 755 "$GITHUB_ACTION_PATH/git-with-retry.sh" "$release_git_directory/git"
         export PATH="$release_git_directory:$PATH"
         npx --no-install --ignore-scripts semantic-release

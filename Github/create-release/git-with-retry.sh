@@ -4,17 +4,23 @@ set -euo pipefail
 # semantic-release pushes its tag before its notes. A transient GitHub notes
 # failure can otherwise strand a genuine tag before package publication starts.
 # Repeat only the identical, non-forced notes push; never rerun the lifecycle.
+proxy_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+IFS= read -r original_git < "$proxy_directory/original-git-path"
+if [[ $original_git != /* || ! -x $original_git || $original_git -ef ${BASH_SOURCE[0]} ]]; then
+  printf 'The release Git proxy requires its original executable.\n' >&2
+  exit 1
+fi
 if [[ $# -ne 4 || $1 != push || $2 != -- ||
       ! $4 =~ ^refs/notes/semantic-release-[A-Za-z0-9][A-Za-z0-9._/-]*$ ||
       ! $3 =~ ^https://([^/@[:space:]]+@)?github\.com/ ]]; then
-  exec "${HEXALITH_RELEASE_GIT:?Original Git executable is required}" "$@"
+  exec "$original_git" "$@"
 fi
 
 output_directory="$(mktemp -d)"
 trap 'rm -rf "$output_directory"' EXIT
 for attempt in 1 2 3; do
   status=0
-  "${HEXALITH_RELEASE_GIT:?Original Git executable is required}" "$@" \
+  "$original_git" "$@" \
     > "$output_directory/stdout" 2> "$output_directory/stderr" || status=$?
   if [[ $status -eq 0 ]]; then
     exit 0
