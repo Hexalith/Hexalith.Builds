@@ -147,8 +147,193 @@ public sealed class CiRunLifecycleTests
         ModuleTestRunRecord first = (await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(diagnostics, "selected-test.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         first.TerminalStatus.ShouldBe(terminal switch { "partial-startup" => "cancelled", "passed" => "completed", "failed-then-job-cancelled" => "failed", _ => terminal });
         first.FailureRetained.ShouldBeFalse();
-        (await engine.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Remaining.IsEmpty.ShouldBeTrue();
+        StringWriter retryOutput = new();
+        await using (retryOutput.ConfigureAwait(true))
+        {
+            int retryExit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Down, workspace.Save(), null, null, null, ToolOutputFormat.Json, retryOutput, TestContext.Current.CancellationToken, "child.dll", owner.RunId, options).ConfigureAwait(true);
+            retryExit.ShouldBe(0, retryOutput.ToString());
+            using JsonDocument retry = JsonDocument.Parse(retryOutput.ToString());
+
+            // The helper verifies exactly these fields of the retried down.
+            retry.RootElement.GetProperty("runId").GetString().ShouldBe(owner.RunId);
+            retry.RootElement.GetProperty("outcome").GetProperty("exitCode").GetString().ShouldBe("Success");
+            retry.RootElement.GetProperty("remainingResources").GetProperty("unverified").GetBoolean().ShouldBeFalse();
+        }
+
         (await CompositionAttachmentStore.ReadAsync(diagnostics, owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single().ShouldBe(ended);
+    }
+
+    /// <summary>The engine persists the CI owner receipt before owner state, and an unwritable receipt allocates nothing.</summary>
+    /// <param name="writable">Whether the receipt destination is publishable.</param>
+    /// <returns>The receipt-first ordering assertions.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task EngineWritesCiOwnerReceiptBeforeStateAndWorkspaceAsync(bool writable)
+    {
+        Dictionary<string, string?> previous = EnterCiContext();
+        try
+        {
+            using PlatformManifestTestWorkspace workspace = new();
+            (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace, "package");
+            string receipt = writable ? Path.Combine(workspace.Root, "runner-temp", "hexalith-ci-owner.json") : Path.Combine(workspace.Root, "runner-temp");
+            _ = Directory.CreateDirectory(Path.Combine(workspace.Root, "runner-temp"));
+            CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with { CiOwnerReceiptPath = receipt, ContinuousIntegrationOverride = true };
+            CompositionEngine engine = new(options);
+            string runId = CompositionRunPlanFactory.NewRunId();
+            System.Reflection.MethodInfo initialize = typeof(CompositionEngine).GetMethod("InitializeStateAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).ShouldNotBeNull();
+            Task<CompositionRunState> IssueAsync() => (Task<CompositionRunState>)initialize.Invoke(engine, [runId, selected.ManifestHash, DateTimeOffset.UtcNow, new CompositionEffectiveDeadline(600, false, null, null), TestContext.Current.CancellationToken])!;
+            if (!writable)
+            {
+                _ = await Should.ThrowAsync<IOException>(IssueAsync).ConfigureAwait(true);
+                File.Exists(engine.StateStore.PathFor(runId)).ShouldBeFalse();
+                File.Exists(Path.Combine(options.StateDirectory, "diagnostics", runId, "owner.json")).ShouldBeFalse();
+                Directory.Exists(Path.Combine(options.WorkspaceRoot, runId)).ShouldBeFalse();
+                return;
+            }
+
+            CompositionRunState issued = await IssueAsync().ConfigureAwait(true);
+            CompositionCiOwnerReceipt recorded = (await CompositionDocumentStore.TryReadAsync<CompositionCiOwnerReceipt>(receipt, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            (recorded.RunId, recorded.AttemptId, recorded.EnvironmentId).ShouldBe((issued.RunId, issued.AttemptId!, issued.EnvironmentId!));
+            recorded.StateDirectory.ShouldBe(Path.GetFullPath(options.StateDirectory));
+            File.GetLastWriteTimeUtc(receipt).ShouldBeLessThanOrEqualTo(File.GetLastWriteTimeUtc(engine.StateStore.PathFor(runId)));
+            Directory.Exists(Path.Combine(options.WorkspaceRoot, runId)).ShouldBeFalse();
+        }
+        finally
+        {
+            ExitCiContext(previous);
+        }
+    }
+
+    /// <summary>The receipt's raw JSON carries exactly the fields and schema the CI integration helper reads.</summary>
+    /// <returns>The cross-language receipt contract assertions.</returns>
+    [Fact]
+    public async Task ReceiptJsonKeysMatchTheIntegrationHelperContractAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (_, CompositionRunState owner) = LocalRunLifecycleFixture.Create(workspace, "package");
+        owner = owner with { ExecutionContext = Context(), RetainOnFailure = false };
+        string receipt = Path.Combine(workspace.Root, "receipt.json");
+        await CompositionCiOwnerReceipt.PersistAsync(receipt, owner, Path.Combine(workspace.Root, "state"), Path.Combine(workspace.Root, "runs"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using JsonDocument document = JsonDocument.Parse(await File.ReadAllTextAsync(receipt, TestContext.Current.CancellationToken).ConfigureAwait(true));
+        string[] keys = [.. document.RootElement.EnumerateObject().Select(property => property.Name).Order(StringComparer.Ordinal)];
+        keys.ShouldBe(["attemptId", "createdAtUtc", "environmentId", "executionContext", "runId", "schema", "stateDirectory"]);
+        string helper = await File.ReadAllTextAsync(Path.Combine(BuildsRoot(), "Github", "run-module-integration", "run_module_integration.py"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        helper.ShouldContain("SCHEMA = \"" + document.RootElement.GetProperty("schema").GetString() + "\"");
+        foreach (string key in new[] { "runId", "attemptId", "environmentId", "executionContext", "stateDirectory" })
+        {
+            helper.ShouldContain("\"" + key + "\"", customMessage: key);
+        }
+
+        JsonElement.DeepEquals(document.RootElement.GetProperty("executionContext"), Context()).ShouldBeTrue();
+    }
+
+    /// <summary>The finalizer's job status reaches the engine through the production command options.</summary>
+    /// <param name="jobStatus">The workflow job status the helper exports, or null when absent.</param>
+    /// <param name="cancelled">Whether the engine treats the job as cancelled.</param>
+    /// <returns>The status bridge and withdrawal end-reason assertions.</returns>
+    [Theory]
+    [InlineData("cancelled", true)]
+    [InlineData("failure", false)]
+    [InlineData("success", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public async Task CiJobStatusBridgesThroughCommandOptionsAsync(string? jobStatus, bool cancelled)
+    {
+        string? prior = Environment.GetEnvironmentVariable("HEXALITH_CI_JOB_STATUS");
+        try
+        {
+            Environment.SetEnvironmentVariable("HEXALITH_CI_JOB_STATUS", jobStatus);
+            CompositionEngineOptions bridged = CompositionCommandOptions.Create(typeof(CiRunLifecycleTests).Assembly.Location);
+            bridged.CiJobCancelled.ShouldBe(cancelled);
+            using PlatformManifestTestWorkspace workspace = new();
+            (ModuleTestSelection selected, CompositionRunState original) = LocalRunLifecycleFixture.Create(workspace, "package");
+            CompositionRunState owner = original with { Status = CompositionRunStatus.Ready, ExecutionContext = Context(), RetainOnFailure = false, ReadinessResults = [new("owned", "process", "Healthy")] };
+            CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with { ContinuousIntegrationOverride = true, CiJobCancelled = bridged.CiJobCancelled, StopTimeout = TimeSpan.FromSeconds(10) };
+            CompositionEngine engine = new(options);
+            await engine.StateStore.WriteAsync(owner, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            CompositionAttachment active = new(CompositionRunPlanFactory.NewRunId(), owner.EnvironmentId!, owner.RunId, CompositionRunPlanFactory.NewRunId(), 14400, now, 14400, now.AddHours(4));
+            string diagnostics = Path.Combine(options.StateDirectory, "diagnostics", owner.RunId);
+            _ = await CompositionAttachmentStore.UpdateAsync<int>(diagnostics, owner.RunId, _ => (0, [active]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            _ = await engine.RecordTestOutcomeAsync(owner.RunId, owner.ReadinessResults, new("failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, "HXT001", ToolExitCode.ProductOrTest), []), "unknown", new([], []), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            (await engine.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+            CompositionAttachment ended = (await CompositionAttachmentStore.ReadAsync(diagnostics, owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
+            ended.EndReason.ShouldBe(cancelled ? "ci-job-cancelled" : "ci-job-completed");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("HEXALITH_CI_JOB_STATUS", prior);
+        }
+    }
+
+    /// <summary>A CI owner is never listed as failure-retained, whatever its terminal or attachments record.</summary>
+    /// <returns>The local and CI retention listing assertions.</returns>
+    [Fact]
+    public async Task CiOwnerListingNeverReportsFailureRetentionAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState original) = LocalRunLifecycleFixture.Create(workspace, "package");
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        original = original with { Status = CompositionRunStatus.Ready, ReadinessResults = [new("owned", "process", "Healthy")] };
+        await engine.StateStore.WriteAsync(original, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord recorded = (await engine.RecordTestOutcomeAsync(original.RunId, original.ReadinessResults, new("failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, "HXT001", ToolExitCode.ProductOrTest), []), "retained", new([], []), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        ModuleTestRunRecord retained = recorded with { FailureRetained = true, CleanupDisposition = "not-requested" };
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        CompositionAttachment failed = new CompositionAttachment(CompositionRunPlanFactory.NewRunId(), original.EnvironmentId!, original.RunId, CompositionRunPlanFactory.NewRunId(), 600, now, 600, now.AddMinutes(10)) with { Outcome = "failed", EndedAtUtc = now };
+        CompositionRunState local = original with { TestRun = retained, CreatedAt = now };
+        CompositionRunListing.Retention(local, [failed]).ShouldBe("failure-retained");
+        CompositionRunListing.Retention(local).ShouldBe("failure-retained");
+        CompositionRunState ci = local with { ExecutionContext = Context() };
+        CompositionRunListing.Retention(ci, [failed]).ShouldBe("not-retained");
+        CompositionRunListing.Retention(ci).ShouldBe("not-retained");
+    }
+
+    /// <summary>A partial CI startup whose withdrawal cannot be committed stops nothing and reports explicit leftovers.</summary>
+    /// <param name="cancelled">Whether startup ended by cancellation rather than failure.</param>
+    /// <returns>The refused withdrawal, live resource and later exact cleanup assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PartialStartupWithFailedCiWithdrawalKeepsResourcesAndReportsLeftoversAsync(bool cancelled)
+    {
+        Dictionary<string, string?> previous = EnterCiContext();
+        try
+        {
+            using PlatformManifestTestWorkspace workspace = new();
+            string manifest = ConfigureExecutingWorkspace(workspace);
+            ModuleTestSelection selected = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+            (CompositionEngineOptions options, CompositionRunPlan plan, string diagnostics) = await PreparePartialStartupAsync(workspace, manifest, selected).ConfigureAwait(true);
+            using Process appHost = new() { StartInfo = CompositionProcess.CreateStartInfo("python3", ["-u", "-c", "import sys; print('ready', flush=True); sys.stdin.readline()"], workspace.Root, new Dictionary<string, string> { [CompositionEnvironment.RunId] = plan.RunId }) };
+            appHost.Start().ShouldBeTrue();
+            (await appHost.StandardOutput.ReadLineAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("ready");
+            try
+            {
+                // A directory at the cleanup-request name makes the withdrawal commit fail before anything stops.
+                string blocker = Path.Combine(diagnostics, "cleanup-request.json");
+                _ = Directory.CreateDirectory(blocker);
+                CompositionEngine engine = new(options with { SelectedTest = selected });
+                CompositionStartResult refused = await FailPartialStartupAsync(engine, plan.RunId, appHost, selected, cancelled).ConfigureAwait(true);
+                await AssertWithdrawalRefusedAsync(refused, cancelled, appHost, diagnostics, plan.RunId).ConfigureAwait(true);
+                Directory.Delete(blocker);
+                CompositionDownResult down = await engine.DownAsync(plan.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, JsonSerializer.Serialize(down.Result));
+                down.Remaining.IsEmpty.ShouldBeTrue();
+                (await CompositionAttachmentStore.ReadAsync(diagnostics, plan.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single().Outcome.ShouldBe("withdrawn");
+                await appHost.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+            finally
+            {
+                if (!appHost.HasExited)
+                {
+                    CompositionProcess.Kill(appHost);
+                }
+            }
+        }
+        finally
+        {
+            ExitCiContext(previous);
+        }
     }
 
     /// <summary>Executes the CI service path and observes withdrawal from the first live composed resource at its stop boundary.</summary>
@@ -237,6 +422,40 @@ public sealed class CiRunLifecycleTests
                 Environment.SetEnvironmentVariable(name, value);
             }
         }
+    }
+
+    /// <summary>A CI owner without a recorded first outcome closes admission as failed while stop allowance remains.</summary>
+    /// <returns>The failed owner status and the owner-failed attachment refusal assertions.</returns>
+    [Fact]
+    public async Task FailedOwnerStatusWithinStopAllowanceRefusesLaterAttachmentAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState created) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with { ContinuousIntegrationOverride = true };
+        CompositionRunState issued = created with
+        {
+            Status = CompositionRunStatus.Ready,
+            ReadinessResults = [new CompositionResourceReadiness("owned", "process", "Healthy")],
+            RemainingResources = null,
+            ExecutionContext = Context(),
+        };
+        CompositionRunStateStore store = new(options.StateDirectory);
+        await store.WriteAsync(issued, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionWorkspace.CreatePrivateDirectory(Path.Combine(options.StateDirectory, "diagnostics", issued.RunId));
+        CompositionEngine engine = new(options);
+
+        // The service's no-recorded-terminal branch: the remaining stop allowance is still open.
+        using CancellationTokenSource allowance = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        allowance.CancelAfter(TimeSpan.FromSeconds(5));
+        await engine.RecordOwnerStatusAsync(issued.RunId, CompositionRunStatus.Failed, allowance.Token).ConfigureAwait(true);
+        allowance.IsCancellationRequested.ShouldBeFalse();
+        CompositionRunState owner = (await store.TryReadAsync(issued.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        owner.Status.ShouldBe(CompositionRunStatus.Failed);
+        owner.TestRun.ShouldBeNull();
+        CompositionAttachRequest request = new(issued.RunId, "source", selected.ManifestHash) { AttacherContext = Context() };
+        ToolCommandResult admission = await CompositionAttachAdmission.AdmitAsync(store, request, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        admission.Attachment.ShouldBeNull();
+        admission.Diagnostics.Single().Field.ShouldBe("owner-failed");
     }
 
     private static async Task ExecuteCiOwnerAsync(CiOwnerExecution run, StringWriter output)
@@ -329,6 +548,10 @@ public sealed class CiRunLifecycleTests
         ended.GetProperty("expiresAtUtc").GetDateTimeOffset().ShouldBe(hold.ExpiresAtUtc);
         seen.GetProperty("terminal").GetProperty("terminalStatus").GetString().ShouldBe(run.FirstStatus);
         seen.GetProperty("terminal").GetProperty("failureRetained").GetBoolean().ShouldBeFalse();
+
+        // Only an actual cancellation records the owner as cancelled before withdrawal and stop.
+        string expectedStatus = run.Cancelled ? "Cancelled" : "Ready";
+        seen.GetProperty("ownerStatus").GetString().ShouldBe(run.Partial ? "Starting" : expectedStatus);
     }
 
     private static async Task AssertRetainedCiResultAsync(CiOwnerExecution run, JsonElement seen)
@@ -455,10 +678,12 @@ public sealed class CiRunLifecycleTests
         long stopping = owned.StoppingTimestamp.ShouldNotBeNull();
         owned.FirstObservedOutcome.ShouldNotBeNull().MetadataRecordingTimestamp.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(stopping);
         Stopwatch.GetElapsedTime(stopping).ShouldBeGreaterThan(TimeSpan.FromSeconds(blockedWithdrawal ? 4 : 1));
-        cancelledCleanup.ShouldBe(blockedWithdrawal ? null : true);
+
+        // Withdrawal never outlasts the remaining stop allowance; once it is spent, the job finalizer owns withdrawal and cleanup.
+        cancelledCleanup.ShouldBeNull();
         elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(blockedWithdrawal ? 11 : 6));
         output.ShouldContain("HXT008");
-        File.Exists(Path.Combine(directory, "attachment-withdrawals.json")).ShouldBe(!blockedWithdrawal);
+        File.Exists(Path.Combine(directory, "attachment-withdrawals.json")).ShouldBeFalse();
         Directory.Exists(owned.Plan.Workspace).ShouldBeTrue();
     }
 
@@ -483,6 +708,82 @@ public sealed class CiRunLifecycleTests
 
         return previous;
     }
+
+    private static void ExitCiContext(Dictionary<string, string?> previous)
+    {
+        foreach ((string name, string? value) in previous)
+        {
+            Environment.SetEnvironmentVariable(name, value);
+        }
+    }
+
+    private static string BuildsRoot()
+    {
+        for (string? directory = AppContext.BaseDirectory; directory is not null; directory = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(directory)))
+        {
+            if (File.Exists(Path.Combine(directory, "Hexalith.Builds.slnx")))
+            {
+                return directory;
+            }
+        }
+
+        throw new InvalidOperationException("Could not locate the Builds repository.");
+    }
+
+    private static async Task<(CompositionEngineOptions Options, CompositionRunPlan Plan, string Diagnostics)> PreparePartialStartupAsync(PlatformManifestTestWorkspace workspace, string manifest, ModuleTestSelection selected)
+    {
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            WorkspaceRoot = Path.Combine(workspace.Root, "workspace"),
+            ContinuousIntegrationOverride = true,
+            StopTimeout = TimeSpan.FromSeconds(30),
+            SourceMapping = new SourceMapping(WorkspaceMode.Source, workspace.Root, "sample", [new("sample", "source", workspace.Root)], false),
+        };
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selected }, manifest, workspace.Root).ConfigureAwait(true);
+        CompositionRunState state = CompositionRunPlanFactory.CreateInitialState(plan.RunId, plan.Workspace, selected.ManifestHash, selected.RequestedAtUtc) with
+        {
+            AttemptId = plan.AttemptId,
+            EnvironmentId = plan.EnvironmentId,
+            SelectedTest = selected,
+            Status = CompositionRunStatus.Starting,
+            ExecutionContext = Context(),
+            EffectiveDeadlineSeconds = 600,
+            StartupDeadlineUtc = selected.RequestedAtUtc.AddSeconds(600),
+        };
+        await new CompositionRunStateStore(options.StateDirectory).WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string diagnostics = Path.Combine(options.StateDirectory, "diagnostics", plan.RunId);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        CompositionAttachment active = new(CompositionRunPlanFactory.NewRunId(), plan.EnvironmentId, plan.RunId, CompositionRunPlanFactory.NewRunId(), 14400, now, 14400, now.AddHours(4));
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(diagnostics, plan.RunId, _ => (0, [active]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        return (options, plan, diagnostics);
+    }
+
+    private static Task<CompositionStartResult> FailPartialStartupAsync(CompositionEngine engine, string runId, Process appHost, ModuleTestSelection selected, bool cancelled)
+    {
+        System.Reflection.MethodInfo fail = typeof(CompositionEngine).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            .Single(method => method.Name == "FailAndTearDownAsync" && method.GetParameters().Length == 8);
+        ToolDiagnostic cause = new(cancelled ? "HXC130" : "HXR020", ToolPhase.Topology, cancelled ? ToolFailureCategory.Cancelled : ToolFailureCategory.TopologyOrLifecycle, "Controlled partial startup termination.", "apphost");
+        object[] arguments = [runId, appHost, selected.ManifestHash, cancelled ? CompositionRunStatus.Cancelled : CompositionRunStatus.Failed, cause, PartialStartupExit(cancelled), selected.RequestedAtUtc, new CompositionEffectiveDeadline(600, false, null, null)];
+        return (Task<CompositionStartResult>)fail.Invoke(engine, arguments)!;
+    }
+
+    private static async Task AssertWithdrawalRefusedAsync(CompositionStartResult refused, bool cancelled, Process appHost, string diagnostics, string runId)
+    {
+        refused.Result.Status.ShouldBe(cancelled ? "cancelled" : "failed");
+        refused.Result.Outcome.ExitCode.ShouldBe(PartialStartupExit(cancelled));
+        refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXT008");
+        refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
+        CompositionRunResources leftovers = refused.Result.RemainingResources.ShouldNotBeNull();
+        leftovers.IsEmpty.ShouldBeFalse();
+        appHost.HasExited.ShouldBeFalse();
+        CompositionAttachment held = (await CompositionAttachmentStore.ReadAsync(diagnostics, runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
+        held.EndedAtUtc.ShouldBeNull();
+        held.Outcome.ShouldBeNull();
+        File.Exists(Path.Combine(diagnostics, "attachment-withdrawals.json")).ShouldBeFalse();
+        refused.StoppingTimestamp.ShouldNotBeNull().ShouldBeInRange(1, Stopwatch.GetTimestamp());
+    }
+
+    private static ToolExitCode PartialStartupExit(bool cancelled) => cancelled ? ToolExitCode.Cancelled : ToolExitCode.TopologyOrLifecycle;
 
     private static JsonElement Context() => JsonSerializer.SerializeToElement(new { kind = "ci", repository = "o/r", workflowRunId = "101", workflowAttempt = 2, jobId = "ci", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
 
@@ -564,7 +865,7 @@ public sealed class CiRunLifecycleTests
             }
 
             await CompositionDocumentStore.WriteAsync(plan.ReadinessPath, ready, token).ConfigureAwait(false);
-            return new CompositionStartResult(new("ready", ToolOutcome.Passed(), []), plan.RunId, new CompositionRunSession(plan, ready, "private-ci-fixture-key", AppHost) { LocalExecution = false });
+            return new CompositionStartResult(new("ready", ToolOutcome.Passed(), []), plan.RunId, new CompositionRunSession(plan, ready, "private-ci-fixture-key", AppHost));
         }
 
         private Task RecordExecutingOwnerAsync(CompositionRunPlan plan, ModuleTestSelection selected, CompositionReadiness ready, CancellationToken token)
@@ -611,7 +912,8 @@ public sealed class CiRunLifecycleTests
                 report = json.loads((directory / 'attachment-withdrawals.json').read_text())
                 terminal = json.loads((directory / 'selected-test.json').read_text())
                 request = json.loads((directory / 'cleanup-request.json').read_text())
-                pathlib.Path(sys.argv[2]).write_text(json.dumps({'report': report, 'terminal': terminal, 'request': request, 'processId': os.getpid()}))
+                owner = json.loads((directory.parent.parent / (directory.name + '.json')).read_text())
+                pathlib.Path(sys.argv[2]).write_text(json.dumps({'report': report, 'terminal': terminal, 'request': request, 'ownerStatus': owner['status'], 'processId': os.getpid()}))
                 """;
             string directory = Path.Combine(BaseOptions.StateDirectory, "diagnostics", plan.RunId);
             AppHost.StartInfo = CompositionProcess.CreateStartInfo("python3", ["-u", "-c", observer, directory, Observation], Workspace.Root, new Dictionary<string, string> { [CompositionEnvironment.RunId] = plan.RunId });

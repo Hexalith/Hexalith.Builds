@@ -613,17 +613,26 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <param name="cancellationToken">The stopping allowance.</param>
     /// <returns>The durable cancellation task.</returns>
     /// <exception cref="IOException">Verified owner state is unavailable.</exception>
-    internal async Task RecordOwnerCancellationAsync(string runId, CancellationToken cancellationToken)
+    internal Task RecordOwnerCancellationAsync(string runId, CancellationToken cancellationToken) =>
+        RecordOwnerStatusAsync(runId, CompositionRunStatus.Cancelled, cancellationToken);
+
+    /// <summary>Closes admission with the owner's actual terminal status before attachment withdrawal; completed cleanup is never rewritten.</summary>
+    /// <param name="runId">The exact owner identity.</param>
+    /// <param name="status">The owner's actual terminal status.</param>
+    /// <param name="cancellationToken">The stopping allowance.</param>
+    /// <returns>The durable status task.</returns>
+    /// <exception cref="IOException">Verified owner state is unavailable.</exception>
+    internal async Task RecordOwnerStatusAsync(string runId, CompositionRunStatus status, CancellationToken cancellationToken)
     {
         FileStream held = await OpenOutcomeLockAsync(Path.Combine(DiagnosticsDirectory(runId), "outcome.lock"), cancellationToken).ConfigureAwait(false);
         await using (held.ConfigureAwait(false))
         {
             CompositionRunState state = await ReadOwnedStateAsync(runId, cancellationToken).ConfigureAwait(false)
-                ?? throw new IOException("Owner cancellation cannot be recorded without verified ownership.");
+                ?? throw new IOException("Owner status cannot be recorded without verified ownership.");
 
             if (state.CleanupDisposition != "complete")
             {
-                await StateStore.WriteAsync(state with { Status = CompositionRunStatus.Cancelled, UpdatedAt = DateTimeOffset.UtcNow }, cancellationToken).ConfigureAwait(false);
+                await StateStore.WriteAsync(state with { Status = status, UpdatedAt = DateTimeOffset.UtcNow }, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -1803,7 +1812,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 return new CompositionStartResult(
                     new ToolCommandResult("ready", ToolOutcome.Passed(), readyDiagnostics),
                     plan.RunId,
-                    new CompositionRunSession(plan, readiness, signingKey, appHost) { LocalExecution = TestEnvironment.TestEnvironmentDescriptorWriter.IsLocalExecution() });
+                    new CompositionRunSession(plan, readiness, signingKey, appHost));
             }
 
             if (appHost.HasExited)
@@ -2001,7 +2010,24 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             {
                 // Leave ownership and resources retryable when withdrawal could not be committed before stopping.
                 AddRecordingFailure(bookkeeping);
-                return Failed("failed", exitCode, [.. located, .. bookkeeping], runId);
+                CompositionRunResources survivors;
+                try
+                {
+                    survivors = await ObserveOwnedResourcesAsync(runId, boundToken).ConfigureAwait(false);
+                }
+                catch (Exception observation) when (IsTeardownFailure(observation))
+                {
+                    survivors = new CompositionRunResources([], [], Unverified: true);
+                }
+
+                ToolDiagnostic leftovers = Diagnostic("HXR023", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "CI attachment withdrawal could not be committed, so owned resources remain for an exact retry.", "down", "Retry down for the same run identity.");
+                ToolExitCode refused = exitCode == ToolExitCode.Success ? ToolExitCode.TopologyOrLifecycle : exitCode;
+                CompositionStartResult withdrawalRefused = Failed(status == CompositionRunStatus.Cancelled ? "cancelled" : "failed", refused, [.. located, .. bookkeeping, leftovers], runId);
+                return withdrawalRefused with
+                {
+                    Result = withdrawalRefused.Result with { RemainingResources = survivors },
+                    StoppingTimestamp = stoppingTimestamp,
+                };
             }
         }
 
