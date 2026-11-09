@@ -627,12 +627,10 @@ def session_processes(record: dict) -> dict[int, str]:
 
 
 def tool_processes(record: dict) -> dict[int, str]:
-    """The tool's own processes: the live gated muxer (session leader) and the tool process it runs (its direct child).
-
-    Composed processes (AppHost, DCP, the native test host, sidecars) are started by the tool, so they are its
-    descendants and never the leader's direct children. Signals sent here reach only the tool, which records attachment
-    withdrawal before it stops them.
-    """
+    """Return the tool's own processes: the live gated muxer (session leader) and the tool it runs (its direct child)."""
+    # Composed processes (AppHost, DCP, the native test host, sidecars) are started by the tool, so they are its
+    # descendants and never the leader's direct children. Signals sent here reach only the tool, which records
+    # attachment withdrawal before it stops them.
     members = session_identities(record)
     leader = members.get(record["session"])
     if leader is None or leader["startTime"] != record["startTime"]:
@@ -651,11 +649,9 @@ def owned_process(pid: int, run_id: str) -> bool:
 
 
 def unowned_survivors(record: dict, run_id: str) -> dict[int, str]:
-    """Recorded-session processes that are neither owned composed processes nor their descendants.
-
-    The exact down stops owned processes after it withdraws attachments; everything else (the tool, its orphans and
-    helpers that could allocate or hold provisioning.lock) must be gone before the finalizer decides.
-    """
+    """Return the recorded-session processes that are neither owned composed processes nor their descendants."""
+    # The exact down stops owned processes after it withdraws attachments; everything else (the tool, its orphans and
+    # helpers that could allocate or hold provisioning.lock) must be gone before the finalizer decides.
     members = session_identities(record)
     owned = {pid for pid in members if owned_process(pid, run_id)}
 
@@ -767,10 +763,8 @@ def record_cleanup(evidence: Path, value: dict, filename: str | None = None) -> 
 
 
 def run_down(command: list[str], *, cwd: Path, env: dict, timeout: int) -> subprocess.CompletedProcess:
-    """subprocess.run for one exact down in its own session; a timeout kills that whole session, never only the muxer.
-
-    Output is decoded with replacement, so non-UTF-8 bytes are an unverified observation rather than an exception.
-    """
+    """Run one exact down like subprocess.run, in its own session; a timeout kills that whole session."""
+    # Output is decoded with replacement, so non-UTF-8 bytes are an unverified observation rather than an exception.
     child = subprocess.Popen(
         command,  # nosec B603 # nosemgrep -- fixed tool/options; canonical 128-bit run identity only.
         cwd=cwd,
@@ -786,9 +780,10 @@ def run_down(command: list[str], *, cwd: Path, env: dict, timeout: int) -> subpr
         # No orphaned down may keep provisioning.lock against the always() finalizer's retry.
         signal_groups([child.pid], signal.SIGKILL)
         stdout, stderr = child.communicate()
-        raise subprocess.TimeoutExpired(command, timeout, output=stdout, stderr=stderr) from None
-    return subprocess.CompletedProcess(command, child.returncode, stdout.decode("utf-8", "replace"),
-                                       stderr.decode("utf-8", "replace"))
+        raise subprocess.TimeoutExpired(  # nosemgrep -- a result record of the fixed down command, nothing is executed.
+            command, timeout, output=stdout, stderr=stderr) from None
+    return subprocess.CompletedProcess(  # nosemgrep -- a result record of the fixed down command, nothing is executed.
+        command, child.returncode, stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace"))
 
 
 def exact_down(root: Path, owner: dict, evidence: Path, context: dict, job_status: str, timeout: int) -> int:
@@ -921,11 +916,9 @@ class ToolSession:
             self.child.stdin.close()
 
     def cancellation_settled(self) -> bool:
-        """Escalate on the tool inside the runner grace; return once the final kill was sent.
-
-        Composed processes are never signalled here: the always() finalizer's exact down withdraws attachments before it
-        stops whatever the tool left behind. Only the runner's own process-tree kill after its grace can precede that.
-        """
+        """Escalate on the tool inside the runner grace; return once the final kill was sent."""
+        # Composed processes are never signalled here: the always() finalizer's exact down withdraws attachments before
+        # it stops whatever the tool left behind. Only the runner's own process-tree kill after its grace can precede that.
         self.forward()
         elapsed = time.monotonic() - self.signals[0]["observedAt"]
         if elapsed >= CANCELLATION_FINAL_SECONDS:
