@@ -1,241 +1,201 @@
 ---
 story: '3-1'
 created: '2026-11-10'
-status: in-progress
+status: complete
 implementation_baseline_revision: f81486cb532e2e166f5c363fa8e9f75c1313c2a1
 ---
 
 # Publish composite spike results
 
-The hosted build passed, but **execution is blocked by a NuGet Trusted
-Publishing policy mismatch**. Both the nested composite login and the caller
-control returned HTTP 401 naming workflow-policy mismatches. Neither returned
-a temporary key. Registry publication/replay and signed provenance were not
-attempted. No NuGet package or container was published. No OCI transport,
-login placement, fallback or provenance inclusion/exclusion decision is made.
+## Prerequisite evidence
 
-The [execution plan](cicd-3-1-publish-composite-spike-plan.md) remains the
-resumption companion. The canonical CiCd story is
-`_bmad-output/specs/spec-cicd/stories/3-1-spike-oci-containers-and-nuget-login-in-the-publish-composite.md`.
-The earlier absence of `hexalith-release` was resolved by maintainer
-provisioning; it is not the blocker in this attempt.
+The renewed prerequisite gate passed on 2026-11-10 **before restoring any
+executable spike files**. The configured profile was
+`GH_CONFIG_DIR=/home/administrator/.config/gh-cicd-agent`, authenticated account
+`jpiquot`, repository `Hexalith/Hexalith.Builds`, clean `main` at
+`3f47d25b98260ddcbdcfae68402ef86fa0ca58bf`; `GH_TOKEN` and `GITHUB_TOKEN`
+overrides were absent. Read-only environment metadata confirmed exactly one
+allowed deployment policy (`main`, type `branch`) and no reviewer or timer.
+Protected variable endpoints returned HTTP 403, an access limitation rather
+than absence. No maintainer credentials or secret values were read.
 
-## Prerequisite gate repeated before executable creation
+The canonical story supplies renewed protected setup confirmation for active
+NuGet policy `Hexalith.Builds CiCd`, creator `jpiquot`, package owner `Hexalith`,
+GitHub owner/repository IDs `80614290` / `952945989`, workflow
+`publish-spike.yml`, environment `hexalith-release`, glob `*`, and operations
+push-new-package/version and unlist/relist. Runtime exchanges below now confirm
+matching authentication. No NuGet package was published or modified. Existing
+release policies, `HEXALITH_NUGET_USER` and `production` were preserved.
 
-On 2026-11-10 the configured CiCd-agent profile was selected at
-`/home/administrator/.config/gh-cicd-agent`; `GH_TOKEN` and `GITHUB_TOKEN`
-overrides were absent. Authenticated account `jpiquot`, target repository
-`Hexalith/Hexalith.Builds`, branch `main`, and baseline revision
-`f81486cb532e2e166f5c363fa8e9f75c1313c2a1` were checked. No credentials or
-credential-file contents were retained.
-
-Read-only GitHub environment metadata confirmed `hexalith-release`, exactly
-one permitted deployment policy (`main`, type `branch`), and no reviewer or
-timer. Protected environment-variable metadata returned HTTP 403, an access
-limitation that does not invalidate the canonical story's dated provisioning.
-The maintainer had confirmed the matching NuGet policy and organization
-variable selection; the story explicitly authorized using that confirmation.
-This preflight passed before any executable spike file was created.
-
-| Supplied input | Recorded configuration |
+| Supplied input | Confirmed configuration/reference |
 | --- | --- |
 | Isolated destination | `registry.hexalith.com/cicd-publish-spike-3-1` |
 | Version tag | `0.0.0-spike.20261110` |
-| Principal | `cicd-publish-spike-3-1`; read/create/update only on the exact repository, no delete grant |
-| Explicit publish-job secret inputs | Environment secrets `HEXALITH_REGISTRY_PUSH_USERNAME`, `HEXALITH_REGISTRY_PUSH_PASSWORD` |
-| Destination/tag references | Environment variables `HEXALITH_REGISTRY_SPIKE_REPOSITORY`, `HEXALITH_REGISTRY_SPIKE_TAG` |
-| NuGet username reference | Organization variable `HEXALITH_NUGET_USER`, selected for Builds |
-| Required matching NuGet policy | Owner `Hexalith`, repository `Hexalith.Builds`, workflow `publish-spike.yml`, environment `hexalith-release`, permitted package scope |
+| Principal | `cicd-publish-spike-3-1`; read/create/update only on this repository, no delete grant |
+| Explicit publish-job secret inputs | `HEXALITH_REGISTRY_PUSH_USERNAME`, `HEXALITH_REGISTRY_PUSH_PASSWORD` in `hexalith-release` |
+| Destination/tag variable references | `HEXALITH_REGISTRY_SPIKE_REPOSITORY`, `HEXALITH_REGISTRY_SPIKE_TAG` |
+| NuGet user variable | Organization variable `HEXALITH_NUGET_USER`, selected for Builds, confirmed as `jpiquot` |
 
-The exact workflow source proves these configured input references. Protected
-values were not enumerated. The failed exchange below supersedes preflight's
-policy assumption: runtime policy matching remains unsatisfied.
+Dated maintainer provisioning in the canonical story supplies protected
+credential evidence. The retained exact workflow/composite source rechecked
+all configured input references. Before restoration, authenticated metadata
+and an independent local download revalidated the original artifact's
+ID/run/source/ZIP digest, inventory and complete OCI graph. Its expiry remains
+`2027-02-08T08:50:41Z`.
 
-## Renewed prerequisite gate after policy repair
+## Hosted outcome
 
-On 2026-11-10, before restoring executable spike files, the CiCd-agent profile
-was rechecked: `GH_CONFIG_DIR=/home/administrator/.config/gh-cicd-agent`, no
-`GH_TOKEN` or `GITHUB_TOKEN` override, authenticated account `jpiquot`, target
-`Hexalith/Hexalith.Builds`, and clean Builds `main` at
-`3f47d25b98260ddcbdcfae68402ef86fa0ca58bf`. Read-only environment metadata
-again returned exactly the `main` branch policy, with no reviewer or timer.
-Protected variable endpoints returned HTTP 403; this is an access limitation,
-not evidence that provisioned inputs are absent.
+**OCI publication and fresh-job replay passed, and nested remote NuGet/login
+passed. Signed build provenance is excluded for the source/builder identity
+reason below.** Story 3-2 can use these settled interfaces.
 
-The canonical story's renewed protected confirmation supersedes the failed
-policy assumption: active NuGet policy `Hexalith.Builds CiCd`, creator
-`jpiquot`, package owner `Hexalith`, GitHub owner/repository IDs
-`80614290` / `952945989`, workflow `publish-spike.yml`, environment
-`hexalith-release`, glob `*`, push-new-package/version and unlist/relist
-operations. This permits authentication probes only. Existing release
-policies and the shared username variable remain unchanged.
+| Run | Exact caller revision | Executed outcome |
+| --- | --- | --- |
+| [42785806980](https://github.com/Hexalith/Hexalith.Builds/actions/runs/42785806980), attempt 1 | `5780b026ebfb194392c93b2546126a960aa0b30a` | Original build passed; both login placements returned HTTP 401 for workflow-policy mismatches. No registry copy ran. |
+| [42791562146](https://github.com/Hexalith/Hexalith.Builds/actions/runs/42791562146), attempt 1 | `a35cb83be57cff4e26fe593910a1f16ef6a6a873` | Build skipped; nested and caller login passed; exact artifact validated. Skopeo version guard rejected the upstream commit suffix before copy. |
+| [42791957667](https://github.com/Hexalith/Hexalith.Builds/actions/runs/42791957667), attempt 1 | `515aaa3b0c5b668d86bdfed7065286a378052d62` | Build skipped; both login placements, original-artifact publication, complete remote graph verification and fresh-job replay passed. |
 
-The retained exact workflow and composite source still reference
-`HEXALITH_NUGET_USER`, the explicit environment push-secret pair and the
-recorded destination/tag variables by name. The dated scoped-Zot provisioning
-remains the protected credential evidence. Authenticated artifact metadata
-again reports ID `13749161812`, run `42785806980`, original source
-`5780b026ebfb194392c93b2546126a960aa0b30a`, the recorded ZIP digest, and expiry
-`2027-02-08T08:50:41Z`. The resumed hosted run must skip build and validate
-that same artifact's content before registry writes. Runtime outcomes remain
-open until the resumed run completes.
+The successful caller resolved the remote composite and trusted helpers at
+`0705088e92d6703232e62dcbe44b3bf0a0980ee3`, via its own `GITHUB_ACTION_PATH`.
+Neither publish nor replay checked out the repository, restored a build cache,
+compiled, packed or rebuilt an image. They used runner 2.338.2 and
+`ubuntu-26.04` image `20261101.186.1`. Exact Git blobs and SHA-256 hashes are
+in [exact-source.json](../evidence/cicd-3-1/exact-source.json); final job/step
+outcomes are in [resumed-run-42791957667.json](../evidence/cicd-3-1/resumed-run-42791957667.json).
 
-## Exact hosted execution and original artifact
+## Original build and archive identity
 
-[Hosted run 42785806980, attempt 1](https://github.com/Hexalith/Hexalith.Builds/actions/runs/42785806980)
-ran from caller revision `5780b026ebfb194392c93b2546126a960aa0b30a` on `main`.
-The remotely resolved composite and helper source was
-`b260185ebe0d0dd1ae9507b16f2b49b366ccd47c`; the runner downloaded that exact
-revision and resolved scripts through its own `GITHUB_ACTION_PATH`.
-The publish job contained no checkout, source build, pack or cache restore.
-Runner version was 2.338.2, image `ubuntu-26.04` / `20261101.186.1`.
-The source blobs and hashes are retained in
-[exact-source.json](../evidence/cicd-3-1/exact-source.json); job/step outcomes
-are in [hosted-run.json](../evidence/cicd-3-1/hosted-run.json).
+The separate read-only build used Python 3.12 and SDK `10.0.403` from
+`global.json`, shared `build_flags`, Release/package mode and `NuGet.ci.Config`.
+It restored once, built each platform once through the SDK, assembled an OCI
+index from unchanged platform manifests, then packed one local-only fixture
+with `--no-build --no-restore`.
 
-The separate read-only build job succeeded using SDK `10.0.403` selected from
-`global.json`, Python 3.12, Release/package mode, the shared `build_flags`, and
-`NuGet.ci.Config`. It restored once, built each platform once through the SDK,
-assembled an OCI index from the unchanged platform manifests, and packed a
-local-only fixture with `--no-build --no-restore`. It executed no package push.
-
-| Original build artifact identity | Value |
+| Identity | Value |
 | --- | --- |
-| Producing run | `42785806980`, attempt `1` |
-| Artifact ID | `13749161812` |
-| Name | `publish-spike-original` |
-| Uploaded ZIP digest | `sha256:a49aa577b8807fbdb1e42bf6bcbf12e071c6f66c9054e0aed793fd8ddc2083d1` |
-| Source revision | `5780b026ebfb194392c93b2546126a960aa0b30a` |
-| Retention requested | 90 days; exact expiry is in the artifact evidence |
+| Producing run / source | `42785806980`, attempt `1` / `5780b026ebfb194392c93b2546126a960aa0b30a` |
+| Artifact ID / name | `13749161812` / `publish-spike-original` |
+| Authenticated ZIP digest | `sha256:a49aa577b8807fbdb1e42bf6bcbf12e071c6f66c9054e0aed793fd8ddc2083d1` |
+| Archive / digest | `containers/publish-spike.tar` / `sha256:aba1ada7bc66ffa300f4a4f8b5c6f8923fd1b618c550c8610e14c5f31ed93f8e` |
+| Root index | `sha256:c86808e5f83c4ce68fb1b5fc5dee7217fe8aa951cf290b07899a3a349dddf897` |
+| linux/amd64 manifest | `sha256:7fb2788092e7b7bdee2bcdb59613a425b848d097b5acb7e2d66ece2caed7b304` |
+| linux/arm64 manifest | `sha256:7728b01f94766956b2410f3bcbef4d1fd40e45867df1ce778f7600f3e4e32e67` |
+| Local-only package SHA-256 | `3b64bdb0f6549852d2db4271eb06c6d6a86222b0609edf4075d27927bf7df7b0` |
 
 [original-artifact.json](../evidence/cicd-3-1/original-artifact.json) retains
-the authenticated artifact metadata and complete producer inventory: archive
-hash, root/child/config/layer digests and sizes, platforms, local package hash,
-SDK version and actual archive compression. After the hosted failure, the
-retained helper independently downloaded the original ZIP locally, validated
-its ID/run/source/digest against GitHub metadata and explicit upload identity,
-then validated its inventory and complete OCI graph. That local download
-accessed no registry; it does not substitute for hosted archive transport.
+all manifest/config/layer digests and sizes, producer inventory, platform set,
+package name/hash and authenticated metadata. Both resumed runs consumed only
+that original ID, producing run, source and ZIP digest; no substitute artifact
+or new build was accepted.
 
-## Observed archive behavior and candidate tool
+SDK `ContainerArchiveOutputPath` emitted **uncompressed OCI tar streams** even
+with requested `.tar.gz` names. The selected handoff is uncompressed
+`containers/*.tar`. With SDK 10.0.403, multi-RID label transport truncates
+colon-containing values: source URL `https://...` became `https` because the
+SDK serializes `identity:value` then reads `Split(':')[1]`. The fixture publishes
+each platform once via single-RID SDK publication, then assembles packaging
+only. Child manifests, configs and layers retain their original bytes. Both
+platforms and source/revision/version labels passed hosted archive inspection.
 
-SDK single-platform `ContainerArchiveOutputPath` emitted **uncompressed OCI
-tar streams**, despite the requested `.tar.gz` filenames. The handoff uses
-`containers/publish-spike.tar`. The driver packages both original SDK manifest
-graphs into a new two-platform OCI index without rewriting any child manifest,
-config or layer bytes. Both expected platforms (`linux/amd64`, `linux/arm64`)
-and source/revision/version labels passed archive inspection.
+## Proven tool, registry graph and retry
 
-A prior local feasibility build exposed SDK 10.0.403's multi-RID label
-transport truncating values at `:`: the source URL became `https`. The
-installed SDK's `Microsoft.NET.Build.Containers.targets` serializes labels as
-`identity:value` then reads `Split(':')[1]`. The fixture therefore builds each
-platform once via single-RID SDK publication and assembles only packaging.
-This workaround passed both locally and in the hosted build. No image rebuild
-occurs in the publisher or any original-artifact retry.
+The adopted distribution is official `quay.io/skopeo/stable:v1.22.3` pinned to
+image digest
+`sha256:2681eccb8b02c495b013c2669cbf7f41d5c0b0b0e644e7c69bd3ea9bcb20641f`,
+with source commit `92397d5ba399784c6e2f9f229a4244b724743dba`.
+[The tool pin](../Tools/spikes/publish-tools.json) and helper require the exact
+reported version `skopeo version 1.22.3 commit: 92397d5ba399784c6e2f9f229a4244b724743dba`.
+The first resumed run exposed the overly strict bare-version expectation;
+that pre-copy failure is retained in
+[resumed-login-and-version-guard.txt](../evidence/cicd-3-1/resumed-login-and-version-guard.txt).
+The correction pins the observed commit suffix rather than accepting arbitrary
+version output.
 
-[Tool pin](../Tools/spikes/publish-tools.json): official
-`quay.io/skopeo/stable:v1.22.3` at immutable image digest
-`sha256:2681eccb8b02c495b013c2669cbf7f41d5c0b0b0e644e7c69bd3ea9bcb20641f`.
-This distribution was selected by querying its registry identity before use.
-The helper will verify `skopeo version 1.22.3`, then invoke
-`copy --all --preserve-digests` with an isolated private authfile and the
-original `oci-archive:` input. **This remains a candidate:** no hosted Skopeo
-execution or Zot archive-copy success was observed.
-
-## Runtime authentication blocker
-
-The nested SHA-pinned `NuGet/login` v1.2.0 exchange and the immediately
-following caller-job control used the same username variable, workflow,
-environment and `id-token: write` permission. Both failed at
-`https://www.nuget.org/api/v2/token` with HTTP 401:
+The helper mounts the artifact and a mode-0600 authfile read-only in the pinned
+distribution, checks its version, and executes the equivalent of:
 
 ```text
-Workflow mismatch for policy 'Hexalith.Builds': expected 'build-release.yml', actual 'publish-spike.yml'.
-Workflow mismatch for policy 'Hexalith.Builds builds-release': expected 'builds-release.yml', actual 'publish-spike.yml'.
+skopeo copy --all --preserve-digests --authfile /spike/auth.json oci-archive:/spike/containers/publish-spike.tar docker://registry.hexalith.com/cicd-publish-spike-3-1:0.0.0-spike.20261110
 ```
 
-The nested helper rejected the empty key. The caller failure stopped every
-successor, so no artifact-consuming publish step, registry write or replay
-ran. GitHub's parent step conclusion for the nested call was softened by
-`continue-on-error`; the actual nested login and helper failures are retained
-in [login-failures.txt](../evidence/cicd-3-1/login-failures.txt). This is an
-**environment/policy blocker**, not evidence against remote composition and
-not evidence for the caller-login fallback. The existing release policies
-and the production workflow were preserved.
+Credentials never enter command arguments or evidence; the authfile is removed
+in `finally`. A pre-copy registry read rejects an existing conflicting root.
+After each copy, authenticated registry reads verified the tag's root and all
+17 manifest/config/layer digest-size pairs against the archive. The archive's
+exact two-platform index and source/revision/version labels were validated
+before registry writes. First publication recorded `previously_present: false`;
+fresh-job replay recorded `true`. Direct comparison confirms the original,
+[publish](../evidence/cicd-3-1/publish.json) and
+[replay](../evidence/cicd-3-1/replay.json) graphs and archive hashes are identical.
+[Evidence artifact metadata](../evidence/cicd-3-1/resumed-artifacts.json) and
+[sanitized command effects](../evidence/cicd-3-1/successful-hosted-effects.txt)
+retain the hosted observation. Only the isolated spike tag was published.
 
-The maintainer must make a policy accessible to the selected policy-creator
-username match **`Hexalith/Hexalith.Builds` / `publish-spike.yml` /
-`hexalith-release`**, including its permitted package scope. The service's
-error names workflow mismatches; it does not prove that another username has
-no such policy. No policy was weakened or replaced during this attempt.
+## NuGet login placement and production input
 
-## Provenance and production-interface handoff remain open
+SHA-pinned `NuGet/login@8d196754b4036150537f80ac539e15c2f1028841`
+(v1.2.0) succeeded inside the remotely resolved composite. The same-job caller
+control succeeded under the identical workflow, environment, username and
+`id-token: write` permission. Publish and fresh replay also independently
+exchanged a token inside that remote composite. Helpers observed only masked,
+nonempty temporary keys; no package push or key/token retention occurred.
 
-Signed package/container provenance was not executed, and no attestation
-permission was granted. The standard action's documented subject/signature
-behavior was inspected for feasibility, but no subject/source/builder
-verification was completed. Neither inclusion nor reasoned exclusion is
-settled by this authentication failure. OCI labels are not attestations.
+Production keeps login **inside `Github/publish`**. The caller passes the
+NuGet user and explicit registry push pair in its own `hexalith-release` job;
+no caller-login fallback or public `nuget-api-key` input is required. The
+conditional experimental fallback was not exercised or adopted because no
+discriminating nested failure occurred. The earlier shared HTTP 401 was a
+policy prerequisite failure, not evidence against composition.
 
-The artifact helper, graph checks and archive naming above are retained
-implementation evidence, not final AD-17 production decisions. The original
-OCI/login and provenance Deferred entries remain open. Story 3-2 cannot treat
-this attempt as a completed spike or adopt the candidate tool/login interface
-as proven. The release state machine and `Github/publish` were not implemented.
+## Signed build provenance: excluded
 
-## Re-drive without rebuilding
+The decision is based on identity semantics, not service availability.
+[provenance-evaluation.json](../evidence/cicd-3-1/provenance-evaluation.json)
+records the package bytes, immutable root/child image subjects, exact upstream
+revisions and source hashes, and permission delta `[]`.
 
-The temporary workflow/action were removed in cleanup revision
-`30c07862eb655703467433aeaff5a01de9782d48`, after recording exact source
-revisions and blob hashes. No Builds release was dispatched while they existed.
-The fixture, Python helpers, tool pin, behavioral tests and sanitized evidence
-remain. Restore the exact harness/action from the retained Git objects only
-after repeating preflight and correcting the matching policy. Preserve all
-frozen runtime files and the existing `builds-release.yml`.
+The [v4.2.2 wrapper](https://github.com/actions/attest-build-provenance/blob/4d101475d8b20a2381f78447822ac1eab6504dd8/action.yml)
+delegates to `actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d`.
+Its [default provenance generator](https://github.com/actions/attest/blob/508db95dd578ae2727ebd6217d5ba78e4fbda05d/src/provenance.ts)
+uses the bundled library's current OIDC `claims.sha`, `claims.job_workflow_ref`
+and `claims.run_id`/`run_attempt` for source, builder and invocation. On this
+replay, source `515aaa3b...` and run `42791957667` would describe the publisher,
+while both subject classes were built at `5780b026...` in run `42785806980`.
+Signing the downloaded bytes would authenticate that current claim, not prove
+the original build. This mismatch also applies when production complete mode
+runs after a Builds bump.
 
-After restoration, dispatch `publish-spike.yml` on `main` with these inputs:
+The original read-only build emitted no producer-signed statement to verify.
+Custom predicates can describe a publish receipt; they do not retroactively
+create producer-signed build evidence. Therefore the publisher adds neither
+`actions/attest-build-provenance` nor `attestations: write`; no attestation was
+created and no inclusion claim is made. Its permission set remains
+`contents: write`, `actions: read`, `id-token: write` in production (the spike
+needed only `contents: read`). OCI labels remain metadata, not attestations.
 
-```text
-artifact-id=13749161812
-artifact-digest=sha256:a49aa577b8807fbdb1e42bf6bcbf12e071c6f66c9054e0aed793fd8ddc2083d1
-artifact-run-id=42785806980
-source-revision=5780b026ebfb194392c93b2546126a960aa0b30a
-```
+## Cleanup and verification
 
-A nonempty `artifact-id` skips the build job; publish/replay consume only this
-original artifact. Its authenticated metadata and every content digest must
-still match. An expired original artifact is a blocker, not permission to
-replace it silently. Retry the same destination and version tag; conflicting
-content must fail before copy. The unexercised fallback path must be tested
-only if nested login fails while caller login succeeds. Both failing remains
-blocked. Provenance needs a truthful independent subject/source verification
-before any adoption decision.
+The temporary `.github/workflows/publish-spike.yml` and
+`Github/publish-spike/action.yml` are removed after retaining exact source and
+hosted evidence. The fixture, archive driver, helper, tool pin and behavioral
+controls remain reproducible evidence. No Builds release was dispatched while
+experimental action metadata existed; no release state machine, production
+`Github/publish`, Git tag, module pin or frozen workflow/action was changed.
+The dedicated registry tag remains as the scoped experiment result; its
+principal has no delete grant.
 
-## Verification
+Focused tests passed on Python 3.12 and runner Python 3.14.4: 9 behavioral tests,
+including real archive/ZIP corruption and identity controls, graph loss,
+conflicting destination, unchanged-byte replay, failed login, private authfile
+lifetime and wrong version/source/unexpected-output rejection before copy.
+No workflow-text assertions were added. Both locked complete suites passed
+20/20 groups on Python 3.12.13 and 3.14.4. Final online cleanup lint passed:
+12 exact frozen findings and zero new findings. All 104 pre-existing runtime
+Git blobs match the implementation baseline. JSON, local document links and
+`git diff --check` pass. [Resumed verification](../evidence/cicd-3-1/resumed-verification.json)
+records commands, interpreter versions, source/log hashes and final cleanup/API evidence.
+Exact created commit messages were validated with pinned commitlint 21.2.4.
 
-- Focused behavioral suite: 8 tests passed on Python 3.12 and runner Python
-  3.14.4. Controls exercise real ZIP/tar bytes, wrong artifact identity/digest,
-  missing graph content/platforms, conflicting destination, full graph replay,
-  nonzero empty-login command behavior and the pinned Skopeo command/authfile
-  lifetime through an executable command double. No workflow-text assertions.
-- Local fixture build/pack and local verification of the hosted original
-  artifact passed; these are explicitly separate from unperformed OCI proof.
-- Actionlint passed for the exact temporary caller. Initial full workflow
-  lint passed with the temporary action and no caller yet. The caller audit
-  started before its action commit was pushed reported `impostor-commit`
-  for that not-yet-visible revision. Final cleanup lint passed with all
-  online audits: 12 exact frozen findings and 0 new findings. Both locked
-  full suites both passed: **20/20 groups on Python 3.12.13** and
-  **20/20 groups on runner Python 3.14.4**. The hosted caller CI also passed
-  its workflow-lint/public-API job at the exact caller revision.
-- Committed-source public API check at caller revision passed: 2507 entries,
-  no removals, against stable `v4.47.0`. The post-cleanup committed-source
-  API check also passed at `30c07862eb655703467433aeaff5a01de9782d48`: 2494
-  entries and no removals.
-- Every created commit message was validated with the installed pinned
-  commitlint 21.2.4. Frozen-file comparison and cleanup checks accompany the
-  final cleanup revision. All 104 pre-existing `Github/`, workflow and
-  `Props/` Git blobs match the implementation baseline under the tracked EOL
-  rules. Temporary action/workflow files are absent; evidence JSON and local
-  document links validate, and `git diff --check` passes.
+The [plan](cicd-3-1-publish-composite-spike-plan.md) remains the execution
+companion; the canonical CiCd story and AD-17/spec companions receive the same
+settled tool, archive, login and provenance decisions before story 3-2.

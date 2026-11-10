@@ -1,0 +1,48 @@
+{
+  "checks": [
+    {
+      "name": "complete-python-312",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/run_python_tests.py",
+      "exit_code": 0,
+      "python_version": "3.12.13",
+      "log_sha256": "920d151628e2e48f90a629cfdfd0944bde536a255113e4c7744d2ce86ddd2032",
+      "conclusion": "Python suite: 20/20 groups passed"
+    },
+    {
+      "name": "complete-runner-python",
+      "command": "uv run --no-cache --locked --script --python /usr/bin/python3 Tools/ci/run_python_tests.py",
+      "exit_code": 0,
+      "python_version": "3.14.4",
+      "log_sha256": "096c88ee60e32ace1c9c50606eca186e825c365fe4eca8ec4bb25297b84a1611",
+      "conclusion": "Python suite: 20/20 groups passed"
+    },
+    {
+      "name": "cleanup-online-lint",
+      "command": "python3 Tools/ci/lint_workflows.py",
+      "exit_code": 0,
+      "python_version": null,
+      "log_sha256": "cbcf33b8ad41a5e5e41328c089212ec99586b8765c242a1d37f2c9ebea767fef",
+      "conclusion": "zizmor: 12 exact frozen composite findings; 0 new findings"
+    }
+  ],
+  "focused_tests": {
+    "count": 9,
+    "interpreters": [
+      "3.12.13",
+      "3.14.4"
+    ],
+    "exit_codes": [
+      0,
+      0
+    ]
+  },
+  "validated_source_sha256": {
+    "Github/lib/publish_spike.py": "b1afd74f38e02ea5f073f2cb85ca2ce755cd224f9bc36c4ae9036b5a11f496a3",
+    "Github/lib/tests/test_publish_spike.py": "a3062e276a2d38622d4a917be320acf436567be6ba27c077dd864c84673604fc",
+    "Tools/spikes/publish-tools.json": "f45fda0476d3a9a8b6f2a1e16c3e6a886f536b362095632b216fba4d88fa2c6c"
+  },
+  "frozen_baseline": "f81486cb532e2e166f5c363fa8e9f75c1313c2a1",
+  "frozen_git_blobs_preserved": 104,
+  "temporary_metadata_absent": true,
+  "git_diff_check": 0
+}

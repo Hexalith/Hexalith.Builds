@@ -1,0 +1,45 @@
+{
+  "total_count": 2,
+  "artifacts": [
+    {
+      "id": 13752090690,
+      "node_id": "MDg6QXJ0aWZhY3QxMzc1MjA5MDY5MA==",
+      "name": "publish-spike-publish-evidence",
+      "size_in_bytes": 1499,
+      "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13752090690",
+      "archive_download_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13752090690/zip",
+      "expired": false,
+      "digest": "sha256:1ae35bf18bcd5e7c3691242b6fbed6ed4f2e8d6f8c6e024985a1bab9a609caf9",
+      "created_at": "2026-11-10T09:37:03Z",
+      "updated_at": "2026-11-10T09:37:03Z",
+      "expires_at": "2027-02-08T09:35:16Z",
+      "workflow_run": {
+        "id": 42791957667,
+        "repository_id": 952945989,
+        "head_repository_id": 952945989,
+        "head_branch": "main",
+        "head_sha": "515aaa3b0c5b668d86bdfed7065286a378052d62"
+      }
+    },
+    {
+      "id": 13751629971,
+      "node_id": "MDg6QXJ0aWZhY3QxMzc1MTYyOTk3MQ==",
+      "name": "publish-spike-replay-evidence",
+      "size_in_bytes": 1497,
+      "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13751629971",
+      "archive_download_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13751629971/zip",
+      "expired": false,
+      "digest": "sha256:1663fd541a803e1d5d452a7cb80d26ba6dccdf4367240b619426875d8197e5b6",
+      "created_at": "2026-11-10T09:37:47Z",
+      "updated_at": "2026-11-10T09:37:47Z",
+      "expires_at": "2027-02-08T09:35:16Z",
+      "workflow_run": {
+        "id": 42791957667,
+        "repository_id": 952945989,
+        "head_repository_id": 952945989,
+        "head_branch": "main",
+        "head_sha": "515aaa3b0c5b668d86bdfed7065286a378052d62"
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+publish	Set up job	﻿2026-11-10T09:32:36.9104183Z Current runner version: '2.338.2'
+publish	Set up job	2026-11-10T09:32:37.2439784Z Download action repository 'Hexalith/Hexalith.Builds@b260185ebe0d0dd1ae9507b16f2b49b366ccd47c' (SHA:b260185ebe0d0dd1ae9507b16f2b49b366ccd47c)
+publish	Set up job	2026-11-10T09:32:39.4250358Z Download action repository 'NuGet/login@8d196754b4036150537f80ac539e15c2f1028841' (SHA:8d196754b4036150537f80ac539e15c2f1028841)
+publish	Set up job	2026-11-10T09:32:39.8445661Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+publish	Observe nested login inside exact remote composite	2026-11-10T09:32:43.2749351Z Successfully exchanged OIDC token for NuGet API key.
+publish	Observe nested login inside exact remote composite	2026-11-10T09:32:43.3768696Z NuGet login returned a nonempty masked temporary key; no package publication
+publish	Caller login control under the same policy and environment	2026-11-10T09:32:46.3451165Z Successfully exchanged OIDC token for NuGet API key.
+publish	Observe caller key without publication	2026-11-10T09:32:46.3594917Z [36;1mecho "Caller login returned a nonempty masked temporary key. Nested outcome: $NESTED_OUTCOME"[0m
+publish	Observe caller key without publication	2026-11-10T09:32:46.3714248Z Caller login returned a nonempty masked temporary key. Nested outcome: success
+publish	Publish original artifact	2026-11-10T09:32:49.2027189Z Successfully exchanged OIDC token for NuGet API key.
+publish	Publish original artifact	2026-11-10T09:32:58.3733167Z publish spike failed: Skopeo distribution version mismatch
+publish	Publish original artifact	2026-11-10T09:32:58.3754181Z NuGet login returned a nonempty masked temporary key; no package publication

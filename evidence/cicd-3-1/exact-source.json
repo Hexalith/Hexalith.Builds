@@ -12,5 +12,40 @@
     "git_blob": "85f30441382ff62595eb3bcc32d9e8bcda58c9e1",
     "sha256": "6a7b00d0b17ed07a52fe27b632d5ddd55ea8275bc5dc210997a3c4bace8a53cd",
     "url": "https://github.com/Hexalith/Hexalith.Builds/blob/5780b026ebfb194392c93b2546126a960aa0b30a/.github/workflows/publish-spike.yml"
+  },
+  {
+    "revision": "a35cb83be57cff4e26fe593910a1f16ef6a6a873",
+    "path": ".github/workflows/publish-spike.yml",
+    "git_blob": "85f30441382ff62595eb3bcc32d9e8bcda58c9e1",
+    "sha256": "6a7b00d0b17ed07a52fe27b632d5ddd55ea8275bc5dc210997a3c4bace8a53cd",
+    "url": "https://github.com/Hexalith/Hexalith.Builds/blob/a35cb83be57cff4e26fe593910a1f16ef6a6a873/.github/workflows/publish-spike.yml"
+  },
+  {
+    "revision": "0705088e92d6703232e62dcbe44b3bf0a0980ee3",
+    "path": "Github/publish-spike/action.yml",
+    "git_blob": "b149de80958fce41bebb0e4eb7c8ee279d620a6f",
+    "sha256": "1e7cffc62e5beff0c79acb5c9343a762c9774b985e5e57cc86679e06c232bce5",
+    "url": "https://github.com/Hexalith/Hexalith.Builds/blob/0705088e92d6703232e62dcbe44b3bf0a0980ee3/Github/publish-spike/action.yml"
+  },
+  {
+    "revision": "0705088e92d6703232e62dcbe44b3bf0a0980ee3",
+    "path": "Github/lib/publish_spike.py",
+    "git_blob": "b0f5fa8efe8923f24194da07bb20e30b9466944b",
+    "sha256": "b1afd74f38e02ea5f073f2cb85ca2ce755cd224f9bc36c4ae9036b5a11f496a3",
+    "url": "https://github.com/Hexalith/Hexalith.Builds/blob/0705088e92d6703232e62dcbe44b3bf0a0980ee3/Github/lib/publish_spike.py"
+  },
+  {
+    "revision": "0705088e92d6703232e62dcbe44b3bf0a0980ee3",
+    "path": "Tools/spikes/publish-tools.json",
+    "git_blob": "99616126e8b955cbfc530e3c2fa0f6a4850dcb22",
+    "sha256": "f45fda0476d3a9a8b6f2a1e16c3e6a886f536b362095632b216fba4d88fa2c6c",
+    "url": "https://github.com/Hexalith/Hexalith.Builds/blob/0705088e92d6703232e62dcbe44b3bf0a0980ee3/Tools/spikes/publish-tools.json"
+  },
+  {
+    "revision": "515aaa3b0c5b668d86bdfed7065286a378052d62",
+    "path": ".github/workflows/publish-spike.yml",
+    "git_blob": "1b9e82eb7866ed5c1d4e31014113af6274a6b691",
+    "sha256": "c97341a76fdd84f0872ec99401fb08b99f5985ba0ca50f79154b07f5e51481f3",
+    "url": "https://github.com/Hexalith/Hexalith.Builds/blob/515aaa3b0c5b668d86bdfed7065286a378052d62/.github/workflows/publish-spike.yml"
   }
 ]

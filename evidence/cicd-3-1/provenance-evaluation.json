@@ -1,0 +1,61 @@
+{
+  "decision": "exclude signed build provenance from the publisher",
+  "evidence_type": "immutable upstream implementation inspection; no signing or OIDC claims captured",
+  "sources": [
+    {
+      "repository": "actions/attest-build-provenance",
+      "revision": "4d101475d8b20a2381f78447822ac1eab6504dd8",
+      "path": "action.yml",
+      "sha256": "9fb3b3ecd703b994c45c0d18c62934ce095c6863b45240fc43a20d2dea58abc6",
+      "url": "https://github.com/actions/attest-build-provenance/blob/4d101475d8b20a2381f78447822ac1eab6504dd8/action.yml"
+    },
+    {
+      "repository": "actions/attest",
+      "revision": "508db95dd578ae2727ebd6217d5ba78e4fbda05d",
+      "path": "src/provenance.ts",
+      "sha256": "14a74a43c75b3c99aaf55e27f0fefa18ef6ec626f0117a1d7d33bc04840bd58f",
+      "url": "https://github.com/actions/attest/blob/508db95dd578ae2727ebd6217d5ba78e4fbda05d/src/provenance.ts"
+    },
+    {
+      "repository": "actions/attest",
+      "revision": "508db95dd578ae2727ebd6217d5ba78e4fbda05d",
+      "path": "dist/index.js",
+      "sha256": "a5dbd3960c8098dab5c3f87ed9111d47a4e9f5664f8614cf43d6ebcc84bf48fd",
+      "url": "https://github.com/actions/attest/blob/508db95dd578ae2727ebd6217d5ba78e4fbda05d/dist/index.js"
+    }
+  ],
+  "default_slsa_identity": {
+    "source": "OIDC claims.sha",
+    "builder": "OIDC claims.job_workflow_ref",
+    "invocation": "OIDC claims.run_id and claims.run_attempt"
+  },
+  "original_build": {
+    "source_revision": "5780b026ebfb194392c93b2546126a960aa0b30a",
+    "run_id": 42785806980,
+    "run_attempt": 1,
+    "artifact_id": 13749161812,
+    "zip_digest": "sha256:a49aa577b8807fbdb1e42bf6bcbf12e071c6f66c9054e0aed793fd8ddc2083d1"
+  },
+  "subjects": {
+    "packages": {
+      "packages/Hexalith.PublishSpike.LocalOnly.0.0.0-spike.20261110.nupkg": "sha256:3b64bdb0f6549852d2db4271eb06c6d6a86222b0609edf4075d27927bf7df7b0"
+    },
+    "containers": {
+      "index": "sha256:c86808e5f83c4ce68fb1b5fc5dee7217fe8aa951cf290b07899a3a349dddf897",
+      "children": [
+        "sha256:7fb2788092e7b7bdee2bcdb59613a425b848d097b5acb7e2d66ece2caed7b304",
+        "sha256:7728b01f94766956b2410f3bcbef4d1fd40e45867df1ce778f7600f3e4e32e67"
+      ]
+    }
+  },
+  "publisher_example": {
+    "source_revision": "515aaa3b0c5b668d86bdfed7065286a378052d62",
+    "run_id": 42791957667,
+    "run_attempt": 1
+  },
+  "reason": "The original bytes were built in an earlier run at a different source revision. Default SLSA generation binds both subject classes to the current publisher source/run. A signature over those subjects would authenticate that current claim, not prove their original build. Custom predicates can describe a publish receipt, but cannot retroactively create producer-signed build evidence. No independent signed producer statement exists in the original artifact. The build-once/read-only-build/publish-only-write-permission contract is retained.",
+  "permissions_delta": [],
+  "attestations_write_granted": false,
+  "signed_attestation_created": false,
+  "nuget_package_published": false
+}

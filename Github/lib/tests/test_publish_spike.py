@@ -183,15 +183,18 @@ class PublishSpikeTests(unittest.TestCase):
     def test_wrong_skopeo_version_prevents_copy_and_removes_authfile(self):
         docker = self.root / "docker"
         marker = self.root / "unexpected-copy"
-        docker.write_text("#!/usr/bin/env python3\nimport sys\nfrom pathlib import Path\n"
-                          "if sys.argv[-1]=='--version': print('skopeo version 1.22.2')\n"
+        docker.write_text("#!/usr/bin/env python3\nimport os,sys\nfrom pathlib import Path\n"
+                          "if sys.argv[-1]=='--version': print(os.environ['TOOL_VERSION'])\n"
                           f"else: Path({str(marker)!r}).touch()\n")
         docker.chmod(0o755)
-        with patch.dict(os.environ, {"PATH": str(self.root) + os.pathsep + os.environ["PATH"]}):
-            with self.assertRaisesRegex(spike.SpikeError, "version mismatch"):
-                spike.skopeo_copy(self.archive, self.root, "scoped-user", "synthetic-password")
-        self.assertFalse(marker.exists())
-        self.assertFalse((self.root / "auth.json").exists())
+        for version in ("skopeo version 1.22.2", "skopeo version 1.22.3 commit: " + "0" * 40,
+                        "skopeo version 1.22.3 unexpected output"):
+            with self.subTest(version=version), patch.dict(os.environ, {
+                    "PATH": str(self.root) + os.pathsep + os.environ["PATH"], "TOOL_VERSION": version}):
+                with self.assertRaisesRegex(spike.SpikeError, "version mismatch"):
+                    spike.skopeo_copy(self.archive, self.root, "scoped-user", "synthetic-password")
+            self.assertFalse(marker.exists())
+            self.assertFalse((self.root / "auth.json").exists())
 
 
 if __name__ == "__main__":

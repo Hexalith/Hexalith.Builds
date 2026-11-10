@@ -1,7 +1,7 @@
 ---
 story: '3-1'
 created: '2026-11-10'
-status: blocked
+status: complete
 planning_only: false
 implementation_baseline_revision: b99c0d9a5b9b2eeebacc19ea1aebf1b0f656afba
 ---
@@ -12,10 +12,12 @@ Story 3-1 will establish whether containers built once as OCI archives can be
 pushed by a remotely resolved composite, prove the placement of NuGet/login,
 and decide whether the new publisher adds signed build provenance. These
 decisions must reach the CiCd architecture spine and spec before story 3-2.
-Planning created this execution companion. The resumed hosted attempt built
-the original artifact but both login placements failed with a workflow-policy
-mismatch. See the results document and its exact retry inputs; do not rebuild
-that original artifact. OCI transport and provenance decisions remain open.
+Planning created this execution companion. After the maintainer repaired the
+matching policy, hosted run `42791957667` published and replayed the original
+artifact from run `42785806980`, with build skipped. Nested NuGet/login and the
+same-context caller control succeeded. The results document settles OCI
+tooling/naming, login placement and reasoned provenance exclusion; it retains
+the historical blocked attempt and exact resumed evidence.
 
 The canonical workflow record is in the enclosing Hexalith.CiCd repository at
 `_bmad-output/specs/spec-cicd/stories/3-1-spike-oci-containers-and-nuget-login-in-the-publish-composite.md`.

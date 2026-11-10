@@ -1,0 +1,85 @@
+{
+  "conclusion": "failure",
+  "databaseId": 42791562146,
+  "event": "workflow_dispatch",
+  "headSha": "a35cb83be57cff4e26fe593910a1f16ef6a6a873",
+  "jobs": [
+    {
+      "completedAt": "2026-11-10T09:33:00Z",
+      "conclusion": "failure",
+      "databaseId": 129746023162,
+      "name": "publish",
+      "startedAt": "2026-11-10T09:32:35Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Observe nested login inside exact remote composite",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Caller login control under the same policy and environment",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Observe caller key without publication",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "failure",
+          "name": "Publish original artifact",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Retain sanitized publish evidence",
+          "number": 6,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 7,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42791562146/job/129746023162"
+    },
+    {
+      "completedAt": "2026-11-10T09:32:30Z",
+      "conclusion": "skipped",
+      "databaseId": 129746026072,
+      "name": "build",
+      "startedAt": "2026-11-10T09:32:31Z",
+      "status": "completed",
+      "steps": [],
+      "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42791562146/job/129746026072"
+    },
+    {
+      "completedAt": "2026-11-10T09:33:02Z",
+      "conclusion": "skipped",
+      "databaseId": 129746276681,
+      "name": "replay",
+      "startedAt": "2026-11-10T09:33:02Z",
+      "status": "completed",
+      "steps": [],
+      "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42791562146/job/129746276681"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42791562146",
+  "run_attempt": 1,
+  "path": ".github/workflows/publish-spike.yml"
+}
