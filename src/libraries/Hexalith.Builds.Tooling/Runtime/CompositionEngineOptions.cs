@@ -104,6 +104,12 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets a value indicating whether local selected-test failures retain surviving resources until explicit down.</summary>
     public bool RetainOnFailure { get; init; }
 
+    /// <summary>Gets the executor captured before setup and retained through issuance.</summary>
+    internal TestEnvironment.ExecutingToolIdentity? ExecutingTool { get; init; }
+
+    /// <summary>Gets a test-only replacement for hashing the executing binaries.</summary>
+    internal Func<TestEnvironment.ExecutingToolIdentity>? ExecutingToolCaptureOverride { get; init; }
+
     /// <summary>Gets the owner's cancellation separately from the finite selected execution clock.</summary>
     internal CancellationToken? SelectedExecutionOwnerToken { get; init; }
 

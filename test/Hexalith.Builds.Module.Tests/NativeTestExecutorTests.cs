@@ -32,6 +32,88 @@ public sealed class NativeTestExecutorTests
 
     private static readonly byte[] _reportBytes = Encoding.UTF8.GetBytes("<TestRun><ResultSummary outcome=\"Completed\" /></TestRun>");
 
+    /// <summary>A native ledger that cannot be durably written is reported instead of being silently dropped.</summary>
+    /// <returns>The launch-metadata retention failure assertions.</returns>
+    [Fact]
+    public async Task ReviewUnwritableNativeLedgerReportsLaunchMetadataFailureAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The native process double uses POSIX shell scripts.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        _ = LocalRunLifecycleFixture.Create(workspace);
+        workspace.Change("modules.0.tests.0.executor", "\"vstest\"");
+        workspace.Change("modules.0.tests.0.entry", "\"runner.csproj\"");
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.csproj"), "<Project />", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string manifest = workspace.Save();
+        ModuleTestSelection selected = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selected }, manifest, workspace.Root).ConfigureAwait(true);
+        using Process appHost = new();
+        CompositionRunSession session = new(plan, HealthyReadiness(plan), "private-ledger-key", appHost);
+        string archive = Path.Combine(workspace.Root, "retained");
+        CompositionWorkspace.CreatePrivateDirectory(archive);
+        string ledger = Path.Combine(archive, "native-termination.json");
+        string child = Path.Combine(workspace.Root, "native-dotnet");
+        string script = "while [ ! -d '" + ledger + "' ]; do rm -f '" + ledger + "'; mkdir '" + ledger + "' 2>/dev/null; done\n"
+            + "printf '<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>' > \"$HEXALITH_G4_TEST_REPORT_PATH\"\n";
+        CompositionTestFiles.WriteScript(child, script);
+        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(session, new("runner.csproj", "vstest"), manifest, TestContext.Current.CancellationToken, child, selected, archive).ConfigureAwait(true);
+        result.Launched.ShouldBeTrue();
+        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXT008" && diagnostic.Message == "Native launch metadata could not be durably retained.");
+    }
+
+    /// <summary>Prepared-only access stays unissued; a later failed launch preserves actual earlier execution.</summary>
+    /// <param name="earlierExecution">Whether a successful nonfinal entry already launched.</param>
+    /// <returns>The persisted cumulative work/access assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReviewFailedLaunchPreservesActualBatchHistoryAsync(bool earlierExecution)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        _ = LocalRunLifecycleFixture.Create(workspace);
+        workspace.Change("modules.0.tests.0.executor", "\"vstest\"");
+        workspace.Change("modules.0.tests.0.entry", "\"runner.csproj\"");
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.csproj"), "<Project />", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string manifest = workspace.Save();
+        ModuleTestSelection selected = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selected }, manifest, workspace.Root).ConfigureAwait(true);
+        using Process appHost = new();
+        CompositionRunSession session = new(plan, HealthyReadiness(plan), "private-batch-key", appHost);
+        string archive = Path.Combine(workspace.Root, "retained");
+        CompositionWorkspace.CreatePrivateDirectory(archive);
+        IReadOnlyList<int> originalProcesses = [];
+        DateTimeOffset? originalExpiry = null;
+        DateTimeOffset? originalObservation = null;
+        if (earlierExecution)
+        {
+            string child = Path.Combine(workspace.Root, "native-dotnet");
+            CompositionTestFiles.WriteScript(child, "printf '<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>' > \"$HEXALITH_G4_TEST_REPORT_PATH\"\n");
+            NativeTestExecutionResult first = await NativeTestExecutor.ExecuteAsync(session, new("runner.csproj", "vstest"), manifest, TestContext.Current.CancellationToken, child, selected, archive).ConfigureAwait(true);
+            first.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+            first.Launched.ShouldBeTrue();
+            originalProcesses = first.ProcessIds;
+            originalExpiry = first.CredentialExpiresAtUtc;
+            originalObservation = first.OwnerTermination.ShouldNotBeNull().OwnedWork.Single().ObservedAtUtc;
+            session.Plan = session.Plan with { ExecutionTiming = null };
+        }
+
+        NativeTestExecutionResult failed = await NativeTestExecutor.ExecuteAsync(session, new("runner.csproj", "vstest"), manifest, TestContext.Current.CancellationToken, Path.Combine(workspace.Root, "missing-dotnet"), selected, archive).ConfigureAwait(true);
+        failed.Launched.ShouldBeFalse();
+        failed.CredentialExpiresAtUtc.ShouldBeNull();
+        CompositionOwnerTermination ledger = (await CompositionDocumentStore.ReadIfExistsAsync<CompositionOwnerTermination>(Path.Combine(archive, "native-termination.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        ledger.OwnedWork.Single().Status.ShouldBe(earlierExecution ? "terminated" : "not-applicable");
+        ledger.EnvironmentAccess.Single().Status.ShouldBe(earlierExecution ? "pending" : "not-applicable");
+        ledger.CredentialExpiresAtUtc.ShouldBe(originalExpiry);
+        ledger.NativeProcessIds.ShouldBe(originalProcesses);
+        if (earlierExecution)
+        {
+            ledger.OwnedWork.Single().ObservedAtUtc.ShouldBe(originalObservation.ShouldNotBeNull());
+        }
+    }
+
     /// <summary>Checks each platform uses its own native report switch and no shared option.</summary>
     [Fact]
     public void ArgumentsSelectTheNativeReportOfEachPlatform()
@@ -240,6 +322,11 @@ public sealed class NativeTestExecutorTests
 
         // The identity-only child writes no TRX, so the launched run still fails on its missing report.
         result.Result.Outcome.RuleId.ShouldBe("HXT002");
+        result.Launched.ShouldBeTrue();
+        result.StopObserved.ShouldBeTrue();
+        result.ProcessIds.Count.ShouldBe(1);
+        _ = result.CredentialExpiresAtUtc.ShouldNotBeNull();
+        _ = result.ObservedAtUtc.ShouldNotBeNull();
     }
 
     /// <summary>An unsafe or inconsistent endpoint-credential channel refuses at the executor before the child launches.</summary>

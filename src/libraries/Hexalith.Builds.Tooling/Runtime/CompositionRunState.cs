@@ -40,6 +40,9 @@ public sealed record CompositionRunState(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? QualificationOwners { get; init; }
 
+    /// <summary>Gets the original executing CLI and Tooling binary identity, unavailable on legacy state.</summary>
+    public TestEnvironment.ExecutingToolIdentity? ExecutingTool { get; init; }
+
     /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
     public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }
 
@@ -67,7 +70,16 @@ public sealed record CompositionRunState(
     /// <summary>Gets the recorded cleanup disposition.</summary>
     public string CleanupDisposition { get; init; } = "unavailable";
 
-    /// <summary>Gets the elapsed seconds from the start request until this state was recorded.</summary>
+    /// <summary>Gets when startup readiness, failure, timeout or interruption was first observed.</summary>
+    public DateTimeOffset? StartupObservedAtUtc { get; init; }
+
+    /// <summary>Gets a value indicating whether recovery measured an observed interruption rather than reconstructing a death instant.</summary>
+    public bool StartupInterruptionObserved { get; init; }
+
+    /// <summary>Gets a value indicating whether environment provisioning was issued, including partially created workspaces.</summary>
+    public bool EnvironmentWorkIssued { get; init; }
+
+    /// <summary>Gets the elapsed seconds frozen at the first startup observation, before diagnostics or teardown.</summary>
     public double? StartupDurationSeconds { get; init; }
 
     /// <summary>Gets the per-resource readiness results observed for this run.</summary>

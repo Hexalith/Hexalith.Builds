@@ -40,6 +40,18 @@ internal sealed record NativeTestExecutionResult(ToolCommandResult Result, Nativ
     /// <summary>Gets the validated pre-launch descriptor bytes held by the runner.</summary>
     internal byte[]? DescriptorSnapshot { get; init; }
 
+    /// <summary>Gets cumulative runner-held native observations, including earlier batch entries.</summary>
+    internal CompositionOwnerTermination? OwnerTermination { get; init; }
+
+    /// <summary>Gets the native launch identities observed by the runner.</summary>
+    internal IReadOnlyList<int> ProcessIds { get; init; } = [];
+
+    /// <summary>Gets a value indicating whether process exit or bounded stopping was observed independently of test success.</summary>
+    internal bool StopObserved { get; init; }
+
+    /// <summary>Gets the native stopping observation time.</summary>
+    internal DateTimeOffset? ObservedAtUtc { get; init; }
+
     /// <summary>Gets a value indicating whether the native child process was launched.</summary>
     internal bool Launched { get; init; }
 }

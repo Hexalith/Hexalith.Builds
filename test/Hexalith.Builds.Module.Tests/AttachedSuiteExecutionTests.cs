@@ -850,9 +850,10 @@ public sealed class AttachedSuiteExecutionTests
         (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
         string manifest = workspace.Save();
         string runId = CompositionRunPlanFactory.NewRunId();
-        state = state with { RunId = runId, Workspace = Path.Combine(workspace.Root, "runs", runId), Status = CompositionRunStatus.Ready, ReadinessResults = [new CompositionResourceReadiness("owned", "process", "Healthy")], RemainingResources = null };
+        state = state with { RunId = runId, Workspace = Path.Combine(workspace.Root, "runs", runId), Status = CompositionRunStatus.Ready, ExecutingTool = ExecutingToolIdentity.Capture(), StartupDurationSeconds = 0.25, ReadinessResults = [new CompositionResourceReadiness("owned", "process", "Healthy")], RemainingResources = null };
         CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
         {
+            ExecutingToolCaptureOverride = () => throw new InvalidOperationException("A reconnect or cleaner must preserve the original owner executor."),
             HoldPollInterval = TimeSpan.FromMilliseconds(25),
             AttachedPickupTimeout = TimeSpan.FromSeconds(2),
             AttachedProcessDiscoveryOverride = survivor ? Survivor : null,
@@ -946,8 +947,28 @@ public sealed class AttachedSuiteExecutionTests
         run.GetProperty("attachedRunId").GetString().ShouldBe(attachedRunId);
         run.GetProperty("ownerRunId").GetString().ShouldBe(ownerRunId);
         document.GetProperty("bindings").GetProperty("candidate").GetProperty("classification").GetString().ShouldBe("baseline-only");
-        document.GetProperty("bindings").GetProperty("tool").GetProperty("state").GetString().ShouldBe("not-yet-populated");
-        document.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup").TryGetProperty("actualDurationSeconds", out _).ShouldBeFalse();
+        string ownerPath = Path.Combine(stateDirectory, "diagnostics", ownerRunId, "owner.json");
+        using JsonDocument owner = JsonDocument.Parse(File.ReadAllText(File.Exists(ownerPath) ? ownerPath : new CompositionRunStateStore(stateDirectory).PathFor(ownerRunId)));
+        JsonElement tool = document.GetProperty("bindings").GetProperty("tool");
+        if (owner.RootElement.GetProperty("executingTool").ValueKind == JsonValueKind.Object)
+        {
+            tool.GetProperty("contentIdentity").GetString().ShouldBe(owner.RootElement.GetProperty("executingTool").GetProperty("contentIdentity").GetString());
+        }
+        else
+        {
+            tool.GetProperty("state").GetString().ShouldBe("not-yet-populated");
+        }
+
+        JsonElement startup = document.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup");
+        if (owner.RootElement.GetProperty("startupDurationSeconds").ValueKind == JsonValueKind.Number)
+        {
+            startup.GetProperty("actualDurationSeconds").GetDouble().ShouldBe(owner.RootElement.GetProperty("startupDurationSeconds").GetDouble());
+        }
+        else
+        {
+            startup.TryGetProperty("actualDurationSeconds", out _).ShouldBeFalse();
+        }
+
         document.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe(outcome);
         document.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe(cause);
         JsonElement hold = document.GetProperty("bindings").GetProperty("attachments").GetProperty("holds").EnumerateArray().Single(item => item.GetProperty("attachedRunId").GetString() == attachedRunId);
@@ -974,7 +995,17 @@ public sealed class AttachedSuiteExecutionTests
         File.Exists(root.GetProperty("descriptor").GetString()).ShouldBeFalse("The attachment descriptor is deleted when access ends.");
         TestEnvironmentContractReadResult descriptor = TestEnvironmentContractReader.ReadDescriptor(Path.Combine(workspace.Root, "descriptor-" + attachedRunId + ".json"), TestContext.Current.CancellationToken);
         descriptor.IsValid.ShouldBeTrue();
-        JsonElement run = descriptor.Document!.Value.GetProperty("bindings").GetProperty("run");
+        JsonElement childBindings = descriptor.Document!.Value.GetProperty("bindings");
+        JsonElement childTool = childBindings.GetProperty("tool");
+        ExecutingToolIdentity executor = owner.Session.Plan.ExecutingTool.ShouldNotBeNull();
+        childTool.GetProperty("name").GetString().ShouldBe("hexalith-module");
+        childTool.GetProperty("version").GetString().ShouldBe(executor.Version);
+        childTool.GetProperty("contentIdentity").GetString().ShouldBe(executor.ContentIdentity);
+        JsonElement startup = childBindings.GetProperty("deadlines").GetProperty("startup");
+        startup.GetProperty("actualDurationSeconds").GetDouble().ShouldBe(owner.Session.Readiness.StartupDurationSeconds.ShouldNotBeNull());
+        startup.GetProperty("originAt").GetDateTimeOffset().ShouldBe(owner.Session.Plan.StartupDeadlineUtc.ShouldNotBeNull() - owner.Session.Plan.EffectiveDeadline.ShouldNotBeNull().Timeout);
+        startup.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(owner.Session.Plan.StartupDeadlineUtc.Value);
+        JsonElement run = childBindings.GetProperty("run");
         run.GetProperty("role").GetString().ShouldBe("attached");
         run.GetProperty("runId").GetString().ShouldBe(attachedRunId);
         run.GetProperty("attemptId").GetString().ShouldBe(recorded.Execution!.AttemptId);
@@ -982,6 +1013,10 @@ public sealed class AttachedSuiteExecutionTests
         if (ownerDescriptor.IsValid)
         {
             ownerDescriptor.Document!.Value.GetProperty("bindings").GetProperty("run").GetProperty("role").GetString().ShouldBe("owner");
+            JsonElement ownerTool = ownerDescriptor.Document.Value.GetProperty("bindings").GetProperty("tool");
+            ownerTool.GetProperty("name").GetString().ShouldBe("hexalith-module");
+            ownerTool.GetProperty("version").GetString().ShouldBe(executor.Version);
+            ownerTool.GetProperty("contentIdentity").GetString().ShouldBe(executor.ContentIdentity);
         }
 
         AssertNoTaggedProcess(attachedRunId);
@@ -1092,7 +1127,8 @@ public sealed class AttachedSuiteExecutionTests
                 AttachedProcessDiscoveryOverride = survivor ? Survivor : null,
                 SelectedPlatformStartOverride = async (_, selection, token) =>
                 {
-                    CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selection }, manifest, workspace.Root).ConfigureAwait(false);
+                    ExecutingToolIdentity executor = ExecutingToolIdentity.Capture();
+                    CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selection, ExecutingTool = executor }, manifest, workspace.Root).ConfigureAwait(false);
                     CompositionReadiness ready = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "sample");
                     if (credentials)
                     {
@@ -1114,6 +1150,14 @@ public sealed class AttachedSuiteExecutionTests
                     await CompositionDocumentStore.WriteAsync(plan.ReadinessPath, ready, token).ConfigureAwait(false);
                     CompositionRunState issued = CompositionRunPlanFactory.CreateInitialState(plan.RunId, plan.Workspace, selection.ManifestHash, selection.RequestedAtUtc) with
                     {
+                        ExecutingTool = executor,
+                        StartupDurationSeconds = ready.StartupDurationSeconds,
+                        StartupObservedAtUtc = ready.ObservedAt,
+                        StartupDeadlineUtc = plan.StartupDeadlineUtc,
+                        EffectiveDeadlineSeconds = plan.EffectiveDeadline?.TimeoutSeconds,
+                        EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,
+                        EffectiveDeadlineJustification = plan.EffectiveDeadline?.Justification,
+                        EnvironmentWorkIssued = true,
                         AttemptId = plan.AttemptId,
                         EnvironmentId = plan.EnvironmentId,
                         SelectedTest = selection,

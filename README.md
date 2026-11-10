@@ -636,9 +636,11 @@ teardown like an unrecorded withdrawal (`HXR037`), so nothing stops while attach
 `--ci-owner-receipt`, more than one `--profile`, or a suite needing an owner's retention gate or
 access observation (a declared `daprRuntimeVersion`, Memories `functional-retention`) refuses
 with `HXC002`; `--hold-seconds` or `--attachment-request-id` without `--attach-to` is a usage
-error. Limits of this revision: the executing tool and startup duration stay unpopulated, the
-Parties caller is not adopted, owners requiring routing-catalog observations fail an attached
-run as `startup-failure`, and no tool acceptance, qualification or pin is implied.
+error. Attached descriptors and fallback results preserve the live owner's original executing
+tool and measured environment startup, including its original request, deadline and override.
+Attachment preparation never becomes environment startup. Limits of this revision: the Parties
+caller is not adopted, owners requiring routing-catalog observations fail an attached run as
+`startup-failure`, and no tool acceptance, qualification or pin is implied.
 CI package integration additionally supports `test --ci-owner-receipt <external-file>`.
 The tool publishes exact ownership before allocation and refuses an unwritable receipt.
 The workflow-owned helper checks the receipt's repository/run/attempt/job bindings,
@@ -699,6 +701,36 @@ identities and independent startup deadlines, with unavailable catalog, readines
 endpoint and artifact proof explicitly unpopulated. Cleanup and retention advance
 without replacing the first terminal outcome. These local results remain diagnostic
 and grant no candidate acceptance or package runtime qualification.
+
+Startup elapsed seconds freeze once when readiness, startup failure, timeout or interruption
+is observed, before diagnostic collection or teardown. First and refreshed results, durable
+owner state and startup summaries reuse that measurement and the original request/deadline.
+A later exact `down` of an interrupted startup records when recovery observed the interruption;
+it cannot reconstruct an unobserved death instant. Legacy unavailable facts remain unavailable
+with classified lifecycle explanations.
+
+Before allocation, the runner captures `hexalith-module`, its actual CLI informational version
+without build metadata, and an executing-binary content identity. Hashing failure refuses fresh
+provisioning. The digest subject is the exact UTF-8 bytes (no BOM or final newline) of a compact
+JSON manifest with properties in this order: `schema: hexalith.executing-tool-manifest.v1`,
+`algorithm: sha256`, then `binaries`. The binary array is sorted by ordinal filename and contains
+`Hexalith.Builds.Module.Cli.dll` and `Hexalith.Builds.Tooling.dll`; each entry has `name`, then
+`contentIdentity: sha256:<lowercase SHA256 of the entire binary file>`. The tool's content
+identity is `sha256:<lowercase SHA256 of those manifest bytes>`. No paths, packages or credentials
+enter the manifest. Exact original manifest bytes remain an internal, redacted,
+content-addressed `executing-tool-<digest>.json` diagnostic after workspace deletion and through
+CI artifact retention. This identifies binary content, not package provenance; the independent
+adoption, acceptance and integration qualifications stay unavailable. A later cleaner or
+reconnect preserves the original executor rather than hashing itself.
+
+Owner termination separately reports native child work (`native:<run-id>`), environment work
+(`environment:<run-id>`) and issued access (`access:<run-id>`). Unissued work/access is
+`not-applicable`; retained environment services and issued access stay `pending`. Observed native
+exit or bounded stopping can report a terminated child while its environment remains pending.
+Verified exact cleanup/deletion advances environment and access to `terminated`; failed or
+unverifiable cleanup reports `failed` with classified diagnostics and known leftovers. A passing
+test alone proves neither environment deletion nor access revocation. Recovery preserves the
+first outcome, original executor and startup facts while termination observations advance.
 
 Batch archives under `entries/<entry-name-sha256>/` are authoritative for each
 entry. Top-level `test-environment.json` and `execution-timing.json` are

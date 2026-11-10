@@ -22,6 +22,188 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class LocalRunLifecycleTests
 {
+    /// <summary>A legacy ready owner without any native history never claims definite nonissuance during recovery.</summary>
+    /// <param name="legacyReady">Whether readiness was recorded before the original runner vanished.</param>
+    /// <returns>The unknown-versus-known-unissued observations and verified cleanup assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReviewLegacyReadyRecoveryDoesNotInventNonissuanceAsync(bool legacyReady)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        state = state with { Status = legacyReady ? CompositionRunStatus.Ready : CompositionRunStatus.Starting };
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string attempt = CompositionRunPlanFactory.NewRunId();
+        ModuleTestRunRecord pending = (await engine.RecordTestOutcomeAsync(state.RunId, [], Failure("HXT007"), "unknown", new([], [], true), TestContext.Current.CancellationToken, cleanupDisposition: "in-progress", cleanupAttemptId: attempt).ConfigureAwait(true)).ShouldNotBeNull();
+        string expected = legacyReady ? "pending" : "not-applicable";
+        CompositionOwnerTermination termination = pending.Termination.ShouldNotBeNull();
+        termination.OwnedWork.Single(item => item.Id == "native:" + state.RunId).Status.ShouldBe(expected);
+        termination.EnvironmentAccess.Single().Status.ShouldBe(expected);
+        termination.OwnedWork.Single(item => item.Id == "environment:" + state.RunId).Status.ShouldBe(expected);
+        if (legacyReady)
+        {
+            termination.OwnedWork.Single(item => item.Id == "native:" + state.RunId).Detail.ShouldNotContain("No native child was issued");
+            termination.EnvironmentAccess.Single().Detail.ShouldNotContain("No native environment access was issued");
+        }
+
+        ModuleTestRunRecord incomplete = (await engine.RecordTestOutcomeAsync(state.RunId, [], Failure("HXT007"), "remaining", new([], [], true) { DiscoveryFailures = ["processes"] }, TestContext.Current.CancellationToken, cleanupDisposition: "incomplete", cleanupAttemptId: attempt).ConfigureAwait(true)).ShouldNotBeNull();
+        incomplete.Termination.ShouldNotBeNull().OwnedWork.Single(item => item.Id == "native:" + state.RunId).Status.ShouldBe(legacyReady ? "failed" : "not-applicable");
+        incomplete.Termination.EnvironmentAccess.Single().Status.ShouldBe(legacyReady ? "failed" : "not-applicable");
+        ModuleTestRunRecord cleaned = (await engine.RecordTestOutcomeAsync(state.RunId, [], Failure("HXT007"), "removed", new([], []), TestContext.Current.CancellationToken, cleanupDisposition: "complete", cleanupAttemptId: attempt).ConfigureAwait(true)).ShouldNotBeNull();
+        AssertFirstOutcomeUnchanged(cleaned, pending);
+        cleaned.Termination.ShouldNotBeNull().OwnedWork.Single(item => item.Id == "native:" + state.RunId).Status.ShouldBe(legacyReady ? "terminated" : "not-applicable");
+        cleaned.Termination.EnvironmentAccess.Single().Status.ShouldBe(legacyReady ? "terminated" : "not-applicable");
+    }
+
+    /// <summary>A retained local startup failure reports no native child, a pending environment and unissued access.</summary>
+    /// <returns>The retained startup-failure termination assertions.</returns>
+    [Fact]
+    public async Task ReviewRetainedStartupFailureKeepsEnvironmentPendingAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        state = state with { EnvironmentWorkIssued = true, ExecutingTool = ExecutingToolIdentity.Capture() };
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ToolCommandResult failed = new("failed", ToolOutcome.Passed().Fail(ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "HXR021", ToolExitCode.TopologyOrLifecycle), []);
+        ModuleTestRunRecord record = (await engine.RecordTestOutcomeAsync(state.RunId, [], failed, "retained", new([], [], true), TestContext.Current.CancellationToken, terminalCause: "startup-failure").ConfigureAwait(true)).ShouldNotBeNull();
+        CompositionOwnerTermination termination = record.Termination.ShouldNotBeNull();
+        termination.OwnedWork.Single(item => item.Id == "native:" + state.RunId).Status.ShouldBe("not-applicable");
+        termination.OwnedWork.Single(item => item.Id == "environment:" + state.RunId).Status.ShouldBe("pending");
+        termination.EnvironmentAccess.Single().Status.ShouldBe("not-applicable");
+        string path = Path.Combine(engine.StateStore.Directory, "diagnostics", state.RunId, "test-result.json");
+        TestEnvironmentContractReadResult read = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        read.IsValid.ShouldBeTrue(string.Join(';', read.Diagnostics.Select(item => item.Message)));
+        JsonElement result = read.Document!.Value;
+        result.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("startup-failure");
+        result.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("failure-retained");
+        JsonElement published = result.GetProperty("termination");
+        published.GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "native:" + state.RunId).GetProperty("status").GetString().ShouldBe("not-applicable");
+        published.GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "environment:" + state.RunId).GetProperty("status").GetString().ShouldBe("pending");
+        published.GetProperty("environmentAccess")[0].GetProperty("status").GetString().ShouldBe("not-applicable");
+    }
+
+    /// <summary>Unobserved native stopping and known surviving work are first-class failed termination observations.</summary>
+    /// <param name="knownSurvivor">Whether the native stopper returned a known survivor.</param>
+    /// <returns>The failed native item, failure reference and leftovers assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReviewOwnerNativeStoppingFailuresArePublishedAsync(bool knownSurvivor)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        NativeTestExecutionResult native = new(Failure("HXT007"), null, null)
+        {
+            Launched = true,
+            StopObserved = false,
+            ProcessIds = knownSurvivor ? [777777] : [],
+            SurvivingProcessIds = knownSurvivor ? [777777] : [],
+        };
+        _ = await engine.RecordTestOutcomeAsync(state.RunId, [], native.Result, "retained", new([], [], true), TestContext.Current.CancellationToken, native).ConfigureAwait(true);
+        string path = Path.Combine(engine.StateStore.Directory, "diagnostics", state.RunId, "test-result.json");
+        JsonElement result = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
+        JsonElement termination = result.GetProperty("termination");
+        string nativeId = "native:" + state.RunId;
+        termination.GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == nativeId).GetProperty("status").GetString().ShouldBe("failed");
+        termination.GetProperty("failures").EnumerateArray().Select(item => item.GetString()).ShouldContain(nativeId);
+        termination.GetProperty("leftoverWorkIds").EnumerateArray().Select(item => item.GetString()).ShouldBe(knownSurvivor ? ["process:777777"] : []);
+    }
+
+    /// <summary>Incomplete recovery keeps recorded native PIDs visible until exact verified cleanup succeeds.</summary>
+    /// <returns>The unresolved-then-terminated ledger and first-outcome assertions.</returns>
+    [Fact]
+    public async Task ReviewUnverifiedRecoveryPreservesRecordedNativePidsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        state = state with { EnvironmentWorkIssued = true, StartupDurationSeconds = 0.5 };
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string directory = Path.Combine(engine.StateStore.Directory, "diagnostics", state.RunId);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        CompositionOwnerTermination ledger = new([new("native:" + state.RunId, "pending", now, "Native stopping was interrupted.")], [new("access:" + state.RunId, "not-applicable", now, "No access was issued.")], []) { NativeProcessIds = [777777] };
+        await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "native-termination.json"), ledger, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord first = (await engine.RecordTestOutcomeAsync(state.RunId, [], Failure("HXT007"), "remaining", new([], [], true) { DiscoveryFailures = ["processes"] }, TestContext.Current.CancellationToken, cleanupDisposition: "incomplete", cleanupAttemptId: CompositionRunPlanFactory.NewRunId()).ConfigureAwait(true)).ShouldNotBeNull();
+        first.Termination.ShouldNotBeNull().LeftoverWorkIds.ShouldContain("process:777777");
+        first.Termination.Failures.ShouldContain("native:" + state.RunId);
+        ModuleTestRunRecord retried = (await engine.RecordTestOutcomeAsync(state.RunId, [], Failure("HXT007"), "removed", new([], []), TestContext.Current.CancellationToken, cleanupDisposition: "complete", cleanupAttemptId: CompositionRunPlanFactory.NewRunId()).ConfigureAwait(true)).ShouldNotBeNull();
+        AssertFirstOutcomeUnchanged(retried, first);
+        retried.Termination.ShouldNotBeNull().LeftoverWorkIds.ShouldBeEmpty();
+        retried.Termination.OwnedWork.Single(item => item.Id == "native:" + state.RunId).Status.ShouldBe("terminated");
+    }
+
+    /// <summary>Recovery consumes separately persisted native observations after a crash between first-outcome and termination commits.</summary>
+    /// <returns>The original terminal and restored access-issuance assertions.</returns>
+    [Fact]
+    public async Task RecoveryReadsNativeLedgerAfterFirstOutcomeCommitAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState owner) = LocalRunLifecycleFixture.Create(workspace);
+        owner = owner with { Status = CompositionRunStatus.Ready, StartupDurationSeconds = 0.5, EnvironmentWorkIssued = true, ExecutingTool = ExecutingToolIdentity.Capture() };
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        CompositionWorkspace.CreatePrivateDirectory(owner.Workspace);
+        await engine.StateStore.WriteAsync(owner, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string directory = Path.Combine(engine.StateStore.Directory, "diagnostics", owner.RunId);
+        ModuleTestExecutionTiming timing = ModuleTestExecutionTiming.Start(selected, DateTimeOffset.UtcNow);
+        ModuleTestRunRecord first = new(owner.RunId, owner.RunId, selected, null, null, null, null, null, false, [], "failed", Failure("HXT007").Outcome, DateTimeOffset.UtcNow, "retained", new([], [], true))
+        {
+            ExecutionTiming = timing,
+            TerminalCause = "test-failure",
+            FailureRetained = true,
+        };
+        await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "selected-test.json"), first, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        DateTimeOffset observedAt = DateTimeOffset.UtcNow;
+        CompositionOwnerTermination pending = new([new("native:" + owner.RunId, "pending", observedAt, "Native launch was issued before interruption.")], [new("access:" + owner.RunId, "pending", observedAt, "Native access ending was not yet observed.")], []) { CredentialExpiresAtUtc = timing.CredentialExpiryUtc };
+        await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "native-termination.json"), pending, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        (await engine.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Remaining.IsEmpty.ShouldBeTrue();
+        ModuleTestRunRecord recovered = (await engine.ReadCommittedOutcomeAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        AssertFirstOutcomeUnchanged(recovered, first);
+        recovered.Termination.ShouldNotBeNull().CredentialExpiresAtUtc.ShouldBe(pending.CredentialExpiresAtUtc);
+        recovered.Termination.EnvironmentAccess.Single().Status.ShouldBe("terminated");
+        TestEnvironmentContractReader.ReadResult(Path.Combine(directory, "test-result.json"), TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Recovery observes interruption at cleanup and preserves the original executor under a different cleaner.</summary>
+    /// <param name="mode">The local artifact mode.</param>
+    /// <returns>The interruption, immutable facts and observed termination assertions.</returns>
+    [Theory]
+    [InlineData("source")]
+    [InlineData("package")]
+    public async Task RecoveryPreservesExecutorAndFreezesObservedInterruptionAsync(string mode)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState owner) = LocalRunLifecycleFixture.Create(workspace, mode);
+        ExecutingToolIdentity original = ExecutingToolIdentity.Capture();
+        DateTimeOffset requested = DateTimeOffset.UtcNow.AddSeconds(-10);
+        owner = owner with { CreatedAt = requested, StartupDeadlineUtc = requested.AddSeconds(600), ExecutingTool = original, EnvironmentWorkIssued = true };
+        CompositionWorkspace.CreatePrivateDirectory(owner.Workspace);
+        CompositionEngine cleaner = new(LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            ExecutingToolCaptureOverride = () => throw new InvalidOperationException("A cleaner must never capture a replacement executor."),
+        });
+        await cleaner.StateStore.WriteAsync(owner, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionDownResult down = await cleaner.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        down.Remaining.IsEmpty.ShouldBeTrue();
+        string directory = Path.Combine(cleaner.StateStore.Directory, "diagnostics", owner.RunId);
+        CompositionRunState frozen = (await CompositionDocumentStore.ReadIfExistsAsync<CompositionRunState>(Path.Combine(directory, "owner.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        frozen.StartupInterruptionObserved.ShouldBeTrue();
+        frozen.StartupDurationSeconds.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(10);
+        JsonElement first = TestEnvironmentContractReader.ReadResult(Path.Combine(directory, "test-result.json"), TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
+        first.GetProperty("bindings").GetProperty("tool").GetProperty("contentIdentity").GetString().ShouldBe(original.ContentIdentity);
+        first.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup").GetProperty("actualDurationSeconds").GetDouble().ShouldBe(frozen.StartupDurationSeconds.Value);
+        first.GetProperty("termination").GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "native:" + owner.RunId).GetProperty("status").GetString().ShouldBe("not-applicable");
+        first.GetProperty("termination").GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "environment:" + owner.RunId).GetProperty("status").GetString().ShouldBe("terminated");
+        _ = await cleaner.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonElement retried = TestEnvironmentContractReader.ReadResult(Path.Combine(directory, "test-result.json"), TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
+        JsonElement.DeepEquals(first.GetProperty("terminal"), retried.GetProperty("terminal")).ShouldBeTrue();
+        JsonElement.DeepEquals(first.GetProperty("bindings"), retried.GetProperty("bindings")).ShouldBeTrue();
+    }
+
     /// <summary>Observed success cleans and failures retain survivors before optional archival.</summary>
     /// <param name="mode">The selected local mode.</param>
     /// <param name="fails">Whether the real native child fails.</param>
@@ -122,8 +304,29 @@ public sealed class LocalRunLifecycleTests
             _ => "complete",
         };
         document.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe(expectedCleanup);
+        JsonElement termination = document.GetProperty("termination");
+        termination.GetProperty("state").GetString().ShouldBe("populated");
+        termination.GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "native:" + session.RunId).GetProperty("status").GetString().ShouldBe("terminated");
+        string expectedTermination = (fails, cleanupFails) switch
+        {
+            (true, _) => "pending",
+            (_, true) => "failed",
+            _ => "terminated",
+        };
+        termination.GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "environment:" + session.RunId).GetProperty("status").GetString().ShouldBe(expectedTermination);
+        termination.GetProperty("environmentAccess")[0].GetProperty("status").GetString().ShouldBe(expectedTermination);
+        if (cleanupFails)
+        {
+            termination.GetProperty("failures").GetArrayLength().ShouldBeGreaterThan(0);
+            termination.GetProperty("leftoverWorkIds").EnumerateArray().Select(item => item.GetString()).ShouldContain("workspace:" + session.RunId);
+        }
+
         using JsonDocument original = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, "original-descriptor.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
         JsonElement originalBindings = original.RootElement.GetProperty("bindings");
+        JsonElement originalTool = originalBindings.GetProperty("tool");
+        originalTool.GetProperty("name").GetString().ShouldBe("hexalith-module");
+        originalTool.GetProperty("version").GetString().ShouldBe(session.Plan.ExecutingTool.ShouldNotBeNull().Version);
+        originalTool.GetProperty("contentIdentity").GetString().ShouldBe(session.Plan.ExecutingTool.ContentIdentity);
         JsonElement retainedBindings = document.GetProperty("bindings");
         JsonElement.DeepEquals(retainedBindings.GetProperty("environment"), originalBindings.GetProperty("environment")).ShouldBeTrue();
         JsonElement.DeepEquals(retainedBindings.GetProperty("run"), originalBindings.GetProperty("run")).ShouldBeTrue();

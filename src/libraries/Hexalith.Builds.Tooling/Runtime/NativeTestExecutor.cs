@@ -54,7 +54,8 @@ internal static class NativeTestExecutor
 
         if (selection is not null)
         {
-            return await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, onOutcome, ownerCancellationToken ?? cancellationToken, cancellationToken).ConfigureAwait(false);
+            NativeTestExecutionResult selected = await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, onOutcome, ownerCancellationToken ?? cancellationToken, cancellationToken).ConfigureAwait(false);
+            return selected with { OwnerTermination = selected.OwnerTermination ?? session.NativeTermination };
         }
 
         string root = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
@@ -540,8 +541,28 @@ internal static class NativeTestExecutor
         bool cancelled = false;
         long firstStop = 0;
         IReadOnlyList<int> survivors = [];
+        int? launchedProcessId = null;
+        bool stopObserved = false;
+        bool launchMetadataFailed = false;
+        string? terminationPath = attached is null && archiveDirectory is not null ? Path.Combine(archiveDirectory, "native-termination.json") : null;
+        CompositionOwnerTermination? history = session.NativeTermination;
+        CompositionOwnerTermination pending = history ?? new(
+            [new("native:" + session.RunId, "pending", DateTimeOffset.UtcNow, "Native launch preparation began; launch has not yet been observed.")],
+            [new("access:" + session.RunId, "not-applicable", DateTimeOffset.UtcNow, "Credentials were prepared but no access has been issued.")],
+            []);
         try
         {
+            if (terminationPath is not null)
+            {
+                if (history is null)
+                {
+                    history = await CompositionDocumentStore.ReadIfExistsAsync<CompositionOwnerTermination>(terminationPath, cancellationToken).ConfigureAwait(false);
+                    pending = history ?? pending;
+                }
+
+                await CompositionDocumentStore.WriteAsync(terminationPath, pending, cancellationToken).ConfigureAwait(false);
+            }
+
             gate.Start();
             cancellationToken.ThrowIfCancellationRequested();
             System.Diagnostics.ProcessStartInfo childStart = CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : [.. CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), "--artifacts-path", Path.Combine(privateWorkspace, "test-builds")], Path.GetDirectoryName(project), environment);
@@ -559,20 +580,53 @@ internal static class NativeTestExecutor
                         survivors = surviving;
                         onStopFailure?.Invoke(surviving);
                     },
-                    onStarted).ConfigureAwait(false);
+                    pid =>
+                    {
+                        launchedProcessId = pid;
+                        onStarted?.Invoke(pid);
+                    },
+                    async (pid, launchToken) =>
+                    {
+                        pending = CompositionOwnerTermination.ObserveNative(session.RunId, history, new NativeTestExecutionResult(new ToolCommandResult("running", ToolOutcome.Passed(), []), null, null) { Launched = true, ProcessIds = [pid], CredentialExpiresAtUtc = credentialExpiry }, running: true);
+                        session.NativeTermination = pending;
+                        if (terminationPath is not null)
+                        {
+                            try
+                            {
+                                await CompositionDocumentStore.WriteAsync(terminationPath, pending, launchToken).ConfigureAwait(false);
+                            }
+                            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+                            {
+                                launchMetadataFailed = true;
+                            }
+                        }
+                    }).ConfigureAwait(false);
+            stopObserved = process.Started && process.SurvivingProcessIds.Count == 0;
         }
         catch (OperationCanceledException)
         {
             cancelled = ownerCancellationToken.IsCancellationRequested;
             process = new CompositionProcessResult(true, -1, string.Empty, true);
+            stopObserved = launchedProcessId is not null && survivors.Count == 0;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException or KeyNotFoundException or System.ComponentModel.Win32Exception)
         {
             process = new CompositionProcessResult(true, -1, string.Empty, false);
         }
 
+        DateTimeOffset nativeObservedAt = DateTimeOffset.UtcNow;
         long stoppingTimestamp = firstStop == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : firstStop;
         session.StoppingTimestamp ??= stoppingTimestamp;
+        pending = CompositionOwnerTermination.ObserveNative(session.RunId, pending, new NativeTestExecutionResult(new ToolCommandResult("observed", ToolOutcome.Passed(), []), null, null)
+        {
+            Launched = launchedProcessId is not null,
+            StopObserved = stopObserved,
+            ProcessIds = launchedProcessId is { } observedPid ? [observedPid] : [],
+            SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()],
+            CredentialExpiresAtUtc = launchedProcessId is null ? null : credentialExpiry,
+            ObservedAtUtc = nativeObservedAt,
+        });
+        session.NativeTermination = pending;
         try
         {
             // Cancellation, timeout and a nonzero process exit are causal before report/closure diagnostics.
@@ -592,7 +646,20 @@ internal static class NativeTestExecutor
                     first = SelectedInterruption(cancelled);
                 }
 
-                first = first with { StoppingTimestamp = stoppingTimestamp, MetadataRecordingTimestamp = metadataRecordingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
+                first = first with
+                {
+                    StoppingTimestamp = stoppingTimestamp,
+                    MetadataRecordingTimestamp = metadataRecordingTimestamp,
+                    TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null,
+                    Launched = launchedProcessId is not null,
+                    StopObserved = stopObserved,
+                    ObservedAtUtc = nativeObservedAt,
+                    ProcessIds = launchedProcessId is { } pid ? [pid] : [],
+                    SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()],
+                    CredentialExpiresAtUtc = launchedProcessId is null ? null : credentialExpiry,
+                    DescriptorSnapshot = descriptorSnapshot,
+                    OwnerTermination = session.NativeTermination,
+                };
                 session.FirstObservedOutcome ??= first;
                 await onOutcome(first, immediate.Token).ConfigureAwait(false);
             }
@@ -600,6 +667,20 @@ internal static class NativeTestExecutor
         finally
         {
             await gate.DisposeAsync().ConfigureAwait(false);
+        }
+
+        if (terminationPath is not null)
+        {
+            using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
+            try
+            {
+                await CompositionDocumentStore.WriteAsync(terminationPath, pending, recording.Token).ConfigureAwait(false);
+                launchMetadataFailed = false;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+            {
+                launchMetadataFailed = true;
+            }
         }
 
         TimeSpan processingRemaining = TimeSpan.FromSeconds(Math.Min(selection.StopTimeoutSeconds, 30)) - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp);
@@ -647,6 +728,12 @@ internal static class NativeTestExecutor
             evaluated = Failed("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, ToolExitCode.EvidenceSchemaOrPolicy);
         }
 
+        if (launchMetadataFailed)
+        {
+            ToolDiagnostic tracking = new("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Native launch metadata could not be durably retained.", "evidence");
+            evaluated = evaluated with { Result = evaluated.Result with { Diagnostics = [.. evaluated.Result.Diagnostics, tracking] } };
+        }
+
         if (gate.Failed)
         {
             ToolDiagnostic closure = new("HXT009", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "The selected gate could not be safely renewed or closed; its owner changed or storage was unavailable.", "selectedGate");
@@ -656,7 +743,7 @@ internal static class NativeTestExecutor
 
         timing = timing with { ActualDurationSeconds = Math.Max(0, (DateTimeOffset.UtcNow - timing.StartedAtUtc).TotalSeconds - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp).TotalSeconds) };
         session.Plan = session.Plan with { ExecutionTiming = timing };
-        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, RoutingCatalogSnapshot = routingCatalogSnapshot, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null, SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()], CredentialExpiresAtUtc = credentialExpiry, DescriptorSnapshot = descriptorSnapshot, Launched = process.Started };
+        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, RoutingCatalogSnapshot = routingCatalogSnapshot, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null, SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()], CredentialExpiresAtUtc = launchedProcessId is null ? null : credentialExpiry, DescriptorSnapshot = descriptorSnapshot, OwnerTermination = session.NativeTermination, Launched = launchedProcessId is not null, StopObserved = stopObserved, ObservedAtUtc = nativeObservedAt, ProcessIds = launchedProcessId is { } nativePid ? [nativePid] : [] };
         if (onOutcome is not null)
         {
             inspected = inspected with { MetadataRecordingTimestamp = System.Diagnostics.Stopwatch.GetTimestamp() };
