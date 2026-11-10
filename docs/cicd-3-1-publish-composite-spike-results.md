@@ -186,16 +186,24 @@ experimental action metadata existed; no release state machine, production
 The dedicated registry tag remains as the scoped experiment result; its
 principal has no delete grant.
 
-Focused tests passed on Python 3.12 and runner Python 3.14.4: 9 behavioral tests,
+Focused tests passed on Python 3.12 and runner Python 3.14.4: 11 behavioral tests,
 including real archive/ZIP corruption and identity controls, graph loss,
 conflicting destination, unchanged-byte replay, failed login, private authfile
 lifetime and wrong version/source/unexpected-output rejection before copy.
+Real local HTTP transport also proves authenticated registry redirects never
+reach off-origin or HTTP downgrade destinations, and artifact API requests
+carry the GitHub token while signed storage requests carry none. Metadata,
+download-digest and HTTPS redirect failures stop before extraction or further
+requests.
 No workflow-text assertions were added. Both locked complete suites passed
 20/20 groups on Python 3.12.13 and 3.14.4. Final online cleanup lint passed:
 12 exact frozen findings and zero new findings. All 104 pre-existing runtime
 Git blobs match the implementation baseline. JSON, local document links and
 `git diff --check` pass. [Resumed verification](../evidence/cicd-3-1/resumed-verification.json)
 records commands, interpreter versions, source/log hashes and final cleanup/API evidence.
+[Post-review verification](../evidence/cicd-3-1/review-verification.json) records
+the two HTTP-boundary fixes, 11 focused tests and both complete 20/20-group
+suites after those fixes; the hosted OCI proof precedes this redirect hardening.
 Exact created commit messages were validated with pinned commitlint 21.2.4.
 
 The [plan](cicd-3-1-publish-composite-spike-plan.md) remains the execution

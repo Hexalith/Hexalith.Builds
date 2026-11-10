@@ -113,7 +113,7 @@ def validate_identity(metadata: dict, *, artifact_id: int, run_id: int, digest: 
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Keep the GitHub token away from signed artifact storage redirects."""
+    """Prevent authenticated requests from forwarding credentials through redirects."""
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -132,9 +132,10 @@ def download_artifact(directory: Path, *, artifact_id: int, run_id: int, digest:
         urllib.request.build_opener(NoRedirect()).open(
             urllib.request.Request(url + "/zip", headers=headers), timeout=60)
     except urllib.error.HTTPError as error:
-        if error.code != 302:
-            raise SpikeError(f"artifact archive endpoint returned HTTP {error.code}") from error
-        location = error.headers["Location"]
+        with error:
+            if error.code != 302:
+                raise SpikeError(f"artifact archive endpoint returned HTTP {error.code}") from error
+            location = error.headers["Location"]
     else:
         raise SpikeError("expected a signed archive download redirect")
     if not location.startswith("https://"):
@@ -199,12 +200,13 @@ class Registry:
         request = urllib.request.Request(f"https://{host}/v2/{repository}/{kind}/{reference}",
                                          headers={"Authorization": self.authorization, "Accept": MEDIA})
         try:
-            with urllib.request.urlopen(request, timeout=120) as response:
+            with urllib.request.build_opener(NoRedirect()).open(request, timeout=120) as response:
                 return response.read()
         except urllib.error.HTTPError as error:
-            if error.code == 404 and missing_ok:
-                return None
-            raise SpikeError(f"registry read failed: HTTP {error.code}") from error
+            with error:
+                if error.code == 404 and missing_ok:
+                    return None
+                raise SpikeError(f"registry read failed: HTTP {error.code}") from error
 
 
 def publish_archive(archive: Path, graph: dict, registry: Registry, copy) -> dict:

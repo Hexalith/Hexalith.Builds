@@ -1,0 +1,76 @@
+{
+  "review_parent_revision": "a58150c486251562b3f765e6c043105100e5ae74",
+  "patches": [
+    "Reject authenticated registry redirects before destination requests",
+    "Exercise authenticated API versus token-free signed artifact storage over real urllib/HTTP sockets"
+  ],
+  "checks": [
+    {
+      "name": "complete-python-312",
+      "exit_code": 0,
+      "conclusion": "Python suite: 20/20 groups passed",
+      "log_sha256": "0dd3dbcfdff820564d3fb000800c1fe98886889ac80484c6624414406fc9e200"
+    },
+    {
+      "name": "complete-runner-python",
+      "exit_code": 0,
+      "conclusion": "Python suite: 20/20 groups passed",
+      "log_sha256": "9882c37b37e9f8f46150d861f9e170e347c4242f4fb76c381a64c119af898d72"
+    },
+    {
+      "name": "online-lint",
+      "exit_code": 0,
+      "conclusion": "zizmor: 12 exact frozen composite findings; 0 new findings",
+      "log_sha256": "cbcf33b8ad41a5e5e41328c089212ec99586b8765c242a1d37f2c9ebea767fef"
+    }
+  ],
+  "focused_tests": [
+    {
+      "python": "3.12.13",
+      "exit_code": 0,
+      "tests": 11,
+      "resource_warnings": "errors",
+      "log_sha256": "4a5f7d6372667efe87072e14736a798be7988902bbc329a1ff931ee7cefe6ece"
+    },
+    {
+      "python": "3.14.4",
+      "exit_code": 0,
+      "tests": 11,
+      "resource_warnings": "errors",
+      "log_sha256": "dc8ac847565166cdf88a3db4f2541c5644892039f1727e46aa236517fe15fc60"
+    }
+  ],
+  "validated_source_sha256": {
+    "Github/lib/publish_spike.py": "a77fe31fb730cc8d91dd3dbdc520c077c800c06a621cc9878da95ed10932e99b",
+    "Github/lib/tests/test_publish_spike.py": "2562d86fb836c4d63bcf4aef0b5de484012be568efd72106b6649dbfc1a079a9",
+    "Tools/spikes/publish-tools.json": "f45fda0476d3a9a8b6f2a1e16c3e6a886f536b362095632b216fba4d88fa2c6c"
+  },
+  "frozen_git_blobs_preserved": 104,
+  "temporary_metadata_absent": true,
+  "provenance_upstream_source_hashes_independently_verified": true,
+  "hosted_oci_and_login_proof": {
+    "run_id": 42791957667,
+    "caller_revision": "515aaa3b0c5b668d86bdfed7065286a378052d62",
+    "action_revision": "0705088e92d6703232e62dcbe44b3bf0a0980ee3",
+    "artifact_id": 13749161812,
+    "review_patch_exercised_hosted": false
+  },
+  "review": {
+    "individual_findings": 17,
+    "verdicts": {
+      "high": 0,
+      "medium": 4,
+      "low": 8,
+      "false": 5,
+      "maybe_false": 0
+    },
+    "grouped_patch_entries": {
+      "high": 0,
+      "medium": 2,
+      "low": 0
+    },
+    "deferred_entries": 0,
+    "followup_review_recommended": true,
+    "residual_review_risk": "HTTP redirect hardening was verified locally after the exact-SHA hosted publish/replay proof; the hardened helper has not been replayed by a hosted remote composite."
+  }
+}
