@@ -58,6 +58,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         DateTimeOffset requestedAt = _options.SelectedTest?.RequestedAtUtc ?? _options.StartupRequestedAtUtc ?? DateTimeOffset.UtcNow;
         CompositionEffectiveDeadline deadline = CompositionStartupDeadlineResolver.Resolve(null, _options.ReadinessTimeout);
+        bool deadlineResolved = false;
         using CancellationTokenSource startupBound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         CandidateStateIssued = false;
@@ -77,15 +78,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     provisioningLease = null;
                 }
 
-                if (runId is null && _options.SelectedTest is { } selected && _options.CandidatePolicy is null)
-                {
-                    runId = CompositionRunPlanFactory.NewRunId();
-                    manifestHash = selected.ManifestHash;
-                    _ = _startupObservations.TryAdd(runId, (observedAt, false));
-                    using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
-                    _ = await InitializeStateAsync(runId, manifestHash, requestedAt, deadline, recording.Token).ConfigureAwait(false);
-                }
-
+                // A refusal before any run identity exists issues nothing: no state, receipt or retained owner.
                 if (runId is not null)
                 {
                     _ = _startupObservations.TryAdd(runId, (observedAt, false));
@@ -123,6 +116,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 ? null
                 : CompositionDeclarationClosure.Load(_options.DeclarationOptionsOverride?.Invoke(declarationOptions) ?? declarationOptions);
             deadline = CompositionStartupDeadlineResolver.Resolve(closure, _options.ReadinessTimeout);
+            deadlineResolved = true;
             if (_options.SelectedTest is not null)
             {
                 try
@@ -448,6 +442,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 return await ReportStartupTimeoutAsync(requestedAt, deadline, _options.CandidatePolicy is null || CandidateStateIssued ? runId : null, manifestHash, appHost).ConfigureAwait(false);
             }
 
+            if (runId is null && !deadlineResolved && _options.SelectedTest is not null && _options.CandidatePolicy is null)
+            {
+                // The declared deadline/override is not yet known here; the caller reports with its resolved deadline.
+                throw;
+            }
+
             ToolDiagnostic cancelled = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The invocation was cancelled; bounded teardown ran.", "cancellation", null);
             return runId is null || (_options.CandidatePolicy is not null && !CandidateStateIssued)
                 ? await ReportSetupCancellationAsync(requestedAt, deadline).ConfigureAwait(false)
@@ -603,9 +603,18 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         string runId = CompositionRunPlanFactory.NewRunId();
         _ = _startupObservations.TryAdd(runId, (observedAt, false));
-        using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
-        _ = await InitializeStateAsync(runId, selected.ManifestHash, requestedAt, deadline, recording.Token).ConfigureAwait(false);
-        return await FailAndTearDownAsync(runId, null, selected.ManifestHash, CompositionRunStatus.Cancelled, cancelled, ToolExitCode.Cancelled, requestedAt, deadline).ConfigureAwait(false);
+        try
+        {
+            using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
+            _ = await InitializeStateAsync(runId, selected.ManifestHash, requestedAt, deadline, recording.Token).ConfigureAwait(false);
+            return await FailAndTearDownAsync(runId, null, selected.ManifestHash, CompositionRunStatus.Cancelled, cancelled, ToolExitCode.Cancelled, requestedAt, deadline).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException or InvalidDataException or System.Text.Json.JsonException)
+        {
+            // The cancellation stays the outcome; unavailable recording is diagnosed, never replaced by a lifecycle failure.
+            ToolDiagnostic recordingFailure = new("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The startup cancellation could not be durably recorded.", "evidence");
+            return Failed("cancelled", ToolExitCode.Cancelled, [cancelled, recordingFailure], null);
+        }
     }
 
     /// <summary>

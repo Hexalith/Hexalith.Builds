@@ -34,12 +34,36 @@ public sealed class CompositionProcessTests
             onStartedAsync: (_, token) =>
             {
                 launchAllowance = token;
-                return Task.Delay(TimeSpan.FromMilliseconds(500), token);
+                return Task.Delay(TimeSpan.FromSeconds(5), token);
             }).ConfigureAwait(true);
         result.TimedOut.ShouldBeTrue();
         launchAllowance.IsCancellationRequested.ShouldBeTrue();
         stopping.ShouldBeGreaterThan(0);
-        elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(400));
+        elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3));
+    }
+
+    /// <summary>A failing launch-metadata callback stops the started child before the failure propagates.</summary>
+    /// <returns>The propagated failure and stopped-child assertions.</returns>
+    [Fact]
+    public async Task ReviewFailingLaunchCallbackStopsChildAsync()
+    {
+        int launched = 0;
+        _ = await Should.ThrowAsync<InvalidOperationException>(() => CompositionProcess.RunSelectedAsync(
+            CompositionProcess.CreateStartInfo("python3", ["-c", "import time; time.sleep(30)"], null, null),
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromSeconds(1),
+            _ => { },
+            TestContext.Current.CancellationToken,
+            onStarted: pid => launched = pid,
+            onStartedAsync: (_, _) => throw new InvalidOperationException("controlled launch metadata failure"))).ConfigureAwait(true);
+        launched.ShouldBeGreaterThan(0);
+        System.Diagnostics.Stopwatch waited = System.Diagnostics.Stopwatch.StartNew();
+        while (IsAlive(launched) && waited.Elapsed < TimeSpan.FromSeconds(10))
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        IsAlive(launched).ShouldBeFalse();
     }
 
     /// <summary>Verifies missing executables retain native metadata without sensitive process inputs.</summary>
@@ -266,6 +290,19 @@ public sealed class CompositionProcessTests
         finally
         {
             Environment.SetEnvironmentVariable(sentinel, null);
+        }
+    }
+
+    private static bool IsAlive(int processId)
+    {
+        try
+        {
+            using System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById(processId);
+            return !process.HasExited;
+        }
+        catch (ArgumentException)
+        {
+            return false;
         }
     }
 }

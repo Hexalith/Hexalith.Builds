@@ -841,7 +841,7 @@ public static class ModuleCommandExecutionService
         {
             if (session is null && startupRequest is not null && compositionOptions?.SelectedTest is not null && runId is null)
             {
-                CompositionStartResult cancelled = await ReportSetupCancellationSafelyAsync(new CompositionEngine(compositionOptions), startedUtc, startupRequest.Deadline).ConfigureAwait(false);
+                CompositionStartResult cancelled = await new CompositionEngine(compositionOptions).ReportSetupCancellationAsync(startedUtc, startupRequest.Deadline).ConfigureAwait(false);
                 return await WriteResultAsync(cancelled.Result.Status, cancelled.Result.Outcome, cancelled.Result.Diagnostics, format, writer, command, manifestPath, loadedManifest, profile, filter, evidencePath, startedUtc, CancellationToken.None, cancelled.RunId).ConfigureAwait(false);
             }
 
@@ -1065,20 +1065,6 @@ public static class ModuleCommandExecutionService
             format,
             cancellationToken).ConfigureAwait(false);
         return (int)result.Outcome.ExitCode;
-    }
-
-    private static async Task<CompositionStartResult> ReportSetupCancellationSafelyAsync(CompositionEngine engine, DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline)
-    {
-        try
-        {
-            return await engine.ReportSetupCancellationAsync(requestedAt, deadline).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
-        {
-            ToolCommandResult cancelled = PlatformRefusal("HXC130", "The owner cancelled startup setup.", ToolExitCode.Cancelled) with { Status = "cancelled" };
-            ToolDiagnostic recording = new("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The startup cancellation could not be durably recorded.", "evidence");
-            return new CompositionStartResult(cancelled with { Diagnostics = [.. cancelled.Diagnostics, recording] }, null, null);
-        }
     }
 
     private static async Task<int> ExecuteExactDownAsync(string manifestPath, string runId, string? evidencePath, DateTimeOffset startedUtc, ToolOutputFormat format, TextWriter writer, string? runnerAssembly, CompositionEngineOptions? options, CancellationToken cancellationToken)
@@ -1386,7 +1372,7 @@ public static class ModuleCommandExecutionService
                 else if (ownerCancelled && ownedRunId is null && session is null)
                 {
                     engine ??= new CompositionEngine(options);
-                    CompositionStartResult cancelled = await ReportSetupCancellationSafelyAsync(engine, startedUtc, startupDeadline ?? CompositionStartupDeadlineResolver.Resolve(validation.Declarations, options.ReadinessTimeout)).ConfigureAwait(false);
+                    CompositionStartResult cancelled = await engine.ReportSetupCancellationAsync(startedUtc, startupDeadline ?? CompositionStartupDeadlineResolver.Resolve(validation.Declarations, options.ReadinessTimeout)).ConfigureAwait(false);
                     result = cancelled.Result;
                     ownedRunId = cancelled.RunId;
                     startupStoppingTimestamp = cancelled.StoppingTimestamp;

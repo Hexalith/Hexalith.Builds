@@ -89,7 +89,16 @@ public sealed record CompositionOwnerTermination(
             unresolved = recorded.Length > 0 ? recorded : [.. prior.NativeProcessIds.Select(ProcessIdentity)];
         }
 
-        return new([child, environment], [access], [.. record.RemainingResources.ResourceIds.Concat(unresolved).Distinct(StringComparer.Ordinal)])
+        CompositionTerminationItem Stable(CompositionTerminationItem item)
+        {
+            CompositionTerminationItem? previous = new[] { prior, record.Termination }
+                .Where(observed => observed is not null)
+                .SelectMany(observed => observed!.OwnedWork.Concat(observed.EnvironmentAccess))
+                .FirstOrDefault(observed => observed.Id == item.Id);
+            return previous is not null && previous.Status == item.Status ? previous : item;
+        }
+
+        return new([Stable(child), Stable(environment)], [Stable(access)], [.. record.RemainingResources.ResourceIds.Concat(unresolved).Distinct(StringComparer.Ordinal)])
         {
             NativeProcessIds = prior?.NativeProcessIds ?? [],
             CredentialExpiresAtUtc = credentialExpiry,

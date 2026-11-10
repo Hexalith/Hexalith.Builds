@@ -61,6 +61,70 @@ public sealed class StartupReadinessTests
         summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBe(state.StartupDurationSeconds.Value);
     }
 
+    /// <summary>A selected-suite prerequisite refusal before any run identity issues no state, receipt or retained owner.</summary>
+    /// <returns>The unchanged unavailable-refusal assertions.</returns>
+    [Fact]
+    public async Task ReviewSelectedPrerequisiteRefusalIssuesNoRunAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionEngineOptions options, string manifest) = await SelectedEngineOptionsAsync(workspace).ConfigureAwait(true);
+        options = options with { AspireCommand = Path.Combine(workspace.Root, "missing-aspire"), CiOwnerReceiptPath = Path.Combine(workspace.Root, "receipt.json") };
+        CompositionStartResult started = await new CompositionEngine(options).StartAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        started.RunId.ShouldBeNull();
+        started.Result.Status.ShouldBe("unavailable");
+        started.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.PrerequisiteUnavailable);
+        Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics")).ShouldBeFalse();
+        File.Exists(options.CiOwnerReceiptPath).ShouldBeFalse();
+    }
+
+    /// <summary>Selected setup cancellation before the declared deadline is known propagates to the caller's reporter.</summary>
+    /// <returns>The propagated cancellation and unissued-run assertions.</returns>
+    [Fact]
+    public async Task ReviewSelectedCancellationBeforeDeadlineResolutionPropagatesAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionEngineOptions options, string manifest) = await SelectedEngineOptionsAsync(workspace).ConfigureAwait(true);
+        using CancellationTokenSource cancelled = new();
+        await cancelled.CancelAsync().ConfigureAwait(true);
+        _ = await Should.ThrowAsync<OperationCanceledException>(() => new CompositionEngine(options).StartAsync(manifest, cancelled.Token)).ConfigureAwait(true);
+        Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics")).ShouldBeFalse();
+    }
+
+    /// <summary>Owner cancellation after the declared deadline is known publishes a contained cancelled setup result.</summary>
+    /// <returns>The cancelled result, owner cause and reader assertions.</returns>
+    [Fact]
+    public async Task ReviewSelectedCancellationDuringProbePublishesCancelledResultAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Aspire CLI uses POSIX shell scripts.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionEngineOptions options, string manifest) = await SelectedEngineOptionsAsync(workspace).ConfigureAwait(true);
+        string marker = Path.Combine(workspace.Root, "aspire-probe-started");
+        string aspire = Path.Combine(workspace.Root, "slow-aspire");
+        CompositionTestFiles.WriteScript(aspire, "touch '" + marker + "'\nsleep 20\n");
+        options = options with { AspireCommand = aspire, AspireProbeTimeout = TimeSpan.FromSeconds(15), RetainOnFailure = false };
+        using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        Task<CompositionStartResult> starting = new CompositionEngine(options).StartAsync(manifest, owner.Token);
+        Stopwatch waited = Stopwatch.StartNew();
+        while (!File.Exists(marker) && !starting.IsCompleted && waited.Elapsed < TimeSpan.FromSeconds(30))
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        File.Exists(marker).ShouldBeTrue();
+        await owner.CancelAsync().ConfigureAwait(true);
+        CompositionStartResult started = await starting.ConfigureAwait(true);
+        started.Result.Status.ShouldBe("cancelled");
+        started.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Cancelled);
+        string runId = started.RunId.ShouldNotBeNull();
+        TestEnvironmentContractReadResult read = TestEnvironmentContractReader.ReadResult(Path.Combine(options.StateDirectory, "diagnostics", runId, "test-result.json"), TestContext.Current.CancellationToken);
+        read.IsValid.ShouldBeTrue(string.Join(';', read.Diagnostics.Select(item => item.Message)));
+        read.Document!.Value.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("run-cancelled");
+    }
+
     /// <summary>Delayed deletion cannot change first startup observations, including setup cancellation.</summary>
     /// <param name="cancelled">Whether setup ends by explicit owner cancellation.</param>
     /// <returns>The first/final result, durable state, summary and delayed-teardown assertions.</returns>
@@ -1140,5 +1204,13 @@ public sealed class StartupReadinessTests
         }
 
         throw new InvalidOperationException("Could not locate the Hexalith.Builds repository root.");
+    }
+
+    private static async Task<(CompositionEngineOptions Options, string Manifest)> SelectedEngineOptionsAsync(PlatformManifestTestWorkspace workspace)
+    {
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        string manifest = workspace.Save();
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selected }, manifest, workspace.Root).ConfigureAwait(true);
+        return (LocalRunLifecycleFixture.Options(workspace.Root, selected) with { SourceMapping = plan.SourceMapping }, manifest);
     }
 }

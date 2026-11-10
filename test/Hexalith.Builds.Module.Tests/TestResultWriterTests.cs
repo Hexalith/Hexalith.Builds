@@ -27,11 +27,13 @@ public sealed class TestResultWriterTests
     [InlineData("origin")]
     [InlineData("override")]
     [InlineData("budget")]
+    [InlineData("tool")]
+    [InlineData("duration")]
     public async Task ReviewConflictingKnownStartupBindingIsRejectedAsync(string conflict)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
-        state = state with { StartupDurationSeconds = 0.25 };
+        state = state with { StartupDurationSeconds = 0.25, ExecutingTool = ExecutingToolIdentity.Capture() };
         ModuleTestRunRecord record = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, "HXT007", ToolExitCode.ProductOrTest), DateTimeOffset.UtcNow, "unknown", new([], [], true));
         string path = await TestResultWriter.WriteAsync(workspace.Root, state, record, TestContext.Current.CancellationToken).ConfigureAwait(true);
         byte[] original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -41,6 +43,14 @@ public sealed class TestResultWriterTests
         {
             startup["originAt"] = state.CreatedAt!.Value.AddSeconds(1).UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
             startup["expiresAt"] = state.StartupDeadlineUtc!.Value.AddSeconds(1).UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+        }
+        else if (conflict == "tool")
+        {
+            document["bindings"]!["tool"]!["contentIdentity"] = "sha256:" + new string('0', 64);
+        }
+        else if (conflict == "duration")
+        {
+            startup["actualDurationSeconds"] = 0.5;
         }
         else
         {

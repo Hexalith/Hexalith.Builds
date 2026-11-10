@@ -546,28 +546,29 @@ internal static class NativeTestExecutor
         bool launchMetadataFailed = false;
         string? terminationPath = attached is null && archiveDirectory is not null ? Path.Combine(archiveDirectory, "native-termination.json") : null;
         CompositionOwnerTermination? history = session.NativeTermination;
-        if (history is null && terminationPath is not null)
-        {
-            history = await CompositionDocumentStore.ReadIfExistsAsync<CompositionOwnerTermination>(terminationPath, cancellationToken).ConfigureAwait(false);
-        }
-
         CompositionOwnerTermination pending = history ?? new(
             [new("native:" + session.RunId, "pending", DateTimeOffset.UtcNow, "Native launch preparation began; launch has not yet been observed.")],
             [new("access:" + session.RunId, "not-applicable", DateTimeOffset.UtcNow, "Credentials were prepared but no access has been issued.")],
             []);
-        if (terminationPath is not null)
-        {
-            await CompositionDocumentStore.WriteAsync(terminationPath, pending, cancellationToken).ConfigureAwait(false);
-        }
-
         try
         {
+            if (terminationPath is not null)
+            {
+                if (history is null)
+                {
+                    history = await CompositionDocumentStore.ReadIfExistsAsync<CompositionOwnerTermination>(terminationPath, cancellationToken).ConfigureAwait(false);
+                    pending = history ?? pending;
+                }
+
+                await CompositionDocumentStore.WriteAsync(terminationPath, pending, cancellationToken).ConfigureAwait(false);
+            }
+
             gate.Start();
             cancellationToken.ThrowIfCancellationRequested();
             System.Diagnostics.ProcessStartInfo childStart = CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : [.. CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), "--artifacts-path", Path.Combine(privateWorkspace, "test-builds")], Path.GetDirectoryName(project), environment);
             TimeSpan remainingExecution = timing.DeadlineUtc - DateTimeOffset.UtcNow;
             process = remainingExecution <= TimeSpan.Zero
-                ? new CompositionProcessResult(false, -1, string.Empty, true)
+                ? new CompositionProcessResult(true, -1, string.Empty, true)
                 : await CompositionProcess.RunSelectedAsync(
                     childStart,
                     remainingExecution,
@@ -605,12 +606,12 @@ internal static class NativeTestExecutor
         catch (OperationCanceledException)
         {
             cancelled = ownerCancellationToken.IsCancellationRequested;
-            process = new CompositionProcessResult(launchedProcessId is not null, -1, string.Empty, true);
+            process = new CompositionProcessResult(true, -1, string.Empty, true);
             stopObserved = launchedProcessId is not null && survivors.Count == 0;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException or KeyNotFoundException or System.ComponentModel.Win32Exception)
         {
-            process = new CompositionProcessResult(launchedProcessId is not null, -1, string.Empty, false);
+            process = new CompositionProcessResult(true, -1, string.Empty, false);
         }
 
         DateTimeOffset nativeObservedAt = DateTimeOffset.UtcNow;
@@ -674,6 +675,7 @@ internal static class NativeTestExecutor
             try
             {
                 await CompositionDocumentStore.WriteAsync(terminationPath, pending, recording.Token).ConfigureAwait(false);
+                launchMetadataFailed = false;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
             {

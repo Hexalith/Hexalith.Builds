@@ -57,6 +57,34 @@ public sealed class LocalRunLifecycleTests
         cleaned.Termination.EnvironmentAccess.Single().Status.ShouldBe(legacyReady ? "terminated" : "not-applicable");
     }
 
+    /// <summary>A retained local startup failure reports no native child, a pending environment and unissued access.</summary>
+    /// <returns>The retained startup-failure termination assertions.</returns>
+    [Fact]
+    public async Task ReviewRetainedStartupFailureKeepsEnvironmentPendingAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        state = state with { EnvironmentWorkIssued = true, ExecutingTool = ExecutingToolIdentity.Capture() };
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ToolCommandResult failed = new("failed", ToolOutcome.Passed().Fail(ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "HXR021", ToolExitCode.TopologyOrLifecycle), []);
+        ModuleTestRunRecord record = (await engine.RecordTestOutcomeAsync(state.RunId, [], failed, "retained", new([], [], true), TestContext.Current.CancellationToken, terminalCause: "startup-failure").ConfigureAwait(true)).ShouldNotBeNull();
+        CompositionOwnerTermination termination = record.Termination.ShouldNotBeNull();
+        termination.OwnedWork.Single(item => item.Id == "native:" + state.RunId).Status.ShouldBe("not-applicable");
+        termination.OwnedWork.Single(item => item.Id == "environment:" + state.RunId).Status.ShouldBe("pending");
+        termination.EnvironmentAccess.Single().Status.ShouldBe("not-applicable");
+        string path = Path.Combine(engine.StateStore.Directory, "diagnostics", state.RunId, "test-result.json");
+        TestEnvironmentContractReadResult read = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        read.IsValid.ShouldBeTrue(string.Join(';', read.Diagnostics.Select(item => item.Message)));
+        JsonElement result = read.Document!.Value;
+        result.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("startup-failure");
+        result.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("failure-retained");
+        JsonElement published = result.GetProperty("termination");
+        published.GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "native:" + state.RunId).GetProperty("status").GetString().ShouldBe("not-applicable");
+        published.GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "environment:" + state.RunId).GetProperty("status").GetString().ShouldBe("pending");
+        published.GetProperty("environmentAccess")[0].GetProperty("status").GetString().ShouldBe("not-applicable");
+    }
+
     /// <summary>Unobserved native stopping and known surviving work are first-class failed termination observations.</summary>
     /// <param name="knownSurvivor">Whether the native stopper returned a known survivor.</param>
     /// <returns>The failed native item, failure reference and leftovers assertions.</returns>

@@ -47,6 +47,12 @@ public sealed class CiRunLifecycleTests
         before.GetProperty("termination").GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "environment:" + owner.RunId).GetProperty("status").GetString().ShouldBe("failed");
         before.GetProperty("termination").GetProperty("environmentAccess")[0].GetProperty("status").GetString().ShouldBe("failed");
         before.GetProperty("termination").GetProperty("failures").GetArrayLength().ShouldBeGreaterThan(0);
+        string terminationReference = before.GetProperty("diagnostics").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "termination").GetProperty("reference").GetString().ShouldNotBeNull();
+        using (JsonDocument terminationDiagnostic = JsonDocument.Parse(await File.ReadAllBytesAsync(Path.Combine(engine.StateStore.Directory, "diagnostics", owner.RunId, terminationReference), TestContext.Current.CancellationToken).ConfigureAwait(true)))
+        {
+            terminationDiagnostic.RootElement.GetProperty("runId").GetString().ShouldBe(owner.RunId);
+        }
+
         CompositionTestFiles.WriteScript(docker, "exit 0");
         CompositionEngine cleaner = new(options with { ExecutingToolCaptureOverride = () => throw new InvalidOperationException("Cleanup must preserve the original executor.") });
         (await cleaner.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Remaining.IsEmpty.ShouldBeTrue();
