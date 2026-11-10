@@ -63,7 +63,7 @@ jobs:
       - name: Observe nested login inside exact remote composite
         id: nested
         continue-on-error: true
-        uses: Hexalith/Hexalith.Builds/Github/publish-spike@b260185ebe0d0dd1ae9507b16f2b49b366ccd47c
+        uses: Hexalith/Hexalith.Builds/Github/publish-spike@0705088e92d6703232e62dcbe44b3bf0a0980ee3
         with:
           nuget-user: ${{ vars.HEXALITH_NUGET_USER }}
           login-only: 'true'
@@ -81,7 +81,7 @@ jobs:
           test -n "$CALLER_KEY"
           echo "Caller login returned a nonempty masked temporary key. Nested outcome: $NESTED_OUTCOME"
       - name: Publish original artifact
-        uses: Hexalith/Hexalith.Builds/Github/publish-spike@b260185ebe0d0dd1ae9507b16f2b49b366ccd47c
+        uses: Hexalith/Hexalith.Builds/Github/publish-spike@0705088e92d6703232e62dcbe44b3bf0a0980ee3
         with:
           nuget-user: ${{ vars.HEXALITH_NUGET_USER }}
           nuget-api-key: ${{ steps.nested.outcome == 'failure' && steps.caller.outputs.NUGET_API_KEY || '' }}
@@ -113,7 +113,7 @@ jobs:
       id-token: write
     steps:
       - name: Replay the original artifact in a fresh job with no build
-        uses: Hexalith/Hexalith.Builds/Github/publish-spike@b260185ebe0d0dd1ae9507b16f2b49b366ccd47c
+        uses: Hexalith/Hexalith.Builds/Github/publish-spike@0705088e92d6703232e62dcbe44b3bf0a0980ee3
         with:
           nuget-user: ${{ vars.HEXALITH_NUGET_USER }}
           artifact-id: ${{ inputs.artifact-id || needs.build.outputs.artifact-id }}
