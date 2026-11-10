@@ -130,7 +130,7 @@ The nested helper rejected the empty key. The caller failure stopped every
 successor, so no artifact-consuming publish step, registry write or replay
 ran. GitHub's parent step conclusion for the nested call was softened by
 `continue-on-error`; the actual nested login and helper failures are retained
-in [login-failures.log](../evidence/cicd-3-1/login-failures.log). This is an
+in [login-failures.txt](../evidence/cicd-3-1/login-failures.txt). This is an
 **environment/policy blocker**, not evidence against remote composition and
 not evidence for the caller-login fallback. The existing release policies
 and the production workflow were preserved.
@@ -157,8 +157,9 @@ as proven. The release state machine and `Github/publish` were not implemented.
 
 ## Re-drive without rebuilding
 
-The temporary workflow/action were removed after recording exact revisions
-and source blob hashes. No Builds release was dispatched while they existed.
+The temporary workflow/action were removed in cleanup revision
+`30c07862eb655703467433aeaff5a01de9782d48`, after recording exact source
+revisions and blob hashes. No Builds release was dispatched while they existed.
 The fixture, Python helpers, tool pin, behavioral tests and sanitized evidence
 remain. Restore the exact harness/action from the retained Git objects only
 after repeating preflight and correcting the matching policy. Preserve all
@@ -200,7 +201,9 @@ before any adoption decision.
   **20/20 groups on runner Python 3.14.4**. The hosted caller CI also passed
   its workflow-lint/public-API job at the exact caller revision.
 - Committed-source public API check at caller revision passed: 2507 entries,
-  no removals, against stable `v4.47.0`.
+  no removals, against stable `v4.47.0`. The post-cleanup committed-source
+  API check also passed at `30c07862eb655703467433aeaff5a01de9782d48`: 2494
+  entries and no removals.
 - Every created commit message was validated with the installed pinned
   commitlint 21.2.4. Frozen-file comparison and cleanup checks accompany the
   final cleanup revision. All 104 pre-existing `Github/`, workflow and

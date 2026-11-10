@@ -1,0 +1,10 @@
+publish	Set up job	2026-11-10T08:51:12.3835447Z ##[group]GITHUB_TOKEN Permissions
+publish	Set up job	2026-11-10T08:51:12.3837659Z Actions: read
+publish	Set up job	2026-11-10T08:51:12.3838168Z Contents: read
+publish	Set up job	2026-11-10T08:51:12.7287175Z Download action repository 'Hexalith/Hexalith.Builds@b260185ebe0d0dd1ae9507b16f2b49b366ccd47c' (SHA:b260185ebe0d0dd1ae9507b16f2b49b366ccd47c)
+publish	Set up job	2026-11-10T08:51:15.0756457Z Download action repository 'NuGet/login@8d196754b4036150537f80ac539e15c2f1028841' (SHA:8d196754b4036150537f80ac539e15c2f1028841)
+publish	Set up job	2026-11-10T08:51:15.3716809Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+publish	Observe nested login inside exact remote composite	2026-11-10T08:51:19.1370055Z ##[error]Token exchange failed (HTTP 401) at https://www.nuget.org/api/v2/token. Make sure you are using the username of the policy creator, not the policy owner: Workflow mismatch for policy 'Hexalith.Builds': expected 'build-release.yml', actual 'publish-spike.yml'. Workflow mismatch for policy 'Hexalith.Builds builds-release': expected 'builds-release.yml', actual 'publish-spike.yml'
+publish	Observe nested login inside exact remote composite	2026-11-10T08:51:19.1548535Z   TRUSTED_ACTION_PATH: /home/runner/work/_actions/Hexalith/Hexalith.Builds/b260185ebe0d0dd1ae9507b16f2b49b366ccd47c/Github/publish-spike
+publish	Observe nested login inside exact remote composite	2026-11-10T08:51:19.2112091Z publish spike failed: NuGet login returned an empty temporary key
+publish	Caller login control under the same policy and environment	2026-11-10T08:51:21.7644772Z ##[error]Token exchange failed (HTTP 401) at https://www.nuget.org/api/v2/token. Make sure you are using the username of the policy creator, not the policy owner: Workflow mismatch for policy 'Hexalith.Builds': expected 'build-release.yml', actual 'publish-spike.yml'. Workflow mismatch for policy 'Hexalith.Builds builds-release': expected 'builds-release.yml', actual 'publish-spike.yml'

@@ -40,5 +40,13 @@
   "frozen_git_blobs_preserved": 104,
   "temporary_metadata_absent": true,
   "evidence_json_and_document_links_valid": true,
-  "git_diff_check": 0
+  "git_diff_check": 0,
+  "cleanup_revision": "30c07862eb655703467433aeaff5a01de9782d48",
+  "post_cleanup_public_api": {
+    "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/check_public_api.py",
+    "exit_code": 0,
+    "checked_revision": "30c07862eb655703467433aeaff5a01de9782d48",
+    "entries": 2494,
+    "removals": 0
+  }
 }
