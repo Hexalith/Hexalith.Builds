@@ -1,11 +1,14 @@
 {
   "schema": "hexalith.ci.v1",
-  "solution": "Hexalith.Builds.slnx",
+  "solution": "test/fixtures/release/PackageOnly.slnx",
   "dapr": false,
   "browsers": false,
   "registry": false,
-  "codeql": ["csharp"],
-  "tests": { "integration": [], "exclude": {} },
+  "codeql": [],
+  "tests": {
+    "integration": [],
+    "exclude": {}
+  },
   "hooks": [],
   "jobs": {},
   "submodules": []

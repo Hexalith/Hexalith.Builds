@@ -1,0 +1,54 @@
+name: Release create-mode probe
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: Disposable fixture scenario; no publisher runs.
+        type: choice
+        default: success
+        options: [success, no-version, audit]
+permissions: {}
+cache-mode: none
+concurrency:
+  group: release-create-mode-probe
+  cancel-in-progress: false
+jobs:
+  release:
+    uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write
+      actions: read
+      security-events: write
+    with:
+      ci-workflow: builds-ci.yml
+      release-rules: builds
+      probe-case: ${{ inputs.scenario }}
+  observe:
+    needs: release
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Retain the exact reusable handoff
+        shell: bash
+        env:
+          HANDOFF: ${{ toJSON(needs.release.outputs) }}
+          RESULT: ${{ needs.release.result }}
+          SCENARIO: ${{ inputs.scenario }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          value = {'scenario': os.environ['SCENARIO'], 'result': os.environ['RESULT'],
+                   'outputs': json.loads(os.environ['HANDOFF'])}
+          Path('handoff.json').write_text(json.dumps(value, sort_keys=True) + '\n')
+          print(json.dumps(value, sort_keys=True))
+          PYTHON
+      - name: Upload handoff observation
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: probe-handoff
+          path: handoff.json
+          if-no-files-found: error
