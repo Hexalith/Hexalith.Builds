@@ -16,8 +16,7 @@
     }
   },
   "hooks": [
-    "after-unit-tests",
-    "nightly"
+    "after-unit-tests"
   ],
   "jobs": {
     "sample-windows": {
