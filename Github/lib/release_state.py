@@ -55,19 +55,39 @@ class Api:
             raise ReleaseError("a GitHub read token is required")
         self.repository, self.token, self.base_url, self.clock = repository, token, base_url.rstrip("/"), clock
         self.opener = urllib.request.build_opener(NoRedirect())
+        self._repository_id = None
 
-    def _url(self, path):
+    def _url(self, path, deadline=None):
         url = urllib.parse.urljoin(self.base_url + "/", path.lstrip("/")) if not path.startswith(("https://", "http://")) else path
         parsed, base = urllib.parse.urlsplit(url), urllib.parse.urlsplit(self.base_url)
-        prefix = base.path.rstrip("/") + "/repos/" + self.repository + "/"
+        root = base.path.rstrip("/") + "/repos/" + self.repository
         if ((parsed.scheme, parsed.netloc) != (base.scheme, base.netloc)
-                or not parsed.path.startswith(prefix) or parsed.fragment or parsed.username or parsed.password
+                or parsed.fragment or parsed.username or parsed.password
                 or any(p in (".", "..") for p in urllib.parse.unquote(parsed.path).split("/"))):
             raise ReleaseError("API request escaped the repository credential boundary")
-        return url
+        if parsed.path == root or parsed.path.startswith(root + "/"):
+            return url
+        # GitHub's Link headers may use /repositories/<id>/... instead of
+        # /repos/<owner>/<name>/.... Authenticate the repository identity via
+        # its named endpoint before accepting an alias, then keep all actual
+        # collection requests on that named endpoint. No numeric destination
+        # receives credentials, including a mismatching repository ID.
+        numeric = re.fullmatch(re.escape(base.path.rstrip("/")) + r"/repositories/([1-9][0-9]*)(/.*)", parsed.path)
+        if numeric is None:
+            raise ReleaseError("API request escaped the repository credential boundary")
+        if self._repository_id is None:
+            metadata = self.get("/repos/" + self.repository, deadline=deadline)
+            if (not isinstance(metadata, dict) or type(metadata.get("id")) is not int or metadata["id"] < 1
+                    or not isinstance(metadata.get("full_name"), str)
+                    or metadata["full_name"].casefold() != self.repository.casefold()):
+                raise ReleaseError("GitHub API repository metadata identity mismatch")
+            self._repository_id = metadata["id"]
+        if numeric[1] != str(self._repository_id):
+            raise ReleaseError("API pagination repository ID mismatch")
+        return urllib.parse.urlunsplit(parsed._replace(path=root + numeric[2]))
 
     def _get(self, path, deadline=None):
-        url = self._url(path)
+        url = self._url(path, deadline)
         timeout = 60 if deadline is None else min(60, deadline - self.clock())
         if timeout <= 0:
             raise ReleaseError("GitHub API deadline exceeded")
@@ -88,7 +108,7 @@ class Api:
     def pages(self, path, key=None, deadline=None):
         seen = set()
         while path:
-            url = self._url(path)
+            url = self._url(path, deadline)
             if url in seen:
                 raise ReleaseError("GitHub API pagination cycle")
             seen.add(url)

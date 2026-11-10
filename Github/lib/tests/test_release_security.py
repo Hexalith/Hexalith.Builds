@@ -114,6 +114,68 @@ class ReleaseSecurityTests(unittest.TestCase):
         self.assertEqual([ENDPOINT, next_path], [path for path, _auth in requests])
         self.assertEqual(["Bearer " + TOKEN] * 2, [auth for _path, auth in requests])
 
+    def test_numeric_repository_links_are_verified_and_rewritten_before_collection_reads(self):
+        metadata = f"/repos/{REPOSITORY}"
+        page_two = f"/repos/{REPOSITORY}/code-scanning/alerts?page=2&per_page=100&state=open"
+        page_three = f"/repos/{REPOSITORY}/code-scanning/alerts?page=3&per_page=100&state=open"
+        responses = {
+            ENDPOINT: lambda port: (200, {"Link": f'<http://127.0.0.1:{port}/repositories/123/code-scanning/alerts?page=2&per_page=100&state=open>; rel="next"'},
+                                    [alert(1, severity="low")]),
+            metadata: (200, {}, {"id": 123, "full_name": REPOSITORY.lower()}),
+            page_two: lambda port: (200, {"Link": f'<http://127.0.0.1:{port}/repositories/123/code-scanning/alerts?page=3&per_page=100&state=open>; rel="next"'},
+                                    [alert(2, severity="medium")]),
+            page_three: (200, {}, [alert(9, severity="critical")]),
+        }
+        with api_control(responses) as (api, requests, _port):
+            with self.assertRaisesRegex(ReleaseError, "#9"):
+                security.check_alerts(api)
+        self.assertEqual([ENDPOINT, metadata, page_two, page_three], [path for path, _auth in requests])
+        self.assertEqual(["Bearer " + TOKEN] * 4, [auth for _path, auth in requests])
+
+    def test_other_numeric_repository_ids_never_receive_authenticated_requests(self):
+        metadata = f"/repos/{REPOSITORY}"
+        destination = "/repositories/456/code-scanning/alerts?page=2"
+        responses = {
+            ENDPOINT: lambda port: (200, {"Link": f'<http://127.0.0.1:{port}{destination}>; rel="next"'}, []),
+            metadata: (200, {}, {"id": 123, "full_name": REPOSITORY}),
+            destination: (200, {}, [alert(9)]),
+        }
+        with api_control(responses) as (api, requests, _port):
+            with self.assertRaisesRegex(ReleaseError, "repository ID mismatch"):
+                security.check_alerts(api)
+        self.assertEqual([(ENDPOINT, "Bearer " + TOKEN), (metadata, "Bearer " + TOKEN)], requests)
+
+    def test_numeric_links_require_matching_valid_repository_metadata(self):
+        metadata_path = f"/repos/{REPOSITORY}"
+        for metadata in ({"id": 123, "full_name": "Other/Repository"},
+                         {"id": True, "full_name": REPOSITORY}, {"id": 0, "full_name": REPOSITORY},
+                         {"id": "123", "full_name": REPOSITORY}, {"id": 123}, [], None):
+            with self.subTest(metadata=metadata):
+                responses = {
+                    ENDPOINT: lambda port: (200, {"Link": f'<http://127.0.0.1:{port}/repositories/123/code-scanning/alerts?page=2>; rel="next"'}, []),
+                    metadata_path: (200, {}, metadata),
+                }
+                with api_control(responses) as (api, requests, _port):
+                    with self.assertRaisesRegex(ReleaseError, "metadata identity mismatch"):
+                        security.check_alerts(api)
+                self.assertEqual([(ENDPOINT, "Bearer " + TOKEN), (metadata_path, "Bearer " + TOKEN)], requests)
+
+    def test_numeric_links_preserve_configured_api_base_path_and_deadline(self):
+        prefix = "/api/v3"
+        named = prefix + f"/repos/{REPOSITORY}/code-scanning/alerts?page=2"
+        metadata = prefix + f"/repos/{REPOSITORY}"
+        responses = {
+            prefix + ENDPOINT: lambda port: (200, {"Link": f'<http://127.0.0.1:{port}{prefix}/repositories/123/code-scanning/alerts?page=2>; rel="next"'}, []),
+            metadata: (200, {}, {"id": 123, "full_name": REPOSITORY}),
+            named: (200, {}, []),
+        }
+        with api_control(responses) as (_api, requests, port):
+            api = Api(REPOSITORY, TOKEN, base_url=f"http://127.0.0.1:{port}{prefix}", clock=lambda: 5)
+            self.assertEqual([], list(api.pages(ENDPOINT, deadline=10)))
+            with self.assertRaisesRegex(ReleaseError, "credential boundary"):
+                api.get(f"http://127.0.0.1:{port}/repositories/123/code-scanning/alerts?page=3")
+        self.assertEqual([prefix + ENDPOINT, metadata, named], [path for path, _auth in requests])
+
     def test_every_page_must_be_available_and_well_formed(self):
         next_path = f"/repos/{REPOSITORY}/code-scanning/alerts?page=2"
         for status, body in ((403, b"forbidden"), (404, b"not enabled"), (500, b"unavailable"),
