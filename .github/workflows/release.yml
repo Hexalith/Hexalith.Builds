@@ -11,10 +11,6 @@ on:
         description: Exact CI filename; only Builds may pass builds-ci.yml.
         type: string
         default: ci.yml
-      probe-case:
-        description: Temporary labelled fixture control; removed after hosted observation.
-        type: string
-        default: success
       release-rules:
         description: Version rules; builds is restricted to the actual Builds repository.
         type: string
@@ -90,8 +86,7 @@ jobs:
           module-root: ${{ inputs.module-root }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          # Hosted input control: the repository variable is untouched.
-          RELEASE_SWITCH: 'true'
+          RELEASE_SWITCH: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}
 
   codeql:
     name: Release CodeQL (${{ matrix.language }})
@@ -172,16 +167,9 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       notes: ${{ steps.version.outputs.notes }}
       last-tag: ${{ steps.version.outputs.last-tag }}
-      no-version: ${{ steps.noop.outputs.no-version || steps.version.outputs.no-version }}
+      no-version: ${{ steps.version.outputs.no-version }}
     steps:
-      - name: Supply the labelled no-version scheduling control
-        id: noop
-        if: inputs.probe-case == 'no-version'
-        shell: bash
-        run: python3 -c 'import os; open(os.environ["GITHUB_OUTPUT"], "a").write("no-version=true\n")'
-
       - name: Analyze the frozen release range
-        if: inputs.probe-case != 'no-version'
         id: version
         uses: $/Github/release-version
         with:
@@ -191,8 +179,6 @@ jobs:
 
   build:
     name: Build audited release payload
-    env:
-      ReleaseFixtureAuditCode: ${{ inputs.probe-case == 'audit' && 'NU1903' || '' }}
     needs: [resolve, codeql, nightly-hook, version]
     if: >-
       ${{ !cancelled() && needs.resolve.result == 'success' &&
