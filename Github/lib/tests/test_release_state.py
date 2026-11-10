@@ -154,6 +154,83 @@ class ApiDeadlineTests(unittest.TestCase):
             self.assertTrue(finished.wait(1))
 
 
+class RealApiCiGateTests(unittest.TestCase):
+    """Drive the CI gate and transport through a real Api and loopback HTTP."""
+
+    @contextmanager
+    def http(self, respond):
+        requests = []
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *_args):
+                pass
+
+            def do_GET(self):
+                requests.append(self.path)
+                respond(self)
+
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        serving = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True)
+        serving.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_port}", requests
+        finally:
+            server.shutdown()
+            server.server_close()
+            serving.join()
+
+    def test_deadline_bound_ci_reads_keep_sanitized_http_diagnostics(self):
+        for code in (403, 500):
+            def respond(handler, code=code):
+                handler.send_response(code)
+                handler.end_headers()
+                handler.wfile.write(b"ci-gate-token")
+
+            with self.subTest(code=code), self.http(respond) as (base, requests):
+                api = state.Api(REPOSITORY, "ci-gate-token", base)
+                with self.assertRaises(state.ReleaseError) as raised:
+                    state.require_green_ci(api, "c" * 40, "ci.yml")
+                self.assertEqual(f"GitHub API /actions/workflows/ci.yml/runs returned HTTP {code}", str(raised.exception))
+                self.assertEqual(1, len(requests))
+
+    def test_api_deadline_during_ci_polling_reports_the_red_ci_bound(self):
+        offset = [0.0]
+
+        def clock():
+            return time.monotonic() + offset[0]
+
+        def respond(handler):
+            offset[0] += 31 * 60  # the in-flight request crosses the fixed deadline
+            body = b'{"workflow_runs": []}'
+            handler.send_response(200)
+            handler.send_header("Content-Length", str(len(body)))
+            handler.end_headers()
+            handler.wfile.write(body)
+
+        with self.http(respond) as (base, requests):
+            api = state.Api(REPOSITORY, "ci-gate-token", base, clock=clock)
+            with self.assertRaisesRegex(state.ReleaseError,
+                                        r"^main is red, nothing released \(CI wait exceeded 30 minutes\)$") as raised:
+                state.require_green_ci(api, "c" * 40, "ci.yml", clock=clock, sleeper=lambda _seconds: None)
+        self.assertIn("deadline exceeded", str(raised.exception.__cause__))
+        self.assertEqual(1, len(requests))
+
+    def test_truncated_responses_are_sanitized_transport_failures(self):
+        def respond(handler):
+            handler.send_response(200)
+            handler.send_header("Content-Length", "100")
+            handler.end_headers()
+            handler.wfile.write(b'[{"partial":')
+            handler.close_connection = True
+
+        for bounded in (False, True):
+            with self.subTest(deadline=bounded), self.http(respond) as (base, _requests):
+                api = state.Api(REPOSITORY, "ci-gate-token", base)
+                deadline = time.monotonic() + 30 if bounded else None
+                with self.assertRaisesRegex(state.ReleaseError, "^GitHub API transport or JSON decoding failed$"):
+                    list(api.pages(f"/repos/{REPOSITORY}/releases", deadline=deadline))
+
+
 class ReleaseStateTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -334,6 +411,32 @@ class ReleaseStateTests(unittest.TestCase):
                                         (BUILDS, "../other"), (BUILDS, "Samples/Other")]:
             with self.subTest(repository=repository, module_root=module_root), self.assertRaises(state.ReleaseError):
                 state.dispatch_settings(self.git, self.dispatch, repository, module_root)
+
+    def test_resolve_rejects_workflow_overrides_before_disabled_or_complete_returns(self):
+        for options, api in [({"switch": "false", "workflow": "arbitrary.yml"}, ApiControl()),
+                             ({"switch": "false", "workflow": "builds-ci.yml"}, ApiControl()),
+                             ({"switch": "true", "workflow": "arbitrary.yml"}, ApiControl(drafts=[self.draft()]))]:
+            with self.subTest(options=options):
+                with redirect_stdout(io.StringIO()) as logs:
+                    with self.assertRaisesRegex(state.ReleaseError, "ci-workflow must be ci.yml"):
+                        self.resolve(api, **options)
+                self.assertNotIn("publishing disabled", logs.getvalue())
+                self.assertEqual([], api.requests)
+
+    def test_resolve_requires_full_dispatch_and_delivered_commit_identities(self):
+        for options, diagnostic in [({"sha": "abc"}, "dispatch SHA must be a full commit"),
+                                    ({"sha": self.dispatch.upper()}, "dispatch SHA must be a full commit"),
+                                    ({"delivered_sha": "main"}, "delivered-sha must be a full commit SHA"),
+                                    ({"delivered_sha": self.first[:12]}, "delivered-sha must be a full commit SHA")]:
+            with self.subTest(options=options):
+                api = ApiControl()
+                with self.assertRaisesRegex(state.ReleaseError, diagnostic):
+                    self.resolve(api, **options)
+                self.assertEqual([], api.requests)
+        with redirect_stdout(io.StringIO()):
+            selected, emitted = self.resolve(ApiControl(), delivered_sha=self.first)
+        self.assertEqual(self.dispatch, selected["sha"])
+        self.assertEqual("false", emitted["enabled"])
 
     def test_latest_exact_sha_push_or_manual_ci_governs(self):
         for event in ("push", "workflow_dispatch"):

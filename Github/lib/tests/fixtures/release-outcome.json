@@ -176,6 +176,24 @@
     }
   },
   {
+    "name": "schema-not-string",
+    "valid": false,
+    "document": {
+      "schema": 1,
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "outcome-null",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": null
+    }
+  },
+  {
     "name": "version-tagged",
     "valid": false,
     "document": {

@@ -12,13 +12,14 @@ import sys
 import tempfile
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ci_config import LANGUAGES
+
 
 SCHEMA = "hexalith.release-outcome.v1"
 SHA = re.compile(r"[0-9a-f]{40}")
 VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 OUTCOMES = frozenset(("published", "ready", "nothing", "disabled", "failed"))
-LANGUAGES = frozenset(("c-cpp", "csharp", "go", "java-kotlin", "javascript-typescript",
-                       "python", "ruby", "rust", "swift"))
 
 
 class OutcomeError(ValueError):
@@ -181,9 +182,11 @@ def main() -> int:
             decision = reduce_results(
                 dispatch_sha=dispatch_sha, sha=selected_sha, version=version,
                 enabled=environment.get("RELEASE_ENABLED", ""),
-                codeql=json.loads(environment.get("RELEASE_CODEQL", "null")),
+                # An absent job output is an empty string; failure-first
+                # reduction must still name the failed prerequisite.
+                codeql=json.loads(environment.get("RELEASE_CODEQL") or "null"),
                 nightly_hook=environment.get("RELEASE_NIGHTLY_HOOK", ""),
-                needs=json.loads(environment.get("RELEASE_NEEDS", "null")),
+                needs=json.loads(environment.get("RELEASE_NEEDS") or "null"),
                 publish=environment.get("RELEASE_PUBLISH", "false"),
                 noop_reason=environment.get("RELEASE_NOOP_REASON", ""),
                 mode=environment.get("RELEASE_MODE", "create"))

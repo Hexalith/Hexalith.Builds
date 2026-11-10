@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parents[3]
 REPOSITORY = "Example/ReleaseFixture"
 ENDPOINT = f"/repos/{REPOSITORY}/code-scanning/alerts?state=open&per_page=100&ref=refs%2Fheads%2Fmain"
 TOKEN = "synthetic-release-security-token"
+SARIF = "47177e22-5596-11eb-80a1-c1e54ef945c6"
+SARIF_PATH = f"/repos/{REPOSITORY}/code-scanning/sarifs/{SARIF}"
 
 
 def alert(number=1, *, state="open", severity="high", category="hexalith-release/csharp"):
@@ -72,6 +74,41 @@ class ReleaseSecurityTests(unittest.TestCase):
         self.assertEqual(1, len(requests))
         query = urllib.parse.parse_qs(urllib.parse.urlsplit(requests[0][0]).query)
         self.assertEqual(["refs/heads/main"], query["ref"])
+
+    def test_alerts_require_completed_processing_of_this_runs_upload(self):
+        with api_control({SARIF_PATH: (200, {}, {"processing_status": "complete"})}) as (api, requests, _port):
+            security.require_processed(api, SARIF)
+        self.assertEqual([(SARIF_PATH, "Bearer " + TOKEN)], requests)
+        # The pinned analyze action only warns after its bounded wait or a
+        # status-read error, so anything except complete must fail closed.
+        for response, diagnostic in [((200, {}, {"processing_status": "pending"}), "processing is pending"),
+                                     ((200, {}, {"processing_status": "failed", "errors": ["x"]}), "processing is failed"),
+                                     ((200, {}, {"processing_status": "complete\n"}), "processing is unknown"),
+                                     ((200, {}, {}), "processing is unknown"), ((200, {}, []), "processing is unknown"),
+                                     ((404, {}, b"not found"), "sarifs/" + SARIF + " returned HTTP 404")]:
+            with self.subTest(response=response):
+                with api_control({SARIF_PATH: response}) as (api, requests, _port):
+                    with self.assertRaisesRegex(ReleaseError, diagnostic):
+                        security.require_processed(api, SARIF)
+                self.assertEqual([SARIF_PATH], [path for path, _auth in requests])
+        for sarif_id in ("", None, "../alerts", "a/b", "id?ref=x", "x" * 101):
+            with self.subTest(sarif_id=sarif_id):
+                with api_control({}) as (api, requests, _port):
+                    with self.assertRaisesRegex(ReleaseError, "no valid SARIF upload ID"):
+                        security.require_processed(api, sarif_id)
+                self.assertEqual([], requests)
+
+    def test_pagination_cycles_and_ambiguous_next_links_fail_without_extra_reads(self):
+        for link, diagnostic in [("<{base}{path}>; rel=\"next\"", "pagination cycle"),
+                                 ("<{base}{path}&page=2>; rel=\"next\", <{base}{path}&page=3>; rel=\"next\"",
+                                  "ambiguous pagination")]:
+            with self.subTest(diagnostic=diagnostic):
+                responses = {ENDPOINT: lambda port, link=link: (
+                    200, {"Link": link.format(base=f"http://127.0.0.1:{port}", path=ENDPOINT)}, [alert(severity="low")])}
+                with api_control(responses) as (api, requests, _port):
+                    with self.assertRaisesRegex(ReleaseError, diagnostic):
+                        security.check_alerts(api)
+                self.assertEqual([(ENDPOINT, "Bearer " + TOKEN)], requests)
 
     def test_http_errors_name_only_the_sanitized_repository_relative_endpoint(self):
         for path in ("/releases", "/actions/workflows/ci.yml/runs", "/code-scanning/alerts"):
@@ -231,10 +268,10 @@ class ReleaseSecurityTests(unittest.TestCase):
                     security.check_alerts(api)
                 self.assertEqual([(ENDPOINT, "Bearer " + TOKEN)], requests)
 
-    def adapter(self, port, workspace):
+    def adapter(self, port, workspace, sarif_id=SARIF):
         directory = ROOT / "Github/release-security"
         action = yaml.safe_load((directory / "action.yml").read_text())
-        environment = dict(os.environ, GITHUB_REPOSITORY=REPOSITORY, GITHUB_TOKEN=TOKEN,
+        environment = dict(os.environ, GITHUB_REPOSITORY=REPOSITORY, GITHUB_TOKEN=TOKEN, RELEASE_SARIF_ID=sarif_id,
                            GITHUB_API_URL=f"http://127.0.0.1:{port}", GITHUB_ACTION_PATH=str(directory))
         result = None
         for step in action["runs"]["steps"]:
@@ -252,12 +289,25 @@ class ReleaseSecurityTests(unittest.TestCase):
                 # A same-named module file must never be imported from the checkout.
                 poison = Path(workspace) / "release_state.py"
                 poison.write_text("raise RuntimeError('module code was executed')")
-                with api_control({ENDPOINT: response}) as (_api, requests, port):
+                processed = (200, {}, {"processing_status": "complete"})
+                with api_control({SARIF_PATH: processed, ENDPOINT: response}) as (_api, requests, port):
                     result = self.adapter(port, workspace)
                 self.assertEqual(expected, result.returncode, result.stdout + result.stderr)
                 self.assertIn(message, result.stdout + result.stderr)
                 self.assertNotIn(TOKEN, result.stdout + result.stderr)
-                self.assertEqual([(ENDPOINT, "Bearer " + TOKEN)], requests)
+                self.assertEqual([(SARIF_PATH, "Bearer " + TOKEN), (ENDPOINT, "Bearer " + TOKEN)], requests)
+
+    def test_executed_adapter_never_reads_alerts_before_processing_completes(self):
+        for sarif_id, responses, message, expected_requests in [
+                (SARIF, {SARIF_PATH: (200, {}, {"processing_status": "pending"})}, "processing is pending", [SARIF_PATH]),
+                ("", {}, "no valid SARIF upload ID", [])]:
+            with self.subTest(sarif_id=sarif_id), tempfile.TemporaryDirectory() as workspace:
+                with api_control({**responses, ENDPOINT: (200, {}, [])}) as (_api, requests, port):
+                    result = self.adapter(port, workspace, sarif_id)
+                self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+                self.assertIn(message, result.stderr)
+                self.assertNotIn("security gate passed", result.stdout)
+                self.assertEqual(expected_requests, [path for path, _auth in requests])
 
 
 if __name__ == "__main__":

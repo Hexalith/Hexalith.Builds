@@ -7,6 +7,7 @@ module script, filter, hook, submodule, build tool or authenticated git runs.
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import os
 from pathlib import Path
@@ -129,7 +130,7 @@ class Api:
                 prefix = urllib.parse.urlsplit(self.base_url).path.rstrip("/") + "/repos/" + self.repository
                 endpoint = urllib.parse.urlsplit(url).path.removeprefix(prefix) or "/"
                 raise ReleaseError(f"GitHub API {endpoint} returned HTTP {error.code}") from error
-        except (OSError, ValueError, RecursionError) as error:
+        except (OSError, ValueError, RecursionError, http.client.HTTPException) as error:
             raise ReleaseError("GitHub API transport or JSON decoding failed") from error
 
     def get(self, path, deadline=None):

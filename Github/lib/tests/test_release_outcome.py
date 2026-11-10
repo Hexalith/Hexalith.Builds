@@ -137,6 +137,11 @@ class OutcomeReductionTests(unittest.TestCase):
             with self.subTest(changes=changes):
                 self.assert_failed(self.decide(**changes))
 
+    def test_reducer_shares_the_ci_configuration_language_vocabulary(self):
+        import ci_config
+        self.assertIs(ci_config.LANGUAGES, OUTCOME.LANGUAGES)
+        self.assertEqual("disabled", self.decide(codeql=sorted(ci_config.LANGUAGES))["document"]["outcome"])
+
     def test_enabled_gates_without_publication_stages_fail_explicitly(self):
         self.assert_failed(self.decide(enabled="true"), "release publication stages are not installed")
 
@@ -250,6 +255,20 @@ class OutcomeAdapterTests(unittest.TestCase):
                 self.output.unlink(missing_ok=True)
                 result = self.adapter(**changes)
                 self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+                self.assertEqual({"schema": "hexalith.release-outcome.v1", "sha": DISPATCH_SHA,
+                                  "outcome": "failed"}, self.document())
+
+    def test_absent_resolve_outputs_still_report_the_failed_prerequisite(self):
+        failed_resolve = json.dumps(prerequisites(resolve="failure", codeql="skipped", hook="skipped"))
+        for needs, diagnostic in [(failed_resolve, "release prerequisite 'resolve' failure"),
+                                  ("", "release prerequisite results must be an object")]:
+            with self.subTest(needs=needs):
+                self.output.unlink(missing_ok=True)
+                # Workflow expressions render absent job outputs as empty strings.
+                result = self.adapter(RELEASE_SHA="", RELEASE_MODE="", RELEASE_ENABLED="", RELEASE_CODEQL="",
+                                      RELEASE_NIGHTLY_HOOK="", RELEASE_NEEDS=needs)
+                self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+                self.assertIn(diagnostic, result.stderr)
                 self.assertEqual({"schema": "hexalith.release-outcome.v1", "sha": DISPATCH_SHA,
                                   "outcome": "failed"}, self.document())
 

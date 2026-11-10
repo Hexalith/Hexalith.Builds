@@ -69,7 +69,8 @@ jobs:
   codeql:
     name: Release CodeQL (${{ matrix.language }})
     needs: resolve
-    if: always() && needs.resolve.outputs.config-valid == 'true' && needs.resolve.outputs.codeql != '[]'
+    # Run after resolve failures, but honor run cancellation.
+    if: ${{ !cancelled() && needs.resolve.outputs.config-valid == 'true' && needs.resolve.outputs.codeql != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -78,8 +79,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The fallback keeps intentional skips from evaluating an empty matrix.
-        language: ${{ fromJSON(needs.resolve.outputs.codeql || '["csharp"]') }}
+        # Skipped jobs never expand an empty or missing list: both '[]' and an
+        # absent output use a placeholder that the job condition never runs.
+        language: ${{ fromJSON(needs.resolve.outputs.codeql != '[]' && needs.resolve.outputs.codeql || '["csharp"]') }}
     steps:
       - name: Checkout dispatch source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -95,6 +97,7 @@ jobs:
           build-mode: none
 
       - name: Analyze and wait for processing
+        id: analyze
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: hexalith-release/${{ matrix.language }}
@@ -104,11 +107,12 @@ jobs:
         uses: $/Github/release-security
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SARIF_ID: ${{ steps.analyze.outputs.sarif-id }}
 
   nightly-hook:
     name: Prepare and run nightly hook
     needs: resolve
-    if: always() && needs.resolve.outputs.config-valid == 'true' && needs.resolve.outputs.nightly-hook == 'true'
+    if: ${{ !cancelled() && needs.resolve.outputs.config-valid == 'true' && needs.resolve.outputs.nightly-hook == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:

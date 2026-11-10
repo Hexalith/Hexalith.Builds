@@ -413,8 +413,17 @@ its presence currently provides no drift protection. The test-only
 `module-root` is guarded to the Builds sample and excluded from the public
 module API. No publisher secret, OIDC or attestation permission is used.
 
+CodeQL and nightly-hook run after resolve failures but honor run
+cancellation; only the reporter is unconditionally scheduled. The security
+gate first requires this run's uploaded SARIF to report complete processing,
+because the analyze action only warns when its bounded wait times out, then
+reads alerts.
+
 Focused behavioral controls (real disposable Git histories, local HTTP
-pagination/redirect/error endpoints and executed composite adapters) run with:
+pagination/redirect/error endpoints and executed composite adapters) run with
+the command below. They need the locked runner's PyYAML and jsonschema and
+`node` on `PATH`; on a bare interpreter, use the locked
+`Tools/ci/run_python_tests.py` command above.
 
 ```bash
 python3 -m unittest discover -s Github/lib/tests -p 'test_release_*.py' -v

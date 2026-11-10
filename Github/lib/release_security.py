@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """Check processed release CodeQL alerts using trusted stdlib API reads.
 
-The workflow calls this only after analyze has successfully waited for SARIF
-processing. This gate reads the most recent instance on refs/heads/main;
-it never searches historical instances or other analysis configurations.
+The analyze action only warns when its bounded processing wait times out or
+its status read fails, so this gate first requires the uploaded SARIF to
+report complete processing. It then reads the most recent instance on
+refs/heads/main; it never searches historical instances or other analysis
+configurations.
 """
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -19,6 +22,18 @@ from release_state import Api, ReleaseError
 PREFIX = "hexalith-release/"
 STATES = frozenset(("open", "closed", "dismissed", "fixed"))
 SEVERITIES = frozenset(("critical", "high", "medium", "low"))
+SARIF_ID = re.compile(r"[A-Za-z0-9-]{1,100}\Z")
+
+
+def require_processed(api: Api, sarif_id: object) -> None:
+    """Fail unless this run's uploaded release analysis finished processing."""
+    if not isinstance(sarif_id, str) or not SARIF_ID.fullmatch(sarif_id):
+        raise ReleaseError("release CodeQL analysis reported no valid SARIF upload ID")
+    status = api.get(f"/repos/{api.repository}/code-scanning/sarifs/{sarif_id}")
+    processing = status.get("processing_status") if isinstance(status, dict) else None
+    if processing != "complete":
+        known = processing if processing in ("pending", "failed") else "unknown"
+        raise ReleaseError(f"release CodeQL SARIF processing is {known}; processed alerts cannot be checked")
 
 
 def blocking_alert(alert: object) -> int | None:
@@ -73,6 +88,7 @@ def main() -> int:
             raise ReleaseError("Python 3.12 or later is required")
         api = Api(os.environ.get("GITHUB_REPOSITORY", ""), os.environ.get("GITHUB_TOKEN", ""),
                   base_url=os.environ.get("GITHUB_API_URL", "https://api.github.com"))
+        require_processed(api, os.environ.get("RELEASE_SARIF_ID", ""))
         checked = check_alerts(api)
         print(f"release CodeQL security gate passed; checked {checked} alerts after SARIF processing")
         return 0

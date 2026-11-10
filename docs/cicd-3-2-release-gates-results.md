@@ -200,3 +200,33 @@ Post-fix parent verification passed all **20/20 groups on both Python
 actionlint/zizmor again reports 12 exact frozen findings and zero new findings.
 All named intent-matrix controls ran and passed in both full-suite logs. The
 frozen-file/probe-cleanup checks and whitespace validation pass.
+
+## Follow-up review hardening
+
+A second independent review pass produced twelve patch entries. The CodeQL
+and nightly-hook jobs now use `!cancelled()` instead of `always()`, so they
+still run after a resolve failure but stop on run cancellation; the reporter
+keeps `if: always()`. The pinned analyze action at v4.39.3 only warns when its
+five bounded status polls (about 155 seconds) time out or a status read fails,
+and the step still succeeds. The security gate therefore first reads this
+run's `sarif-id` status and fails closed unless processing is `complete`,
+before it reads alerts. The CodeQL matrix now uses its placeholder for both
+`[]` and a missing output, so neither case can depend on matrix-before-
+condition evaluation.
+
+The reporter treats empty job outputs as missing, so a failed resolve is named
+as the failed prerequisite instead of a JSON decoding error. It shares the
+`ci_config` language vocabulary. Truncated HTTP bodies (`http.client`
+protocol errors) become the sanitized transport failure. New executed controls
+cover deadline-bound CI HTTP diagnostics, deadline translation to the red-CI
+message, workflow overrides in disabled and complete modes, dispatch and
+delivered SHA validation, pagination cycles and ambiguous next links, the
+SARIF processing states and two additional corpus cases. Each new control was
+mutation-checked against the guard it covers.
+
+The focused release suite passes **70 tests**. Both locked Python 3.12 and
+runner Python 3.14.4 pass all **20/20 groups**, including **178
+shared-library tests**. Pinned online actionlint/zizmor reports the same 12
+exact frozen findings and zero new findings. The changed job conditions, matrix
+expression and SARIF status read have not been observed in a hosted run. The
+hosted probes above predate both review passes.
