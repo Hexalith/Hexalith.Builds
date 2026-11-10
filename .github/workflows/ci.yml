@@ -1,6 +1,7 @@
 name: Shared CI
 
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       module-root:
