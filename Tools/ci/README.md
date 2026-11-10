@@ -321,7 +321,7 @@ are rejected. Other runner settings are retained, and other test frameworks
 receive no xUnit options. Real SDK tests exercise both runner paths.
 
 `Github/prepare` prepares a separate custom job without running tests or hooks.
-It always checks out with persisted credentials and recursive submodules disabled.
+It always checks out without persisting credentials and without recursive submodules.
 On Windows, pass shared CI's `solution`, `submodules` (the unchanged JSON-array
 output), and `global-json` outputs. The SDK-path input defaults to `global.json`
 for root modules; prefixed samples must pass the validated output explicitly.

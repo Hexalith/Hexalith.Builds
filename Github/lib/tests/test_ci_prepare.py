@@ -144,14 +144,15 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual(1, len(self.external))
 
     def test_external_checkout_and_sdk_failure_prevent_all_product_commands(self):
-        for boundary, count in (("actions/checkout@", 1), ("actions/setup-dotnet@", 2)):
-            with self.subTest(boundary=boundary):
-                self.external.clear()
-                self.fail_external = boundary
-                result = self.invoke()
-                self.assertEqual(47, result.returncode, result.stdout + result.stderr)
-                self.assertEqual(count, len(self.external))
-                self.assertEqual([], self.commands())
+        for os_name in ("Windows", "Linux"):
+            for boundary, count in (("actions/checkout@", 1), ("actions/setup-dotnet@", 2)):
+                with self.subTest(os_name=os_name, boundary=boundary):
+                    self.external.clear()
+                    self.fail_external = boundary
+                    result = self.invoke(os_name)
+                    self.assertEqual(47, result.returncode, result.stdout + result.stderr)
+                    self.assertEqual(count, len(self.external))
+                    self.assertEqual([], self.commands())
 
     def test_windows_restore_and_build_failures_preserve_status_without_successor(self):
         for command in ("restore", "build"):
@@ -255,6 +256,30 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
                 self.assertEqual([], self.commands())
                 self.assertEqual(1, len(self.external))
                 self.assertFalse((self.root / "submodules-initialized.json").exists())
+
+    def test_windows_control_characters_fail_as_unsafe_before_sdk_or_update(self):
+        self.submodule_controls()
+        for key, value, message in (("solution", "bad\nname.slnx", "Unsafe solution path"),
+                                    ("solution", "bad\x7fname.slnx", "Unsafe solution path"),
+                                    ("submodules", json.dumps(["references/B\rx"]), "Unsafe submodule path")):
+            with self.subTest(key=key, value=value):
+                self.external.clear()
+                result = self.invoke(inputs=dict(self.inputs, **{key: value}))
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertIn(message, result.stderr)
+                self.assertEqual([], self.commands())
+                self.assertEqual(1, len(self.external))
+                self.assertFalse((self.root / "submodules-initialized.json").exists())
+
+    def test_windows_duplicate_declared_paths_fail_before_sdk_or_update(self):
+        self.submodule_controls()
+        self.git("config", "--file", ".gitmodules", "submodule.again.path", "references/B")
+        result = self.invoke(inputs=dict(self.inputs, submodules='["references/B"]'))
+        self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("Duplicate paths in root .gitmodules", result.stderr)
+        self.assertEqual([], self.commands())
+        self.assertEqual(1, len(self.external))
+        self.assertFalse((self.root / "submodules-initialized.json").exists())
 
     def test_windows_submodule_failure_preserves_status_before_restore(self):
         self.submodule_controls()
