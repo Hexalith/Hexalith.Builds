@@ -368,3 +368,59 @@ temporary workspace. External checkout/SDK actions and command doubles are
 labeled controls, covering their inputs and failure boundaries. They provide
 local behavioral evidence; the dependent job on `windows-latest` supplies the
 separate hosted Windows evidence.
+
+## Reusable release gates
+
+`.github/workflows/release.yml` is the incremental release entry point. Its
+caller grants the permission union `contents: write`, `actions: read` and
+`security-events: write`. The reusable workflow starts with `permissions: {}`
+and grants each job only its own permissions: resolve has exactly contents
+write/actions read; CodeQL has contents read/security-events write; the hook
+and reporter have contents read. Resolve executes trusted stdlib Python and
+anonymous Git object reads only. Both workflow and caller use `cache-mode:
+none`, and concurrency belongs to the top-level caller. The only optional
+secrets are `registry-pull-username` and `registry-pull-password`, passed to
+prepare in the hook job as `REGISTRY_PULL_USERNAME` and
+`REGISTRY_PULL_PASSWORD`.
+
+Resolve reads dispatch-commit configuration through `ci_config`, then freezes
+the release SHA once. A valid marked draft selects complete mode; otherwise
+the dispatch SHA selects create mode. The default qualifying CI is `ci.yml`;
+only the Builds repository may pass `ci-workflow: builds-ci.yml`. The exact
+switch `HEXALITH_RELEASE_PUBLISH_ENABLED=false` disables publishing while
+current-dispatch CodeQL and nightly preparation/hook still run. Invalid switch
+values and red exact-source CI fail without suppressing validated nightly
+settings. Complete mode selects the older draft's SHA and known version but
+never reads its old configuration or checks its CI again. Both nightly jobs
+always use the dispatch SHA.
+
+The final always-scheduled reporter writes only `outcome.json` in artifact
+`hexalith-release-outcome`, with overwrite enabled for reruns. Its closed v1
+schema is in `schemas/hexalith.release-outcome.v1.json`; runtime validation is
+stdlib and the shared test corpus also uses the independent draft-2020-12
+validator. Failed, cancelled, missing or unexpected job results dominate
+successful disabled/no-op decisions. Explicit successful no-version or
+stale-draft-deletion stages can later produce `nothing`. A validated successful
+draft may later hand publication and outcome ownership to the publisher; the
+reusable reporter then writes and uploads nothing. The publisher remains the
+sole writer for published, ready and publishing-failure outcomes.
+
+This story installs gates only. The all-green enabled path keeps string
+`publish=false` and fails with `release publication stages are not installed`
+until version/build/draft stages arrive. Production callers remain on their
+existing workflows. `delivered-sha` is the integration slot for story 5-1;
+its presence currently provides no drift protection. The test-only
+`module-root` is guarded to the Builds sample and excluded from the public
+module API. No publisher secret, OIDC or attestation permission is used.
+
+Focused behavioral controls (real disposable Git histories, local HTTP
+pagination/redirect/error endpoints and executed composite adapters) run with:
+
+```bash
+python3 -m unittest discover -s Github/lib/tests -p 'test_release_*.py' -v
+```
+
+[Story 3-2 verification results](../../docs/cicd-3-2-release-gates-results.md)
+record exact-source hosted observations separately from deterministic local
+controls, alongside dual-interpreter, workflow-lint, public-API and frozen-file
+checks.

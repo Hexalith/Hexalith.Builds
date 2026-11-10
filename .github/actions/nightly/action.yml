@@ -1,0 +1,8 @@
+name: Release gate probe nightly hook
+description: Temporary prepared-workspace and dispatch-source observation.
+runs:
+  using: composite
+  steps:
+    - name: Observe prepared sample and requested failure
+      shell: bash
+      run: python3 -I "$GITHUB_WORKSPACE/Tools/ci/probe_release_gates.py" --hook

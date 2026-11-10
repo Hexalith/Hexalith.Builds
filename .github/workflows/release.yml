@@ -1,0 +1,161 @@
+name: Shared release gates
+
+on:
+  workflow_call:
+    inputs:
+      delivered-sha:
+        description: Delivered-state commit for the story 5-1 drift check integration.
+        type: string
+        default: ''
+      ci-workflow:
+        description: Exact CI filename; only Builds may pass builds-ci.yml.
+        type: string
+        default: ci.yml
+      module-root:
+        description: Test-only Builds sample module root.
+        type: string
+        default: ''
+    secrets:
+      registry-pull-username:
+        description: Dedicated pull-only registry identity, required only with registry enabled.
+        required: false
+      registry-pull-password:
+        description: Password for the dedicated pull-only registry identity.
+        required: false
+    outputs:
+      sha:
+        description: Frozen release SHA, which may differ from the dispatch SHA in complete mode.
+        value: ${{ jobs.resolve.outputs.sha }}
+      mode:
+        description: Selected create or complete mode.
+        value: ${{ jobs.resolve.outputs.mode }}
+      publish:
+        description: String publication handoff flag; false until downstream stages are installed.
+        value: ${{ jobs.outcome.outputs.publish }}
+
+permissions: {}
+cache-mode: none
+
+jobs:
+  resolve:
+    name: Resolve release identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      mode: ${{ steps.resolve.outputs.mode }}
+      enabled: ${{ steps.resolve.outputs.enabled }}
+      codeql: ${{ steps.resolve.outputs.codeql }}
+      nightly-hook: ${{ steps.resolve.outputs.nightly-hook }}
+      config-valid: ${{ steps.resolve.outputs.config-valid }}
+      version: ${{ steps.resolve.outputs.version }}
+      draft-id: ${{ steps.resolve.outputs.draft-id }}
+      last-tag: ${{ steps.resolve.outputs.last-tag }}
+    steps:
+      - name: Read dispatch settings and freeze release source
+        id: resolve
+        uses: $/Github/release-resolve
+        with:
+          delivered-sha: ${{ inputs.delivered-sha }}
+          ci-workflow: ${{ inputs.ci-workflow }}
+          module-root: ${{ inputs.module-root }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SWITCH: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}
+
+  codeql:
+    name: Release CodeQL (${{ matrix.language }})
+    needs: resolve
+    if: always() && needs.resolve.outputs.config-valid == 'true' && needs.resolve.outputs.codeql != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # The fallback keeps intentional skips from evaluating an empty matrix.
+        language: ${{ fromJSON(needs.resolve.outputs.codeql || '["csharp"]') }}
+    steps:
+      - name: Checkout dispatch source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          submodules: false
+          persist-credentials: false
+
+      - name: Initialize release analysis
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze and wait for processing
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          category: hexalith-release/${{ matrix.language }}
+          wait-for-processing: true
+
+      - name: Check processed release security findings
+        uses: $/Github/release-security
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  nightly-hook:
+    name: Prepare and run nightly hook
+    needs: resolve
+    if: always() && needs.resolve.outputs.config-valid == 'true' && needs.resolve.outputs.nightly-hook == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Prepare dispatch source and Linux environment
+        uses: $/Github/prepare
+        with:
+          module-root: ${{ inputs.module-root }}
+        env:
+          REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}
+          REGISTRY_PULL_PASSWORD: ${{ secrets.registry-pull-password }}
+
+      - name: Run enabled nightly hook
+        uses: ./.github/actions/nightly
+
+  outcome:
+    name: Report release outcome
+    needs: [resolve, codeql, nightly-hook]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.decision.outputs.publish }}
+    steps:
+      - name: Decide outcome with failure precedence
+        id: decision
+        uses: $/Github/release-outcome
+        env:
+          RELEASE_DISPATCH_SHA: ${{ github.sha }}
+          RELEASE_SHA: ${{ needs.resolve.outputs.sha }}
+          RELEASE_MODE: ${{ needs.resolve.outputs.mode }}
+          RELEASE_VERSION: ${{ needs.resolve.outputs.version }}
+          RELEASE_ENABLED: ${{ needs.resolve.outputs.enabled }}
+          RELEASE_CODEQL: ${{ needs.resolve.outputs.codeql }}
+          RELEASE_NIGHTLY_HOOK: ${{ needs.resolve.outputs.nightly-hook }}
+          RELEASE_NEEDS: ${{ toJSON(needs) }}
+          RELEASE_PUBLISH: 'false'
+          RELEASE_OUTPUT_DIRECTORY: ${{ runner.temp }}/hexalith-release-outcome
+
+      - name: Upload the sole reusable outcome
+        if: always() && steps.decision.outputs.upload == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hexalith-release-outcome
+          path: ${{ steps.decision.outputs.path }}
+          overwrite: true
+          if-no-files-found: error

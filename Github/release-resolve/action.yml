@@ -1,0 +1,51 @@
+name: Resolve release state
+description: Read dispatch configuration and freeze marked-draft or event source using trusted stdlib only.
+inputs:
+  ci-workflow:
+    description: Exact CI filename; only Builds may use builds-ci.yml.
+    default: ci.yml
+  delivered-sha:
+    description: Delivered-state integration input; drift checking ships in story 5-1.
+    default: ''
+  module-root:
+    description: Test-only Builds sample module root.
+    default: ''
+outputs:
+  sha:
+    description: Frozen full release SHA.
+    value: ${{ steps.resolve.outputs.sha }}
+  mode:
+    description: create or complete.
+    value: ${{ steps.resolve.outputs.mode }}
+  enabled:
+    description: Strict publishing switch value.
+    value: ${{ steps.resolve.outputs.enabled }}
+  codeql:
+    description: Validated dispatch-SHA CodeQL language JSON array.
+    value: ${{ steps.resolve.outputs.codeql }}
+  nightly-hook:
+    description: Validated dispatch-SHA nightly hook flag.
+    value: ${{ steps.resolve.outputs.nightly-hook }}
+  config-valid:
+    description: Whether dispatch configuration was validated.
+    value: ${{ steps.resolve.outputs.config-valid }}
+  version:
+    description: Known stable version without v prefix.
+    value: ${{ steps.resolve.outputs.version }}
+  draft-id:
+    description: Known valid marked draft identity.
+    value: ${{ steps.resolve.outputs.draft-id }}
+  last-tag:
+    description: Highest reachable stable tag excluding the draft tag, or empty.
+    value: ${{ steps.resolve.outputs.last-tag }}
+runs:
+  using: composite
+  steps:
+    - name: Resolve trusted release state
+      id: resolve
+      shell: bash
+      env:
+        RELEASE_CI_WORKFLOW: ${{ inputs.ci-workflow }}
+        RELEASE_DELIVERED_SHA: ${{ inputs.delivered-sha }}
+        RELEASE_MODULE_ROOT: ${{ inputs.module-root }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_state.py"

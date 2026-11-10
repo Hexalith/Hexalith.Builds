@@ -1,0 +1,23 @@
+name: Release gates probe
+on:
+  workflow_dispatch:
+    inputs:
+      fail-nightly:
+        description: Intentionally fail the prepared nightly hook.
+        type: boolean
+        default: false
+permissions: {}
+cache-mode: none
+concurrency:
+  group: release-gates-probe
+  cancel-in-progress: false
+jobs:
+  release:
+    permissions:
+      contents: write
+      actions: read
+      security-events: write
+    uses: ./.github/workflows/release.yml
+    with:
+      ci-workflow: builds-ci.yml
+      module-root: Samples/Hexalith.Sample

@@ -1,0 +1,8 @@
+name: Check release security alerts
+description: Reject open high or critical findings in the most recent release CodeQL configuration.
+runs:
+  using: composite
+  steps:
+    - name: Check processed release CodeQL alerts
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_security.py"

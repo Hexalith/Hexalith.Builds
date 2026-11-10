@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.com/schemas/hexalith.release-outcome.v1.json",
+  "title": "Hexalith release outcome v1",
+  "description": "The sole machine-readable outcome of a release workflow run.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "sha", "outcome"],
+  "properties": {
+    "schema": { "const": "hexalith.release-outcome.v1" },
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}(?![\\s\\S])" },
+    "outcome": { "enum": ["published", "ready", "nothing", "disabled", "failed"] },
+    "version": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
+    },
+    "draftId": { "type": "integer", "minimum": 1 },
+    "lastTag": {
+      "type": "string",
+      "pattern": "^(?:v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*))?(?![\\s\\S])"
+    }
+  },
+  "allOf": [{
+    "if": { "properties": { "outcome": { "const": "ready" } }, "required": ["outcome"] },
+    "then": { "required": ["version", "draftId", "lastTag"] }
+  }]
+}

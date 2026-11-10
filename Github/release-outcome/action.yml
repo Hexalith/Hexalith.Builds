@@ -1,0 +1,22 @@
+name: Report release outcome
+description: Reduce all prerequisite results and write the non-publisher release outcome.
+outputs:
+  upload:
+    description: Whether the reusable reporter owns and must upload outcome.json.
+    value: ${{ steps.outcome.outputs.upload }}
+  publish:
+    description: Whether a validated successful draft handed outcome ownership to the publisher.
+    value: ${{ steps.outcome.outputs.publish }}
+  path:
+    description: Absolute path of the sole outcome.json, empty for publisher handoff.
+    value: ${{ steps.outcome.outputs.path }}
+  outcome:
+    description: The recorded outcome, empty for publisher handoff.
+    value: ${{ steps.outcome.outputs.outcome }}
+runs:
+  using: composite
+  steps:
+    - name: Decide and record release outcome
+      id: outcome
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_outcome.py"

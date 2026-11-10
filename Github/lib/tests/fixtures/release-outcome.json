@@ -1,0 +1,379 @@
+[
+  {
+    "name": "published",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "published"
+    }
+  },
+  {
+    "name": "published-known-version",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "published",
+      "version": "1.2.3"
+    }
+  },
+  {
+    "name": "nothing",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "nothing"
+    }
+  },
+  {
+    "name": "nothing-known-version",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "nothing",
+      "version": "1.2.3"
+    }
+  },
+  {
+    "name": "disabled",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "disabled"
+    }
+  },
+  {
+    "name": "disabled-known-version",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "disabled",
+      "version": "1.2.3"
+    }
+  },
+  {
+    "name": "failed",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "failed-known-version",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "version": "1.2.3"
+    }
+  },
+  {
+    "name": "ready-tag",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "ready",
+      "version": "2.0.0",
+      "draftId": 42,
+      "lastTag": "v1.8.0"
+    }
+  },
+  {
+    "name": "ready-bootstrap",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "ready",
+      "version": "1.0.0",
+      "draftId": 1,
+      "lastTag": ""
+    }
+  },
+  {
+    "name": "ready-numeric-integer",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "ready",
+      "version": "1.0.0",
+      "draftId": 1.0,
+      "lastTag": ""
+    }
+  },
+  {
+    "name": "unknown",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "extra": true
+    }
+  },
+  {
+    "name": "schema",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v2",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "sha-short",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "sha-uppercase",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "sha-newline",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n",
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "sha-not-string",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": true,
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "unknown-outcome",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "success"
+    }
+  },
+  {
+    "name": "version-tagged",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "version": "v1.2.3"
+    }
+  },
+  {
+    "name": "version-zero",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "version": "01.2.3"
+    }
+  },
+  {
+    "name": "version-pre",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "version": "1.2.3-rc.1"
+    }
+  },
+  {
+    "name": "version-newline",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "version": "1.2.3\n"
+    }
+  },
+  {
+    "name": "draft-zero",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "draftId": 0
+    }
+  },
+  {
+    "name": "draft-negative",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "draftId": -1
+    }
+  },
+  {
+    "name": "draft-fraction",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "draftId": 1.5
+    }
+  },
+  {
+    "name": "draft-bool",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "draftId": true
+    }
+  },
+  {
+    "name": "draft-string",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "draftId": "1"
+    }
+  },
+  {
+    "name": "tag-unprefixed",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "lastTag": "1.2.3"
+    }
+  },
+  {
+    "name": "tag-pre",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "lastTag": "v1.2.3-rc.1"
+    }
+  },
+  {
+    "name": "tag-newline",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "lastTag": "v1.2.3\n"
+    }
+  },
+  {
+    "name": "tag-null",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "lastTag": null
+    }
+  },
+  {
+    "name": "ready-missing-metadata",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "ready"
+    }
+  },
+  {
+    "name": "missing-schema",
+    "valid": false,
+    "document": {
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "missing-sha",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "outcome": "failed"
+    }
+  },
+  {
+    "name": "missing-outcome",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  {
+    "name": "ready-missing-version",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "ready",
+      "draftId": 1,
+      "lastTag": ""
+    }
+  },
+  {
+    "name": "ready-missing-draftId",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "ready",
+      "version": "1.0.0",
+      "lastTag": ""
+    }
+  },
+  {
+    "name": "ready-missing-lastTag",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.release-outcome.v1",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "ready",
+      "version": "1.0.0",
+      "draftId": 1
+    }
+  },
+  {
+    "name": "not-object",
+    "valid": false,
+    "document": []
+  }
+]
