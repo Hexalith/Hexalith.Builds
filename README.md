@@ -726,7 +726,14 @@ reconnect preserves the original executor rather than hashing itself.
 Owner termination separately reports native child work (`native:<run-id>`), environment work
 (`environment:<run-id>`) and issued access (`access:<run-id>`). Unissued work/access is
 `not-applicable`; retained environment services and issued access stay `pending`. Observed native
-exit or bounded stopping can report a terminated child while its environment remains pending.
+exit plus verified absence of native descendants can report terminated work while its environment remains pending.
+Each selected native entry adds a private inherited execution tag, so bounded descendant stopping excludes
+retained environment services and other entries. Selected dotnet children disable reusable MSBuild
+and compiler workers to keep those workers inside their issuing execution. Discovery uncertainty
+reports failed native termination and known unresolved process identities within the original stopping
+allowance. Discovery proves absence of processes retaining the ownership tag; a child that removes
+ownership tags escapes the existing tag-based cleanup boundary and supplies no process-containment proof.
+Repeated publication preserves the observation time of each unchanged status.
 Verified exact cleanup/deletion advances environment and access to `terminated`; failed or
 unverifiable cleanup reports `failed` with classified diagnostics and known leftovers. A passing
 test alone proves neither environment deletion nor access revocation. Recovery preserves the

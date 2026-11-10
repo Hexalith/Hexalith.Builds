@@ -20,8 +20,10 @@ internal static class CompositionProcessEnvironmentReader
     /// <summary>Discovers owned processes with bounded environment reads and explicit observation uncertainty.</summary>
     /// <param name="runId">The exact runner-issued owner tag.</param>
     /// <param name="cancellationToken">The existing scan allowance.</param>
+    /// <param name="environmentVariable">The exact ownership environment entry being observed.</param>
+    /// <param name="preexistingProcessStarts">The private execution's original process identities, absent for owner-wide discovery.</param>
     /// <returns>Verified matching processes and whether discovery was complete.</returns>
-    internal static (IReadOnlyList<int> ProcessIds, bool Verified) Find(string runId, CancellationToken cancellationToken)
+    internal static (IReadOnlyList<int> ProcessIds, bool Verified) Find(string runId, CancellationToken cancellationToken, string environmentVariable = CompositionEnvironment.RunId, Dictionary<int, long>? preexistingProcessStarts = null)
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
         {
@@ -30,14 +32,18 @@ internal static class CompositionProcessEnvironmentReader
 
         bool verified = true;
         List<int> matches = [];
-        string expected = CompositionEnvironment.RunId + "=" + runId;
+        string expected = environmentVariable + "=" + runId;
         HashSet<int> foreignWindowsProcesses = OperatingSystem.IsWindows() ? ForeignWindowsProcesses() : [];
         Process[] processes = Process.GetProcesses();
         try
         {
             foreach (int processId in processes.Select(process => process.Id))
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return ([.. matches.Order()], false);
+                }
+
                 if (processId == Environment.ProcessId || processId <= 4)
                 {
                     continue;
@@ -45,6 +51,11 @@ internal static class CompositionProcessEnvironmentReader
 
                 try
                 {
+                    if (preexistingProcessStarts is not null && CompositionRunResourceScanner.WasRunningBefore(processId, preexistingProcessStarts))
+                    {
+                        continue;
+                    }
+
                     byte[]? environment = null;
                     if (OperatingSystem.IsWindows())
                     {

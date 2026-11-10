@@ -22,6 +22,44 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class LocalRunLifecycleTests
 {
+    /// <summary>Native result replay preserves complete environment/access observations before and after cleanup.</summary>
+    /// <returns>The stable full termination snapshots and immutable first-outcome assertions.</returns>
+    [Fact]
+    public async Task ReviewNativeReplayPreservesFullTerminationObservationTimesAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        state = state with { Status = CompositionRunStatus.Ready, EnvironmentWorkIssued = true, ExecutingTool = ExecutingToolIdentity.Capture() };
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        DateTimeOffset observedAt = DateTimeOffset.UtcNow.AddSeconds(-1);
+        NativeTestExecutionResult native = new(Failure("HXT007"), null, null)
+        {
+            Launched = true,
+            StopObserved = true,
+            ProcessIds = [12345],
+            ObservedAtUtc = observedAt,
+            CredentialExpiresAtUtc = observedAt.AddMinutes(1),
+        };
+        native = native with { OwnerTermination = CompositionOwnerTermination.ObserveNative(state.RunId, null, native) };
+        ModuleTestRunRecord first = (await engine.RecordTestOutcomeAsync(state.RunId, [], native.Result, "retained", new([], [], true), TestContext.Current.CancellationToken, native).ConfigureAwait(true)).ShouldNotBeNull();
+        CompositionOwnerTermination original = first.Termination.ShouldNotBeNull();
+        original.OwnedWork.Single(item => item.Id == "environment:" + state.RunId).Status.ShouldBe("pending");
+        original.EnvironmentAccess.Single().Status.ShouldBe("pending");
+        ModuleTestRunRecord repeated = (await engine.RecordTestOutcomeAsync(state.RunId, [], native.Result, "retained", new([], [], true), TestContext.Current.CancellationToken, native).ConfigureAwait(true)).ShouldNotBeNull();
+        CompositionDocumentStore.Serialize(repeated.Termination).ShouldBe(CompositionDocumentStore.Serialize(original));
+        string attemptId = CompositionRunPlanFactory.NewRunId();
+        ModuleTestRunRecord cleaned = (await engine.RecordTestOutcomeAsync(state.RunId, [], native.Result, "removed", new([], []), TestContext.Current.CancellationToken, cleanupDisposition: "complete", cleanupAttemptId: attemptId).ConfigureAwait(true)).ShouldNotBeNull();
+        CompositionOwnerTermination complete = cleaned.Termination.ShouldNotBeNull();
+        complete.OwnedWork.ShouldAllBe(item => item.Status == "terminated");
+        complete.EnvironmentAccess.Single().Status.ShouldBe("terminated");
+        ModuleTestRunRecord replayed = (await engine.RecordTestOutcomeAsync(state.RunId, [], native.Result, "removed", new([], []), TestContext.Current.CancellationToken, native, cleanupDisposition: "complete", cleanupAttemptId: attemptId).ConfigureAwait(true)).ShouldNotBeNull();
+        CompositionDocumentStore.Serialize(replayed.Termination).ShouldBe(CompositionDocumentStore.Serialize(complete));
+        AssertFirstOutcomeUnchanged(replayed, first);
+        string path = Path.Combine(engine.StateStore.Directory, "diagnostics", state.RunId, "test-result.json");
+        TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
     /// <summary>A legacy ready owner without any native history never claims definite nonissuance during recovery.</summary>
     /// <param name="legacyReady">Whether readiness was recorded before the original runner vanished.</param>
     /// <returns>The unknown-versus-known-unissued observations and verified cleanup assertions.</returns>
@@ -182,9 +220,15 @@ public sealed class LocalRunLifecycleTests
         DateTimeOffset requested = DateTimeOffset.UtcNow.AddSeconds(-10);
         owner = owner with { CreatedAt = requested, StartupDeadlineUtc = requested.AddSeconds(600), ExecutingTool = original, EnvironmentWorkIssued = true };
         CompositionWorkspace.CreatePrivateDirectory(owner.Workspace);
+        DateTimeOffset? beforeMarker = null;
         CompositionEngine cleaner = new(LocalRunLifecycleFixture.Options(workspace.Root, selected) with
         {
             ExecutingToolCaptureOverride = () => throw new InvalidOperationException("A cleaner must never capture a replacement executor."),
+            BeforeCleanupRequestWriteOverride = async token =>
+            {
+                beforeMarker = DateTimeOffset.UtcNow;
+                await Task.Delay(300, token).ConfigureAwait(false);
+            },
         });
         await cleaner.StateStore.WriteAsync(owner, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionDownResult down = await cleaner.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -193,6 +237,7 @@ public sealed class LocalRunLifecycleTests
         CompositionRunState frozen = (await CompositionDocumentStore.ReadIfExistsAsync<CompositionRunState>(Path.Combine(directory, "owner.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         frozen.StartupInterruptionObserved.ShouldBeTrue();
         frozen.StartupDurationSeconds.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(10);
+        frozen.StartupDurationSeconds.Value.ShouldBeLessThanOrEqualTo((beforeMarker.ShouldNotBeNull() - requested).TotalSeconds);
         JsonElement first = TestEnvironmentContractReader.ReadResult(Path.Combine(directory, "test-result.json"), TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
         first.GetProperty("bindings").GetProperty("tool").GetProperty("contentIdentity").GetString().ShouldBe(original.ContentIdentity);
         first.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup").GetProperty("actualDurationSeconds").GetDouble().ShouldBe(frozen.StartupDurationSeconds.Value);

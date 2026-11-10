@@ -810,7 +810,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 TerminalCause = terminalCause,
             };
 
-            record = record with { Termination = native?.OwnerTermination ?? record.Termination ?? nativeObservation };
+            record = record with { Termination = record.Termination ?? nativeObservation };
 
             // Explicit cleanup is monotonic. Publish both completion records before removing discoverable tracking.
             bool completing = cleanupDisposition == "complete";
@@ -1475,6 +1475,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     {
         List<ToolDiagnostic> bookkeeping = recordingFailed ? [RecordingFailure()] : [];
         CompositionRunState? state = await ReadOwnedStateAsync(runId, bound).ConfigureAwait(false);
+        DateTimeOffset interruptionObservedAt = DateTimeOffset.UtcNow;
         if (state is not null && (state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId))
         {
             ToolDiagnostic invalid = Diagnostic("HXR024", ToolPhase.Usage, ToolFailureCategory.Usage, "Recorded ownership does not match the requested run.", "runId", null);
@@ -1497,6 +1498,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             // This marker survives state/workspace deletion and prevents late callbacks restoring retention.
             try
             {
+                if (_options.BeforeCleanupRequestWriteOverride is { } beforeWrite)
+                {
+                    await beforeWrite(bound).ConfigureAwait(false);
+                }
+
                 await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "cleanup-request.json"), new { runId, attemptId }, bound).ConfigureAwait(false);
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
@@ -1511,7 +1517,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         if (state is { Status: CompositionRunStatus.Starting, StartupDurationSeconds: null, CreatedAt: not null })
         {
-            await FreezeStartupAsync(runId, DateTimeOffset.UtcNow, true, bound).ConfigureAwait(false);
+            await FreezeStartupAsync(runId, interruptionObservedAt, true, bound).ConfigureAwait(false);
             state = await ReadOwnedStateAsync(runId, bound).ConfigureAwait(false) ?? state;
         }
 

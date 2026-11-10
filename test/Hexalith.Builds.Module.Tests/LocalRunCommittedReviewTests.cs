@@ -393,8 +393,11 @@ public sealed class LocalRunCommittedReviewTests
         workspace.Change("modules.0.tests.0.executionTimeoutSeconds", "15");
         string gate = Path.Combine(workspace.Root, "release-child");
         string started = Path.Combine(workspace.Root, "child-started");
-        string script = "import os, pathlib, time\n" +
-            "pathlib.Path(" + JsonSerializer.Serialize(started) + ").write_text('started')\n" +
+        string script = "import json, os, pathlib, time\n" +
+            "started = pathlib.Path(" + JsonSerializer.Serialize(started) + ")\n" +
+            "temporary = started.with_suffix('.tmp')\n" +
+            "temporary.write_text(json.dumps({'pid': os.getpid(), 'expiry': os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']}))\n" +
+            "temporary.replace(started)\n" +
             "while not pathlib.Path(" + JsonSerializer.Serialize(gate) + ").exists(): time.sleep(0.01)\n" +
             "pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>')\n";
         await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), script, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -420,7 +423,26 @@ public sealed class LocalRunCommittedReviewTests
             }
 
             File.Exists(started).ShouldBeTrue();
+            string ledgerPath = Path.Combine(store.Directory, "diagnostics", plan.RunId, "native-termination.json");
+            CompositionOwnerTermination? launch = null;
+            while (!execution.IsCompleted)
+            {
+                launch = await CompositionDocumentStore.ReadIfExistsAsync<CompositionOwnerTermination>(ledgerPath, wait.Token).ConfigureAwait(true);
+                if (launch?.NativeProcessIds.Count > 0)
+                {
+                    break;
+                }
+
+                await Task.Delay(20, wait.Token).ConfigureAwait(true);
+            }
+
             execution.IsCompleted.ShouldBeFalse();
+            using JsonDocument startedObservation = JsonDocument.Parse(await File.ReadAllTextAsync(started, wait.Token).ConfigureAwait(true));
+            launch.ShouldNotBeNull().NativeProcessIds.ShouldBe([startedObservation.RootElement.GetProperty("pid").GetInt32()]);
+            launch.OwnedWork.Single().Status.ShouldBe("pending");
+            launch.EnvironmentAccess.Single().Status.ShouldBe("pending");
+            launch.CredentialExpiresAtUtc.ShouldBe(startedObservation.RootElement.GetProperty("expiry").GetDateTimeOffset());
+            launch.CredentialExpiresAtUtc.ShouldNotBeNull().ShouldBeGreaterThan(DateTimeOffset.UtcNow);
             ToolCommandResult listed = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
             listed.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
             DateTimeOffset deadline = listed.Environments.ShouldNotBeNull().Single().ExecutionDeadlineUtc.ShouldNotBeNull();
