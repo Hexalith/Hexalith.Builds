@@ -236,7 +236,8 @@ def skopeo_copy(archive: Path, work: Path, username: str, password: str) -> None
     base = ["docker", "run", "--rm", "--volume", f"{work}:/spike:ro", image]
     try:
         version = subprocess.check_output([*base, "--version"], text=True).strip()
-        if version != "skopeo version " + tool["version"]:
+        expected = f"skopeo version {tool["version"]} commit: {tool["source_commit"]}"
+        if version != expected:
             raise SpikeError("Skopeo distribution version mismatch")
         command = [*base, "copy", "--all", "--preserve-digests", "--authfile", "/spike/auth.json",
                    "oci-archive:/spike/" + str(archive.relative_to(work)),
@@ -268,7 +269,8 @@ def main() -> int:
             graph = inspect_archive(archive, revision=os.environ["SOURCE_REVISION"])
             result = publish_archive(archive, graph, registry,
                                      lambda: skopeo_copy(archive, work, username, password))
-            result.update(artifact_id=artifact_id, producing_run_id=run_id,
+            result.update(tool=json.loads((ROOT / "Tools/spikes/publish-tools.json").read_text())["skopeo"],
+                          artifact_id=artifact_id, producing_run_id=run_id,
                           artifact_digest=metadata["digest"], source_revision=os.environ["SOURCE_REVISION"],
                           action_path=os.environ.get("GITHUB_ACTION_PATH"),
                           caller_revision=os.environ["GITHUB_SHA"], run_id=os.environ["GITHUB_RUN_ID"],

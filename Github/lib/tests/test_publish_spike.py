@@ -160,14 +160,16 @@ class PublishSpikeTests(unittest.TestCase):
     def test_skopeo_command_executes_pinned_distribution_and_removes_authfile(self):
         docker = self.root / "docker"
         docker.write_text("#!/usr/bin/env python3\nimport json,os,sys\nfrom pathlib import Path\n"
-                          "if sys.argv[-1]=='--version': print('skopeo version 1.22.3')\n"
+                          "if sys.argv[-1]=='--version': print(os.environ['TOOL_VERSION'])\n"
                           "else: Path(os.environ['COMMAND_LOG']).write_text(json.dumps(sys.argv[1:]))\n")
         docker.chmod(0o755)
         archive = self.root / "fixture.tar"
         archive.write_bytes(self.archive.read_bytes())
         log = self.root / "command.json"
+        tool = json.loads((spike.ROOT / "Tools/spikes/publish-tools.json").read_text())["skopeo"]
+        expected = f"skopeo version {tool["version"]} commit: {tool["source_commit"]}"
         with patch.dict(os.environ, {"PATH": str(self.root) + os.pathsep + os.environ["PATH"],
-                                    "COMMAND_LOG": str(log)}):
+                                    "COMMAND_LOG": str(log), "TOOL_VERSION": expected}):
             spike.skopeo_copy(archive, self.root, "scoped-user", "synthetic-password")
         command = json.loads(log.read_text())
         self.assertIn("--all", command)
@@ -175,6 +177,20 @@ class PublishSpikeTests(unittest.TestCase):
         tool = json.loads((spike.ROOT / "Tools/spikes/publish-tools.json").read_text())["skopeo"]
         self.assertIn(tool["distribution"] + "@" + tool["digest"], command)
         self.assertNotIn("synthetic-password", log.read_text())
+        self.assertFalse((self.root / "auth.json").exists())
+
+
+    def test_wrong_skopeo_version_prevents_copy_and_removes_authfile(self):
+        docker = self.root / "docker"
+        marker = self.root / "unexpected-copy"
+        docker.write_text("#!/usr/bin/env python3\nimport sys\nfrom pathlib import Path\n"
+                          "if sys.argv[-1]=='--version': print('skopeo version 1.22.2')\n"
+                          f"else: Path({str(marker)!r}).touch()\n")
+        docker.chmod(0o755)
+        with patch.dict(os.environ, {"PATH": str(self.root) + os.pathsep + os.environ["PATH"]}):
+            with self.assertRaisesRegex(spike.SpikeError, "version mismatch"):
+                spike.skopeo_copy(self.archive, self.root, "scoped-user", "synthetic-password")
+        self.assertFalse(marker.exists())
         self.assertFalse((self.root / "auth.json").exists())
 
 
