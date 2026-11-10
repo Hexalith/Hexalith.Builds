@@ -569,6 +569,67 @@ when that lock later stalls. Sessions whose owners cannot accept attachments (Ru
 Debug, profile and environment-only) stop their AppHost before any cleanup lock or
 bookkeeping, killing it without waiting once the stopping budget is exhausted, so no
 cleanup exit leaves it running. Each command reports each withdrawn run id once.
+
+#### Runner-owned attached suites
+
+```sh
+hexalith-module test --manifest <same-v2-manifest> --profile <declared-suite> --mode source --attach-to <owner-run-id> [--hold-seconds 300] [--attachment-request-id <issued-id>] --output json
+```
+
+`test --attach-to` runs one declared suite from the owner's own manifest as a runner-owned
+attached run of a *live* owner `test` command. It admits a hold under the same admission,
+hold limits, lineage and retry rules as `attach`, records an execution request with the hold,
+and the owner command picks it up under the attachment lock. The owner re-selects the suite
+from its manifest, refuses incompatible or gate-requiring suites, creates
+`<owner-workspace>/attachments/<attachedRunId>/` and writes there a private descriptor with
+`role: attached`, a private endpoint credential channel bound to the attached run, its report
+paths and its plan/readiness snapshots. The owner mints the bearer from its in-memory key,
+narrowed to subject `g4-attached-tests:<attachedRunId>` with
+`exp = min(execution deadline, expiresAt)`, hands it only to the child, and tags the child with
+the attached run identity. No AppHost change is involved and the key is never persisted.
+Attached runs are always `baseline-only` diagnostics and never inherit an owner's candidate
+decision, gate or paths.
+
+The child stops at the earliest of the runner's UTC `expiresAt` (even mid-execution; a later
+passing report stays `withdrawn`/`hold-expired`), environment withdrawal (`owner-cancelled`,
+`developer-stop`, `ci-job-completed`, `ci-job-cancelled`), or the attached command's own
+cancellation (Ctrl+C records `cancelled`; the owner and other attachments keep running). Execution
+deadlines and retries never extend the hold. Owner cancellation, explicit `down` and CI job end
+keep the existing order: owner state, durable withdrawal, then the owner drains its supervisor
+(stop the child, end its access, record termination) before any owner resource stops. A `down`
+from another terminal waits up to half the stop budget for the live owner to finish that drain,
+then kills processes still tagged with the attached run and records them itself (`HXI013`, or
+`HXR038` with leftovers, which keeps owner cleanup incomplete and retryable).
+
+Access counts as ended once the process tree is killed, a run-tag scan finds no surviving
+process tagged with the attached run, and the attachment's credential and descriptor files are
+deleted; its termination diagnostic states `bearer valid until <exp>; no holder`. There is no
+service-side revocation. A surviving process or undeletable file records the item as `failed`
+with its identities in `leftoverWorkIds`; it never changes the first outcome, extends the hold or
+grants evidence. The attached result is published at
+`<state-directory>/diagnostics/<attachedRunId>/test-result.json`, reader-valid with
+`role: attached`, the run's own hold end, matching cause and populated `termination`; the
+command relays its outcome and exit code (`0` passed, the failing exit for `failed`, `130` for
+`cancelled` and `withdrawn`). A local attached failure retains the environment (`HXI012`); CI
+never retains.
+
+The live owner renews a lease in its diagnostics directory while it hosts attached suites and
+closes it under the attachment lock before it stops hosting. Without a live owner (for example a
+failed local owner command that has exited) attached-suite execution is refused before
+admission with `HXR033` reason `owner-not-live`, while hold-only `attach` still works. A failed
+local owner command stays open until its runner-owned attached runs end. A request the owner
+never picks up is recorded as `failed` (`startup-failure`) with not-applicable termination. A
+retry presenting the lineage reconnects to the same run without launching a second child and
+keeps the first acceptance and expiry; ended or expired lineages refuse with `HXR036`. Hold-only
+`attach`/`attach --end` is unchanged; its ended holds record `not-applicable` termination items,
+and `attach --end` refuses a runner-owned attached suite (`HXR036` `runner-owned-attachment`).
+`--attach-to` with `--filter`, `--evidence`, `--candidate-request`, `--with-owner` or
+`--ci-owner-receipt`, more than one `--profile`, or a suite needing an owner's retention gate or
+access observation (a declared `daprRuntimeVersion`, Memories `functional-retention`) refuses
+with `HXC002`; `--hold-seconds` or `--attachment-request-id` without `--attach-to` is a usage
+error. Limits of this revision: the executing tool and startup duration stay unpopulated, the
+Parties caller is not adopted, owners requiring routing-catalog observations fail an attached
+run as `startup-failure`, and no tool acceptance, qualification or pin is implied.
 CI package integration additionally supports `test --ci-owner-receipt <external-file>`.
 The tool publishes exact ownership before allocation and refuses an unwritable receipt.
 The workflow-owned helper checks the receipt's repository/run/attempt/job bindings,

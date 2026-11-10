@@ -90,9 +90,17 @@ public static class CompositionAttachAdmission
             return ownerState;
         }
 
+        if (request.Execution is not null && !AttachedSuiteSupervisorLease.IsLive(directory, request.OwnerRunId, now))
+        {
+            return NotLive();
+        }
+
         if (request.PresentedRequestId is { } presented)
         {
-            return Retry(existing.FirstOrDefault(item => item.OriginalAttachmentRequestId == presented || item.AttachedRunId == presented), now);
+            ToolCommandResult retried = Retry(existing.FirstOrDefault(item => item.OriginalAttachmentRequestId == presented || item.AttachedRunId == presented), now);
+            return request.Execution is null || retried.Attachment is not { Execution: null } lineage
+                ? retried
+                : await RecordExecutionAsync(directory, request, lineage, now, cancellationToken).ConfigureAwait(false);
         }
 
         if (request.EnvironmentId is not null && request.EnvironmentId != owner.EnvironmentId)
@@ -121,6 +129,12 @@ public static class CompositionAttachAdmission
                         return (finished, null);
                     }
 
+                    // The live owner closes its supervisor under this same lock, so a request recorded here is always picked up or seen.
+                    if (request.Execution is not null && !AttachedSuiteSupervisorLease.IsLive(directory, request.OwnerRunId, now))
+                    {
+                        return (NotLive(), null);
+                    }
+
                     CompositionAttachment created = new(
                         CompositionRunPlanFactory.NewRunId(),
                         owner.EnvironmentId,
@@ -129,7 +143,10 @@ public static class CompositionAttachAdmission
                         requestedHold,
                         now,
                         effectiveHold,
-                        now.AddSeconds(effectiveHold));
+                        now.AddSeconds(effectiveHold))
+                    {
+                        Execution = request.Execution,
+                    };
                     return (Accepted(created, retry: false), [.. current, created]);
                 },
                 cancellationToken).ConfigureAwait(false);
@@ -195,10 +212,20 @@ public static class CompositionAttachAdmission
                         return (target, null);
                     }
 
-                    CompositionAttachment updated = target with { EndedAtUtc = EndTime(target, now), EndReason = now >= target.ExpiresAtUtc ? "expired" : "terminal-outcome", Outcome = now >= target.ExpiresAtUtc ? "withdrawn" : outcome };
+                    if (target.Execution is not null)
+                    {
+                        return (target, null);
+                    }
+
+                    CompositionAttachment updated = target.Ended(EndTime(target, now), now >= target.ExpiresAtUtc ? "expired" : "terminal-outcome", now >= target.ExpiresAtUtc ? "withdrawn" : outcome, now);
                     return (updated, [.. current.Select(item => ReferenceEquals(item, target) ? updated : item)]);
                 },
                 cancellationToken).ConfigureAwait(false);
+            if (ended is { Execution: not null, EndedAtUtc: null })
+            {
+                return Refuse("HXR036", "runner-owned-attachment", "A runner-owned attached suite ends through its own test command, its hold expiry or owner withdrawal.");
+            }
+
             return ended is null
                 ? Refuse("HXR036", "unknown-attachment", "No attachment with this identity was issued for the environment.")
                 : new ToolCommandResult("ended", ToolOutcome.Passed(), []) { Attachment = ended };
@@ -208,6 +235,41 @@ public static class CompositionAttachAdmission
             return Refuse("HXR033", "attachment-unrecordable", "The attachment end could not be durably recorded.");
         }
     }
+
+    private static async Task<ToolCommandResult> RecordExecutionAsync(string directory, CompositionAttachRequest request, CompositionAttachment lineage, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await CompositionAttachmentStore.UpdateAsync<ToolCommandResult>(
+                directory,
+                request.OwnerRunId,
+                current =>
+                {
+                    CompositionAttachment? latest = current.FirstOrDefault(item => item.AttachedRunId == lineage.AttachedRunId);
+                    ToolCommandResult retried = Retry(latest, now);
+                    if (retried.Attachment is not { } live || live.Execution is not null)
+                    {
+                        // A reconnect to an existing attached suite keeps its execution and never starts another child.
+                        return (retried, null);
+                    }
+
+                    if (!AttachedSuiteSupervisorLease.IsLive(directory, request.OwnerRunId, now))
+                    {
+                        return (NotLive(), null);
+                    }
+
+                    CompositionAttachment updated = live with { Execution = request.Execution };
+                    return (Accepted(updated, retry: true), [.. current.Select(item => ReferenceEquals(item, latest) ? updated : item)]);
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
+        {
+            return Refuse("HXR033", "attachment-unrecordable", "The attached suite request could not be durably recorded; nothing was attached.");
+        }
+    }
+
+    private static ToolCommandResult NotLive() => Refuse("HXR033", "owner-not-live", "No live owner command hosts attached suites for this environment; hold-only attach remains available.");
 
     private static DateTimeOffset EndTime(CompositionAttachment target, DateTimeOffset now)
     {

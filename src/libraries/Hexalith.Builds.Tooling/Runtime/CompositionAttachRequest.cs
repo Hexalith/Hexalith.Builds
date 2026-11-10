@@ -30,4 +30,7 @@ public sealed record CompositionAttachRequest(string OwnerRunId, string Mode, st
 
     /// <summary>Gets the attaching process's execution context; null reads the actual process environment.</summary>
     public JsonElement? AttacherContext { get; init; }
+
+    /// <summary>Gets the declared suite the live owner must run under the hold, or null for a hold-only attachment.</summary>
+    public CompositionAttachedExecution? Execution { get; init; }
 }

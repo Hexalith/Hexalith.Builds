@@ -37,7 +37,6 @@ public sealed class ModuleTestSelectionTests
     [InlineData("dependency")]
     [InlineData("secret")]
     [InlineData("filter")]
-    [InlineData("attachment")]
     public async Task InvalidSelectionNeverStartsAsync(string scenario)
     {
         using PlatformManifestTestWorkspace workspace = new();
@@ -51,7 +50,7 @@ public sealed class ModuleTestSelectionTests
             case "mode": workspace.Change("modules.0.tests.0.mode", "\"package\""); break;
             case "dependency": workspace.Change("modules.0.tests.0.entry", "\"references/dep/runner.py\""); break;
             case "secret": workspace.Change("modules.0.tests.0.password", "\"do-not-retain\""); break;
-            default: scenario.ShouldBeOneOf("missing", "unknown", "filter", "attachment"); break;
+            default: scenario.ShouldBeOneOf("missing", "unknown", "filter"); break;
         }
 
         int starts = 0;
@@ -65,9 +64,49 @@ public sealed class ModuleTestSelectionTests
         };
         StringWriter writer = new();
         await using ConfiguredAsyncDisposable writerLifetime = writer.ConfigureAwait(true);
-        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), scenario switch { "missing" => null, "unknown" => "absent", _ => "verify" }, scenario == "filter" ? "anything" : null, null, ToolOutputFormat.Json, writer, TestContext.Current.CancellationToken, "child.dll", runId: scenario == "attachment" ? CompositionTestFiles.RunId : null, compositionOptions: options).ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), scenario switch { "missing" => null, "unknown" => "absent", _ => "verify" }, scenario == "filter" ? "anything" : null, null, ToolOutputFormat.Json, writer, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options).ConfigureAwait(true);
         exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
         starts.ShouldBe(0);
+    }
+
+    /// <summary>A declared suite naming an owner run is an attached run of that owner, not a blanket refusal; an unknown owner admits nothing and starts nothing.</summary>
+    /// <param name="filtered">Whether the request also carries an unsupported filter.</param>
+    /// <returns>The attacher-path refusal assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AttachmentRunsAsAttachedSuiteInsteadOfRefusingAsync(bool filtered)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        Declare(workspace);
+        int starts = 0;
+        CompositionEngineOptions options = Options(workspace.Root) with
+        {
+            PlatformStartOverride = (_, _) =>
+            {
+                starts++;
+                throw new InvalidOperationException("An attached run never starts an environment of its own.");
+            },
+        };
+        StringWriter writer = new();
+        await using ConfiguredAsyncDisposable writerLifetime = writer.ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), "verify", filtered ? "anything" : null, null, ToolOutputFormat.Json, writer, TestContext.Current.CancellationToken, "child.dll", runId: CompositionTestFiles.RunId, compositionOptions: options).ConfigureAwait(true);
+        starts.ShouldBe(0);
+        writer.ToString().ShouldNotContain("attachment is unsupported");
+        using JsonDocument output = JsonDocument.Parse(writer.ToString());
+        JsonElement diagnostic = output.RootElement.GetProperty("diagnostics")[0];
+        if (filtered)
+        {
+            exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
+            diagnostic.GetProperty("ruleId").GetString().ShouldBe("HXC002");
+        }
+        else
+        {
+            exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle);
+            diagnostic.GetProperty("ruleId").GetString().ShouldBe("HXR033");
+            diagnostic.GetProperty("field").GetString().ShouldBe("owner-unknown");
+            File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId))).ShouldBeFalse();
+        }
     }
 
     /// <summary>Runs the fixed Python executor and checks the complete command/evidence lifecycle.</summary>

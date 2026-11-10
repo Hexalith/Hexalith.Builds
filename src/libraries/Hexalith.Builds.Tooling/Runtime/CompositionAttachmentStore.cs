@@ -111,7 +111,7 @@ public static class CompositionAttachmentStore
                     CompositionAttachment ended = item.ObservedAt(now);
                     if (ended.EndedAtUtc is null)
                     {
-                        ended = item with { EndedAtUtc = now < item.AcceptedAtUtc ? item.AcceptedAtUtc : now, EndReason = reason, Outcome = "withdrawn" };
+                        ended = item.Ended(now < item.AcceptedAtUtc ? item.AcceptedAtUtc : now, reason, "withdrawn", now);
                     }
 
                     withdrawn.Add(ended);
@@ -147,6 +147,35 @@ public static class CompositionAttachmentStore
             TimeSpan pause = untilNextExpiry < pollInterval ? untilNextExpiry : pollInterval;
             await Task.Delay(pause > TimeSpan.Zero ? pause : TimeSpan.FromMilliseconds(1), cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>Applies one serialized change to a single attachment, leaving every other attachment untouched.</summary>
+    /// <param name="diagnosticsDirectory">The owner's durable diagnostics directory.</param>
+    /// <param name="ownerRunId">The owner identity.</param>
+    /// <param name="attachedRunId">The attached run.</param>
+    /// <param name="change">Receives the current record and returns its replacement, or the same instance for no write.</param>
+    /// <param name="cancellationToken">The allowance.</param>
+    /// <returns>The resulting record, or null when the attachment is unknown.</returns>
+    internal static Task<CompositionAttachment?> UpdateOneAsync(string diagnosticsDirectory, string ownerRunId, string attachedRunId, Func<CompositionAttachment, CompositionAttachment> change, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        return UpdateWithReportAsync<CompositionAttachment?>(
+            diagnosticsDirectory,
+            ownerRunId,
+            current =>
+            {
+                CompositionAttachment? target = current.FirstOrDefault(item => item.AttachedRunId == attachedRunId);
+                if (target is null)
+                {
+                    return (null, null);
+                }
+
+                CompositionAttachment updated = change(target);
+                return ReferenceEquals(updated, target)
+                    ? (target, null)
+                    : (updated, [.. current.Select(item => ReferenceEquals(item, target) ? updated : item)]);
+            },
+            cancellationToken);
     }
 
     /// <summary>Builds the withdrawal report before any environment teardown.</summary>

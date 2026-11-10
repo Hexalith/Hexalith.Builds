@@ -65,6 +65,7 @@ public static class ModuleCommandExecutionService
     /// <param name="mode">The tool-selected build mode.</param>
     /// <param name="profiles">Optional ordered batch profile names from the same manifest.</param>
     /// <param name="candidateRequestPath">Optional GitHub-authenticated candidate request envelope.</param>
+    /// <param name="attachedSuite">Hold options when <paramref name="runId"/> names the owner a declared suite attaches to.</param>
     /// <returns>The stable process exit code.</returns>
     public static async Task<int> ExecuteAsync(
         ModuleInvocationCommand command,
@@ -80,7 +81,8 @@ public static class ModuleCommandExecutionService
         CompositionEngineOptions? compositionOptions = null,
         WorkspaceMode mode = WorkspaceMode.Source,
         IReadOnlyList<string>? profiles = null,
-        string? candidateRequestPath = null)
+        string? candidateRequestPath = null,
+        AttachedSuiteRequest? attachedSuite = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(writer);
@@ -144,7 +146,14 @@ public static class ModuleCommandExecutionService
             // A direct reference may contain a stale or absent working-tree manifest.
             // Resolve its recorded gitlink before parsing any of its bytes.
             SourceMapping? preResolvedMapping = null;
-            if (command != ModuleInvocationCommand.Down && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath))
+            if (command == ModuleInvocationCommand.Test && runId is not null && !PlatformManifestCommand.IsV2(manifestPath))
+            {
+                ToolCommandResult unsupported = PlatformRefusal("HXC002", "Attached suites require a declared suite from a v2 manifest.", ToolExitCode.UsageOrManifest);
+                return await WriteResultAsync(unsupported.Status, unsupported.Outcome, unsupported.Diagnostics, format, writer, command, manifestPath, null, profile, filter, null, startedUtc, CancellationToken.None).ConfigureAwait(false);
+            }
+
+            // An attached suite runs inside the live owner's already resolved environment; it resolves no mapping of its own.
+            if (command != ModuleInvocationCommand.Down && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath) && !(command == ModuleInvocationCommand.Test && runId is not null))
             {
                 bool rootManifest = await (compositionOptions?.RootManifestCheckOverride?.Invoke(manifestPath, setupToken) ?? WorkspaceRootResolver.IsRootManifestAsync(manifestPath, setupToken)).ConfigureAwait(false);
                 if (rootManifest && startupRequest is not null)
@@ -171,7 +180,7 @@ public static class ModuleCommandExecutionService
 
             if (PlatformManifestCommand.IsV2(manifestPath))
             {
-                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, startupRequest?.Deadline, startupRequest?.Token, profiles, candidateRequestPath, cancellationToken).ConfigureAwait(false);
+                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, startupRequest?.Deadline, startupRequest?.Token, profiles, candidateRequestPath, cancellationToken, attachedSuite).ConfigureAwait(false);
             }
 
             ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
@@ -1061,7 +1070,8 @@ public static class ModuleCommandExecutionService
         CancellationToken? startupToken,
         IReadOnlyList<string>? profiles,
         string? candidateRequestPath,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        AttachedSuiteRequest? attachedSuite = null)
     {
         if (command != ModuleInvocationCommand.Test)
         {
@@ -1084,6 +1094,31 @@ public static class ModuleCommandExecutionService
             return await WriteResultAsync(unsupported.Status, unsupported.Outcome, unsupported.Diagnostics, format, writer, command, manifestPath, null, profile, filter, null, startedUtc, CancellationToken.None).ConfigureAwait(false);
         }
 
+        if (runId is not null)
+        {
+            // test --attach-to: admit a hold, hand the suite to the live owner, await and relay its runner-owned result.
+            ToolCommandResult? refused = null;
+            if (!validation.IsValid)
+            {
+                refused = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
+            }
+            else if (filter is not null)
+            {
+                refused = PlatformRefusal("HXC002", "Declared suites do not support filters.", ToolExitCode.UsageOrManifest);
+            }
+            else if (!string.IsNullOrWhiteSpace(evidencePath) || candidateRequestPath is not null
+                || compositionOptions?.QualificationOwners.Count > 0 || compositionOptions?.CiOwnerReceiptPath is not null)
+            {
+                refused = PlatformRefusal("HXC002", "Attached suites are baseline-only runs of an existing owner; --evidence, --candidate-request, --with-owner and --ci-owner-receipt require a fresh owner.", ToolExitCode.UsageOrManifest);
+            }
+
+            ToolCommandResult attached = refused ?? await AttachedSuiteCommand.ExecuteAsync(compositionOptions, selections, selectionRefusal, mode, runId, attachedSuite, cancellationToken).ConfigureAwait(false);
+
+            ToolCommandResult relayed = attached with { Diagnostics = [.. _identityWarnings.Value ?? [], .. attached.Diagnostics] };
+            await ToolDiagnosticFormatter.WriteAsync(writer, relayed, format, CancellationToken.None).ConfigureAwait(false);
+            return (int)relayed.Outcome.ExitCode;
+        }
+
         ToolCommandResult result;
         NativeTestExecutionResult? native = null;
         ModuleTestRunRecord? record = null;
@@ -1092,7 +1127,7 @@ public static class ModuleCommandExecutionService
         {
             result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
         }
-        else if (filter is not null || runId is not null
+        else if (filter is not null
                 || (compositionOptions?.SourceMapping is { } suppliedMapping && suppliedMapping.Mode != mode)
                 || (selected = selections.Count == 0 ? null : selections[0]) is null
                 || selected.Mode != (mode == WorkspaceMode.Source ? "source" : "package"))
@@ -1101,10 +1136,6 @@ public static class ModuleCommandExecutionService
             if (filter is not null)
             {
                 reason = "Declared suites do not support filters.";
-            }
-            else if (runId is not null)
-            {
-                reason = "Declared suites require a fresh environment; attachment is unsupported.";
             }
             else if (compositionOptions?.SourceMapping is { } supplied && supplied.Mode != mode)
             {
@@ -1140,6 +1171,7 @@ public static class ModuleCommandExecutionService
             string? ownedRunId = null;
             long? startupStoppingTimestamp = null;
             string? fallbackTerminalCause = null;
+            AttachedSuiteSupervisor? supervisor = null;
             try
             {
                 (startupToken ?? cancellationToken).ThrowIfCancellationRequested();
@@ -1210,6 +1242,11 @@ public static class ModuleCommandExecutionService
                     };
                     using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
                     ownerAvailable = await engine.EnsureIssuedStateAsync(issued, recording.Token).ConfigureAwait(false);
+                    if (ownerAvailable && issued.QualificationOwners is null)
+                    {
+                        // The live owner hosts runner-owned attached suites until its own teardown.
+                        supervisor = await StartAttachedSuitesAsync(engine, options, session, issued, manifestPath, selected).ConfigureAwait(false);
+                    }
                 }
 
                 result = ownerAvailable
@@ -1418,6 +1455,12 @@ public static class ModuleCommandExecutionService
                     cleanupPending = true;
                     result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "CI attachment withdrawal could not be durably reported; exact cleanup must be retried by the job finalizer.", "evidence"));
                 }
+
+                if (supervisor is not null)
+                {
+                    // CI job end stops attached work and ends its access within the stop allowance, before any owner resource stops.
+                    result = result with { Diagnostics = [.. result.Diagnostics, .. await supervisor.DrainAsync(cancellationToken.IsCancellationRequested || withdrawn ? "ci-job-cancelled" : "ci-job-completed", stopping.Token).ConfigureAwait(false)] };
+                }
             }
 
             if (!ci && attachmentDirectory is not null)
@@ -1480,6 +1523,27 @@ public static class ModuleCommandExecutionService
                 }
             }
 
+            if (!ci && !cleanup && supervisor is not null && !cancellationToken.IsCancellationRequested && ownedRunId is not null && attachmentDirectory is not null)
+            {
+                // A local owner that will not clean up stays open until its runner-owned attached runs end.
+                try
+                {
+                    await supervisor.WaitForIdleAsync(cancellationToken).ConfigureAwait(false);
+                    using CancellationTokenSource attachmentMetadata = new(TimeSpan.FromSeconds(5));
+                    IReadOnlyList<CompositionAttachment> settled = await CompositionAttachmentStore.ReadAsync(attachmentDirectory, ownedRunId, attachmentMetadata.Token).ConfigureAwait(false);
+                    attachedFailureRunIds = [.. settled.Where(item => item.Outcome == "failed").Select(item => item.AttachedRunId)];
+                    attachedFailure = attachedFailureRunIds.Length > 0;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Owner cancellation during the wait withdraws and drains below before anything stops.
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
+                {
+                    // The retained environment stays discoverable; down drains and records any attached leftovers.
+                }
+            }
+
             if (!ci && cancellationToken.IsCancellationRequested && ownedRunId is not null && attachmentDirectory is not null)
             {
                 try
@@ -1500,6 +1564,12 @@ public static class ModuleCommandExecutionService
                     cleanup = false;
                     cleanupPending = true;
                     result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Attachment withdrawal or its report could not be durably recorded; cleanup remains pending and retryable with down for this owner.", "evidence"));
+                }
+
+                if (supervisor is not null)
+                {
+                    // Owner cancellation stops attached work and ends its access after durable withdrawal, before owner teardown.
+                    result = result with { Diagnostics = [.. result.Diagnostics, .. await supervisor.DrainAsync("owner-cancelled", (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false)] };
                 }
             }
 
@@ -1588,6 +1658,12 @@ public static class ModuleCommandExecutionService
                         await engine!.StopSessionAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
                     }
 
+                    if (options.PlatformDownOverride is not null && supervisor is not null)
+                    {
+                        // A replaced cleanup boundary still finalizes attached runs before any owner resource stops.
+                        _ = await supervisor.DrainAsync("developer-stop", (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
+                    }
+
                     down = await (options.PlatformDownOverride?.Invoke(session!, (waitedForHolds ? deferredStopping : stopping).Token) ?? engine!.DownWithinBudgetAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token)).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is not OutOfMemoryException)
@@ -1623,6 +1699,12 @@ public static class ModuleCommandExecutionService
                     }
                 }
             }
+
+            if (supervisor is not null)
+            {
+                session!.AttachedSuites = null;
+                await supervisor.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         if (record is not null)
@@ -1632,6 +1714,35 @@ public static class ModuleCommandExecutionService
         }
 
         return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None, result.RunId, runId, nativeTests: native, nativePlatform: selected?.Executor, selectedTestRun: record, remainingResources: record?.RemainingResources, testResultPath: durableResultPath).ConfigureAwait(false);
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership transfers to the owner command, which drains and disposes the supervisor before its own teardown; failed starts dispose it in finally.")]
+    private static async Task<AttachedSuiteSupervisor?> StartAttachedSuitesAsync(CompositionEngine engine, CompositionEngineOptions options, CompositionRunSession session, CompositionRunState issued, string manifestPath, ModuleTestSelection selected)
+    {
+        AttachedSuiteSupervisor? supervisor = null;
+        try
+        {
+            using CancellationTokenSource publishing = new(TimeSpan.FromSeconds(5));
+            CompositionRunState owner = await engine.StateStore.TryReadAsync(session.RunId, publishing.Token).ConfigureAwait(false) ?? issued;
+            supervisor = new AttachedSuiteSupervisor(options, session, owner, manifestPath, selected);
+            await supervisor.StartAsync(publishing.Token).ConfigureAwait(false);
+            session.AttachedSuites = supervisor;
+            AttachedSuiteSupervisor started = supervisor;
+            supervisor = null;
+            return started;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException or System.Text.Json.JsonException)
+        {
+            // Without a published lease this owner hosts no attached suites; hold-only attachment is unaffected.
+            return null;
+        }
+        finally
+        {
+            if (supervisor is not null)
+            {
+                await supervisor.DisposeAsync().ConfigureAwait(false);
+            }
+        }
     }
 
     private static ToolCommandResult PlatformRefusal(string ruleId, string message, ToolExitCode exit)

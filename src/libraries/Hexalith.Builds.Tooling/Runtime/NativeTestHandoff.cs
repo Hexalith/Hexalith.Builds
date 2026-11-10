@@ -56,7 +56,16 @@ public static class NativeTestHandoff
     /// <param name="accessToken">The run-scoped bearer token.</param>
     /// <returns>The environment values.</returns>
     /// <exception cref="InvalidDataException">An active selected execution lacks its validated owned descriptor.</exception>
-    public static IReadOnlyDictionary<string, string> Create(CompositionRunPlan plan, CompositionReadiness readiness, string accessToken)
+    public static IReadOnlyDictionary<string, string> Create(CompositionRunPlan plan, CompositionReadiness readiness, string accessToken) => Create(plan, readiness, accessToken, null);
+
+    /// <summary>Creates the handoff for one owner or runner-owned attached run with its own private paths and run tag.</summary>
+    /// <param name="plan">The owner's run plan with the executing selection.</param>
+    /// <param name="readiness">The validated readiness document.</param>
+    /// <param name="accessToken">The run-scoped bearer token.</param>
+    /// <param name="attached">The attached run identity, or null for the owner.</param>
+    /// <returns>The environment values.</returns>
+    /// <exception cref="InvalidDataException">An active selected execution lacks its validated owned descriptor.</exception>
+    internal static IReadOnlyDictionary<string, string> Create(CompositionRunPlan plan, CompositionReadiness readiness, string accessToken, AttachedSuiteIdentity? attached)
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(readiness);
@@ -64,7 +73,7 @@ public static class NativeTestHandoff
 
         Dictionary<string, string> values = new(StringComparer.Ordinal)
         {
-            [RunId] = plan.RunId,
+            [RunId] = attached?.RunId ?? plan.RunId,
             [EventStoreUrl] = readiness.EventStoreEndpoint.AbsoluteUri,
             [Tenant] = plan.TenantNamespace,
             [ResourceNamespace] = plan.ResourceNamespace,
@@ -73,7 +82,7 @@ public static class NativeTestHandoff
         };
         if (readiness.NativeEndpointCredentialsPath is { } credentialPath)
         {
-            if (credentialPath != Path.Combine(Path.GetFullPath(plan.Workspace), EndpointCredentialsFileName))
+            if (credentialPath != (attached?.CredentialsPath ?? Path.Combine(Path.GetFullPath(plan.Workspace), EndpointCredentialsFileName)))
             {
                 throw new InvalidDataException("The private endpoint credential channel must use the fixed owned workspace path.");
             }
@@ -95,9 +104,9 @@ public static class NativeTestHandoff
         {
             if (plan.ExecutionTiming is not null)
             {
-                string descriptorPath = Path.GetFullPath(Path.Combine(plan.Workspace, "test-environment.json"));
+                string descriptorPath = attached?.DescriptorPath ?? Path.GetFullPath(Path.Combine(plan.Workspace, "test-environment.json"));
                 TestEnvironment.TestEnvironmentContractReadResult descriptor = TestEnvironment.TestEnvironmentContractReader.ReadDescriptor(descriptorPath);
-                if (!descriptor.IsValid || descriptor.Document!.Value.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString() != plan.RunId)
+                if (!descriptor.IsValid || descriptor.Document!.Value.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString() != (attached?.RunId ?? plan.RunId))
                 {
                     throw new InvalidDataException("A validated descriptor for the owned execution is required.");
                 }
@@ -113,15 +122,22 @@ public static class NativeTestHandoff
             values["HEXALITH_G4_TEST_LIFETIME_SECONDS"] = selected.ExecutionTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
             values["HEXALITH_G4_TEST_STOP_SECONDS"] = selected.StopTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
             values["HEXALITH_G4_EXECUTION_DEADLINE_UTC"] = (plan.ExecutionTiming?.DeadlineUtc ?? selected.ExecutionDeadlineUtc).ToString("O", CultureInfo.InvariantCulture);
-            values["HEXALITH_G4_CREDENTIAL_EXPIRY_UTC"] = (plan.ExecutionTiming?.CredentialExpiryUtc ?? selected.CredentialExpiryUtc).ToString("O", CultureInfo.InvariantCulture);
+            DateTimeOffset credentialExpiry = plan.ExecutionTiming?.CredentialExpiryUtc ?? selected.CredentialExpiryUtc;
+            if (attached is not null && plan.ExecutionTiming is { } attachedTiming)
+            {
+                // The attached bearer never outlives its hold: whole-second exp = min(execution deadline, expiresAt).
+                credentialExpiry = DateTimeOffset.FromUnixTimeSeconds(attached.AccessExpiry(attachedTiming).ToUnixTimeSeconds());
+            }
+
+            values["HEXALITH_G4_CREDENTIAL_EXPIRY_UTC"] = credentialExpiry.ToString("O", CultureInfo.InvariantCulture);
             values["HEXALITH_G4_TEST_MODE"] = selected.Mode;
             if (selected.DaprRuntimeVersion is { } runtime)
             {
                 values["HEXALITH_G4_DAPR_RUNTIME_VERSION"] = runtime;
             }
 
-            values["HEXALITH_G4_PLAN_PATH"] = Path.Combine(plan.Workspace, "plan.json");
-            values["HEXALITH_G4_READINESS_PATH"] = plan.ReadinessPath;
+            values["HEXALITH_G4_PLAN_PATH"] = attached?.PlanPath ?? Path.Combine(plan.Workspace, "plan.json");
+            values["HEXALITH_G4_READINESS_PATH"] = attached?.ReadinessPath ?? plan.ReadinessPath;
             values["HEXALITH_G4_SOURCE_MAPPING_PATH"] = Path.Combine(plan.Workspace, "source-mapping", "mapping.json");
         }
 

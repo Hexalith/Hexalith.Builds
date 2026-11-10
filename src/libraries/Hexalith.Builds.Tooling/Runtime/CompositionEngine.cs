@@ -1489,6 +1489,19 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             {
                 return WithdrawalRefusal(state, bookkeeping);
             }
+
+            // Runner-owned attached work and access end after durable withdrawal and before the first owner resource stops.
+            // An in-process owner drains its own supervisor; another terminal waits within the stop budget, then stops tagged leftovers.
+            try
+            {
+                bookkeeping.AddRange(session?.AttachedSuites is { } supervisor
+                    ? await supervisor.DrainAsync(withdrawalReason, bound).ConfigureAwait(false)
+                    : await AttachedSuiteTermination.DrainForeignAsync(new CompositionRunResourceScanner(_options.DockerCommand) { ProcessDiscoveryOverride = _options.AttachedProcessDiscoveryOverride }, StateStore.Directory, state!, TimeSpan.FromSeconds(Math.Max(1, state!.SelectedTest!.StopTimeoutSeconds) / 2.0), bound).ConfigureAwait(false));
+            }
+            catch (Exception exception) when (IsTeardownFailure(exception))
+            {
+                AddRecordingFailure(bookkeeping);
+            }
         }
 
         // Every later exit must leave the session stopped, including provisioning-lock failures.

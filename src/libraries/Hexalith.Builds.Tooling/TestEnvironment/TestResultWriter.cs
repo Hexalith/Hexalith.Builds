@@ -15,6 +15,9 @@ using Hexalith.Builds.Tooling.Runtime;
 /// <summary>Publishes validated terminal snapshots outside disposable owner workspaces.</summary>
 public static class TestResultWriter
 {
+    private static readonly string[] _lifecycleDiagnosticIds = ["lifecycle"];
+    private static readonly string[] _terminationDiagnosticIds = ["termination"];
+
     /// <summary>Writes classified diagnostics followed by an atomic validated result. Call under the owner's outcome lock.</summary>
     /// <param name="directory">The durable owner diagnostic directory.</param>
     /// <param name="state">The original durable owner identities.</param>
@@ -188,6 +191,156 @@ public static class TestResultWriter
             ["cleanup"] = cleanupNode,
             ["diagnostics"] = JsonSerializer.SerializeToNode(diagnostics),
         };
+        return await PublishAsync(directory, document, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Publishes a runner-owned attached run's validated result with its populated termination.</summary>
+    /// <param name="stateDirectory">The runner state directory.</param>
+    /// <param name="owner">The owner's durable identities.</param>
+    /// <param name="attachment">The ended attachment with its first outcome, cause and recorded termination.</param>
+    /// <param name="attemptId">The attached attempt identity.</param>
+    /// <param name="descriptorSnapshot">The validated pre-launch attached descriptor, or null when no child was prepared.</param>
+    /// <param name="timing">The attached execution clock, when execution was activated.</param>
+    /// <param name="reportBytes">The inspected native report, when retained.</param>
+    /// <param name="ruleIds">The classified rule identities of the first outcome.</param>
+    /// <param name="cancellationToken">The publication allowance.</param>
+    /// <returns>The absolute <c>diagnostics/&lt;attachedRunId&gt;/test-result.json</c> location.</returns>
+    /// <exception cref="InvalidDataException">The known observations cannot form a valid contract.</exception>
+    /// <exception cref="IOException">The destination no longer satisfies the owned-path policy.</exception>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Published content identities require lowercase SHA-256 hexadecimal.")]
+    internal static async Task<string> WriteAttachedAsync(string stateDirectory, CompositionRunState owner, CompositionAttachment attachment, string attemptId, byte[]? descriptorSnapshot, ModuleTestExecutionTiming? timing, byte[]? reportBytes, IReadOnlyList<string> ruleIds, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+        ArgumentNullException.ThrowIfNull(attachment);
+        ArgumentNullException.ThrowIfNull(ruleIds);
+        if (attachment is not { Outcome: "passed" or "failed" or "cancelled" or "withdrawn", EndedAtUtc: { } recordedAt, Execution: { Cause: { } cause } execution, Termination: { } termination }
+            || attachment.OwnerRunId != owner.RunId || owner.EnvironmentId is null || attachment.EnvironmentId != owner.EnvironmentId || !CompositionRunPlanFactory.IsRunId(attemptId))
+        {
+            throw new InvalidDataException("The attached run has no recorded first outcome, cause and termination.");
+        }
+
+        string directory = Path.GetFullPath(Path.Combine(stateDirectory, "diagnostics", attachment.AttachedRunId));
+        string ownerDirectory = Path.Combine(stateDirectory, "diagnostics", owner.RunId);
+        CompositionWorkspace.CreatePrivateDirectory(directory);
+        JsonNode bindings;
+        if (descriptorSnapshot is not null)
+        {
+            using JsonDocument descriptor = JsonDocument.Parse(descriptorSnapshot);
+            bindings = JsonNode.Parse(descriptor.RootElement.GetProperty("bindings").GetRawText())!;
+        }
+        else
+        {
+            bindings = AttachedPartialBindings(owner, attachment, attemptId, timing);
+        }
+
+        if (bindings is not JsonObject current || current["run"] is not JsonObject run
+            || run["role"]?.GetValue<string>() != "attached" || run["runId"]?.GetValue<string>() != attachment.AttachedRunId
+            || run["ownerRunId"]?.GetValue<string>() != owner.RunId || run["attemptId"]?.GetValue<string>() != attemptId)
+        {
+            throw new InvalidDataException("The attached result does not match the issued attached identities.");
+        }
+
+        // Holds evolve after launch, so the result snapshots the owner's durable records, including this run's own ended hold.
+        JsonArray holds = [];
+        DateTimeOffset observedAt = DateTimeOffset.UtcNow;
+        foreach (CompositionAttachment hold in await CompositionAttachmentStore.ReadAsync(ownerDirectory, owner.RunId, cancellationToken).ConfigureAwait(false))
+        {
+            holds.Add(hold.ToContract(observedAt));
+        }
+
+        current["attachments"] = new JsonObject { ["state"] = "populated", ["holds"] = holds };
+        if (timing is { ActualDurationSeconds: { } actual } && current["deadlines"]?["execution"] is JsonObject executionDeadline
+            && executionDeadline["state"]?.GetValue<string>() == "populated")
+        {
+            executionDeadline["actualDurationSeconds"] = actual;
+        }
+
+        bool local = owner.ExecutionContext is { ValueKind: JsonValueKind.Object } context && context.TryGetProperty("kind", out JsonElement kind) && kind.ValueKind == JsonValueKind.String && kind.GetString() == "local";
+        bool failureRetained = local && attachment.Outcome == "failed";
+        string now = Utc(observedAt);
+        string accessStatement = termination.CredentialExpiresAtUtc is { } bearer
+            ? "bearer valid until " + Utc(bearer) + "; no holder"
+            : "no bearer was issued";
+        byte[] lifecycle = Canonical(new
+        {
+            runId = attachment.AttachedRunId,
+            ownerRunId = owner.RunId,
+            role = "attached",
+            outcome = attachment.Outcome,
+            cause,
+            endReason = attachment.EndReason,
+            exitCode = execution.ExitCode,
+            ruleIds = ruleIds.Where(rule => rule.Length is >= 5 and <= 8 && rule.StartsWith("HX", StringComparison.Ordinal) && rule.All(char.IsAsciiLetterOrDigit)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
+        });
+        byte[] terminationDetail = Canonical(new
+        {
+            runId = attachment.AttachedRunId,
+            recorder = termination.Recorder,
+            ownedWork = termination.OwnedWork.Select(item => new { id = item.Id, status = item.Status, detail = item.Detail }),
+            environmentAccess = termination.EnvironmentAccess.Select(item => new { id = item.Id, status = item.Status, detail = item.Detail }),
+            leftoverWorkIds = termination.LeftoverWorkIds,
+            access = accessStatement,
+        });
+        List<object> diagnostics =
+        [
+            await RetainedDiagnosticAsync(directory, "lifecycle", "lifecycle", lifecycle, cancellationToken).ConfigureAwait(false),
+            await RetainedDiagnosticAsync(directory, "termination", "termination", terminationDetail, cancellationToken).ConfigureAwait(false),
+        ];
+        if (reportBytes is { Length: > 0 })
+        {
+            string hash = Convert.ToHexStringLower(SHA256.HashData(reportBytes));
+            string reference = "native-" + hash + ".trx";
+            if (!File.Exists(Path.Combine(directory, reference)))
+            {
+                await NativeTestExecutor.WriteSnapshotAsync(Path.Combine(directory, reference), directory, reportBytes, cancellationToken).ConfigureAwait(false);
+            }
+
+            diagnostics.Add(new { id = "native-report", classification = "internal", redacted = true, reference, contentIdentity = "sha256:" + hash });
+        }
+
+        string[] terminationIds = _terminationDiagnosticIds;
+        JsonObject document = new()
+        {
+            ["schema"] = TestEnvironmentContractReader.ResultSchema,
+            ["policyId"] = TestEnvironmentContractReader.PolicyId,
+            ["bindings"] = bindings,
+            ["terminal"] = Node(new { outcome = attachment.Outcome, recordedAt = Utc(recordedAt), cause, diagnosticIds = _lifecycleDiagnosticIds }),
+            ["termination"] = Node(new
+            {
+                state = "populated",
+                ownedWork = termination.OwnedWork.Select(item => new { id = item.Id, status = item.Status, observedAt = Utc(item.ObservedAtUtc), diagnosticIds = terminationIds }),
+                environmentAccess = termination.EnvironmentAccess.Select(item => new { id = item.Id, status = item.Status, observedAt = Utc(item.ObservedAtUtc), diagnosticIds = terminationIds }),
+                leftoverWorkIds = termination.LeftoverWorkIds,
+                failures = termination.Failures,
+            }),
+            ["retention"] = Node(new
+            {
+                state = "populated",
+                disposition = failureRetained ? "failure-retained" : "not-retained",
+                failureRunIds = failureRetained ? new[] { attachment.AttachedRunId } : [],
+                retainedResourceIds = Array.Empty<string>(),
+                reason = RetentionReason(failureRetained, local),
+                recordedAt = now,
+            }),
+            ["cleanup"] = Node(new { state = "populated", disposition = "not-requested", observedAt = now, ownedResourceIds = Array.Empty<string>(), leftoverResourceIds = Array.Empty<string>(), failures = Array.Empty<string>(), diagnosticIds = _lifecycleDiagnosticIds }),
+            ["diagnostics"] = JsonSerializer.SerializeToNode(diagnostics),
+        };
+        return await PublishAsync(directory, document, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Maps the preserved causal observation to the published v1 cause.</summary>
+    /// <param name="record">The first selected-run record.</param>
+    /// <returns>The v1 cause.</returns>
+    internal static string Cause(ModuleTestRunRecord record) => record switch
+    {
+        { TerminalOutcome.ExitCode: Diagnostics.ToolExitCode.Success } => "tests-completed",
+        { TerminalOutcome.ExitCode: Diagnostics.ToolExitCode.Cancelled } => "run-cancelled",
+        { ExecutionTiming: null } => "startup-failure",
+        _ => "test-failure",
+    };
+
+    private static async Task<string> PublishAsync(string directory, JsonObject document, CancellationToken cancellationToken)
+    {
         string path = Path.GetFullPath(Path.Combine(directory, "test-result.json"));
         string temporary = Path.Combine(directory, ".result-validation-" + Guid.NewGuid().ToString("N") + ".json");
         try
@@ -217,17 +370,6 @@ public static class TestResultWriter
 
         return path;
     }
-
-    /// <summary>Maps the preserved causal observation to the published v1 cause.</summary>
-    /// <param name="record">The first selected-run record.</param>
-    /// <returns>The v1 cause.</returns>
-    internal static string Cause(ModuleTestRunRecord record) => record switch
-    {
-        { TerminalOutcome.ExitCode: Diagnostics.ToolExitCode.Success } => "tests-completed",
-        { TerminalOutcome.ExitCode: Diagnostics.ToolExitCode.Cancelled } => "run-cancelled",
-        { ExecutionTiming: null } => "startup-failure",
-        _ => "test-failure",
-    };
 
     private static async Task EnsureArtifactSnapshotAsync(string directory, string reference, string legacy, string hash, CancellationToken cancellationToken)
     {
@@ -300,6 +442,64 @@ public static class TestResultWriter
             ["deadlines"] = new JsonObject { ["startup"] = startup, ["execution"] = execution },
         };
     }
+
+    private static async Task<object> RetainedDiagnosticAsync(string directory, string id, string prefix, byte[] content, CancellationToken cancellationToken)
+    {
+        string hash = Convert.ToHexStringLower(SHA256.HashData(content));
+        string reference = prefix + "-" + hash + ".json";
+        if (!File.Exists(Path.Combine(directory, reference)))
+        {
+            await NativeTestExecutor.WriteSnapshotAsync(Path.Combine(directory, reference), directory, content, cancellationToken).ConfigureAwait(false);
+        }
+
+        return new { id, classification = "internal", redacted = true, reference, contentIdentity = "sha256:" + hash };
+    }
+
+    private static byte[] Canonical<T>(T value) => System.Text.Encoding.UTF8.GetBytes(CompositionDocumentStore.Serialize(JsonSerializer.SerializeToElement(value)));
+
+    private static JsonObject AttachedPartialBindings(CompositionRunState owner, CompositionAttachment attachment, string attemptId, ModuleTestExecutionTiming? timing)
+    {
+        object startupOverride = owner.EffectiveDeadlineIsOverride
+            ? new { state = "declared", requestedSeconds = owner.EffectiveDeadlineSeconds, justification = owner.EffectiveDeadlineJustification }
+            : new { state = "not-overridden" };
+        JsonNode startup = owner.StartupDeadlineUtc is { } expires && owner.EffectiveDeadlineSeconds is { } seconds && owner.CreatedAt is { } origin
+            ? Node(new { state = "populated", origin = "environment-requested", originAt = Utc(origin), effectiveSeconds = seconds, expiresAt = Utc(expires), @override = startupOverride })
+            : Unavailable();
+        JsonNode execution = timing is not null
+            ? Node(new { state = "populated", origin = "test-execution-started", originAt = Utc(timing.StartedAtUtc), effectiveSeconds = timing.EffectiveSeconds, expiresAt = Utc(timing.DeadlineUtc), configurationContentIdentity = timing.ConfigurationContentIdentity })
+            : Unavailable();
+        JsonNode context = owner.ExecutionContext is { } actual ? JsonNode.Parse(actual.GetRawText())! : throw new InvalidDataException("Original execution context is unavailable.");
+        return new JsonObject
+        {
+            ["run"] = JsonSerializer.SerializeToNode(TestEnvironmentDescriptorWriter.AttachedRun(attachment.AttachedRunId, attemptId, owner.RunId, owner.EnvironmentId!)),
+            ["environment"] = new JsonObject
+            {
+                ["composition"] = Unavailable(),
+                ["mode"] = attachment.Execution!.Mode,
+                ["executionContext"] = context,
+                ["catalog"] = Unavailable(),
+                ["isolation"] = Unavailable(),
+                ["resources"] = Unavailable(),
+                ["readiness"] = Unavailable(),
+                ["startupTasks"] = Unavailable(),
+            },
+            ["tool"] = Unavailable(),
+            ["candidate"] = JsonSerializer.SerializeToNode(TestEnvironmentDescriptorWriter.AttachedCandidate()),
+            ["decision"] = Unavailable(),
+            ["reuseLineage"] = Unavailable(),
+            ["artifacts"] = new JsonObject { ["expected"] = Unavailable(), ["loaded"] = Unavailable() },
+            ["suite"] = new JsonObject { ["declared"] = Unavailable(), ["completion"] = Unavailable() },
+            ["attachments"] = new JsonObject { ["state"] = "populated", ["holds"] = new JsonArray() },
+            ["deadlines"] = new JsonObject { ["startup"] = startup, ["execution"] = execution },
+        };
+    }
+
+    private static string RetentionReason(bool failureRetained, bool local) => (failureRetained, local) switch
+    {
+        (true, _) => "local-attached-failure",
+        (false, true) => "local-failure-retention-not-established",
+        (false, false) => "ci-never-retains",
+    };
 
     private static bool SafeIdentity(string value) => value is { Length: > 0 and <= 2048 } && !value.Any(char.IsControl) && !Manifest.ManifestSecretDetector.ContainsSecret(value);
 

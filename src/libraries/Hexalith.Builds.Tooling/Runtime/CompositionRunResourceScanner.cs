@@ -86,6 +86,48 @@ public sealed class CompositionRunResourceScanner(string dockerCommand)
         }
     }
 
+    /// <summary>Lists only processes tagged with a run identity, such as an attached run's children.</summary>
+    /// <param name="runId">The run identity carried by the process environment tag.</param>
+    /// <param name="cancellationToken">The scan allowance.</param>
+    /// <returns>The tagged processes and whether absence is verified.</returns>
+    /// <exception cref="ArgumentException">The run identity is malformed.</exception>
+    internal (IReadOnlyList<int> ProcessIds, bool Verified) FindTaggedProcesses(string runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(runId);
+        _ = CompositionRunPlanFactory.IsRunId(runId) ? runId : throw new ArgumentException("The run identity must be 32 lowercase hexadecimal characters.", nameof(runId));
+        return ProcessDiscoveryOverride?.Invoke(runId, cancellationToken)
+            ?? (OperatingSystem.IsLinux() ? (FindProcesses(runId), true) : CompositionProcessEnvironmentReader.Find(runId, cancellationToken));
+    }
+
+    /// <summary>Kills processes tagged with a run identity with bounded retries, never touching other runs.</summary>
+    /// <param name="runId">The run identity carried by the process environment tag.</param>
+    /// <param name="cancellationToken">The stop allowance.</param>
+    /// <returns>The processes still tagged after the bound and whether absence is verified.</returns>
+    internal async Task<(IReadOnlyList<int> ProcessIds, bool Verified)> RemoveTaggedProcessesAsync(string runId, CancellationToken cancellationToken)
+    {
+        (IReadOnlyList<int> remaining, bool verified) = FindTaggedProcesses(runId, cancellationToken);
+        try
+        {
+            for (int attempt = 0; attempt < 5 && remaining.Count > 0; attempt++)
+            {
+                foreach (int processId in remaining)
+                {
+                    TryKill(processId);
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * (attempt + 1)), cancellationToken).ConfigureAwait(false);
+                (remaining, verified) = FindTaggedProcesses(runId, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The allowance ended: report what is still known rather than claiming a stop.
+            return (remaining, false);
+        }
+
+        return (remaining, verified);
+    }
+
     private static IReadOnlyList<int> FindProcesses(string runId)
     {
         if (!OperatingSystem.IsLinux() || !Directory.Exists("/proc"))

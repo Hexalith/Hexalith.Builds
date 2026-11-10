@@ -44,6 +44,18 @@ public sealed record CompositionAttachment(
     /// <summary>Gets the first terminal outcome, or null while the attachment is active.</summary>
     public string? Outcome { get; init; }
 
+    /// <summary>Gets the runner-owned attached suite the live owner hosts for this hold, or null for a hold-only attachment.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public CompositionAttachedExecution? Execution { get; init; }
+
+    /// <summary>Gets the recorded termination of owned work and access; hold-only attachments record not-applicable items.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public CompositionAttachmentTermination? Termination { get; init; }
+
+    /// <summary>Gets the internal execution kind: <c>hold-only</c> or <c>attached-suite</c>.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string ExecutionKind => Execution is null ? "hold-only" : CompositionAttachedExecution.Kind;
+
     /// <summary>Parses a hold request. Only an absent request means omission; nothing is clamped or defaulted on error.</summary>
     /// <param name="raw">The raw request, or null when omitted.</param>
     /// <param name="requested">The explicit whole seconds, or null for omission.</param>
@@ -72,8 +84,31 @@ public sealed record CompositionAttachment(
     /// <param name="now">The runner's UTC clock reading.</param>
     /// <returns>The attachment with its observed first outcome.</returns>
     public CompositionAttachment ObservedAt(DateTimeOffset now) => EndedAtUtc is null && now >= ExpiresAtUtc
-        ? this with { EndedAtUtc = ExpiresAtUtc, EndReason = "expired", Outcome = "withdrawn" }
+        ? Ended(ExpiresAtUtc, "expired", "withdrawn", now)
         : this;
+
+    /// <summary>Records the first terminal outcome with its end reason, cause and any hold-only termination.</summary>
+    /// <param name="endedAt">The actual end time.</param>
+    /// <param name="reason">The end reason.</param>
+    /// <param name="outcome">The first terminal outcome.</param>
+    /// <param name="observedAt">The runner observation time.</param>
+    /// <param name="cause">The v1 cause of an attached suite's own outcome, when it is not a withdrawal.</param>
+    /// <returns>The ended attachment; an already ended attachment is returned unchanged.</returns>
+    public CompositionAttachment Ended(DateTimeOffset endedAt, string reason, string outcome, DateTimeOffset observedAt, string? cause = null)
+    {
+        if (EndedAtUtc is not null)
+        {
+            return this;
+        }
+
+        CompositionAttachment ended = this with { EndedAtUtc = endedAt, EndReason = reason, Outcome = outcome };
+        if (Execution is { } execution)
+        {
+            return ended with { Execution = execution with { Cause = CompositionAttachedExecution.WithdrawalCause(reason) ?? cause } };
+        }
+
+        return ended with { Termination = Termination ?? CompositionAttachmentTermination.NotApplicable(AttachedRunId, observedAt < AcceptedAtUtc ? AcceptedAtUtc : observedAt) };
+    }
 
     /// <summary>Checks the internal consistency of a persisted attachment.</summary>
     /// <returns>Whether the immutable bindings agree.</returns>
@@ -86,6 +121,10 @@ public sealed record CompositionAttachment(
         && ExpiresAtUtc - AcceptedAtUtc == TimeSpan.FromSeconds(EffectiveHoldSeconds)
         && (EndedAtUtc is null) == (EndReason is null)
         && HasConsistentOutcome()
+        && Execution?.IsConsistent(this) != false
+        && (Termination is null || (EndedAtUtc is not null && Termination.IsConsistent()
+            && (Execution is not null || (Termination.Recorder == "hold-only" && Termination.LeftoverWorkIds.Count == 0
+                && Termination.OwnedWork.Concat(Termination.EnvironmentAccess).All(item => item.Status == "not-applicable")))))
         && (EndedAtUtc is null || (EndedAtUtc >= AcceptedAtUtc && EndReason is "terminal-outcome" or "expired" or "owner-cancelled" or "developer-stop" or "cleanup" or "ci-job-completed" or "ci-job-cancelled"));
 
     /// <summary>Gets whether the hold is still live at a time: not ended and before its exclusive expiry.</summary>

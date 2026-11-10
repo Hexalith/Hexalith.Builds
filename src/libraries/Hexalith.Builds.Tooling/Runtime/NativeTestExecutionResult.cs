@@ -30,4 +30,16 @@ internal sealed record NativeTestExecutionResult(ToolCommandResult Result, Nativ
 
     /// <summary>Gets the monotonic start of the finite metadata commit allowance after process shutdown.</summary>
     internal long? MetadataRecordingTimestamp { get; init; }
+
+    /// <summary>Gets processes whose stop could not be confirmed within the stop allowance.</summary>
+    internal IReadOnlyList<int> SurvivingProcessIds { get; init; } = [];
+
+    /// <summary>Gets the expiry of the bearer handed only to the child.</summary>
+    internal DateTimeOffset? CredentialExpiresAtUtc { get; init; }
+
+    /// <summary>Gets the validated pre-launch descriptor bytes held by the runner.</summary>
+    internal byte[]? DescriptorSnapshot { get; init; }
+
+    /// <summary>Gets a value indicating whether the native child process was launched.</summary>
+    internal bool Launched { get; init; }
 }
