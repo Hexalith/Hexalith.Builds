@@ -1,0 +1,16 @@
+[
+  {
+    "revision": "b260185ebe0d0dd1ae9507b16f2b49b366ccd47c",
+    "path": "Github/publish-spike/action.yml",
+    "git_blob": "b149de80958fce41bebb0e4eb7c8ee279d620a6f",
+    "sha256": "1e7cffc62e5beff0c79acb5c9343a762c9774b985e5e57cc86679e06c232bce5",
+    "url": "https://github.com/Hexalith/Hexalith.Builds/blob/b260185ebe0d0dd1ae9507b16f2b49b366ccd47c/Github/publish-spike/action.yml"
+  },
+  {
+    "revision": "5780b026ebfb194392c93b2546126a960aa0b30a",
+    "path": ".github/workflows/publish-spike.yml",
+    "git_blob": "85f30441382ff62595eb3bcc32d9e8bcda58c9e1",
+    "sha256": "6a7b00d0b17ed07a52fe27b632d5ddd55ea8275bc5dc210997a3c4bace8a53cd",
+    "url": "https://github.com/Hexalith/Hexalith.Builds/blob/5780b026ebfb194392c93b2546126a960aa0b30a/.github/workflows/publish-spike.yml"
+  }
+]

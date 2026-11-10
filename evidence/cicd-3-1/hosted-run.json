@@ -1,0 +1,186 @@
+{
+  "run": {
+    "id": 42785806980,
+    "run_number": 1,
+    "run_attempt": 1,
+    "head_sha": "5780b026ebfb194392c93b2546126a960aa0b30a",
+    "head_branch": "main",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "failure",
+    "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42785806980",
+    "created_at": "2026-11-10T08:50:39Z",
+    "updated_at": "2026-11-10T08:51:24Z",
+    "path": ".github/workflows/publish-spike.yml"
+  },
+  "jobs": [
+    {
+      "id": 129726583724,
+      "name": "build",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-10T08:50:43Z",
+      "completed_at": "2026-11-10T08:51:06Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42785806980/job/129726583724",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T08:50:44Z",
+          "completed_at": "2026-11-10T08:50:45Z"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T08:50:45Z",
+          "completed_at": "2026-11-10T08:50:47Z"
+        },
+        {
+          "name": "Run actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T08:50:47Z",
+          "completed_at": "2026-11-10T08:50:47Z"
+        },
+        {
+          "name": "Run actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-10T08:50:47Z",
+          "completed_at": "2026-11-10T08:50:48Z"
+        },
+        {
+          "name": "Build each platform once and assemble OCI archive",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-10T08:50:48Z",
+          "completed_at": "2026-11-10T08:51:00Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-10T08:51:00Z",
+          "completed_at": "2026-11-10T08:51:04Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-10T08:51:04Z",
+          "completed_at": "2026-11-10T08:51:04Z"
+        },
+        {
+          "name": "Post Run actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-10T08:51:04Z",
+          "completed_at": "2026-11-10T08:51:04Z"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-11-10T08:51:04Z",
+          "completed_at": "2026-11-10T08:51:04Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-11-10T08:51:04Z",
+          "completed_at": "2026-11-10T08:51:04Z"
+        }
+      ]
+    },
+    {
+      "id": 129726764350,
+      "name": "publish",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-11-10T08:51:11Z",
+      "completed_at": "2026-11-10T08:51:23Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42785806980/job/129726764350",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T08:51:12Z",
+          "completed_at": "2026-11-10T08:51:15Z"
+        },
+        {
+          "name": "Observe nested login inside exact remote composite",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T08:51:15Z",
+          "completed_at": "2026-11-10T08:51:19Z"
+        },
+        {
+          "name": "Caller login control under the same policy and environment",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 3,
+          "started_at": "2026-11-10T08:51:19Z",
+          "completed_at": "2026-11-10T08:51:21Z"
+        },
+        {
+          "name": "Observe caller key without publication",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 4,
+          "started_at": "2026-11-10T08:51:21Z",
+          "completed_at": "2026-11-10T08:51:21Z"
+        },
+        {
+          "name": "Publish original artifact",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 5,
+          "started_at": "2026-11-10T08:51:21Z",
+          "completed_at": "2026-11-10T08:51:21Z"
+        },
+        {
+          "name": "Retain sanitized publish evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-10T08:51:21Z",
+          "completed_at": "2026-11-10T08:51:21Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-10T08:51:21Z",
+          "completed_at": "2026-11-10T08:51:21Z"
+        }
+      ]
+    },
+    {
+      "id": 129726894053,
+      "name": "replay",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-11-10T08:51:24Z",
+      "completed_at": "2026-11-10T08:51:24Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42785806980/job/129726894053",
+      "steps": []
+    }
+  ]
+}

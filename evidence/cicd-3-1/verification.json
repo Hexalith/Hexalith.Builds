@@ -1,0 +1,44 @@
+{
+  "checks": [
+    {
+      "name": "focused-python-312",
+      "command": "uv run --no-cache --python 3.12 python -m unittest discover -s Github/lib/tests -p test_publish_spike.py",
+      "exit_code": 0,
+      "log_sha256": "5f5df4191ab40d345f7afb89e9d67d8f397a5e10d81b7087a37d7b50b8dd7595",
+      "conclusion": "OK"
+    },
+    {
+      "name": "focused-runner-python",
+      "command": "python3 -m unittest discover -s Github/lib/tests -p test_publish_spike.py",
+      "exit_code": 0,
+      "log_sha256": "54c2b3ae66b6af1a3025dc98eb1b1a4a5aa30b388d70f9b5565ddb2a704da1e8",
+      "conclusion": "OK"
+    },
+    {
+      "name": "complete-python-312",
+      "command": "GH_TOKEN=<read-only credential> /tmp/hexalith-builds-ci-tools/uv run --no-cache --locked --script --python 3.12 Tools/ci/run_python_tests.py",
+      "exit_code": 0,
+      "log_sha256": "a8f68bb0482b828752b688e2125471d23a87d54a82c29c5223873e64ed18ec36",
+      "conclusion": "Python suite: 20/20 groups passed"
+    },
+    {
+      "name": "complete-runner-python",
+      "command": "GH_TOKEN=<read-only credential> /tmp/hexalith-builds-ci-tools/uv run --no-cache --locked --script --python /usr/bin/python3 Tools/ci/run_python_tests.py",
+      "exit_code": 0,
+      "log_sha256": "bdb8f174b03360fbe959d7abb0d363a059ce394b4363e0e83680707142153107",
+      "conclusion": "Python suite: 20/20 groups passed"
+    },
+    {
+      "name": "final-online-lint",
+      "command": "GH_TOKEN=<read-only credential> python3 Tools/ci/lint_workflows.py",
+      "exit_code": 0,
+      "log_sha256": "cbcf33b8ad41a5e5e41328c089212ec99586b8765c242a1d37f2c9ebea767fef",
+      "conclusion": "zizmor: 12 exact frozen composite findings; 0 new findings"
+    }
+  ],
+  "frozen_baseline": "f81486cb532e2e166f5c363fa8e9f75c1313c2a1",
+  "frozen_git_blobs_preserved": 104,
+  "temporary_metadata_absent": true,
+  "evidence_json_and_document_links_valid": true,
+  "git_diff_check": 0
+}
