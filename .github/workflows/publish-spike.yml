@@ -1,0 +1,135 @@
+name: Publish composite spike
+on:
+  workflow_dispatch:
+    inputs:
+      artifact-id:
+        description: Original artifact ID for retry without build; empty builds once
+        type: string
+        default: ''
+      artifact-digest:
+        description: Original authenticated artifact archive digest
+        type: string
+        default: ''
+      artifact-run-id:
+        description: Original producing run ID
+        type: string
+        default: ''
+      source-revision:
+        description: Original full source revision
+        type: string
+        default: ''
+permissions: {}
+concurrency:
+  group: isolated-publish-spike-3-1
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' && inputs.artifact-id == ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      artifact-digest: ${{ format('sha256:{0}', steps.upload.outputs.artifact-digest) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+      - name: Build each platform once and assemble OCI archive
+        run: python3 Tools/spikes/publish_spike.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: upload
+        with:
+          name: publish-spike-original
+          path: artifacts/publish-spike/
+          if-no-files-found: error
+          retention-days: 90
+  publish:
+    needs: build
+    if: always() && github.ref == 'refs/heads/main' && (needs.build.result == 'success' || inputs.artifact-id != '')
+    runs-on: ubuntu-latest
+    environment: hexalith-release
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - name: Observe nested login inside exact remote composite
+        id: nested
+        continue-on-error: true
+        uses: Hexalith/Hexalith.Builds/Github/publish-spike@b260185ebe0d0dd1ae9507b16f2b49b366ccd47c
+        with:
+          nuget-user: ${{ vars.HEXALITH_NUGET_USER }}
+          login-only: 'true'
+      - name: Caller login control under the same policy and environment
+        id: caller
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ vars.HEXALITH_NUGET_USER }}
+      - name: Observe caller key without publication
+        shell: bash
+        env:
+          CALLER_KEY: ${{ steps.caller.outputs.NUGET_API_KEY }}
+          NESTED_OUTCOME: ${{ steps.nested.outcome }}
+        run: |
+          test -n "$CALLER_KEY"
+          echo "Caller login returned a nonempty masked temporary key. Nested outcome: $NESTED_OUTCOME"
+      - name: Publish original artifact
+        uses: Hexalith/Hexalith.Builds/Github/publish-spike@b260185ebe0d0dd1ae9507b16f2b49b366ccd47c
+        with:
+          nuget-user: ${{ vars.HEXALITH_NUGET_USER }}
+          nuget-api-key: ${{ steps.nested.outcome == 'failure' && steps.caller.outputs.NUGET_API_KEY || '' }}
+          artifact-id: ${{ inputs.artifact-id || needs.build.outputs.artifact-id }}
+          artifact-digest: ${{ inputs.artifact-digest || needs.build.outputs.artifact-digest }}
+          artifact-run-id: ${{ inputs.artifact-run-id || github.run_id }}
+          source-revision: ${{ inputs.source-revision || github.sha }}
+          registry-username: ${{ secrets.HEXALITH_REGISTRY_PUSH_USERNAME }}
+          registry-password: ${{ secrets.HEXALITH_REGISTRY_PUSH_PASSWORD }}
+          repository: ${{ vars.HEXALITH_REGISTRY_SPIKE_REPOSITORY }}
+          tag: ${{ vars.HEXALITH_REGISTRY_SPIKE_TAG }}
+          evidence: ${{ runner.temp }}/spike-evidence/publish.json
+      - name: Retain sanitized publish evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: publish-spike-publish-evidence
+          path: ${{ runner.temp }}/spike-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+  replay:
+    needs: [build, publish]
+    if: always() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    environment: hexalith-release
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - name: Replay the original artifact in a fresh job with no build
+        uses: Hexalith/Hexalith.Builds/Github/publish-spike@b260185ebe0d0dd1ae9507b16f2b49b366ccd47c
+        with:
+          nuget-user: ${{ vars.HEXALITH_NUGET_USER }}
+          artifact-id: ${{ inputs.artifact-id || needs.build.outputs.artifact-id }}
+          artifact-digest: ${{ inputs.artifact-digest || needs.build.outputs.artifact-digest }}
+          artifact-run-id: ${{ inputs.artifact-run-id || github.run_id }}
+          source-revision: ${{ inputs.source-revision || github.sha }}
+          registry-username: ${{ secrets.HEXALITH_REGISTRY_PUSH_USERNAME }}
+          registry-password: ${{ secrets.HEXALITH_REGISTRY_PUSH_PASSWORD }}
+          repository: ${{ vars.HEXALITH_REGISTRY_SPIKE_REPOSITORY }}
+          tag: ${{ vars.HEXALITH_REGISTRY_SPIKE_TAG }}
+          evidence: ${{ runner.temp }}/spike-evidence/replay.json
+      - name: Retain sanitized replay evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: publish-spike-replay-evidence
+          path: ${{ runner.temp }}/spike-evidence/
+          if-no-files-found: warn
+          retention-days: 90

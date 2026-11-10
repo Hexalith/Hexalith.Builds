@@ -1,7 +1,7 @@
 ---
 story: '3-1'
 created: '2026-11-10'
-status: blocked
+status: in-progress
 implementation_baseline_revision: f81486cb532e2e166f5c363fa8e9f75c1313c2a1
 ---
 
@@ -50,6 +50,35 @@ This preflight passed before any executable spike file was created.
 The exact workflow source proves these configured input references. Protected
 values were not enumerated. The failed exchange below supersedes preflight's
 policy assumption: runtime policy matching remains unsatisfied.
+
+## Renewed prerequisite gate after policy repair
+
+On 2026-11-10, before restoring executable spike files, the CiCd-agent profile
+was rechecked: `GH_CONFIG_DIR=/home/administrator/.config/gh-cicd-agent`, no
+`GH_TOKEN` or `GITHUB_TOKEN` override, authenticated account `jpiquot`, target
+`Hexalith/Hexalith.Builds`, and clean Builds `main` at
+`3f47d25b98260ddcbdcfae68402ef86fa0ca58bf`. Read-only environment metadata
+again returned exactly the `main` branch policy, with no reviewer or timer.
+Protected variable endpoints returned HTTP 403; this is an access limitation,
+not evidence that provisioned inputs are absent.
+
+The canonical story's renewed protected confirmation supersedes the failed
+policy assumption: active NuGet policy `Hexalith.Builds CiCd`, creator
+`jpiquot`, package owner `Hexalith`, GitHub owner/repository IDs
+`80614290` / `952945989`, workflow `publish-spike.yml`, environment
+`hexalith-release`, glob `*`, push-new-package/version and unlist/relist
+operations. This permits authentication probes only. Existing release
+policies and the shared username variable remain unchanged.
+
+The retained exact workflow and composite source still reference
+`HEXALITH_NUGET_USER`, the explicit environment push-secret pair and the
+recorded destination/tag variables by name. The dated scoped-Zot provisioning
+remains the protected credential evidence. Authenticated artifact metadata
+again reports ID `13749161812`, run `42785806980`, original source
+`5780b026ebfb194392c93b2546126a960aa0b30a`, the recorded ZIP digest, and expiry
+`2027-02-08T08:50:41Z`. The resumed hosted run must skip build and validate
+that same artifact's content before registry writes. Runtime outcomes remain
+open until the resumed run completes.
 
 ## Exact hosted execution and original artifact
 
