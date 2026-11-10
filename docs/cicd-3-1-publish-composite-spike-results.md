@@ -92,7 +92,9 @@ SDK `ContainerArchiveOutputPath` emitted **uncompressed OCI tar streams** even
 with requested `.tar.gz` names. The selected handoff is uncompressed
 `containers/*.tar`. With SDK 10.0.403, multi-RID label transport truncates
 colon-containing values: source URL `https://...` became `https` because the
-SDK serializes `identity:value` then reads `Split(':')[1]`. The fixture publishes
+SDK serializes `identity:value` then reads `Split(':')[1]` (SDK 10.0.403
+`Containers/build/Microsoft.NET.Build.Containers.targets`: `_ContainerLabel`
+forwarding at line 336, label parsing at lines 383-384). The fixture publishes
 each platform once via single-RID SDK publication, then assembles packaging
 only. Child manifests, configs and layers retain their original bytes. Both
 platforms and source/revision/version labels passed hosted archive inspection.
@@ -170,8 +172,9 @@ Custom predicates can describe a publish receipt; they do not retroactively
 create producer-signed build evidence. Therefore the publisher adds neither
 `actions/attest-build-provenance` nor `attestations: write`; no attestation was
 created and no inclusion claim is made. Its permission set remains
-`contents: write`, `actions: read`, `id-token: write` in production (the spike
-needed only `contents: read`). OCI labels remain metadata, not attestations.
+`contents: write`, `actions: read`, `id-token: write` in production (the spike's
+publish and replay jobs used `contents: read`, `actions: read` and
+`id-token: write`). OCI labels remain metadata, not attestations.
 
 ## Cleanup and verification
 
@@ -186,15 +189,18 @@ experimental action metadata existed; no release state machine, production
 The dedicated registry tag remains as the scoped experiment result; its
 principal has no delete grant.
 
-Focused tests passed on Python 3.12 and runner Python 3.14.4: 11 behavioral tests,
+Focused tests passed on Python 3.12 and runner Python 3.14.4: 12 behavioral tests
+after the follow-up review,
 including real archive/ZIP corruption and identity controls, graph loss,
 conflicting destination, unchanged-byte replay, failed login, private authfile
 lifetime and wrong version/source/unexpected-output rejection before copy.
-Real local HTTP transport also proves authenticated registry redirects never
-reach off-origin or HTTP downgrade destinations, and artifact API requests
+Real local HTTP transport also proves authenticated registry and artifact
+metadata redirects never reach their destinations, and artifact API requests
 carry the GitHub token while signed storage requests carry none. Metadata,
 download-digest and HTTPS redirect failures stop before extraction or further
-requests.
+requests; producer or file-digest inventory mismatches fail before any registry
+operation. Real registry reads cover the absent-tag 404, manifest/blob routing
+and missing-digest failure.
 No workflow-text assertions were added. Both locked complete suites passed
 20/20 groups on Python 3.12.13 and 3.14.4. Final online cleanup lint passed:
 12 exact frozen findings and zero new findings. All 104 pre-existing runtime
@@ -204,6 +210,8 @@ records commands, interpreter versions, source/log hashes and final cleanup/API 
 [Post-review verification](../evidence/cicd-3-1/review-verification.json) records
 the two HTTP-boundary fixes, 11 focused tests and both complete 20/20-group
 suites after those fixes; the hosted OCI proof precedes this redirect hardening.
+[Follow-up review verification](../evidence/cicd-3-1/followup-review-verification.json)
+records the metadata-redirect fix and the 12 focused tests after it.
 Exact created commit messages were validated with pinned commitlint 21.2.4.
 
 The [plan](cicd-3-1-publish-composite-spike-plan.md) remains the execution

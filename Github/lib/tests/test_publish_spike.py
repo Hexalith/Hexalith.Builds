@@ -119,21 +119,23 @@ class PublishSpikeTests(unittest.TestCase):
 
     def test_archive_and_replay_preserve_all_original_bytes(self):
         registry = MemoryRegistry()
-        writes = []
 
         def copy_command_effect():
-            # A real child command produces the copy marker; registry double records its bytes.
+            # A real child command produces the copy marker; the double installs the archive's current bytes.
             subprocess.run([sys.executable, "-c", "from pathlib import Path; import sys; Path(sys.argv[1]).write_text('copied')",
                             str(self.root / "copy-marker")], check=True)
-            writes.append(self.archive.read_bytes())
-            registry.data.update(self.blobs)
-            registry.tag = self.blobs[self.graph["root"]]
+            with tarfile.open(self.archive) as archive:
+                for member in archive:
+                    if member.name.startswith("blobs/"):
+                        data = archive.extractfile(member).read()
+                        registry.data[spike.sha256(data)] = data
+            registry.tag = registry.data[self.graph["root"]]
 
         first = spike.publish_archive(self.archive, self.graph, registry, copy_command_effect)
         replay = spike.publish_archive(self.archive, self.graph, registry, copy_command_effect)
         self.assertFalse(first["previously_present"])
         self.assertTrue(replay["previously_present"])
-        self.assertEqual(writes[0], writes[1])
+        self.assertEqual(spike.sha256(self.archive.read_bytes()), self.graph["archive_sha256"])
         self.assertTrue((self.root / "copy-marker").is_file())
         self.assertEqual(first["verified"], replay["verified"])
 
@@ -207,14 +209,43 @@ class PublishSpikeTests(unittest.TestCase):
                         registry.get("manifests", spike.TAG, missing_ok=True)
                     self.assertEqual(requests, [("registry.hexalith.com", source, registry.authorization)])
 
+    def test_publish_archive_reads_real_registry_routes_and_absent_tag(self):
+        registry = spike.Registry("scoped-user", "synthetic-password")
+        prefix = "/v2/" + spike.DESTINATION.split("/", 1)[1]
+        tag = prefix + "/manifests/" + spike.TAG
+        manifests = [self.graph["root"], *self.graph["children"]]
+        routes = [f"{prefix}/{'manifests' if digest in manifests else 'blobs'}/{digest}"
+                  for digest in self.graph["blobs"]]
+        responses = {}
+
+        def copy_effect():
+            responses[tag] = (200, {}, self.blobs[self.graph["root"]])
+            for route, digest in zip(routes, self.graph["blobs"], strict=True):
+                responses[route] = (200, {}, self.blobs[digest])
+
+        with http_boundary(responses) as (requests, _port):
+            result = spike.publish_archive(self.archive, self.graph, registry, copy_effect)
+            self.assertFalse(result["previously_present"])
+            self.assertEqual([path for _host, path, _auth in requests], [tag, tag, *routes])
+            self.assertEqual({(host, auth) for host, _path, auth in requests},
+                             {("registry.hexalith.com", registry.authorization)})
+            with self.assertRaisesRegex(spike.SpikeError, "registry read failed: HTTP 404"):
+                registry.get("blobs", "sha256:" + "0" * 64)
+
     def test_artifact_download_separates_authenticated_api_from_signed_storage(self):
-        inventory = {"source_revision": REVISION, "run_id": 20, "repository": spike.REPOSITORY,
-                     "files": {"containers/fixture.tar": spike.sha256(self.archive.read_bytes())[7:]}}
-        stream = io.BytesIO()
-        with zipfile.ZipFile(stream, "w") as archive:
-            archive.writestr("inventory.json", json.dumps(inventory))
-            archive.writestr("containers/fixture.tar", self.archive.read_bytes())
-        payload = stream.getvalue()
+        def artifact(**changes):
+            inventory = {"source_revision": REVISION, "run_id": 20, "repository": spike.REPOSITORY,
+                         "files": {"containers/fixture.tar": spike.sha256(self.archive.read_bytes())[7:]},
+                         **changes}
+            stream = io.BytesIO()
+            with zipfile.ZipFile(stream, "w") as archive:
+                archive.writestr("inventory.json", json.dumps(inventory))
+                archive.writestr("containers/fixture.tar", self.archive.read_bytes())
+            return stream.getvalue()
+
+        payload = artifact()
+        variants = {"inventory-producer": artifact(source_revision="b" * 40),
+                    "inventory-digest": artifact(files={"containers/fixture.tar": "0" * 64})}
         metadata = {"id": 10, "expired": False, "digest": spike.sha256(payload),
                     "workflow_run": {"id": 20, "head_sha": REVISION}}
         api = "/repos/" + spike.REPOSITORY + "/actions/artifacts/10"
@@ -225,31 +256,42 @@ class PublishSpikeTests(unittest.TestCase):
                     ("api.github.com", api + "/zip", "Bearer synthetic-github-token"),
                     ("signed-storage.invalid", "/artifact.zip", None)]
         with http_boundary(responses) as (requests, port):
-            for scenario in ("valid", "wrong-metadata", "corrupt-download", "insecure-redirect"):
+            for scenario in ("valid", "wrong-metadata", "metadata-redirect", "corrupt-download",
+                             "insecure-redirect", "inventory-producer", "inventory-digest"):
                 with self.subTest(scenario=scenario):
                     requests.clear()
                     target = self.root / scenario
                     target.mkdir()
-                    current = {**metadata, "id": 11} if scenario == "wrong-metadata" else metadata
+                    body = variants.get(scenario, payload)
+                    current = {**metadata, "digest": spike.sha256(body)}
+                    if scenario == "wrong-metadata":
+                        current["id"] = 11
+                    trusted = {**arguments, "digest": current["digest"]}
                     location = (f"http://127.0.0.1:{port}/artifact.zip" if scenario == "insecure-redirect"
                                 else "https://signed-storage.invalid/artifact.zip")
-                    responses.update({api: (200, {}, json.dumps(current).encode()),
+                    responses.update({api: ((302, {"Location": "https://other-origin.invalid/metadata"}, b"")
+                                            if scenario == "metadata-redirect"
+                                            else (200, {}, json.dumps(current).encode())),
                                       api + "/zip": (302, {"Location": location}, b""),
                                       "/artifact.zip": (200, {}, b"corrupt" if scenario == "corrupt-download"
-                                                       else payload)})
+                                                       else body)})
                     if scenario == "valid":
-                        self.assertEqual(spike.download_artifact(target, **arguments), metadata)
+                        self.assertEqual(spike.download_artifact(target, **trusted), metadata)
                         self.assertEqual((target / "containers/fixture.tar").read_bytes(), self.archive.read_bytes())
                         self.assertEqual(requests, expected)
                     else:
                         message = {"wrong-metadata": "identity mismatch",
+                                   "metadata-redirect": "metadata endpoint returned HTTP 302",
                                    "corrupt-download": "downloaded artifact digest mismatch",
-                                   "insecure-redirect": "artifact redirect must use HTTPS"}[scenario]
+                                   "insecure-redirect": "artifact redirect must use HTTPS",
+                                   "inventory-producer": "inventory producer mismatch",
+                                   "inventory-digest": "inventory file digest mismatch"}[scenario]
                         with self.assertRaisesRegex(spike.SpikeError, message):
-                            spike.download_artifact(target, **arguments)
-                        count = {"wrong-metadata": 1, "insecure-redirect": 2, "corrupt-download": 3}[scenario]
+                            spike.download_artifact(target, **trusted)
+                        count = {"wrong-metadata": 1, "metadata-redirect": 1, "insecure-redirect": 2}.get(scenario, 3)
                         self.assertEqual(requests, expected[:count])
-                        self.assertEqual(list(target.iterdir()), [])
+                        if not scenario.startswith("inventory-"):
+                            self.assertEqual(list(target.iterdir()), [])
 
     def test_login_failure_has_nonzero_exit_and_never_echoes_key(self):
         for key, status in [("", 1), ("   ", 1), ("synthetic-sensitive-control-key", 0)]:

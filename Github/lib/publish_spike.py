@@ -125,8 +125,13 @@ def download_artifact(directory: Path, *, artifact_id: int, run_id: int, digest:
     url = f"https://api.github.com/repos/{REPOSITORY}/actions/artifacts/{artifact_id}"
     headers = {"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
                "X-GitHub-Api-Version": "2022-11-28"}
-    with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60) as response:
-        metadata = json.load(response)
+    try:
+        with urllib.request.build_opener(NoRedirect()).open(
+                urllib.request.Request(url, headers=headers), timeout=60) as response:
+            metadata = json.load(response)
+    except urllib.error.HTTPError as error:
+        with error:
+            raise SpikeError(f"artifact metadata endpoint returned HTTP {error.code}") from error
     validate_identity(metadata, artifact_id=artifact_id, run_id=run_id, digest=digest, revision=revision)
     try:
         urllib.request.build_opener(NoRedirect()).open(

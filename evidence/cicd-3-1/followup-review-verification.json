@@ -1,0 +1,88 @@
+{
+  "review_parent_revision": "66a617fec147bcba633e65b79ab7a0d46f15c907",
+  "patches": [
+    "Reject authenticated artifact metadata redirects before contacting the redirect destination",
+    "Exercise publish_archive through the real Registry over HTTP sockets: absent-tag 404, manifest/blob routing and missing-digest failure",
+    "Cover inventory producer and file-digest mismatches in the artifact download scenarios",
+    "Install replay registry bytes from the consumed archive instead of a precomputed fixture map",
+    "Cite the SDK 10.0.403 label-forwarding source and correct the spike job permission statement"
+  ],
+  "checks": [
+    {
+      "name": "complete-python-312",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/run_python_tests.py",
+      "exit_code": 0,
+      "conclusion": "Python suite: 20/20 groups passed",
+      "log_sha256": "4fc9ba45667ce7feda834821d6e25d1a2b4d0850ccc11811153858c0e05d3870"
+    },
+    {
+      "name": "complete-runner-python",
+      "command": "uv run --no-cache --locked --script --python /usr/bin/python3 Tools/ci/run_python_tests.py",
+      "exit_code": 0,
+      "conclusion": "Python suite: 20/20 groups passed",
+      "log_sha256": "ae3514182ab538621a79db3faf02f5bdb7c4c692c8ab50e33377d018e266385b"
+    },
+    {
+      "name": "online-lint",
+      "command": "python3 Tools/ci/lint_workflows.py",
+      "exit_code": 0,
+      "conclusion": "zizmor: 12 exact frozen composite findings; 0 new findings",
+      "log_sha256": "cbcf33b8ad41a5e5e41328c089212ec99586b8765c242a1d37f2c9ebea767fef"
+    }
+  ],
+  "focused_tests": [
+    {
+      "python": "3.12.13",
+      "exit_code": 0,
+      "tests": 12,
+      "resource_warnings": "errors",
+      "log_sha256": "35bebf785f162b6c47b125298c82b99ecc7915b48b4af3bb0b15975ca5486096"
+    },
+    {
+      "python": "3.14.4",
+      "exit_code": 0,
+      "tests": 12,
+      "resource_warnings": "errors",
+      "log_sha256": "dd978bd7c443f308b333208689a63f693898527831792afcf36b4765507dbc36"
+    }
+  ],
+  "mutation_controls": {
+    "metadata request follows redirects": "fails",
+    "absent tag read without missing_ok": "fails",
+    "404 never treated as absent": "fails",
+    "manifest/blob routing swapped": "fails",
+    "inventory producer check removed": "fails",
+    "inventory file digest check removed": "fails"
+  },
+  "validated_source_sha256": {
+    "Github/lib/publish_spike.py": "576f57431fcc5a6e6bcdb630fa95fc56f227225d99c7fbb0221da83851c0fdc0",
+    "Github/lib/tests/test_publish_spike.py": "9f60057d9eb6c1edb0d5b9a653e5029a4b7128cdbadc65c643a5fb5f5001471f",
+    "Tools/spikes/publish-tools.json": "f45fda0476d3a9a8b6f2a1e16c3e6a886f536b362095632b216fba4d88fa2c6c"
+  },
+  "changed_paths_outside_spike_files": [],
+  "hosted_oci_and_login_proof": {
+    "run_id": 42791957667,
+    "caller_revision": "515aaa3b0c5b668d86bdfed7065286a378052d62",
+    "action_revision": "0705088e92d6703232e62dcbe44b3bf0a0980ee3",
+    "artifact_id": 13749161812,
+    "review_patches_exercised_hosted": false
+  },
+  "review": {
+    "pass": "follow-up",
+    "individual_findings": 43,
+    "verdicts": {
+      "high": 0,
+      "medium": 4,
+      "low": 18,
+      "false": 17,
+      "maybe_false": 4
+    },
+    "patch_entries": {
+      "high": 0,
+      "medium": 2,
+      "low": 6
+    },
+    "deferred_entries": 1,
+    "followup_review_recommended": false
+  }
+}
