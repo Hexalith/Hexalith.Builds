@@ -376,7 +376,8 @@ caller grants the permission union `contents: write`, `actions: read` and
 `security-events: write`. The reusable workflow starts with `permissions: {}`
 and grants each job only its own permissions: resolve has exactly contents
 write/actions read; CodeQL has contents read/security-events write; the hook
-and reporter have contents read. Resolve executes trusted stdlib Python and
+and reporter have contents read. Version and build have contents read; draft
+has contents write/actions read. Resolve executes trusted stdlib Python and
 anonymous Git object reads only. Both workflow and caller use `cache-mode:
 none`, and concurrency belongs to the top-level caller. The only optional
 secrets are `registry-pull-username` and `registry-pull-password`, passed to
@@ -399,16 +400,71 @@ The final always-scheduled reporter writes only `outcome.json` in artifact
 schema is in `schemas/hexalith.release-outcome.v1.json`; runtime validation is
 stdlib and the shared test corpus also uses the independent draft-2020-12
 validator. Failed, cancelled, missing or unexpected job results dominate
-successful disabled/no-op decisions. Explicit successful no-version or
-stale-draft-deletion stages can later produce `nothing`. A validated successful
-draft may later hand publication and outcome ownership to the publisher; the
+successful disabled/no-op decisions. Explicit successful no-version produces
+`nothing`. A validated successful draft hands publication and outcome ownership
+to the future publisher; the
 reusable reporter then writes and uploads nothing. The publisher remains the
 sole writer for published, ready and publishing-failure outcomes.
 
-This story installs gates only. The all-green enabled path keeps string
-`publish=false` and fails with `release publication stages are not installed`
-until version/build/draft stages arrive. Production callers remain on their
-existing workflows. `delivered-sha` is the integration slot for story 5-1;
+Create mode computes a version, produces an audited original artifact and
+creates a marked draft. `release-rules` defaults to `module`; only the actual
+Builds repository with no sample `module-root` may select `builds`. Version
+calls the pinned commit-analyzer 13.0.1 and release-notes-generator 14.1.1
+directly, from an isolated lockfile installation verified by `npm audit
+signatures`. It reads no product npm/release configuration and runs no
+semantic-release lifecycle. A nonreleasable range logs `nothing to release`,
+skips build/draft and reports `nothing` with `publish=false`.
+
+Version, build and draft consume resolve's frozen SHA. Build checks out without
+stored credentials, selects that source's SDK and initializes only configured
+direct submodules. Release/package/version evaluation selects packable projects
+and non-test `HexalithPublishContainer=true` projects. Restore/build enable
+full low-level NuGet auditing and promote NU1900, NU1903, NU1904 and NU1905
+despite inherited warning exemptions. NU1901/2 remain advisories;
+compiler/analyzer policy remains active. Blocking audit failures log
+`vX.Y.Z blocked by a vulnerable package` and preserve the SDK exit status.
+Packages are packed without another restore/build and stamped with the actual
+version and commit. Each selected container RID is published once through the
+SDK; only a new OCI index is assembled around unchanged child manifests,
+configs and layers, preserving labels containing colons.
+
+`Github/release-build` exposes only `artifact-id` and the `sha256:`-prefixed
+`artifact-digest`. Its one 90-day artifact named `release` contains exactly
+`release-manifest.json`, `packages/*.nupkg` and `containers/*.tar`. The internal
+closed manifest format is:
+
+```json
+{
+  "sha": "<full frozen SHA>",
+  "version": "2.4.0",
+  "packages": [{"id": "Package.Id", "path": "packages/Package.Id.2.4.0.nupkg"}],
+  "containers": [{"name": "image-name", "path": "containers/image-name.tar"}]
+}
+```
+
+Both lists may be empty. `solution: none` uploads only the manifest and runs
+no SDK or submodule command. Draft authenticates artifact ID, name, run, expiry
+and API digest, verifies downloaded bytes, and derives inventory from the
+manifest and actual package/OCI metadata as data without extraction. It
+independently accepts exactly one stable major/minor/patch increment over the
+shared highest reachable tag (or only `1.0.0` without a base). Same-run retries
+reuse only an identical marked draft; competing or invalid markers fail. The
+complete frozen workflow tree must match fresh `main` immediately before
+creation. No product, npm or build code runs with the write token.
+
+The persisted bot draft holds exactly five trailers: `hexalith-release`,
+`hexalith-release-run`, `hexalith-release-artifact`,
+`hexalith-release-packages`, and `hexalith-release-containers`. Notes cannot
+inject reserved lines. The reusable workflow exposes validated `publish`,
+`version`, `sha`, `last-tag`, `draft-id`, `artifact-id`, `artifact-digest` and
+`artifact-run`; only a successful identity-matching handoff with successful
+required jobs authorizes `publish=true`. Draft creation does not report
+`published` or `ready` and creates no Git ref. Complete mode skips version/build
+and remains fail-closed with `release publication stages are not installed`;
+artifact recovery/deletion and publication remain downstream work.
+
+Production callers remain on their existing workflows. `delivered-sha` is the
+integration slot for story 5-1;
 its presence currently provides no drift protection. The test-only
 `module-root` is guarded to the Builds sample and excluded from the public
 module API. No publisher secret, OIDC or attestation permission is used.
@@ -433,3 +489,14 @@ python3 -m unittest discover -s Github/lib/tests -p 'test_release_*.py' -v
 record exact-source hosted observations separately from deterministic local
 controls, alongside dual-interpreter, workflow-lint, public-API and frozen-file
 checks.
+
+[Story 3-3 verification results](../../docs/cicd-3-3-release-create-mode-results.md)
+record create-mode artifact/draft observations separately from deterministic
+controls. The focused suite also executes the two pinned npm plugins, imported
+and multitarget SDK evaluations, real NuGet vulnerability blocking, independent
+audit-code controls, package commit/version inspection and dual-RID SDK OCI
+publication with unchanged child bytes. Disposable fixtures live under
+`test/fixtures/release/`; their packages and container names are qualification
+payloads and must never be published. Temporary hosted probe callers/helpers
+are removed after evidence collection. Frozen legacy runtime and production
+caller bytes are compared with the canonical story's implementation baseline.

@@ -216,20 +216,23 @@ def target_frameworks(properties: dict[str, str]) -> list[str]:
     return [framework.strip() for framework in properties["TargetFrameworks"].split(";") if framework.strip()]
 
 
-def evaluated_properties(root: Path, project: str, *, framework: str = "") -> dict[str, str]:
+def evaluated_properties(root: Path, project: str, *, framework: str = "",
+                         properties: tuple[str, ...] = PROPERTIES,
+                         flags: list[str] | None = None) -> dict[str, str]:
     """Read real MSBuild evaluation in the same package-mode Release context."""
-    arguments = ["dotnet", "msbuild", project, "-nologo", "-verbosity:quiet",
-                 "-getProperty:" + ",".join(PROPERTIES), *build_flags()]
+    sdk_project = project if flags is None else str(contained_path(root, project, kind="project"))
+    arguments = ["dotnet", "msbuild", sdk_project, "-nologo", "-verbosity:quiet",
+                 "-getProperty:" + ",".join(properties), *(build_flags() if flags is None else flags)]
     if framework:
         arguments.append(f"-p:TargetFramework={framework}")
     output = run_command(arguments, root, capture=True)
     try:
         document = json.loads(output)
         values = document["Properties"]
-        if not isinstance(values, dict) or any(not isinstance(values.get(key), str) for key in PROPERTIES):
+        if not isinstance(values, dict) or any(not isinstance(values.get(key), str) for key in properties):
             raise ValueError("missing or non-string properties")
         for name in ("IsTestProject", "XunitTestProject"):
-            if values[name].lower() not in ("", "true", "false"):
+            if name in values and values[name].lower() not in ("", "true", "false"):
                 raise ValueError(f"{name} must be true, false or empty")
         return values
     except (ValueError, KeyError, TypeError) as error:

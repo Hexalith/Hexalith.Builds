@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(UseHexalithProjectReferences)' == 'false'">
+    <IsPackable>true</IsPackable>
+    <PackageId>Hexalith.Release.CreateMode.Disposable</PackageId>
+  </PropertyGroup>
+</Project>

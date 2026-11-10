@@ -1,0 +1,5 @@
+<Project>
+  <Target Name="ReleaseFixtureAudit" BeforeTargets="Restore;Build" Condition="'$(ReleaseFixtureAuditCode)' != ''">
+    <Warning Code="$(ReleaseFixtureAuditCode)" Text="Deterministic SDK audit warning control." />
+  </Target>
+</Project>

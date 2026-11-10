@@ -1,0 +1,17 @@
+<Project>
+  <!-- Loaded by both outer and inner SDK builds after normal project targets.
+       Keep ordinary compiler/analyzer policy, remove only release-blocking
+       audit exemptions, and keep low/moderate advisories informational. -->
+  <PropertyGroup>
+    <WarningsNotAsErrors>$([System.Text.RegularExpressions.Regex]::Replace('$(WarningsNotAsErrors)', '(?i)(^|;)\s*NU190[0345]\s*(?=;|$)', '$1'));NU1901;NU1902</WarningsNotAsErrors>
+    <NoWarn>$([System.Text.RegularExpressions.Regex]::Replace('$(NoWarn)', '(?i)(^|;)\s*NU190[0345]\s*(?=;|$)', '$1'))</NoWarn>
+  </PropertyGroup>
+  <Target Name="HexalithReleaseLabels" BeforeTargets="_PublishSingleContainer">
+    <ItemGroup>
+      <ContainerLabel Remove="org.opencontainers.image.source;org.opencontainers.image.revision;org.opencontainers.image.version" />
+      <ContainerLabel Include="org.opencontainers.image.source" Value="$(RepositoryUrl)" />
+      <ContainerLabel Include="org.opencontainers.image.revision" Value="$(SourceRevisionId)" />
+      <ContainerLabel Include="org.opencontainers.image.version" Value="$(PackageVersion)" />
+    </ItemGroup>
+  </Target>
+</Project>

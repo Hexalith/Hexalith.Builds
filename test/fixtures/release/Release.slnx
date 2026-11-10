@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Package/Release.Package.csproj" />
+  <Project Path="Container/Release.Container.csproj" />
+</Solution>

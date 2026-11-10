@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <HexalithPublishContainer>true</HexalithPublishContainer>
+    <ContainerRepository>hexalith-release-create-disposable</ContainerRepository>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:10.0-alpine</ContainerBaseImage>
+    <RuntimeIdentifiers>linux-x64;linux-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+</Project>

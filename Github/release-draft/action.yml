@@ -1,0 +1,56 @@
+name: Create validated release draft
+description: Independently authenticate original artifact data and create or reuse its marked draft using trusted stdlib only.
+inputs:
+  sha:
+    description: Frozen full source SHA from resolve.
+    required: true
+  version:
+    description: Stable release version without v prefix.
+    required: true
+  notes:
+    description: Release notes as data; reserved release trailers are forbidden.
+    required: true
+  artifact-id:
+    description: This run's uploaded release artifact identity.
+    required: true
+  artifact-digest:
+    description: Original uploaded artifact SHA-256 digest with sha256 prefix.
+    required: true
+outputs:
+  publish:
+    description: True only after all independent draft checks pass.
+    value: ${{ steps.draft.outputs.publish }}
+  version:
+    description: Validated stable version without v prefix.
+    value: ${{ steps.draft.outputs.version }}
+  sha:
+    description: Validated frozen full source SHA.
+    value: ${{ steps.draft.outputs.sha }}
+  last-tag:
+    description: Highest stable reachable tag, or empty.
+    value: ${{ steps.draft.outputs.last-tag }}
+  draft-id:
+    description: Validated bot-authored marked draft ID.
+    value: ${{ steps.draft.outputs.draft-id }}
+  artifact-id:
+    description: Authenticated original artifact ID.
+    value: ${{ steps.draft.outputs.artifact-id }}
+  artifact-digest:
+    description: Authenticated original artifact SHA-256 digest.
+    value: ${{ steps.draft.outputs.artifact-digest }}
+  artifact-run:
+    description: Authenticated original producing run ID.
+    value: ${{ steps.draft.outputs.artifact-run }}
+runs:
+  using: composite
+  steps:
+    - name: Authenticate artifact and create marked draft
+      id: draft
+      shell: bash
+      env:
+        RELEASE_SHA: ${{ inputs.sha }}
+        RELEASE_VERSION: ${{ inputs.version }}
+        RELEASE_NOTES: ${{ inputs.notes }}
+        RELEASE_ARTIFACT_ID: ${{ inputs.artifact-id }}
+        RELEASE_ARTIFACT_DIGEST: ${{ inputs.artifact-digest }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_draft.py"
