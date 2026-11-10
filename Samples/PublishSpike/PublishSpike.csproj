@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifiers>linux-x64;linux-arm64</RuntimeIdentifiers>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <ContainerImageFormat>OCI</ContainerImageFormat>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:10.0-alpine</ContainerBaseImage>
+    <ContainerRepository>cicd-publish-spike-3-1</ContainerRepository>
+    <ContainerImageTag>0.0.0-spike.20261110</ContainerImageTag>
+    <IsPackable>true</IsPackable>
+    <PackageId>Hexalith.PublishSpike.LocalOnly</PackageId>
+    <Version>0.0.0-spike.20261110</Version>
+    <Description>Local-only archive handoff fixture. Never publish this package.</Description>
+    <Authors>Hexalith</Authors>
+    <IncludeSymbols>false</IncludeSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <ContainerLabel Include="org.opencontainers.image.source" Value="https://github.com/Hexalith/Hexalith.Builds" />
+    <ContainerLabel Include="org.opencontainers.image.revision" Value="$(SourceRevisionId)" />
+    <ContainerLabel Include="org.opencontainers.image.version" Value="$(Version)" />
+  </ItemGroup>
+</Project>

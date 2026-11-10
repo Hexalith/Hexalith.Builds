@@ -1,0 +1,7 @@
+{
+  "skopeo": {
+    "version": "1.22.3",
+    "distribution": "quay.io/skopeo/stable:v1.22.3",
+    "digest": "sha256:2681eccb8b02c495b013c2669cbf7f41d5c0b0b0e644e7c69bd3ea9bcb20641f"
+  }
+}

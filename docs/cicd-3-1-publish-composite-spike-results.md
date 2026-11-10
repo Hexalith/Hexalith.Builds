@@ -1,11 +1,34 @@
 ---
 story: '3-1'
 created: '2026-11-10'
-status: blocked
+status: in-progress
 implementation_baseline_revision: 15c108131c7127dbff10dbbb53d1701f123dfe29
 ---
 
 # Publish composite spike results
+
+## Resumed prerequisite gate — 2026-11-10
+
+The earlier blocked check below is historical and is superseded by the
+maintainer's provisioning recorded in the canonical story. A fresh read-only
+check using the configured CiCd-agent profile confirmed Builds' environment
+`hexalith-release`, exactly one allowed deployment branch `main`, and no
+reviewer or timer. Token override variables were absent; repository identity
+and authenticated account were checked. Protected variable metadata returned
+HTTP 403, an access limit which does not negate the dated provisioning.
+
+The supplied destination is `registry.hexalith.com/cicd-publish-spike-3-1`,
+tag `0.0.0-spike.20261110`; dedicated principal `cicd-publish-spike-3-1` has
+read/create/update only on that repository, with no delete grant. The caller
+environment supplies `HEXALITH_REGISTRY_PUSH_USERNAME` and
+`HEXALITH_REGISTRY_PUSH_PASSWORD` explicitly, and records destination/tag in
+`HEXALITH_REGISTRY_SPIKE_REPOSITORY` and `HEXALITH_REGISTRY_SPIKE_TAG`.
+`HEXALITH_NUGET_USER` is the maintainer-confirmed organization variable selected
+for Builds; matching `publish-spike.yml` / `hexalith-release` NuGet policy setup
+is maintainer-confirmed. This gate passed before executable file creation.
+Runtime authentication remains experimental and must succeed independently.
+
+## Historical blocked attempt
 
 Execution stopped at the prerequisite gate on 2026-11-10. The required
 `hexalith-release` environment does not exist in `Hexalith/Hexalith.Builds`.
