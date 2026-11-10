@@ -32,6 +32,18 @@ def prerequisites(*, codeql="success", hook="success", resolve="success"):
             "nightly-hook": {"result": hook}}
 
 
+def handoff(version="2.0.0"):
+    needs = prerequisites()
+    digest = "sha256:" + "c" * 64
+    needs.update(
+        version={"result": "success", "outputs": {"version": version, "last-tag": "v1.9.0", "no-version": "false"}},
+        build={"result": "success", "outputs": {"artifact-id": "123", "artifact-digest": digest}},
+        draft={"result": "success", "outputs": {"publish": "true", "sha": SELECTED_SHA, "version": version,
+               "last-tag": "v1.9.0", "draft-id": "456", "artifact-id": "123", "artifact-digest": digest,
+               "artifact-run": "789"}})
+    return needs
+
+
 class OutcomeContractTests(unittest.TestCase):
     def test_json_schema_and_stdlib_agree_on_the_shared_corpus(self):
         Draft202012Validator.check_schema(SCHEMA)
@@ -160,9 +172,7 @@ class OutcomeReductionTests(unittest.TestCase):
         self.assertEqual("nothing", self.decide(enabled="true", noop_reason="no-version", needs=needs)["document"]["outcome"])
 
     def test_only_validated_successful_drafts_can_transfer_outcome_ownership(self):
-        needs = prerequisites()
-        needs.update({name: {"result": "success"} for name in ("version", "build", "draft")})
-        needs["draft"]["outputs"] = {"publish": "true", "sha": SELECTED_SHA, "version": "2.0.0"}
+        needs = handoff()
         choices = dict(enabled="true", publish="true", version="2.0.0", needs=needs)
         decision = self.decide(**choices)
         self.assertIsNone(decision["document"])
@@ -186,6 +196,42 @@ class OutcomeReductionTests(unittest.TestCase):
         complete = copy.deepcopy(needs)
         complete["version"]["result"] = complete["build"]["result"] = "skipped"
         self.assertEqual("true", self.decide(**(choices | {"mode": "complete", "needs": complete}))["publish"])
+
+    def test_incomplete_or_mismatched_artifact_handoffs_retain_reporter_ownership(self):
+        for name, value in (("artifact-id", ""), ("artifact-run", "01"), ("draft-id", "-1"),
+                            ("artifact-digest", "c" * 64), ("last-tag", "v1.9.0\n")):
+            with self.subTest(name=name):
+                needs = handoff()
+                needs["draft"]["outputs"][name] = value
+                self.assert_failed(self.decide(enabled="true", publish="true", version="2.0.0", needs=needs))
+        for owner, name, value in (("build", "artifact-id", "999"),
+                                   ("build", "artifact-digest", "sha256:" + "d" * 64),
+                                   ("version", "version", "2.0.1"), ("version", "last-tag", "v1.8.0"),
+                                   ("version", "no-version", "true")):
+            with self.subTest(owner=owner, name=name):
+                needs = handoff()
+                needs[owner]["outputs"][name] = value
+                self.assert_failed(self.decide(enabled="true", publish="true", version="2.0.0", needs=needs),
+                                   "differs from the version or build")
+
+    def test_no_version_skips_build_and_draft_but_failure_or_cancellation_wins(self):
+        needs = prerequisites(codeql="skipped", hook="skipped")
+        needs.update(version={"result": "success", "outputs": {"no-version": "true"}},
+                     build={"result": "skipped"}, draft={"result": "skipped"})
+        choices = dict(enabled="true", codeql=[], nightly_hook="false", noop_reason="no-version", needs=needs)
+        self.assertEqual("nothing", self.decide(**choices)["document"]["outcome"])
+        for name in needs:
+            for result in ("failure", "cancelled"):
+                with self.subTest(name=name, result=result):
+                    changed = copy.deepcopy(needs)
+                    changed[name]["result"] = result
+                    self.assert_failed(self.decide(**(choices | {"needs": changed})), result)
+
+    def test_complete_mode_without_recovery_skips_build_and_fails_closed(self):
+        needs = prerequisites(codeql="skipped", hook="skipped")
+        needs.update(version={"result": "skipped"}, build={"result": "skipped"}, draft={"result": "skipped"})
+        self.assert_failed(self.decide(enabled="true", codeql=[], nightly_hook="false", mode="complete", needs=needs),
+                           "release publication stages are not installed")
 
 
 class OutcomeAdapterTests(unittest.TestCase):
@@ -282,9 +328,7 @@ class OutcomeAdapterTests(unittest.TestCase):
         self.assertNotIn("\n::error::injected", result.stderr)
 
     def test_actual_adapter_does_no_file_or_upload_work_for_publisher_handoff(self):
-        needs = prerequisites()
-        needs.update({name: {"result": "success"} for name in ("version", "build", "draft")})
-        needs["draft"]["outputs"] = {"publish": "true", "sha": SELECTED_SHA, "version": "1.2.3"}
+        needs = handoff("1.2.3")
         result = self.adapter(RELEASE_ENABLED="true", RELEASE_PUBLISH="true", RELEASE_VERSION="1.2.3",
                               RELEASE_NEEDS=json.dumps(needs))
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)

@@ -1,4 +1,4 @@
-name: Shared release gates
+name: Shared release
 
 on:
   workflow_call:
@@ -11,6 +11,10 @@ on:
         description: Exact CI filename; only Builds may pass builds-ci.yml.
         type: string
         default: ci.yml
+      release-rules:
+        description: Version rules; builds is restricted to the actual Builds repository.
+        type: string
+        default: module
       module-root:
         description: Test-only Builds sample module root.
         type: string
@@ -30,8 +34,26 @@ on:
         description: Selected create or complete mode.
         value: ${{ jobs.resolve.outputs.mode }}
       publish:
-        description: String publication handoff flag; false until downstream stages are installed.
+        description: String publication handoff flag; true only after every gate and the draft validate.
         value: ${{ jobs.outcome.outputs.publish }}
+      version:
+        description: Stable version independently validated by the draft stage.
+        value: ${{ jobs.draft.outputs.version }}
+      last-tag:
+        description: Highest stable tag reachable from the frozen source.
+        value: ${{ jobs.draft.outputs.last-tag }}
+      draft-id:
+        description: Validated bot-authored draft release identity.
+        value: ${{ jobs.draft.outputs.draft-id }}
+      artifact-id:
+        description: Authenticated original release artifact identity.
+        value: ${{ jobs.draft.outputs.artifact-id }}
+      artifact-digest:
+        description: Authenticated artifact SHA-256 digest including its sha256 prefix.
+        value: ${{ jobs.draft.outputs.artifact-digest }}
+      artifact-run:
+        description: Run that uploaded the original release payload.
+        value: ${{ jobs.draft.outputs.artifact-run }}
 
 permissions: {}
 cache-mode: none
@@ -129,9 +151,98 @@ jobs:
       - name: Run enabled nightly hook
         uses: ./.github/actions/nightly
 
+  version:
+    name: Compute release version
+    needs: [resolve, codeql, nightly-hook]
+    if: >-
+      ${{ !cancelled() && needs.resolve.result == 'success' &&
+          needs.resolve.outputs.enabled == 'true' && needs.resolve.outputs.mode == 'create' &&
+          (needs.codeql.result == 'success' || needs.codeql.result == 'skipped') &&
+          (needs.nightly-hook.result == 'success' || needs.nightly-hook.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      notes: ${{ steps.version.outputs.notes }}
+      last-tag: ${{ steps.version.outputs.last-tag }}
+      no-version: ${{ steps.version.outputs.no-version }}
+    steps:
+      - name: Analyze the frozen release range
+        id: version
+        uses: $/Github/release-version
+        with:
+          sha: ${{ needs.resolve.outputs.sha }}
+          release-rules: ${{ inputs.release-rules }}
+          module-root: ${{ inputs.module-root }}
+
+  build:
+    name: Build audited release payload
+    needs: [resolve, codeql, nightly-hook, version]
+    if: >-
+      ${{ !cancelled() && needs.resolve.result == 'success' &&
+          needs.resolve.outputs.enabled == 'true' && needs.resolve.outputs.mode == 'create' &&
+          (needs.codeql.result == 'success' || needs.codeql.result == 'skipped') &&
+          (needs.nightly-hook.result == 'success' || needs.nightly-hook.result == 'skipped') &&
+          needs.version.result == 'success' && needs.version.outputs.no-version == 'false' &&
+          needs.version.outputs.version != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.build.outputs.artifact-id }}
+      artifact-digest: ${{ steps.build.outputs.artifact-digest }}
+    steps:
+      - name: Build once and retain the original versioned payload
+        id: build
+        uses: $/Github/release-build
+        with:
+          sha: ${{ needs.resolve.outputs.sha }}
+          version: ${{ needs.version.outputs.version }}
+          module-root: ${{ inputs.module-root }}
+
+  draft:
+    name: Validate artifact and create marked draft
+    needs: [resolve, codeql, nightly-hook, version, build]
+    if: >-
+      ${{ !cancelled() && needs.resolve.result == 'success' &&
+          needs.resolve.outputs.enabled == 'true' && needs.resolve.outputs.mode == 'create' &&
+          (needs.codeql.result == 'success' || needs.codeql.result == 'skipped') &&
+          (needs.nightly-hook.result == 'success' || needs.nightly-hook.result == 'skipped') &&
+          needs.version.result == 'success' && needs.version.outputs.no-version == 'false' &&
+          needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      publish: ${{ steps.draft.outputs.publish }}
+      version: ${{ steps.draft.outputs.version }}
+      sha: ${{ steps.draft.outputs.sha }}
+      last-tag: ${{ steps.draft.outputs.last-tag }}
+      draft-id: ${{ steps.draft.outputs.draft-id }}
+      artifact-id: ${{ steps.draft.outputs.artifact-id }}
+      artifact-digest: ${{ steps.draft.outputs.artifact-digest }}
+      artifact-run: ${{ steps.draft.outputs.artifact-run }}
+    steps:
+      - name: Authenticate the release handoff and write the draft
+        id: draft
+        uses: $/Github/release-draft
+        with:
+          sha: ${{ needs.resolve.outputs.sha }}
+          version: ${{ needs.version.outputs.version }}
+          notes: ${{ needs.version.outputs.notes }}
+          artifact-id: ${{ needs.build.outputs.artifact-id }}
+          artifact-digest: ${{ needs.build.outputs.artifact-digest }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
   outcome:
     name: Report release outcome
-    needs: [resolve, codeql, nightly-hook]
+    needs: [resolve, codeql, nightly-hook, version, build, draft]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -147,12 +258,13 @@ jobs:
           RELEASE_DISPATCH_SHA: ${{ github.sha }}
           RELEASE_SHA: ${{ needs.resolve.outputs.sha }}
           RELEASE_MODE: ${{ needs.resolve.outputs.mode }}
-          RELEASE_VERSION: ${{ needs.resolve.outputs.version }}
+          RELEASE_VERSION: ${{ needs.draft.outputs.version || needs.version.outputs.version || needs.resolve.outputs.version }}
           RELEASE_ENABLED: ${{ needs.resolve.outputs.enabled }}
           RELEASE_CODEQL: ${{ needs.resolve.outputs.codeql }}
           RELEASE_NIGHTLY_HOOK: ${{ needs.resolve.outputs.nightly-hook }}
           RELEASE_NEEDS: ${{ toJSON(needs) }}
-          RELEASE_PUBLISH: 'false'
+          RELEASE_PUBLISH: ${{ needs.draft.outputs.publish || 'false' }}
+          RELEASE_NOOP_REASON: ${{ needs.version.outputs.no-version == 'true' && 'no-version' || '' }}
           RELEASE_OUTPUT_DIRECTORY: ${{ runner.temp }}/hexalith-release-outcome
 
       - name: Upload the sole reusable outcome

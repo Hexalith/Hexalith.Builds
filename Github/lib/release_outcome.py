@@ -70,9 +70,8 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
                    noop_reason: str = "", mode: str = "create") -> dict[str, Any]:
     """Return a failure-first decision; only a validated draft can hand off writing.
 
-    A successful current gate-only run is either disabled or incomplete. Future
-    stages must supply explicit successful version/draft decisions for a no-op,
-    or a successful validated draft's ``publish`` output for publisher ownership.
+    A successful no-version stage authorizes a no-op. A validated draft's
+    complete artifact handoff transfers outcome ownership to the publisher.
     """
     selected = sha or dispatch_sha
     document = outcome_document(selected, "failed", version)
@@ -115,6 +114,10 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
         intentional_skips.update(("version", "build", "draft"))
     if mode == "complete":
         intentional_skips.update(("version", "build"))
+        if publish == "false" and not noop_reason:
+            # Recovery has not landed: no historical build or draft mutation
+            # runs, and the final incomplete-stage diagnostic remains red.
+            intentional_skips.add("draft")
     if noop_reason == "no-version":
         intentional_skips.update(("build", "draft"))
     for name, job in needs.items():
@@ -129,6 +132,27 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
                 or not isinstance(draft_outputs, dict) or draft_outputs.get("publish") != "true"
                 or draft_outputs.get("sha") != sha or draft_outputs.get("version") != version):
             return failed("release publisher handoff lacks a validated successful draft")
+        for name in ("draft-id", "artifact-id", "artifact-run"):
+            value = draft_outputs.get(name)
+            if not isinstance(value, str) or re.fullmatch(r"[1-9][0-9]*", value) is None:
+                return failed("release publisher handoff has an invalid " + name)
+        digest = draft_outputs.get("artifact-digest")
+        last_tag = draft_outputs.get("last-tag")
+        if (not isinstance(digest, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is None
+                or not isinstance(last_tag, str)
+                or (last_tag != "" and (not last_tag.startswith("v")
+                    or VERSION.fullmatch(last_tag[1:]) is None))):
+            return failed("release publisher handoff has an invalid artifact digest or last tag")
+        if mode == "create":
+            build_outputs = needs["build"].get("outputs", {})
+            version_outputs = needs["version"].get("outputs", {})
+            if (not isinstance(build_outputs, dict) or not isinstance(version_outputs, dict)
+                    or any(build_outputs.get(name) != draft_outputs[name]
+                           for name in ("artifact-id", "artifact-digest"))
+                    or version_outputs.get("version") != version
+                    or version_outputs.get("last-tag") != last_tag
+                    or version_outputs.get("no-version") != "false"):
+                return failed("release publisher handoff differs from the version or build identity")
         return {"document": None, "upload": "false", "publish": "true", "error": ""}
     if enabled == "false":
         if noop_reason:

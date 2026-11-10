@@ -1,0 +1,41 @@
+name: Compute trusted release version
+description: Analyze frozen Git history with isolated pinned plugins and explicit release rules.
+inputs:
+  sha:
+    description: Frozen full release commit SHA.
+    required: true
+  release-rules:
+    description: module, or builds only for the actual Builds repository.
+    default: module
+  module-root:
+    description: Test-only Builds sample module root.
+    default: ''
+outputs:
+  version:
+    description: Next stable release version without v, or empty.
+    value: ${{ steps.version.outputs.version }}
+  notes:
+    description: Generated release notes from frozen commits.
+    value: ${{ steps.version.outputs.notes }}
+  last-tag:
+    description: Highest stable tag reachable from the frozen source, or empty.
+    value: ${{ steps.version.outputs.last-tag }}
+  no-version:
+    description: Literal true when there is nothing to release.
+    value: ${{ steps.version.outputs.no-version }}
+runs:
+  using: composite
+  steps:
+    - name: Set up pinned Node runtime
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '24'
+        package-manager-cache: false
+    - name: Compute version and notes
+      id: version
+      shell: bash
+      env:
+        RELEASE_SHA: ${{ inputs.sha }}
+        RELEASE_RULES: ${{ inputs.release-rules }}
+        RELEASE_MODULE_ROOT: ${{ inputs.module-root }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_version.py"
