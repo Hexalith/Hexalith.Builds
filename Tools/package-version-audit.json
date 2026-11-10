@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "e6a59fa223ea22b61ad16399458f17b7da652af2",
+  "generatedFromRevision": "93c9db2e2892be80ab8595052b91cbda5b7d158f",
   "catalogPath": "Props/Directory.Packages.props",
   "catalogSha256": "e8ea866f6e361bbf7ec494787b753807cd74a5f7a6a953c137baa7b0720bf562",
   "catalogRawSha256": "957818ed7df1b29b2299644afb06987393f617c5b87ff8551b9b95b52a23034d",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-09T15:07:21.6274512+00:00",
+    "auditedAtUtc": "2026-11-09T23:52:18.1848959+00:00",
     "refreshedFamilies": [
-      "hexalith-eventstore"
+      "xunit"
     ],
     "preservedFamilies": [
       "aspire",
@@ -22,6 +22,7 @@
       "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
+      "hexalith-eventstore",
       "hexalith-folders",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
@@ -164,8 +165,7 @@
       "package:threenine.data",
       "package:yamldotnet",
       "roslyn",
-      "verify",
-      "xunit"
+      "verify"
     ]
   },
   "sources": [
@@ -181,8 +181,8 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "e6a59fa223ea22b61ad16399458f17b7da652af2",
-    "sha256": "3b7534fe71f682f9c6d78b00bab3bbea98ffde7e9f8985c70c925bb917ec5107",
+    "repositoryRevision": "93c9db2e2892be80ab8595052b91cbda5b7d158f",
+    "sha256": "dd3aed0e6369edba2dfeef2fa19529612c5bfd1332f79b625b2b8f7de54fbbf1",
     "entries": [
       {
         "family": "aspire",
@@ -400,6 +400,34 @@
         "packageId": "YamlDotNet",
         "declarationPath": "src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj",
         "declarationSha256": "5398373e0b0a31a3a72fb9073dcbeecc0d280b90ec540968eaf9c0006b879388"
+      },
+      {
+        "family": "xunit",
+        "consumer": "Samples/Hexalith.Sample/test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj",
+        "packageId": "xunit.v3",
+        "declarationPath": "Samples/Hexalith.Sample/test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj",
+        "declarationSha256": "76ba4e3242fae967078f59a5d49b39e5b31be27d85f25010fcd7e823a711dfb3"
+      },
+      {
+        "family": "xunit",
+        "consumer": "Samples/Hexalith.Sample/test/Hexalith.Sample.IntegrationTests/Hexalith.Sample.IntegrationTests.csproj",
+        "packageId": "xunit.v3",
+        "declarationPath": "Samples/Hexalith.Sample/test/Hexalith.Sample.IntegrationTests/Hexalith.Sample.IntegrationTests.csproj",
+        "declarationSha256": "76ba4e3242fae967078f59a5d49b39e5b31be27d85f25010fcd7e823a711dfb3"
+      },
+      {
+        "family": "xunit",
+        "consumer": "Samples/Hexalith.Sample/test/Hexalith.Sample.UnitTests/Hexalith.Sample.UnitTests.csproj",
+        "packageId": "xunit.v3",
+        "declarationPath": "Samples/Hexalith.Sample/test/Hexalith.Sample.UnitTests/Hexalith.Sample.UnitTests.csproj",
+        "declarationSha256": "76ba4e3242fae967078f59a5d49b39e5b31be27d85f25010fcd7e823a711dfb3"
+      },
+      {
+        "family": "xunit",
+        "consumer": "Samples/Hexalith.Sample/test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj",
+        "packageId": "xunit.v3",
+        "declarationPath": "Samples/Hexalith.Sample/test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj",
+        "declarationSha256": "76ba4e3242fae967078f59a5d49b39e5b31be27d85f25010fcd7e823a711dfb3"
       },
       {
         "family": "xunit",
@@ -70794,6 +70822,10 @@
       "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [
+        "Samples/Hexalith.Sample/test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj",
+        "Samples/Hexalith.Sample/test/Hexalith.Sample.IntegrationTests/Hexalith.Sample.IntegrationTests.csproj",
+        "Samples/Hexalith.Sample/test/Hexalith.Sample.UnitTests/Hexalith.Sample.UnitTests.csproj",
+        "Samples/Hexalith.Sample/test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj",
         "test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/P0Fixture.NativeTests.VsTest.csproj",
         "test/fixtures/module/executable/P0Fixture.NativeTests/P0Fixture.NativeTests.csproj",
         "test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj",
@@ -70801,12 +70833,12 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
-        "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+        "auditedAtUtc": "2026-11-09T23:52:18.1848959+00:00",
+        "generatedFromRevision": "93c9db2e2892be80ab8595052b91cbda5b7d158f",
         "familySelectionSha256": "2738e3f69315288dcc2894932e5d2db0c904d7f259eef7076782aa8ef83b819f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c802fa0e9f80aab3e257f84751982cb36a1f3994dd4a8418aabdfa3f973f8338",
-        "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
+        "consumerEvidenceSha256": "c01ff1673fbec5d458a49f28ff5441db583479e7c3872f4bf635817f6c6439e5"
       },
       "historicalContext": [
         {
@@ -71458,6 +71490,40 @@
             "familySelectionSha256": "4988065efa94b3ee525230538d940019c354e09b1a4e77cebdeeeb49bb26452b",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "3b7b9b1e0c125e7b4bd5ecb6d10ef5104fbf6589cd6c492236fdefe0edc682b8",
+            "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+          "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "packageIds": [
+            "xunit.runner.visualstudio",
+            "xunit.v3",
+            "xunit.v3.assert",
+            "xunit.v3.extensibility.core"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [
+            "test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/P0Fixture.NativeTests.VsTest.csproj",
+            "test/fixtures/module/executable/P0Fixture.NativeTests/P0Fixture.NativeTests.csproj",
+            "test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj",
+            "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+            "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+            "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+            "familySelectionSha256": "2738e3f69315288dcc2894932e5d2db0c904d7f259eef7076782aa8ef83b819f",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "c802fa0e9f80aab3e257f84751982cb36a1f3994dd4a8418aabdfa3f973f8338",
             "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -272774,6 +272840,42 @@
             "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+          "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+          "id": "xunit.runner.visualstudio",
+          "auditedVersion": "4.0.1",
+          "selectedVersion": "4.0.1",
+          "latestStable": "4.0.1",
+          "latestPrerelease": "4.0.0-pre.5",
+          "listingState": "listed",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.1, prerelease=4.0.0-pre.5",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "4.0.1",
+              "latestPrerelease": "4.0.0-pre.5",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+            "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+            "familySelectionSha256": "2738e3f69315288dcc2894932e5d2db0c904d7f259eef7076782aa8ef83b819f",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "c802fa0e9f80aab3e257f84751982cb36a1f3994dd4a8418aabdfa3f973f8338",
+            "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -273412,6 +273514,42 @@
             "familySelectionSha256": "4988065efa94b3ee525230538d940019c354e09b1a4e77cebdeeeb49bb26452b",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "3b7b9b1e0c125e7b4bd5ecb6d10ef5104fbf6589cd6c492236fdefe0edc682b8",
+            "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+          "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+          "id": "xunit.v3",
+          "auditedVersion": "4.0.3",
+          "selectedVersion": "4.0.3",
+          "latestStable": "4.0.3",
+          "latestPrerelease": "0.7.0-pre.15",
+          "listingState": "listed",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.3, prerelease=0.7.0-pre.15",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "4.0.3",
+              "latestPrerelease": "0.7.0-pre.15",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+            "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+            "familySelectionSha256": "2738e3f69315288dcc2894932e5d2db0c904d7f259eef7076782aa8ef83b819f",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "c802fa0e9f80aab3e257f84751982cb36a1f3994dd4a8418aabdfa3f973f8338",
             "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -274056,6 +274194,42 @@
             "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+          "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+          "id": "xunit.v3.assert",
+          "auditedVersion": "4.0.3",
+          "selectedVersion": "4.0.3",
+          "latestStable": "4.0.3",
+          "latestPrerelease": "4.0.0-pre.154",
+          "listingState": "listed",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.3, prerelease=4.0.0-pre.154",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "4.0.3",
+              "latestPrerelease": "4.0.0-pre.154",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+            "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+            "familySelectionSha256": "2738e3f69315288dcc2894932e5d2db0c904d7f259eef7076782aa8ef83b819f",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "c802fa0e9f80aab3e257f84751982cb36a1f3994dd4a8418aabdfa3f973f8338",
+            "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -274694,6 +274868,42 @@
             "familySelectionSha256": "4988065efa94b3ee525230538d940019c354e09b1a4e77cebdeeeb49bb26452b",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "3b7b9b1e0c125e7b4bd5ecb6d10ef5104fbf6589cd6c492236fdefe0edc682b8",
+            "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+          "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+          "id": "xunit.v3.extensibility.core",
+          "auditedVersion": "4.0.3",
+          "selectedVersion": "4.0.3",
+          "latestStable": "4.0.3",
+          "latestPrerelease": "4.0.0-pre.154",
+          "listingState": "listed",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.3, prerelease=4.0.0-pre.154",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "4.0.3",
+              "latestPrerelease": "4.0.0-pre.154",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-09T13:55:43.8679012+00:00",
+            "generatedFromRevision": "3bfea5098759906d1cd5ace94ff2e26591ccb7c7",
+            "familySelectionSha256": "2738e3f69315288dcc2894932e5d2db0c904d7f259eef7076782aa8ef83b819f",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "c802fa0e9f80aab3e257f84751982cb36a1f3994dd4a8418aabdfa3f973f8338",
             "consumerEvidenceSha256": "6cfb06021c72f2a36d4f44003756d11c561db059d55affa5b0a8e033c5c06e85"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."

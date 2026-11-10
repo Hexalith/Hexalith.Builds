@@ -116,8 +116,8 @@ try {
     $env:DOTNET_NOLOGO = '1'
     Push-Location -LiteralPath $moduleRoot
     try {
-        Invoke-Checked dotnet (@('restore', $relativeSolution) + $flags)
-        Invoke-Checked dotnet (@('build', $relativeSolution, '--no-restore') + $flags)
+        Invoke-Checked dotnet (@('restore', $solution) + $flags)
+        Invoke-Checked dotnet (@('build', $solution, '--no-restore') + $flags)
     }
     finally {
         Pop-Location

@@ -65,8 +65,13 @@ class PrepareTests(unittest.TestCase):
         # Invalid module JSON is deliberately unreadable to a config loader.
         self.save = lambda: None
         (self.root / ".github/hexalith-ci.json").write_text("not JSON")
+        for name in ("python", "python3"):
+            sentinel = self.fixture.bin / name
+            sentinel.write_text('#!/bin/sh\nprintf called > "$GITHUB_WORKSPACE/python-invoked"\nexit 79\n')
+            sentinel.chmod(0o755)
         result = self.invoke()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertFalse((self.root / "python-invoked").exists())
         commands = self.commands()
         self.assertEqual(["restore", "build"], [command[0] for command in commands])
         for command in commands:
@@ -88,9 +93,17 @@ class PrepareTests(unittest.TestCase):
         result = self.invoke()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         commands = [json.loads(line) for line in (module / "commands.jsonl").read_text().splitlines()]
-        self.assertEqual("solutions/nested/A sample.slnx", commands[0][1])
+        self.assertEqual(str(module / "solutions/nested/A sample.slnx"), commands[0][1])
         self.assertTrue((module / "build-completed").is_file())
         self.assertEqual([], self.commands())
+
+    def test_windows_leading_dash_solution_is_an_absolute_argument(self):
+        solution = self.root / "-sample.slnx"
+        solution.write_text("<Solution />")
+        result = self.invoke(inputs=dict(self.inputs, solution=solution.name))
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["restore", "build"], [args[0] for args in self.commands()])
+        self.assertTrue(all(args[1] == str(solution) for args in self.commands()))
 
     def test_windows_unsafe_missing_or_outside_paths_fail_before_sdk_and_product(self):
         for key, value in (("solution", "../outside.slnx"), ("solution", "/tmp/a.slnx"),
@@ -192,6 +205,42 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
         self.assertNotIn("--recursive", arguments)
         self.assertNotIn("--remote", arguments)
 
+    def test_windows_initializes_recorded_direct_gitlinks_before_product_commands(self):
+        fixture = FIXTURE.ClassifierAndSubmoduleTests()
+        self.addCleanup(fixture.doCleanups)
+
+        def prepare(consumer, environment):
+            environment["PATH"] = str(self.fixture.bin) + os.pathsep + environment["PATH"]
+            (consumer / "fake-sdk.json").write_text(json.dumps(self.fixture.data))
+            self.require_recorded_dependencies_at_product_commands()
+            paths = ["references/Hexalith.Builds", "references/Extra dependency"]
+            inputs = {"solution": "Fixture.slnx", "global-json": "global.json", "submodules": json.dumps(paths)}
+
+            def external_control(reference, values, environment):
+                if reference.startswith("actions/checkout@"):
+                    self.assertEqual("false", values["submodules"].lower())
+                    self.assertEqual("false", values["persist-credentials"].lower())
+                elif reference.startswith("actions/setup-dotnet@"):
+                    self.assertEqual("global.json", values["global-json-file"])
+                    self.assertTrue((consumer / values["global-json-file"]).is_file())
+                    self.assertFalse((consumer / "commands.jsonl").exists())
+                else:
+                    self.fail(f"unexpected external action: {reference}")
+                return 0
+
+            result = CompositeHarness(consumer, environment, runner_os="Windows",
+                                      external_action=external_control).run_action(ACTION, inputs)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            commands = [json.loads(line) for line in (consumer / "commands.jsonl").read_text().splitlines()]
+            self.assertEqual(["restore", "build"], [command[0] for command in commands])
+            # The shared fixture consumes this output to verify the same requested
+            # graph and its real recorded Git revisions after the composite exits.
+            return subprocess.CompletedProcess([], result.returncode,
+                                               result.stdout + "\n" + json.dumps({"submodules": inputs["submodules"]}),
+                                               result.stderr)
+
+        fixture.check_recorded_consumer_gitlinks(prepare)
+
     def test_windows_invalid_submodules_fail_before_sdk_or_update(self):
         self.submodule_controls()
         (self.root / "ordinary").write_text("ordinary")
@@ -244,6 +293,80 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
         self.assertFalse(any(args[0] == "test" for args in commands))
         self.assertTrue((self.root / "build-completed").exists())
 
+    def test_linux_prefixed_nested_module_uses_its_sdk_cwd_and_environment(self):
+        prefix = "Samples/A sample"
+        module = self.root / prefix
+        solution = "solutions/nested/A sample.slnx"
+        (module / solution).parent.mkdir(parents=True)
+        (module / solution).write_text("<Solution />")
+        (module / ".github").mkdir()
+        document = dict(self.fixture.document, buildsTag="v1.0.0", solution=solution, registry=True)
+        (module / ".github/hexalith-ci.json").write_text(json.dumps(document))
+        self.fixture.document["solution"] = "none"
+        self.fixture.data["projects"]["test/Fixture.E2E.Tests.csproj"] = True
+        (module / "fake-sdk.json").write_text(json.dumps(self.fixture.data))
+        shutil.copy(self.root / "global.json", module / "global.json")
+        # `dotnet sln list` reports paths relative to the nested solution,
+        # while project evaluation and product commands run in the SDK directory.
+        (self.fixture.bin / "dotnet").write_text(f"#!{sys.executable}\n" + FIXTURE.FAKE_DOTNET.replace(
+            'print("\\n".join(data["projects"]))',
+            'print("\\n".join(os.path.relpath(root / project, root / "solutions/nested") for project in data["projects"]))'))
+        for project in self.fixture.data["projects"]:
+            target = module / project
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("<Project />")
+        output = module / "test/A space/bin/Release/net10.0"
+        (output / ".playwright/package").mkdir(parents=True)
+        (output / "playwright.ps1").write_text("# tooling")
+        (output / "Microsoft.Playwright.dll").touch()
+        (output / ".playwright/package/package.json").write_text('{"version":"1.64.1"}')
+        for name in ("pwsh", "docker"):
+            executable = self.fixture.bin / name
+            executable.write_text(f"#!{sys.executable}\n" + r'''
+import json, os, pathlib, sys
+root=pathlib.Path.cwd()
+assert (root / "build-completed").read_text()=="Release"
+with (root / "setup-effects.jsonl").open("a") as stream:
+    stream.write(json.dumps({"tool":pathlib.Path(sys.argv[0]).name, "cwd":str(root),
+        "environment":{key:os.environ.get(key) for key in ("CI_MODULE_ROOT", "CI_ENVIRONMENT_SOLUTION",
+            "CI_ENVIRONMENT_DAPR", "CI_ENVIRONMENT_BROWSERS", "CI_ENVIRONMENT_REGISTRY")}})+"\n")
+''')
+            executable.chmod(0o755)
+        self.inputs["global-json"] = f"{prefix}/global.json"
+        self.environment.update(REGISTRY_PULL_USERNAME="pull-only", REGISTRY_PULL_PASSWORD="synthetic")
+        result = self.invoke("Linux", inputs={"module-root": prefix})
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(f"{prefix}/global.json", self.external[1][1]["global-json-file"])
+        commands = [json.loads(line) for line in (module / "commands.jsonl").read_text().splitlines()]
+        self.assertEqual(["restore", "build"], [args[0] for args in commands if args[0] in ("restore", "build")])
+        self.assertTrue(all(args[1] == solution for args in commands if args[0] in ("restore", "build")))
+        self.assertFalse(any(args[0] == "test" for args in commands))
+        self.assertEqual([], self.commands())
+        effects = [json.loads(line) for line in (module / "setup-effects.jsonl").read_text().splitlines()]
+        self.assertEqual(["pwsh", "docker"], [effect["tool"] for effect in effects])
+        for effect in effects:
+            self.assertEqual(str(module), effect["cwd"])
+            self.assertEqual({"CI_MODULE_ROOT": prefix, "CI_ENVIRONMENT_SOLUTION": f"{prefix}/{solution}",
+                              "CI_ENVIRONMENT_DAPR": "false", "CI_ENVIRONMENT_BROWSERS": "true",
+                              "CI_ENVIRONMENT_REGISTRY": "true"}, effect["environment"])
+
+    def require_recorded_dependencies_at_product_commands(self):
+        executable = self.fixture.bin / "dotnet"
+        # Check the real checkout contents before every SDK command, so an
+        # omitted --init cannot hide behind an apparently successful Git update.
+        executable.write_text(f"#!{sys.executable}\n" + r'''
+from pathlib import Path
+for path in ("references/Hexalith.Builds", "references/Extra dependency"):
+    checkout=Path(path)
+    assert (checkout / ".git").is_file()
+    assert (checkout / "revision").read_text()=="recorded commit"
+    assert not (checkout / "references/Nested/.git").exists()
+    assert not (checkout / "references/Nested/revision").exists()
+assert not Path("references/Unused/.git").exists()
+assert not Path("references/Unused/revision").exists()
+''' + FIXTURE.FAKE_DOTNET)
+        executable.chmod(0o755)
+
     def test_linux_entrypoint_initializes_recorded_direct_gitlinks_before_build(self):
         fixture = FIXTURE.ClassifierAndSubmoduleTests()
         self.addCleanup(fixture.doCleanups)
@@ -256,21 +379,7 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
                 target = consumer / project
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text("<Project />")
-            executable = self.fixture.bin / "dotnet"
-            # Check the initialized contents at every product command boundary,
-            # not merely after both entrypoint phases have already completed.
-            executable.write_text(f"#!{sys.executable}\n" + r'''
-from pathlib import Path
-for path in ("references/Hexalith.Builds", "references/Extra dependency"):
-    checkout=Path(path)
-    assert (checkout / ".git").is_file()
-    assert (checkout / "revision").read_text()=="recorded commit"
-    assert not (checkout / "references/Nested/.git").exists()
-    assert not (checkout / "references/Nested/revision").exists()
-assert not Path("references/Unused/.git").exists()
-assert not Path("references/Unused/revision").exists()
-''' + FIXTURE.FAKE_DOTNET)
-            executable.chmod(0o755)
+            self.require_recorded_dependencies_at_product_commands()
             prepared = subprocess.run([sys.executable, "-I", "-S", str(ACTION / "prepare_linux.py"),
                                        "--phase", "prepare"], env=environment,
                                       text=True, capture_output=True, check=False)
@@ -310,6 +419,28 @@ assert not Path("references/Unused/revision").exists()
         self.fixture.document["hooks"] = ["after-unit-tests"]
         result = self.invoke("Linux")
         self.assertNotEqual(0, result.returncode)
+
+    def test_linux_environment_failure_stops_following_custom_action(self):
+        self.fixture.document["registry"] = True
+        self.environment.update(REGISTRY_PULL_USERNAME="pull-only", REGISTRY_PULL_PASSWORD="synthetic")
+        executable = self.fixture.bin / "docker"
+        executable.write_text(f"#!{sys.executable}\n" + r'''
+import pathlib, sys
+assert (pathlib.Path.cwd() / "build-completed").read_text()=="Release"
+sys.exit(71)
+''')
+        executable.chmod(0o755)
+        successor = self.root / ".github/actions/successor"
+        successor.mkdir(parents=True)
+        (successor / "action.yml").write_text(
+            "runs:\n  using: composite\n  steps:\n    - shell: bash\n      run: touch successor-ran\n")
+        self.save()
+        harness = CompositeHarness(self.root, self.environment, external_action=self.external_control)
+        result = harness.steps([{"uses": "$/Github/prepare"}, {"uses": "./.github/actions/successor"}],
+                               harness.context, harness.environment)
+        self.assertEqual(71, result.returncode, result.stdout + result.stderr)
+        self.assertFalse((self.root / "successor-ran").exists())
+        self.assertEqual(["restore", "build"], [args[0] for args in self.commands() if args[0] in ("restore", "build")])
 
     def test_linux_environment_inference_setup_once_after_build_no_hooks(self):
         self.fixture.data["projects"]["test/Fixture.E2E.Tests.csproj"] = True
@@ -364,7 +495,10 @@ sys.exit(int(os.environ.get("FAIL_DELEGATED_TEST", "0")))
                 shutil.copytree(ROOT / f".github/actions/{name}", target)
                 for code in (0, 61):
                     environment = dict(self.environment, FAIL_DELEGATED_TEST=str(code))
-                    harness = CompositeHarness(self.root, environment)
+                    def reject_external(reference, inputs, environment):
+                        self.fail(f"delegated action invoked external action: {reference}")
+
+                    harness = CompositeHarness(self.root, environment, external_action=reject_external)
                     result = harness.steps([
                         {"uses": f"./.github/actions/{name}"},
                         {"shell": "bash", "run": "touch successor"},

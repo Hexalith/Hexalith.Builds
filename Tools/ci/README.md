@@ -1,7 +1,9 @@
 # Builds quality checks
 
 Run from the Builds repository root on Linux x86_64 with Python 3.12 or later,
-the .NET SDK from `global.json`, Node 24 or later, and the locked npm tools:
+the .NET SDK from `global.json`, Node 24 or later, PowerShell 7.6 or later
+(`pwsh` on `PATH`), and the locked npm tools. The shared Python suite launches
+PowerShell unconditionally for composite and tooling contract tests.
 
 ```bash
 npm ci --ignore-scripts
