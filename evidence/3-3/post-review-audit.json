@@ -1,0 +1,291 @@
+{
+  "id": 42924447082,
+  "run_attempt": 1,
+  "head_sha": "b1681870d0b08a5fe103133214c67fda7a449eb1",
+  "event": "workflow_dispatch",
+  "path": ".github/workflows/release-create-probe.yml",
+  "status": "completed",
+  "conclusion": "failure",
+  "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42924447082",
+  "jobs": [
+    {
+      "name": "release / Resolve release identity",
+      "conclusion": "success",
+      "started_at": "2026-11-10T23:34:16Z",
+      "completed_at": "2026-11-10T23:34:30Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T23:34:17Z",
+          "completed_at": "2026-11-10T23:34:21Z"
+        },
+        {
+          "name": "Read dispatch settings and freeze release source",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T23:34:21Z",
+          "completed_at": "2026-11-10T23:34:28Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T23:34:28Z",
+          "completed_at": "2026-11-10T23:34:28Z"
+        }
+      ]
+    },
+    {
+      "name": "release / Compute release version",
+      "conclusion": "success",
+      "started_at": "2026-11-10T23:34:33Z",
+      "completed_at": "2026-11-10T23:34:47Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T23:34:34Z",
+          "completed_at": "2026-11-10T23:34:37Z"
+        },
+        {
+          "name": "Supply the labelled no-version scheduling control",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 2,
+          "started_at": "2026-11-10T23:34:37Z",
+          "completed_at": "2026-11-10T23:34:37Z"
+        },
+        {
+          "name": "Analyze the frozen release range",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T23:34:37Z",
+          "completed_at": "2026-11-10T23:34:45Z"
+        },
+        {
+          "name": "Post Analyze the frozen release range",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-10T23:34:45Z",
+          "completed_at": "2026-11-10T23:34:45Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-10T23:34:45Z",
+          "completed_at": "2026-11-10T23:34:45Z"
+        }
+      ]
+    },
+    {
+      "name": "release / Release CodeQL (${{ matrix.language }})",
+      "conclusion": "skipped",
+      "started_at": "2026-11-10T23:34:31Z",
+      "completed_at": "2026-11-10T23:34:30Z",
+      "steps": []
+    },
+    {
+      "name": "release / Prepare and run nightly hook",
+      "conclusion": "skipped",
+      "started_at": "2026-11-10T23:34:31Z",
+      "completed_at": "2026-11-10T23:34:30Z",
+      "steps": []
+    },
+    {
+      "name": "release / Build audited release payload",
+      "conclusion": "failure",
+      "started_at": "2026-11-10T23:34:51Z",
+      "completed_at": "2026-11-10T23:35:17Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T23:34:52Z",
+          "completed_at": "2026-11-10T23:34:55Z"
+        },
+        {
+          "name": "Build once and retain the original versioned payload",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 2,
+          "started_at": "2026-11-10T23:34:55Z",
+          "completed_at": "2026-11-10T23:35:15Z"
+        },
+        {
+          "name": "Post Build once and retain the original versioned payload",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-10T23:35:15Z",
+          "completed_at": "2026-11-10T23:35:15Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-10T23:35:15Z",
+          "completed_at": "2026-11-10T23:35:15Z"
+        }
+      ]
+    },
+    {
+      "name": "release / Report release outcome",
+      "conclusion": "failure",
+      "started_at": "2026-11-10T23:35:20Z",
+      "completed_at": "2026-11-10T23:35:26Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T23:35:21Z",
+          "completed_at": "2026-11-10T23:35:23Z"
+        },
+        {
+          "name": "Decide outcome with failure precedence",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 2,
+          "started_at": "2026-11-10T23:35:23Z",
+          "completed_at": "2026-11-10T23:35:23Z"
+        },
+        {
+          "name": "Upload the sole reusable outcome",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T23:35:23Z",
+          "completed_at": "2026-11-10T23:35:25Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-10T23:35:25Z",
+          "completed_at": "2026-11-10T23:35:25Z"
+        }
+      ]
+    },
+    {
+      "name": "release / Validate artifact and create marked draft",
+      "conclusion": "skipped",
+      "started_at": "2026-11-10T23:35:18Z",
+      "completed_at": "2026-11-10T23:35:17Z",
+      "steps": []
+    },
+    {
+      "name": "observe",
+      "conclusion": "success",
+      "started_at": "2026-11-10T23:35:29Z",
+      "completed_at": "2026-11-10T23:35:33Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T23:35:29Z",
+          "completed_at": "2026-11-10T23:35:30Z"
+        },
+        {
+          "name": "Retain the exact reusable handoff",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T23:35:30Z",
+          "completed_at": "2026-11-10T23:35:30Z"
+        },
+        {
+          "name": "Upload handoff observation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T23:35:30Z",
+          "completed_at": "2026-11-10T23:35:32Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-10T23:35:32Z",
+          "completed_at": "2026-11-10T23:35:32Z"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 13813316593,
+      "name": "probe-handoff",
+      "digest": "sha256:90243630ddc832b0c92e0930d1207e5f0193d4d2438b94ec5b01b270f1578a1c",
+      "expired": false,
+      "created_at": "2026-11-10T23:35:32Z",
+      "expires_at": "2027-02-08T23:34:13Z",
+      "workflow_run": {
+        "id": 42924447082,
+        "repository_id": 952945989,
+        "head_repository_id": 952945989,
+        "head_branch": "main",
+        "head_sha": "b1681870d0b08a5fe103133214c67fda7a449eb1"
+      }
+    },
+    {
+      "id": 13813162863,
+      "name": "hexalith-release-outcome",
+      "digest": "sha256:3d7fa398446b3701abe8c15a88feccaea4571c53975ffb606229db43a3b77ca9",
+      "expired": false,
+      "created_at": "2026-11-10T23:35:25Z",
+      "expires_at": "2027-02-08T23:34:13Z",
+      "workflow_run": {
+        "id": 42924447082,
+        "repository_id": 952945989,
+        "head_repository_id": 952945989,
+        "head_branch": "main",
+        "head_sha": "b1681870d0b08a5fe103133214c67fda7a449eb1"
+      }
+    }
+  ],
+  "handoff": {
+    "outputs": {
+      "artifact-digest": "",
+      "artifact-id": "",
+      "artifact-run": "",
+      "draft-id": "",
+      "last-tag": "",
+      "mode": "create",
+      "publish": "false",
+      "sha": "b1681870d0b08a5fe103133214c67fda7a449eb1",
+      "version": ""
+    },
+    "result": "failure",
+    "scenario": "audit"
+  },
+  "outcome": {
+    "outcome": "failed",
+    "schema": "hexalith.release-outcome.v1",
+    "sha": "b1681870d0b08a5fe103133214c67fda7a449eb1",
+    "version": "4.48.0"
+  },
+  "audit_diagnostics": [
+    "2026-11-10T23:35:15.1967731Z ##[error]/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/fixtures/release/Directory.Build.targets(3,5): error NU1903: Deterministic SDK audit warning control. [/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/fixtures/release/Package/Release.Package.csproj]",
+    "2026-11-10T23:35:15.2779731Z ##[error]/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/fixtures/release/Directory.Build.targets(3,5): error NU1903: Deterministic SDK audit warning control. [/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/fixtures/release/Package/Release.Package.csproj]",
+    "2026-11-10T23:35:15.3041398Z v4.48.0 blocked by a vulnerable package"
+  ]
+}
