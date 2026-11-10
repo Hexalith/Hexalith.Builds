@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import http.server
 import io
 import json
 import os
@@ -10,8 +11,11 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ci_config import ConfigError
@@ -65,6 +69,89 @@ class ApiControl:
 
 def ci_run(sha, *, identifier=10, status="completed", conclusion="success", event="push"):
     return {"id": identifier, "head_sha": sha, "event": event, "status": status, "conclusion": conclusion}
+
+
+class ApiDeadlineTests(unittest.TestCase):
+    @contextmanager
+    def streaming_http(self, phase):
+        release, started, finished = threading.Event(), threading.Event(), threading.Event()
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *_args):
+                pass
+
+            def do_GET(self):
+                started.set()
+                try:
+                    if phase == "headers":
+                        self.wfile.write(b"HTTP/1.1 200 OK\r\n")
+                    else:
+                        self.send_response(200)
+                        self.end_headers()
+                        self.wfile.write(b"[")
+                    self.wfile.flush()
+                    limit = time.monotonic() + 3
+                    while time.monotonic() < limit and not release.wait(0.02):
+                        self.wfile.write(b"X-Progress: x\r\n" if phase == "headers" else b" ")
+                        self.wfile.flush()
+                    self.wfile.write(b"Content-Length: 2\r\n\r\n[]" if phase == "headers" else b"]")
+                    self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                finally:
+                    finished.set()
+
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        serving = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True)
+        serving.start()
+        try:
+            yield state.Api(REPOSITORY, "deadline-token", f"http://127.0.0.1:{server.server_port}"), started, finished
+        finally:
+            release.set()
+            server.shutdown()
+            server.server_close()
+            serving.join()
+            self.assertTrue(finished.wait(1))
+
+    def assert_deadline_returns_before_worker(self, operation, finished):
+        start = time.monotonic()
+        with self.assertRaisesRegex(state.ReleaseError, "deadline exceeded"):
+            operation(start + 0.2)
+        self.assertLess(time.monotonic() - start, 0.7)
+        self.assertFalse(finished.is_set(), "timeout must not wait for the unfinished worker")
+
+    def test_absolute_deadline_bounds_a_steadily_streaming_json_body(self):
+        with self.streaming_http("body") as (api, started, finished):
+            self.assert_deadline_returns_before_worker(
+                lambda deadline: api.get(f"/repos/{REPOSITORY}/actions/workflows/ci.yml/runs", deadline=deadline), finished)
+            self.assertTrue(started.is_set())
+
+    def test_absolute_deadline_bounds_steadily_streaming_response_headers(self):
+        with self.streaming_http("headers") as (api, started, finished):
+            self.assert_deadline_returns_before_worker(
+                lambda deadline: api.get(f"/repos/{REPOSITORY}/releases", deadline=deadline), finished)
+            self.assertTrue(started.is_set())
+
+    def test_absolute_deadline_does_not_join_slow_response_acquisition(self):
+        release, finished = threading.Event(), threading.Event()
+        api = state.Api(REPOSITORY, "deadline-token")
+
+        def slow_open(*_args, **_kwargs):
+            try:
+                release.wait(3)
+                response = io.BytesIO(b"[]")
+                response.headers = {}
+                return response
+            finally:
+                finished.set()
+
+        try:
+            with patch.object(api.opener, "open", side_effect=slow_open):
+                self.assert_deadline_returns_before_worker(
+                    lambda deadline: api.get(f"/repos/{REPOSITORY}/releases", deadline=deadline), finished)
+        finally:
+            release.set()
+            self.assertTrue(finished.wait(1))
 
 
 class ReleaseStateTests(unittest.TestCase):

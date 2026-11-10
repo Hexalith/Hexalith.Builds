@@ -125,7 +125,8 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
         draft_outputs = needs.get("draft", {}).get("outputs", {})
         if (enabled != "true" or noop_reason or not sha or not version
                 or any(needs.get(name, {}).get("result") != "success" for name in required)
-                or not isinstance(draft_outputs, dict) or draft_outputs.get("publish") != "true"):
+                or not isinstance(draft_outputs, dict) or draft_outputs.get("publish") != "true"
+                or draft_outputs.get("sha") != sha or draft_outputs.get("version") != version):
             return failed("release publisher handoff lacks a validated successful draft")
         return {"document": None, "upload": "false", "publish": "true", "error": ""}
     if enabled == "false":

@@ -157,7 +157,7 @@ class OutcomeReductionTests(unittest.TestCase):
     def test_only_validated_successful_drafts_can_transfer_outcome_ownership(self):
         needs = prerequisites()
         needs.update({name: {"result": "success"} for name in ("version", "build", "draft")})
-        needs["draft"]["outputs"] = {"publish": "true"}
+        needs["draft"]["outputs"] = {"publish": "true", "sha": SELECTED_SHA, "version": "2.0.0"}
         choices = dict(enabled="true", publish="true", version="2.0.0", needs=needs)
         decision = self.decide(**choices)
         self.assertIsNone(decision["document"])
@@ -169,10 +169,15 @@ class OutcomeReductionTests(unittest.TestCase):
             incomplete = copy.deepcopy(needs)
             del incomplete[missing]
             self.assert_failed(self.decide(**(choices | {"needs": incomplete})))
-        for outputs in ({}, {"publish": "false"}, {"publish": True}, None):
+        for outputs in ({}, {"publish": "false"}, {"publish": True}, None,
+                        {"publish": "true", "version": "2.0.0"},
+                        {"publish": "true", "sha": SELECTED_SHA},
+                        {"publish": "true", "sha": DISPATCH_SHA, "version": "2.0.0"},
+                        {"publish": "true", "sha": SELECTED_SHA, "version": "2.0.1"}):
             invalid = copy.deepcopy(needs)
             invalid["draft"]["outputs"] = outputs
-            self.assert_failed(self.decide(**(choices | {"needs": invalid})))
+            for mode in ("create", "complete"):
+                self.assert_failed(self.decide(**(choices | {"needs": invalid, "mode": mode})))
         complete = copy.deepcopy(needs)
         complete["version"]["result"] = complete["build"]["result"] = "skipped"
         self.assertEqual("true", self.decide(**(choices | {"mode": "complete", "needs": complete}))["publish"])
@@ -260,7 +265,7 @@ class OutcomeAdapterTests(unittest.TestCase):
     def test_actual_adapter_does_no_file_or_upload_work_for_publisher_handoff(self):
         needs = prerequisites()
         needs.update({name: {"result": "success"} for name in ("version", "build", "draft")})
-        needs["draft"]["outputs"] = {"publish": "true"}
+        needs["draft"]["outputs"] = {"publish": "true", "sha": SELECTED_SHA, "version": "1.2.3"}
         result = self.adapter(RELEASE_ENABLED="true", RELEASE_PUBLISH="true", RELEASE_VERSION="1.2.3",
                               RELEASE_NEEDS=json.dumps(needs))
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)

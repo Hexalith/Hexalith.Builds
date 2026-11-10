@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 import unittest
+import urllib.parse
 
 import yaml
 
@@ -22,7 +23,7 @@ from release_state import Api, ReleaseError
 
 ROOT = Path(__file__).resolve().parents[3]
 REPOSITORY = "Example/ReleaseFixture"
-ENDPOINT = f"/repos/{REPOSITORY}/code-scanning/alerts?state=open&per_page=100"
+ENDPOINT = f"/repos/{REPOSITORY}/code-scanning/alerts?state=open&per_page=100&ref=refs%2Fheads%2Fmain"
 TOKEN = "synthetic-release-security-token"
 
 
@@ -65,6 +66,24 @@ def api_control(responses):
 
 
 class ReleaseSecurityTests(unittest.TestCase):
+    def test_alert_request_explicitly_selects_main_instead_of_the_default_branch(self):
+        with api_control({ENDPOINT: (200, {}, [])}) as (api, requests, _port):
+            self.assertEqual(0, security.check_alerts(api))
+        self.assertEqual(1, len(requests))
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(requests[0][0]).query)
+        self.assertEqual(["refs/heads/main"], query["ref"])
+
+    def test_http_errors_name_only_the_sanitized_repository_relative_endpoint(self):
+        for path in ("/releases", "/actions/workflows/ci.yml/runs", "/code-scanning/alerts"):
+            with self.subTest(path=path):
+                request_path = f"/repos/{REPOSITORY}{path}?secret={TOKEN}"
+                with api_control({request_path: (403, {}, TOKEN.encode())}) as (api, _requests, _port):
+                    with self.assertRaises(ReleaseError) as raised:
+                        api.get(request_path)
+                self.assertEqual(f"GitHub API {path} returned HTTP 403", str(raised.exception))
+                self.assertNotIn(TOKEN, str(raised.exception))
+                self.assertNotIn("?", str(raised.exception))
+
     def test_only_current_open_high_and_critical_release_categories_block(self):
         for severity in ("high", "critical"):
             with self.subTest(severity=severity):

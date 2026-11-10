@@ -29,7 +29,7 @@ recorded separately; a local branch is not claimed as a hosted branch.
 | CI selection | `test_release_state.test_latest_exact_sha_push_or_manual_ci_governs`, `test_fixture_and_workflow_overrides_are_restricted` | Latest exact-source push/manual run wins; arbitrary workflow override rejected; only Builds accepts builds-ci.yml. |
 | Security | `test_release_security.test_only_current_open_high_and_critical_release_categories_block`, `test_real_pagination_finds_later_blockers_and_names_each_number`, `test_every_page_must_be_available_and_well_formed` | Open high/critical current release categories block; closed/lower/unrelated pass; API/JSON failure fails. |
 | Hook | Hosted success/failure observations below; `test_release_state.test_complete_uses_dispatch_configuration_and_never_checks_old_sha_ci` | Current settings remain independent of old selected source; hosted run proves actual prepare/hook scheduling. |
-| Empty languages | `test_release_outcome.test_intentionally_disabled_gates_can_skip` | Empty CodeQL/dormant hook allow only their intentional skips; hosted empty-matrix coverage is not claimed. |
+| Empty languages | `test_release_outcome.test_intentionally_disabled_gates_can_skip` | Reducer-only coverage: empty CodeQL/dormant hook settings allow their intentional skipped results. Workflow matrix expansion was not exercised locally or on hosted Actions. |
 | No publication | `test_release_outcome.test_only_explicit_successful_downstream_noops_are_nothing`, `test_missing_unknown_and_unexpected_skips_cannot_be_success` | Nothing requires an explicit successful no-version/stale-draft-deletion owner; missing stages never imply a no-op. |
 | Publication handoff | `test_release_outcome.test_only_validated_successful_drafts_can_transfer_outcome_ownership`, `test_actual_adapter_does_no_file_or_upload_work_for_publisher_handoff` | Failure wins; validated handoff writes no file/directory and sets upload=false. |
 | Early error/cancellation | `test_release_outcome.test_failure_and_cancellation_win_over_all_other_decisions`, `test_actual_adapter_falls_back_to_dispatch_on_early_or_malformed_metadata`, `test_failed_decision_still_exposes_upload_path_and_retains_failure` | Failed artifact uses dispatch until selected SHA is known; failed decision still exposes upload path and exits nonzero. |
@@ -117,7 +117,9 @@ pinning init/analyze. The corrected resolve jobs emitted selected SHA/mode and
 valid current settings despite failure. This proves actual always scheduling
 after failed resolve, preparation, hook success/failure, real processed
 analysis/alert reads and upload after failed reporting. Cancellation of a
-running prerequisite, empty matrix and complete mode are local controls only.
+running prerequisite and complete mode are local controls only. Empty-language
+coverage exercises reducer skip semantics only; hosted matrix-expansion
+coverage was not performed.
 
 All three probe files are removed. Both sample config blobs are restored
 byte-for-byte to the implementation baseline; existing sample behavior is
@@ -164,3 +166,37 @@ no credential-bearing raw log is committed.
 Caller permission union, current/release SHA separation, outcome ownership,
 safe incremental behavior and the unimplemented drift slot are documented in
 [the quality README](../Tools/ci/README.md#reusable-release-gates).
+
+## Post-review hardening
+
+Independent review produced five patch entries. The API now bounds the whole
+request against the CI deadline, including response acquisition, headers and
+streaming JSON bodies; daemon work cannot delay timeout reporting or process
+exit. Alert queries explicitly select `refs/heads/main`. A future publisher
+handoff requires the successful draft outputs to match the selected SHA and
+version. HTTP errors identify a repository-relative endpoint without query,
+credential or body content. Empty-language evidence is explicitly limited to
+reducer skip semantics.
+
+The affected release controls pass **60 tests**, adding real slow-body,
+slow-header and blocked-acquisition cases, explicit main-ref requests,
+sanitized HTTP diagnostics, and missing/mismatched draft identity checks for
+both create and complete mode. Parent post-fix full-suite and lint logs are
+`/tmp/cicd-3-2-parent-python312.log`,
+`/tmp/cicd-3-2-parent-python314.log` and
+`/tmp/cicd-3-2-parent-lint.log`.
+
+Hosted probes above exercised the pre-review helpers at the recorded source;
+they are not post-fix hosted observations. The job graph, preparation action,
+workflow permissions and CodeQL pin are unchanged by the review patches.
+Hosted analysis covers csharp. The canonical story records a deferred,
+unverified question about the pinned analyzer's Kotlin coverage in no-build
+mode; [GitHub's current documentation](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/manage-your-configuration/codeql-for-compiled-languages)
+says that mode analyzes Java and omits Kotlin. No mixed Kotlin/Java fixture was
+executed with the pinned analyzer, and no alternate build mode was introduced.
+
+Post-fix parent verification passed all **20/20 groups on both Python
+3.12.13 and 3.14.4**, including **168 shared-library tests**. Pinned online
+actionlint/zizmor again reports 12 exact frozen findings and zero new findings.
+All named intent-matrix controls ran and passed in both full-suite logs. The
+frozen-file/probe-cleanup checks and whitespace validation pass.

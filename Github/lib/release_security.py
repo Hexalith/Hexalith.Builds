@@ -2,7 +2,7 @@
 """Check processed release CodeQL alerts using trusted stdlib API reads.
 
 The workflow calls this only after analyze has successfully waited for SARIF
-processing. This gate reads the most recent instance on the default branch;
+processing. This gate reads the most recent instance on refs/heads/main;
 it never searches historical instances or other analysis configurations.
 """
 
@@ -55,7 +55,7 @@ def check_alerts(api: Api) -> int:
     """Read every alert page and reject qualifying current release findings."""
     blocked = []
     checked = 0
-    endpoint = f"/repos/{api.repository}/code-scanning/alerts?state=open&per_page=100"
+    endpoint = f"/repos/{api.repository}/code-scanning/alerts?state=open&per_page=100&ref=refs%2Fheads%2Fmain"
     for alert in api.pages(endpoint):
         checked += 1
         number = blocking_alert(alert)

@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -87,6 +88,33 @@ class Api:
         return urllib.parse.urlunsplit(parsed._replace(path=root + numeric[2]))
 
     def _get(self, path, deadline=None):
+        if deadline is None:
+            return self._request(path)
+        if deadline <= self.clock():
+            raise ReleaseError("GitHub API deadline exceeded")
+        completed = threading.Event()
+        result = []
+
+        def request():
+            try:
+                result.append((True, self._request(path, deadline)))
+            except BaseException as error:
+                result.append((False, error))
+            finally:
+                completed.set()
+
+        # Socket timeouts measure inactivity, so a dribbling response or slow
+        # name resolution can outlive them. Bound acquisition and JSON reads
+        # together; a timed-out daemon cannot delay the caller or process exit.
+        threading.Thread(target=request, daemon=True).start()
+        if not completed.wait(max(0, deadline - self.clock())) or self.clock() >= deadline:
+            raise ReleaseError("GitHub API deadline exceeded")
+        success, value = result[0]
+        if not success:
+            raise value
+        return value
+
+    def _request(self, path, deadline=None):
         url = self._url(path, deadline)
         timeout = 60 if deadline is None else min(60, deadline - self.clock())
         if timeout <= 0:
@@ -98,7 +126,9 @@ class Api:
                 return json.load(response), response.headers.get("Link", "")
         except urllib.error.HTTPError as error:
             with error:
-                raise ReleaseError(f"GitHub API returned HTTP {error.code}") from error
+                prefix = urllib.parse.urlsplit(self.base_url).path.rstrip("/") + "/repos/" + self.repository
+                endpoint = urllib.parse.urlsplit(url).path.removeprefix(prefix) or "/"
+                raise ReleaseError(f"GitHub API {endpoint} returned HTTP {error.code}") from error
         except (OSError, ValueError, RecursionError) as error:
             raise ReleaseError("GitHub API transport or JSON decoding failed") from error
 
