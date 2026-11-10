@@ -22,4 +22,7 @@ public sealed record CompositionProcessResult(bool Started, int ExitCode, string
 
     /// <summary>Gets a bounded tail of standard error for actionable process failures.</summary>
     public string ErrorOutput { get; init; } = string.Empty;
+
+    /// <summary>Gets processes whose tree kill could not be confirmed within the stop allowance.</summary>
+    public IReadOnlyList<int> SurvivingProcessIds { get; init; } = [];
 }

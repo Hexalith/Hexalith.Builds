@@ -245,7 +245,18 @@ internal static class NativeTestExecutor
     /// <param name="archiveDirectory">The durable owned diagnostics, when provided by the runner.</param>
     /// <param name="processingToken">The original remaining processing budget; this method never renews it.</param>
     /// <returns>The original outcome with any subsequent evidence diagnostic.</returns>
-    internal static async Task<NativeTestExecutionResult> ArchiveSelectedAsync(NativeTestExecutionResult inspected, CompositionRunSession session, byte[] descriptorSnapshot, string? archiveDirectory, CancellationToken processingToken)
+    internal static Task<NativeTestExecutionResult> ArchiveSelectedAsync(NativeTestExecutionResult inspected, CompositionRunSession session, byte[] descriptorSnapshot, string? archiveDirectory, CancellationToken processingToken)
+        => ArchiveSelectedAsync(inspected, session, descriptorSnapshot, archiveDirectory, session.Plan.Workspace, processingToken);
+
+    /// <summary>Archives pre-launch descriptor and inspected report snapshots, writing workspace copies only inside the executing run's own workspace.</summary>
+    /// <param name="inspected">The first child outcome and its original stopping timestamp.</param>
+    /// <param name="session">The active entry and execution timing.</param>
+    /// <param name="descriptorSnapshot">The bounded descriptor bytes validated before child launch.</param>
+    /// <param name="archiveDirectory">The durable owned diagnostics, when provided by the runner.</param>
+    /// <param name="privateWorkspace">The owner workspace, or an attached run's own workspace.</param>
+    /// <param name="processingToken">The original remaining processing budget; this method never renews it.</param>
+    /// <returns>The original outcome with any subsequent evidence diagnostic.</returns>
+    internal static async Task<NativeTestExecutionResult> ArchiveSelectedAsync(NativeTestExecutionResult inspected, CompositionRunSession session, byte[] descriptorSnapshot, string? archiveDirectory, string privateWorkspace, CancellationToken processingToken)
     {
         try
         {
@@ -253,7 +264,7 @@ internal static class NativeTestExecutor
             string identity = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(session.Plan.SelectedTest!.Name)));
             ModuleTestExecutionTiming timing = session.Plan.ExecutionTiming!;
             byte[] timingBytes = Encoding.UTF8.GetBytes(CompositionDocumentStore.Serialize(timing));
-            string entry = Path.Combine(session.Plan.Workspace, "native-tests", identity);
+            string entry = Path.Combine(privateWorkspace, "native-tests", identity);
             if (archiveDirectory is not null)
             {
                 string durableEntry = Path.Combine(archiveDirectory, "entries", identity);
@@ -263,8 +274,8 @@ internal static class NativeTestExecutor
                 await ArchiveRoutingAsync(archiveDirectory, archiveDirectory).ConfigureAwait(false);
             }
 
-            await WriteSnapshotAsync(Path.Combine(session.Plan.Workspace, "execution-timing.json"), session.Plan.Workspace, timingBytes, processingToken).ConfigureAwait(false);
-            await ArchiveAsync(entry, session.Plan.Workspace).ConfigureAwait(false);
+            await WriteSnapshotAsync(Path.Combine(privateWorkspace, "execution-timing.json"), privateWorkspace, timingBytes, processingToken).ConfigureAwait(false);
+            await ArchiveAsync(entry, privateWorkspace).ConfigureAwait(false);
 
             async Task ArchiveAsync(string directory, string ownedRoot)
             {
@@ -305,6 +316,24 @@ internal static class NativeTestExecutor
         }
 
         return inspected;
+    }
+
+    /// <summary>Runs one declared suite as a runner-owned attached run inside a live owner environment.</summary>
+    /// <param name="session">The attached run's session view; its plan carries the attached selection over the owner's environment.</param>
+    /// <param name="selection">The attached suite selection.</param>
+    /// <param name="manifestPath">The owner's manifest path.</param>
+    /// <param name="dotnetCommand">The native dotnet command.</param>
+    /// <param name="attached">The attached identity, private paths and narrowed access.</param>
+    /// <param name="onStarted">Receives the child process identity once launched.</param>
+    /// <param name="onStopFailure">Receives surviving processes when a stop cannot be confirmed.</param>
+    /// <param name="cancellationToken">Stops the attached child: expiry, withdrawal, own cancellation or owner drain.</param>
+    /// <returns>The inspected native result; the caller decides the first outcome from its own hold record.</returns>
+    internal static Task<NativeTestExecutionResult> ExecuteAttachedAsync(CompositionRunSession session, ModuleTestSelection selection, string manifestPath, string dotnetCommand, AttachedSuiteIdentity attached, Action<int>? onStarted, Action<IReadOnlyList<int>>? onStopFailure, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(selection);
+        ArgumentNullException.ThrowIfNull(attached);
+        return ExecuteSelectedAsync(session, new PersistedProfileNativeTests(selection.Entry, selection.Executor), manifestPath, selection, dotnetCommand, attached.DiagnosticsDirectory, null, cancellationToken, cancellationToken, attached, onStarted, onStopFailure);
     }
 
     /// <summary>Publishes held bytes through an owned destination and cleans temporary files only within that owner.</summary>
@@ -361,8 +390,16 @@ internal static class NativeTestExecutor
         }
     }
 
-    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken ownerCancellationToken, CancellationToken cancellationToken)
+    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken ownerCancellationToken, CancellationToken cancellationToken, AttachedSuiteIdentity? attached = null, Action<int>? onStarted = null, Action<IReadOnlyList<int>>? onStopFailure = null)
     {
+        // An attached run writes only inside its own workspace; the owner's workspace stays the shared read-only source mapping.
+        string privateWorkspace = attached?.Workspace ?? session.Plan.Workspace;
+        if (attached is not null && (session.Readiness.TestObservation is not null || session.Readiness.RoutingCatalogObservationsRequired
+            || attached.Hold.OwnerRunId != session.Plan.RunId || attached.Hold.EnvironmentId != session.Plan.EnvironmentId))
+        {
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest, "Attached suites cannot use the owner's gate, access or routing observations, or another environment.");
+        }
+
         if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
             || session.Plan.SelectedTest != selection || session.Readiness.RunId != session.Plan.RunId
             || session.Readiness.Resources.Count == 0 || session.Readiness.Resources.Any(resource => resource.State != "Healthy")
@@ -379,15 +416,17 @@ internal static class NativeTestExecutor
             await WriteSnapshotAsync(Path.Combine(archiveDirectory, "execution-activation.json"), archiveDirectory, Encoding.UTF8.GetBytes(CompositionDocumentStore.Serialize(timing)), cancellationToken).ConfigureAwait(false);
         }
 
-        await CompositionDocumentStore.WriteAsync(Path.Combine(session.Plan.Workspace, "execution-timing.json"), timing, cancellationToken).ConfigureAwait(false);
-        await CompositionDocumentStore.WriteAsync(Path.Combine(session.Plan.Workspace, "plan.json"), session.Plan, cancellationToken).ConfigureAwait(false);
-        await CompositionDocumentStore.WriteAsync(session.Plan.ReadinessPath, session.Readiness, cancellationToken).ConfigureAwait(false);
+        await CompositionDocumentStore.WriteAsync(Path.Combine(privateWorkspace, "execution-timing.json"), timing, cancellationToken).ConfigureAwait(false);
+        await CompositionDocumentStore.WriteAsync(attached?.PlanPath ?? Path.Combine(session.Plan.Workspace, "plan.json"), session.Plan, cancellationToken).ConfigureAwait(false);
+        await CompositionDocumentStore.WriteAsync(attached?.ReadinessPath ?? session.Plan.ReadinessPath, session.Readiness, cancellationToken).ConfigureAwait(false);
         string descriptorPath;
         byte[] descriptorSnapshot;
         IReadOnlyDictionary<string, byte[]> routingCatalogSnapshot;
         try
         {
-            descriptorPath = await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAsync(session, archiveDirectory, cancellationToken).ConfigureAwait(false);
+            descriptorPath = attached is null
+                ? await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAsync(session, archiveDirectory, cancellationToken).ConfigureAwait(false)
+                : await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAttachedAsync(session, Path.Combine(Path.GetDirectoryName(attached.DiagnosticsDirectory)!, session.Plan.RunId), attached, cancellationToken).ConfigureAwait(false);
             TestEnvironment.TestEnvironmentContractReadResult validated = TestEnvironment.TestEnvironmentContractReader.ReadDescriptor(descriptorPath, cancellationToken);
             if (!validated.IsValid)
             {
@@ -408,7 +447,7 @@ internal static class NativeTestExecutor
 
         string root = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
         string project = Path.Combine(root, selection.Entry);
-        string results = Path.Combine(session.Plan.Workspace, "native-tests");
+        string results = Path.Combine(privateWorkspace, "native-tests");
         CompositionWorkspace.CreatePrivateDirectory(results);
         string reportPath = Path.Combine(results, _reportFileName);
         string observationPath = Path.Combine(results, "functional-observations.json");
@@ -428,13 +467,21 @@ internal static class NativeTestExecutor
             return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
         }
 
-        CompositionTokenRequest nativeIdentity = new("g4-native-tests", nativeScope?.Tenants ?? [session.Plan.TenantNamespace], nativeScope?.Domains ?? [selection.ModuleId], ["command:submit", "query:read"], false, timing.CredentialExpiryUtc - issued)
+        // An attached bearer is narrowed to its run and never outlives its hold: exp = min(execution deadline, expiresAt).
+        TimeSpan credentialLifetime = attached is null ? timing.CredentialExpiryUtc - issued : attached.AccessExpiry(timing) - issued;
+        if (attached is not null && DateTimeOffset.FromUnixTimeSeconds(issued.Add(credentialLifetime).ToUnixTimeSeconds()) <= issued)
+        {
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest, "The attached hold or execution deadline leaves no positive access lifetime.");
+        }
+
+        CompositionTokenRequest nativeIdentity = new(attached is null ? "g4-native-tests" : "g4-attached-tests:" + attached.RunId, nativeScope?.Tenants ?? [session.Plan.TenantNamespace], nativeScope?.Domains ?? [selection.ModuleId], ["command:submit", "query:read"], false, credentialLifetime)
         {
             Surface = nativeScope is null ? null : "agent",
         };
         string token = CompositionTokenFactory.Create(session.SigningKey, nativeIdentity, issued);
+        DateTimeOffset credentialExpiry = DateTimeOffset.FromUnixTimeSeconds(issued.Add(credentialLifetime).ToUnixTimeSeconds());
         List<string> handoffSecrets = [token, session.SigningKey];
-        IReadOnlyList<string>? endpointSecrets = await CompositionEndpointCredentials.ReadSecretsAsync(session.Plan, session.Readiness, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<string>? endpointSecrets = await CompositionEndpointCredentials.ReadSecretsAsync(session.Plan, session.Readiness, attached, cancellationToken).ConfigureAwait(false);
         if (endpointSecrets is null)
         {
             return Failed("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, ToolExitCode.EvidenceSchemaOrPolicy);
@@ -465,7 +512,7 @@ internal static class NativeTestExecutor
             return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
         }
 
-        Dictionary<string, string> environment = new(NativeTestHandoff.Create(session.Plan, session.Readiness, token), StringComparer.Ordinal)
+        Dictionary<string, string> environment = new(NativeTestHandoff.Create(session.Plan, session.Readiness, token, attached), StringComparer.Ordinal)
         {
             ["HEXALITH_G4_TEST_REPORT_PATH"] = reportPath,
             [NativeTestHandoff.TestEnvironmentPath] = descriptorPath,
@@ -478,20 +525,41 @@ internal static class NativeTestExecutor
             }
         }
 
+        if (attached is not null && selection.Executor != "python3")
+        {
+            // An attached dotnet child starts no reusable MSBuild node, MSBuild server or compiler server: those would inherit
+            // the attached run tag and bearer, and the run-tag kill at attachment end would break owner or peer builds reusing them.
+            environment["MSBUILDDISABLENODEREUSE"] = "1";
+            environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
+            environment["UseSharedCompilation"] = "false";
+        }
+
         CompositionSelectedTestGate gate = new(session, cancellationToken);
 
         CompositionProcessResult process;
         bool cancelled = false;
         long firstStop = 0;
+        IReadOnlyList<int> survivors = [];
         try
         {
             gate.Start();
             cancellationToken.ThrowIfCancellationRequested();
-            System.Diagnostics.ProcessStartInfo childStart = CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : [.. CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), "--artifacts-path", Path.Combine(session.Plan.Workspace, "test-builds")], Path.GetDirectoryName(project), environment);
+            System.Diagnostics.ProcessStartInfo childStart = CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : [.. CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), "--artifacts-path", Path.Combine(privateWorkspace, "test-builds")], Path.GetDirectoryName(project), environment);
             TimeSpan remainingExecution = timing.DeadlineUtc - DateTimeOffset.UtcNow;
             process = remainingExecution <= TimeSpan.Zero
                 ? new CompositionProcessResult(true, -1, string.Empty, true)
-                : await CompositionProcess.RunSelectedAsync(childStart, remainingExecution, TimeSpan.FromSeconds(selection.StopTimeoutSeconds), timestamp => Interlocked.CompareExchange(ref firstStop, timestamp, 0), gate.Token).ConfigureAwait(false);
+                : await CompositionProcess.RunSelectedAsync(
+                    childStart,
+                    remainingExecution,
+                    TimeSpan.FromSeconds(selection.StopTimeoutSeconds),
+                    timestamp => Interlocked.CompareExchange(ref firstStop, timestamp, 0),
+                    gate.Token,
+                    surviving =>
+                    {
+                        survivors = surviving;
+                        onStopFailure?.Invoke(surviving);
+                    },
+                    onStarted).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -545,11 +613,11 @@ internal static class NativeTestExecutor
             await processing.CancelAsync().ConfigureAwait(false);
         }
 
-        (NativeTestReportLoadResult report, byte[]? bytes) = await SelectedNativeTestReport.ReadAsync(reportPath, session.Plan.Workspace, handoffSecrets, processing.Token).ConfigureAwait(false);
+        (NativeTestReportLoadResult report, byte[]? bytes) = await SelectedNativeTestReport.ReadAsync(reportPath, privateWorkspace, handoffSecrets, processing.Token).ConfigureAwait(false);
         bool requiresObservations = selection is { ModuleId: "memories", Name: "functional-retention" }
             or { ModuleId: "parties", Name: "platform-source" or "platform-package" } || File.Exists(observationPath);
         byte[]? observations = requiresObservations
-            ? await SelectedNativeTestReport.ReadObservationsAsync(observationPath, session.Plan.Workspace, session.Plan.RunId, handoffSecrets, processing.Token).ConfigureAwait(false)
+            ? await SelectedNativeTestReport.ReadObservationsAsync(observationPath, privateWorkspace, attached?.RunId ?? session.Plan.RunId, handoffSecrets, processing.Token).ConfigureAwait(false)
             : null;
         NativeTestExecutionResult evaluated;
         if (report.Diagnostic?.RuleId == "HXT008")
@@ -588,7 +656,7 @@ internal static class NativeTestExecutor
 
         timing = timing with { ActualDurationSeconds = Math.Max(0, (DateTimeOffset.UtcNow - timing.StartedAtUtc).TotalSeconds - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp).TotalSeconds) };
         session.Plan = session.Plan with { ExecutionTiming = timing };
-        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, RoutingCatalogSnapshot = routingCatalogSnapshot, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
+        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, RoutingCatalogSnapshot = routingCatalogSnapshot, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null, SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()], CredentialExpiresAtUtc = credentialExpiry, DescriptorSnapshot = descriptorSnapshot, Launched = process.Started };
         if (onOutcome is not null)
         {
             inspected = inspected with { MetadataRecordingTimestamp = System.Diagnostics.Stopwatch.GetTimestamp() };
@@ -597,7 +665,7 @@ internal static class NativeTestExecutor
             await onOutcome(inspected, recording.Token).ConfigureAwait(false);
         }
 
-        return await ArchiveSelectedAsync(inspected, session, descriptorSnapshot, archiveDirectory, processing.Token).ConfigureAwait(false);
+        return await ArchiveSelectedAsync(inspected, session, descriptorSnapshot, archiveDirectory, privateWorkspace, processing.Token).ConfigureAwait(false);
     }
 
     private static bool ContainsRetainedSecret(byte[] reportBytes, IReadOnlyList<string> handoffSecrets)

@@ -75,7 +75,7 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Run, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Debug, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
-        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
+        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted, attacherContext));
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateResultValidationCommand(standardOutput, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreatePrepareBuildCommand(standardOutput, operationStarted));
@@ -350,7 +350,8 @@ internal static class ModuleCommandApplication
         TextWriter standardOutput,
         string? descriptorChildEntryAssemblyPath,
         CompositionEngineOptions? compositionOptions,
-        Action<Task<int>> operationStarted)
+        Action<Task<int>> operationStarted,
+        JsonElement? attacherContext = null)
     {
         Command commandDefinition = new(CommandName(command), CommandDescription(command));
         Option<string> manifestOption = new("--manifest")
@@ -374,6 +375,9 @@ internal static class ModuleCommandApplication
         Option<string> candidateOption = new("--candidate-request") { Description = "Signed GitHub gate issuance; requires independently enrolled host authority." };
         Option<string> runIdOption = new("--run-id");
         Option<string> ciReceiptOption = new("--ci-owner-receipt") { Description = "External durable ownership receipt for disposable Linux GitHub-hosted package integration." };
+        Option<string> attachToOption = new("--attach-to") { Description = "Runs the declared suite as a runner-owned attached run hosted by this live owner run." };
+        Option<string> holdOption = new("--hold-seconds") { Description = "Whole seconds from 1 to 14400; omit for 1800. Requires --attach-to." };
+        Option<string> attachmentRequestOption = new("--attachment-request-id") { Description = "A runner-issued request or attached run identity being retried. Requires --attach-to." };
         Option<string> outputOption = new("--output")
         {
             DefaultValueFactory = _ => "human",
@@ -391,6 +395,9 @@ internal static class ModuleCommandApplication
             commandDefinition.Options.Add(ownersOption);
             commandDefinition.Options.Add(candidateOption);
             commandDefinition.Options.Add(ciReceiptOption);
+            commandDefinition.Options.Add(attachToOption);
+            commandDefinition.Options.Add(holdOption);
+            commandDefinition.Options.Add(attachmentRequestOption);
         }
 
         if (command == ModuleInvocationCommand.Down)
@@ -419,6 +426,21 @@ internal static class ModuleCommandApplication
                 return ToolCommandHost.WriteParseFailureAsync(standardOutput, ParseOutputFormat(parseResult.GetValue(outputOption)));
             }
 
+            // Only an absent option means omission; an explicit empty value stays malformed and is refused, never defaulted.
+            string? Explicit(Option<string> option) => command == ModuleInvocationCommand.Test && parseResult.GetResult(option) is not null
+                ? parseResult.GetValue(option) ?? string.Empty
+                : null;
+            string? attachTo = Explicit(attachToOption);
+            string? holdSeconds = Explicit(holdOption);
+            string? presentedRequestId = Explicit(attachmentRequestOption);
+            if (attachTo is null && (holdSeconds is not null || presentedRequestId is not null))
+            {
+                return ToolCommandHost.WriteParseFailureAsync(standardOutput, ParseOutputFormat(parseResult.GetValue(outputOption)));
+            }
+
+            AttachedSuiteRequest? attachedSuite = attachTo is null
+                ? null
+                : new AttachedSuiteRequest { HoldSeconds = holdSeconds, PresentedRequestId = presentedRequestId, AttacherContext = attacherContext };
             CompositionEngineOptions? executionOptions = compositionOptions;
             if (command == ModuleInvocationCommand.Test && parseResult.GetValue(ciReceiptOption) is { } receiptPath)
             {
@@ -440,11 +462,12 @@ internal static class ModuleCommandApplication
                 standardOutput,
                 cancellationToken,
                 descriptorChildEntryAssemblyPath,
-                command == ModuleInvocationCommand.Down ? parseResult.GetValue(runIdOption) : null,
+                command == ModuleInvocationCommand.Down ? parseResult.GetValue(runIdOption) : attachTo,
                 executionOptions,
                 mode,
                 parseResult.GetValue(profileOption),
-                command == ModuleInvocationCommand.Test ? parseResult.GetValue(candidateOption) : null);
+                command == ModuleInvocationCommand.Test ? parseResult.GetValue(candidateOption) : null,
+                attachedSuite);
             operationStarted(execution);
             return execution;
         });

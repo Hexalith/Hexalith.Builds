@@ -227,11 +227,13 @@ public static class CompositionProcess
     /// <param name="stopTimeout">The separate total stopping allowance.</param>
     /// <param name="onStopping">Records the first deadline or owner stop signal for subsequent report and cleanup work.</param>
     /// <param name="cancellationToken">The original execution token.</param>
+    /// <param name="onStopFailure">Receives surviving process identities when the tree kill cannot be confirmed within the stop allowance.</param>
+    /// <param name="onStarted">Receives the started child process identity.</param>
     /// <returns>The process result, preserving owner cancellation.</returns>
-    internal static Task<CompositionProcessResult> RunSelectedAsync(ProcessStartInfo start, TimeSpan timeout, TimeSpan stopTimeout, Action<long> onStopping, CancellationToken cancellationToken) =>
-        RunCoreAsync(start, timeout, _maximumOutputCharacters, stopTimeout, onStopping, cancellationToken);
+    internal static Task<CompositionProcessResult> RunSelectedAsync(ProcessStartInfo start, TimeSpan timeout, TimeSpan stopTimeout, Action<long> onStopping, CancellationToken cancellationToken, Action<IReadOnlyList<int>>? onStopFailure = null, Action<int>? onStarted = null) =>
+        RunCoreAsync(start, timeout, _maximumOutputCharacters, stopTimeout, onStopping, cancellationToken, onStopFailure, onStarted);
 
-    private static async Task<CompositionProcessResult> RunCoreAsync(ProcessStartInfo start, TimeSpan timeout, int maximumOutputCharacters, TimeSpan? selectedStopTimeout, Action<long>? onStopping, CancellationToken cancellationToken)
+    private static async Task<CompositionProcessResult> RunCoreAsync(ProcessStartInfo start, TimeSpan timeout, int maximumOutputCharacters, TimeSpan? selectedStopTimeout, Action<long>? onStopping, CancellationToken cancellationToken, Action<IReadOnlyList<int>>? onStopFailure = null, Action<int>? onStarted = null)
     {
         ArgumentNullException.ThrowIfNull(start);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumOutputCharacters);
@@ -242,6 +244,8 @@ public static class CompositionProcess
         }
 
         process.StandardInput.Close();
+        int processId = process.Id;
+        onStarted?.Invoke(processId);
         using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bound.CancelAfter(timeout);
         long stoppingAt = 0;
@@ -281,6 +285,7 @@ public static class CompositionProcess
                     await stopping.CancelAsync().ConfigureAwait(false);
                 }
 
+                IReadOnlyList<int> survivors = [];
                 try
                 {
                     process.Kill(entireProcessTree: true);
@@ -288,16 +293,34 @@ public static class CompositionProcess
                 }
                 catch (Exception exception) when (exception is OperationCanceledException or InvalidOperationException or Win32Exception or NotSupportedException or AggregateException)
                 {
-                    // No renewed wait: exact owned cleanup and reporting share the same allowance.
+                    // No renewed wait: exact owned cleanup and reporting share the same allowance, so an unconfirmed stop is reported, never assumed.
+                    survivors = Exited(process) ? [] : [processId];
                 }
-            }
-            else
-            {
-                Kill(process);
+
+                if (survivors.Count > 0)
+                {
+                    onStopFailure?.Invoke(survivors);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                return new CompositionProcessResult(true, -1, string.Empty, true) { SurvivingProcessIds = survivors };
             }
 
+            Kill(process);
             cancellationToken.ThrowIfCancellationRequested();
             return new CompositionProcessResult(true, -1, string.Empty, true);
+        }
+    }
+
+    private static bool Exited(Process process)
+    {
+        try
+        {
+            return process.HasExited;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or Win32Exception or NotSupportedException)
+        {
+            return false;
         }
     }
 

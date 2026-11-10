@@ -131,6 +131,12 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets the longest pause between reads while an owner's success cleanup waits for live attachment holds.</summary>
     internal TimeSpan HoldPollInterval { get; init; } = TimeSpan.FromSeconds(1);
 
+    /// <summary>Gets how long an attached suite request waits for the live owner to pick it up before it is recorded as failed.</summary>
+    internal TimeSpan AttachedPickupTimeout { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>Gets a test-only replacement for the run-tag process discovery of attached runs only.</summary>
+    internal Func<string, CancellationToken, (IReadOnlyList<int> ProcessIds, bool Verified)>? AttachedProcessDiscoveryOverride { get; init; }
+
     /// <summary>Gets a test-only CI policy override.</summary>
     internal bool? ContinuousIntegrationOverride { get; init; }
 

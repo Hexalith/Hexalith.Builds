@@ -30,7 +30,43 @@ public static class TestEnvironmentDescriptorWriter
     /// <param name="cancellationToken">The execution cancellation token.</param>
     /// <returns>The absolute validated descriptor path.</returns>
     /// <exception cref="InvalidDataException">A required real observation or immutable binding is unavailable.</exception>
-    public static async Task<string> WriteAsync(CompositionRunSession session, string? ownerDiagnosticsDirectory, CancellationToken cancellationToken = default)
+    public static Task<string> WriteAsync(CompositionRunSession session, string? ownerDiagnosticsDirectory, CancellationToken cancellationToken = default)
+        => WriteCoreAsync(session, ownerDiagnosticsDirectory, null, cancellationToken);
+
+    /// <summary>Writes the private descriptor of a runner-owned attached run into its own attachment workspace.</summary>
+    /// <param name="session">The attached run's session view over the ready owner environment.</param>
+    /// <param name="ownerDiagnosticsDirectory">The owner's durable diagnostics directory holding accepted attachments.</param>
+    /// <param name="attached">The attached run identity and private paths.</param>
+    /// <param name="cancellationToken">The execution cancellation token.</param>
+    /// <returns>The absolute validated descriptor path.</returns>
+    /// <exception cref="InvalidDataException">A required real observation or immutable binding is unavailable.</exception>
+    internal static Task<string> WriteAttachedAsync(CompositionRunSession session, string ownerDiagnosticsDirectory, AttachedSuiteIdentity attached, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(attached);
+        return WriteCoreAsync(session, ownerDiagnosticsDirectory, attached, cancellationToken);
+    }
+
+    /// <summary>Gets the attached-role run binding, which names the producing attached run and its owner.</summary>
+    /// <param name="attachedRunId">The attached run.</param>
+    /// <param name="attemptId">The issued attached attempt.</param>
+    /// <param name="ownerRunId">The owner.</param>
+    /// <param name="environmentId">The owner's environment.</param>
+    /// <returns>The v1 attached run binding.</returns>
+    internal static object AttachedRun(string attachedRunId, string attemptId, string ownerRunId, string environmentId) =>
+        new { runId = attachedRunId, attemptId, attemptSequence = 1, ownerRunId, environmentId, role = "attached", attachedRunId };
+
+    /// <summary>Gets the explicit baseline-only classification of an attached run; attachment never inherits an owner's candidate decision.</summary>
+    /// <returns>The v1 baseline-only candidate binding.</returns>
+    internal static object AttachedCandidate() => new { state = "populated", classification = "baseline-only", reason = "Runner-owned attached runs are diagnostic baseline-only runs." };
+
+    /// <summary>Writes the owner's or an attached run's private descriptor from an actually ready, owned environment.</summary>
+    /// <param name="session">The ready session, or an attached run's view of it.</param>
+    /// <param name="ownerDiagnosticsDirectory">The owner's durable diagnostics directory holding accepted attachments, when known.</param>
+    /// <param name="attached">The attached run identity, or null for the owner.</param>
+    /// <param name="cancellationToken">The execution cancellation token.</param>
+    /// <returns>The absolute validated descriptor path.</returns>
+    /// <exception cref="InvalidDataException">A required real observation or immutable binding is unavailable.</exception>
+    internal static async Task<string> WriteCoreAsync(CompositionRunSession session, string? ownerDiagnosticsDirectory, AttachedSuiteIdentity? attached, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(session);
         CompositionRunPlan plan = session.Plan;
@@ -110,7 +146,9 @@ public static class TestEnvironmentDescriptorWriter
             policyId = TestEnvironmentContractReader.PolicyId,
             bindings = new
             {
-                run = new { runId = plan.RunId, attemptId = plan.AttemptId, attemptSequence = plan.CandidatePolicy?.AttemptSequence ?? 1, ownerRunId = plan.RunId, environmentId = plan.EnvironmentId, role = "owner" },
+                run = attached is null
+                    ? new { runId = plan.RunId, attemptId = plan.AttemptId, attemptSequence = plan.CandidatePolicy?.AttemptSequence ?? 1, ownerRunId = plan.RunId, environmentId = plan.EnvironmentId, role = "owner" }
+                    : AttachedRun(attached.RunId, attached.AttemptId, plan.RunId, plan.EnvironmentId),
                 environment = new
                 {
                     composition = new { id = plan.PlatformActiveModule ?? selected.ModuleId, contentIdentity = composition },
@@ -123,21 +161,24 @@ public static class TestEnvironmentDescriptorWriter
                     startupTasks = new { state = "populated", tasks = ready.StartupTaskResults.Select(task => new { taskId = task.TaskId, required = true, status = task.Status, startedAt = Utc(task.StartedAt!.Value), finishedAt = Utc(task.FinishedAt!.Value), diagnosticIds = Array.Empty<string>() }) },
                 },
                 tool = unavailable,
-                candidate = plan.CandidatePolicy is { } candidate ? (object)candidate.Candidate : new { state = "populated", classification = "baseline-only", reason = "No authenticated candidate request was selected." },
-                decision = plan.CandidatePolicy is { } decision ? decision.Decision : unavailable,
-                reuseLineage = plan.CandidatePolicy is { } lineage ? lineage.ReuseLineage : unavailable,
+                candidate = CandidateBinding(plan, attached),
+                decision = attached is null && plan.CandidatePolicy is { } decision ? decision.Decision : unavailable,
+                reuseLineage = attached is null && plan.CandidatePolicy is { } lineage ? lineage.ReuseLineage : unavailable,
                 artifacts = new { expected = unavailable, loaded = unavailable },
                 suite = new { declared = unavailable, completion = unavailable },
                 attachments = System.Text.Json.Nodes.JsonNode.Parse(CompositionAttachmentStore.ReadContractBinding(ownerDiagnosticsDirectory, plan.RunId, DateTimeOffset.UtcNow).ToJsonString()),
                 deadlines = new
                 {
-                    startup = new { state = "populated", origin = "environment-requested", originAt = Utc(startupOrigin), effectiveSeconds = plan.EffectiveDeadline.TimeoutSeconds, expiresAt = Utc(plan.StartupDeadlineUtc.Value), actualDurationSeconds = ready.StartupDurationSeconds.Value, @override = startupOverride },
+                    // An attached run shares the environment's startup deadline; its own startup duration is not produced in this revision.
+                    startup = attached is null
+                        ? (object)new { state = "populated", origin = "environment-requested", originAt = Utc(startupOrigin), effectiveSeconds = plan.EffectiveDeadline.TimeoutSeconds, expiresAt = Utc(plan.StartupDeadlineUtc.Value), actualDurationSeconds = ready.StartupDurationSeconds.Value, @override = startupOverride }
+                        : new { state = "populated", origin = "environment-requested", originAt = Utc(startupOrigin), effectiveSeconds = plan.EffectiveDeadline.TimeoutSeconds, expiresAt = Utc(plan.StartupDeadlineUtc.Value), @override = startupOverride },
                     execution = new { state = "populated", origin = "test-execution-started", originAt = Utc(timing.StartedAtUtc), effectiveSeconds = timing.EffectiveSeconds, expiresAt = Utc(timing.DeadlineUtc), configurationContentIdentity = timing.ConfigurationContentIdentity },
                 },
             },
             diagnostics = Array.Empty<object>(),
         };
-        string path = Path.GetFullPath(Path.Combine(plan.Workspace, "test-environment.json"));
+        string path = attached?.DescriptorPath ?? Path.GetFullPath(Path.Combine(plan.Workspace, "test-environment.json"));
         await CompositionDocumentStore.WriteAsync(path, descriptor, cancellationToken).ConfigureAwait(false);
         TestEnvironmentContractReadResult validated = TestEnvironmentContractReader.ReadDescriptor(path, cancellationToken);
         if (!validated.IsValid)
@@ -218,6 +259,13 @@ public static class TestEnvironmentDescriptorWriter
             ? throw new InvalidDataException("Declared suite handoff supports local execution or complete actual GitHub Actions metadata: repository, run ID, positive attempt, job, runner OS and a github-hosted or self-hosted runner environment are required.")
             : new { kind = "ci", repository, workflowRunId = run, workflowAttempt = attempt, jobId = job, runnerKind, operatingSystem = os, disposable = runner == "github-hosted" };
     }
+
+    private static object CandidateBinding(CompositionRunPlan plan, AttachedSuiteIdentity? attached) => (attached, plan.CandidatePolicy) switch
+    {
+        (not null, _) => AttachedCandidate(),
+        (null, { } candidate) => candidate.Candidate,
+        _ => new { state = "populated", classification = "baseline-only", reason = "No authenticated candidate request was selected." },
+    };
 
     private static bool SafeEndpoint(CompositionResourceEndpoint endpoint) => endpoint.Uri.IsAbsoluteUri
         && Uri.CheckHostName(endpoint.Uri.Host) != UriHostNameType.Unknown

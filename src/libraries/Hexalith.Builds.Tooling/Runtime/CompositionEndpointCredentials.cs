@@ -16,7 +16,15 @@ internal static class CompositionEndpointCredentials
     /// <param name="readiness">The actual prepared endpoint observations.</param>
     /// <param name="token">The original execution bound.</param>
     /// <returns>The exact handed-off values, or null on any unsafe or inconsistent channel.</returns>
-    internal static async Task<IReadOnlyList<string>?> ReadSecretsAsync(CompositionRunPlan plan, CompositionReadiness readiness, CancellationToken token)
+    internal static Task<IReadOnlyList<string>?> ReadSecretsAsync(CompositionRunPlan plan, CompositionReadiness readiness, CancellationToken token) => ReadSecretsAsync(plan, readiness, null, token);
+
+    /// <summary>Captures exact endpoint secrets from the owner's channel or an attached run's own channel.</summary>
+    /// <param name="plan">The owning run and isolation bindings.</param>
+    /// <param name="readiness">The actual prepared endpoint observations.</param>
+    /// <param name="attached">The attached run whose private channel is expected, or null for the owner.</param>
+    /// <param name="token">The original execution bound.</param>
+    /// <returns>The exact handed-off values, or null on any unsafe or inconsistent channel.</returns>
+    internal static async Task<IReadOnlyList<string>?> ReadSecretsAsync(CompositionRunPlan plan, CompositionReadiness readiness, AttachedSuiteIdentity? attached, CancellationToken token)
     {
         if (readiness.NativeEndpointCredentialsPath is not { } path)
         {
@@ -25,8 +33,9 @@ internal static class CompositionEndpointCredentials
 
         try
         {
-            string expected = Path.Combine(Path.GetFullPath(plan.Workspace), NativeTestHandoff.EndpointCredentialsFileName);
-            if (path != expected || !SelectedNativeTestReport.IsOwnedRegularPath(path, plan.Workspace))
+            string workspace = attached?.Workspace ?? plan.Workspace;
+            string expected = Path.Combine(Path.GetFullPath(workspace), NativeTestHandoff.EndpointCredentialsFileName);
+            if (path != expected || !SelectedNativeTestReport.IsOwnedRegularPath(path, workspace))
             {
                 return null;
             }
@@ -67,7 +76,7 @@ internal static class CompositionEndpointCredentials
                     JsonElement root = document.RootElement;
                     Properties(root, "schema", "runId", "syntheticTenantId", "dataIsolationId", "endpoints");
                     if (root.GetProperty("schema").GetString() != NativeTestHandoff.EndpointCredentialsSchema
-                        || root.GetProperty("runId").GetString() != plan.RunId
+                        || root.GetProperty("runId").GetString() != (attached?.RunId ?? plan.RunId)
                         || root.GetProperty("syntheticTenantId").GetString() != plan.TenantNamespace
                         || root.GetProperty("dataIsolationId").GetString() != plan.ResourceNamespace)
                     {
