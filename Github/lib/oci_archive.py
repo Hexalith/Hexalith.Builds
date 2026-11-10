@@ -12,10 +12,44 @@ import tarfile
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
 INDEX = "application/vnd.oci.image.index.v1+json"
 MANIFEST = "application/vnd.oci.image.manifest.v1+json"
+CONFIG = "application/vnd.oci.image.config.v1+json"
+LAYERS = frozenset("application/vnd.oci.image.layer." + kind + suffix
+                   for kind in ("v1.tar", "nondistributable.v1.tar")
+                   for suffix in ("", "+gzip", "+zstd")) | frozenset({
+    # SDK OCI manifests retain these compatible Docker base-layer descriptors.
+    "application/vnd.docker.image.rootfs.diff.tar.gzip",
+    "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip",
+})
+PLATFORM_FIELDS = ("os", "architecture", "variant", "os.version", "os.features")
+MAX_EXTENDED_METADATA_SIZE = 2 ** 20
+MAX_EXTENDED_METADATA_TOTAL = 8 * 2 ** 20
 
 
 class OciError(ValueError):
     """An archive contains an unsafe member, inconsistent identity or broken graph."""
+
+
+class BoundedTarInfo(tarfile.TarInfo):
+    """Limit hidden metadata before tarfile allocates its extended payload."""
+
+    def _proc_member(self, archive):
+        if self.type in (tarfile.XHDTYPE, tarfile.XGLTYPE, tarfile.SOLARIS_XHDTYPE,
+                         tarfile.GNUTYPE_LONGNAME, tarfile.GNUTYPE_LONGLINK):
+            payload = self._block(self.size)
+            total = getattr(archive, "_oci_metadata_size", 0) + tarfile.BLOCKSIZE + payload
+            if (self.size < 0 or payload > MAX_EXTENDED_METADATA_SIZE
+                    or total > MAX_EXTENDED_METADATA_TOTAL):
+                raise OciError("oversized OCI extended metadata")
+            archive._oci_metadata_size = total
+        elif self.type == tarfile.GNUTYPE_SPARSE:
+            raise OciError("sparse OCI archive member")
+        return super()._proc_member(archive)
+
+    def _proc_gnusparse_00(self, *args):
+        raise OciError("sparse OCI archive member")
+
+    _proc_gnusparse_01 = _proc_gnusparse_00
+    _proc_gnusparse_10 = _proc_gnusparse_00
 
 
 def sha256(data: bytes) -> str:
@@ -46,7 +80,7 @@ def archive_files(source: Path | io.BytesIO) -> dict[str, bytes]:
     files = {}
     try:
         options = {"fileobj": source} if hasattr(source, "read") else {"name": source}
-        with tarfile.open(mode="r:*", **options) as archive:
+        with tarfile.open(mode="r:*", tarinfo=BoundedTarInfo, **options) as archive:
             total = 0
             for member in archive:
                 name = member.name.removeprefix("./")
@@ -61,8 +95,49 @@ def archive_files(source: Path | io.BytesIO) -> dict[str, bytes]:
                     raise OciError("unsafe, duplicate or oversized OCI member")
                 files[name] = archive.extractfile(member).read()
         return files
-    except (tarfile.TarError, OSError, EOFError) as error:
+    except (tarfile.TarError, OSError, EOFError, RecursionError) as error:
         raise OciError("invalid OCI archive") from error
+
+
+def validate_platform(platform):
+    if (not isinstance(platform, dict)
+            or any(not isinstance(platform.get(key), str) or not platform[key]
+                   for key in ("os", "architecture"))):
+        raise OciError("missing OCI platform")
+    for key in ("variant", "os.version"):
+        if key in platform and (not isinstance(platform[key], str) or not platform[key]):
+            raise OciError("invalid OCI platform metadata")
+    if "os.features" in platform and (not isinstance(platform["os.features"], list)
+            or any(not isinstance(value, str) or not value for value in platform["os.features"])):
+        raise OciError("invalid OCI platform metadata")
+
+
+def image_platform(config, descriptor, *, single=False):
+    """Keep descriptor metadata and check every field shared with image config."""
+    platform = {key: config[key] for key in PLATFORM_FIELDS if key in config}
+    validate_platform(platform)
+    if "platform" in descriptor:
+        supplied = descriptor["platform"]
+        if single and supplied is None:
+            return platform
+        if single and isinstance(supplied, dict):
+            # SDK single-image roots can serialize incomplete/null platform
+            # fields. The image config supplies those absent values.
+            supplied = {key: value for key, value in supplied.items()
+                        if key not in PLATFORM_FIELDS or value is not None}
+            validate_platform({**platform, **supplied})
+        else:
+            validate_platform(supplied)
+        if any(supplied[key] != platform[key] for key in PLATFORM_FIELDS
+               if key in supplied and key in platform):
+            raise OciError("OCI configuration platform mismatch")
+        platform.update(supplied)
+    return platform
+
+
+def platform_identity(platform):
+    return platform["os"] + "/" + platform["architecture"] + (
+        "/" + platform["variant"] if platform.get("variant") else "")
 
 
 def inspect_files(files: dict[str, bytes], *, revision: str, version: str,
@@ -76,7 +151,7 @@ def inspect_files(files: dict[str, bytes], *, revision: str, version: str,
         if not isinstance(descriptor, dict) or not DIGEST.fullmatch(str(descriptor.get("digest", ""))):
             raise OciError("invalid OCI descriptor digest")
         digest = descriptor["digest"]
-        if media and descriptor.get("mediaType") != media:
+        if media and descriptor.get("mediaType") not in ({media} if isinstance(media, str) else media):
             raise OciError("unexpected OCI descriptor media type")
         path = "blobs/sha256/" + digest[7:]
         data = files[path]
@@ -109,18 +184,11 @@ def inspect_files(files: dict[str, bytes], *, revision: str, version: str,
             manifest = document(blob(child, MANIFEST))
             if manifest.get("schemaVersion") != 2 or manifest.get("mediaType") != MANIFEST:
                 raise OciError("invalid OCI child manifest")
-            config = document(blob(manifest["config"]))
-            platform = child.get("platform", {}) if not single else {
-                key: config[key] for key in ("os", "architecture")}
-            if any(not isinstance(platform.get(key), str) or not platform[key] for key in ("os", "architecture")):
+            config = document(blob(manifest["config"], CONFIG))
+            if not single and "platform" not in child:
                 raise OciError("missing OCI platform")
-            if config.get("os") != platform["os"] or config.get("architecture") != platform["architecture"]:
-                raise OciError("OCI configuration platform mismatch")
-            variant = platform.get("variant", "")
-            if variant and config.get("variant", variant) != variant:
-                raise OciError("OCI configuration variant mismatch")
-            identity = platform["os"] + "/" + platform["architecture"] + ("/" + variant if variant else "")
-            observed.append(identity)
+            platform = image_platform(config, child, single=single)
+            observed.append(platform_identity(platform))
             manifests.append(child["digest"])
             labels = config["config"]["Labels"]
             expected = {"org.opencontainers.image.revision": revision, "org.opencontainers.image.version": version}
@@ -131,7 +199,7 @@ def inspect_files(files: dict[str, bytes], *, revision: str, version: str,
             if not isinstance(manifest["layers"], list):
                 raise OciError("OCI layer list missing")
             for layer in manifest["layers"]:
-                blob(layer)
+                blob(layer, LAYERS)
         if len(observed) != len(set(observed)) or len(manifests) != len(set(manifests)):
             raise OciError("duplicate OCI platform or manifest")
         if platforms is not None and sorted(platforms) != sorted(observed):
@@ -153,19 +221,21 @@ def combine_archives(archives: list[tuple[Path, dict]], destination: Path, *,
                      revision: str, version: str, repository: str, name: str) -> dict:
     """Wrap unchanged single-platform manifests/configs/layers in one new index."""
     files, children, platforms = {}, [], []
-    for path, platform in archives:
+    for path, selected in archives:
+        validate_platform(selected)
         platform_files = archive_files(path)
-        expected = platform["os"] + "/" + platform["architecture"]
-        if platform.get("variant"):
-            expected += "/" + platform["variant"]
         # SDK single-platform descriptors may omit platform; config is authority.
-        graph = inspect_files(platform_files, revision=revision, version=version,
-                              repository=repository, single=True)
-        if graph["platforms"][0].split("/")[:2] != expected.split("/")[:2]:
-            raise OciError("SDK archive differs from selected platform")
+        inspect_files(platform_files, revision=revision, version=version,
+                      repository=repository, single=True)
         descriptor, = document(platform_files["index.json"])["manifests"]
+        manifest = document(platform_files["blobs/sha256/" + descriptor["digest"][7:]])
+        config = document(platform_files["blobs/sha256/" + manifest["config"]["digest"][7:]])
+        platform = image_platform(config, descriptor, single=True)
+        if any(platform[key] != value for key, value in selected.items() if key in platform):
+            raise OciError("SDK archive differs from selected platform")
+        platform = {**selected, **platform}
         children.append({**descriptor, "platform": platform})
-        platforms.append(expected)
+        platforms.append(platform_identity(platform))
         for member, data in platform_files.items():
             if member.startswith("blobs/"):
                 if member in files and files[member] != data:

@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -90,11 +91,41 @@ class BuildTests(unittest.TestCase):
         (self.prepared.root / "Directory.Packages.props").write_text('<Project><PropertyGroup>'
             '<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup>'
             '<ItemGroup><PackageVersion Include="Newtonsoft.Json" Version="9.0.1" /></ItemGroup></Project>')
-        diagnostic = io.StringIO()
-        with redirect_stderr(diagnostic), self.assertRaises(PipelineError):
-            build.build_release(self.prepared, self.root / "vulnerable", version=VERSION, sha=SHA, repository=REPOSITORY)
-        self.assertIn("v2.4.0 blocked by a vulnerable package", diagnostic.getvalue())
-        self.assertFalse((self.root / "vulnerable/release-manifest.json").exists())
+        props = self.prepared.root / "Directory.Build.props"
+        original = props.read_text()
+        for index, separator in enumerate((";", ",", ";,")):
+            with self.subTest(separator=separator):
+                exemptions = separator.join(("NU1900", "NU1901", "NU1902", "NU1903", "NU1904", "NU1905", "CS1591"))
+                value = re.sub(r"<WarningsNotAsErrors>.*?</WarningsNotAsErrors>",
+                    f"<WarningsNotAsErrors>{exemptions}</WarningsNotAsErrors>", original)
+                value = re.sub(r"<NoWarn>.*?</NoWarn>", f"<NoWarn>{exemptions}</NoWarn>", value)
+                props.write_text(value)
+                diagnostic = io.StringIO()
+                output = self.root / f"vulnerable-{index}"
+                with redirect_stderr(diagnostic), self.assertRaises(PipelineError):
+                    build.build_release(self.prepared, output, version=VERSION, sha=SHA, repository=REPOSITORY)
+                self.assertIn("v2.4.0 blocked by a vulnerable package", diagnostic.getvalue())
+                self.assertFalse((output / "release-manifest.json").exists())
+
+    def test_warning_filters_preserve_ordinary_and_low_moderate_policy_for_both_separators(self):
+        props = self.prepared.root / "Directory.Build.props"
+        original = props.read_text()
+        for separator in (";", ",", ";,"):
+            with self.subTest(separator=separator):
+                warnings = separator.join(("NU1900", "NU1901", "NU1902", "NU1903", "NU1904", "NU1905", "CS1591"))
+                value = re.sub(r"<WarningsNotAsErrors>.*?</WarningsNotAsErrors>",
+                    f"<WarningsNotAsErrors>{warnings}</WarningsNotAsErrors>", original)
+                value = re.sub(r"<NoWarn>.*?</NoWarn>", f"<NoWarn>{warnings}</NoWarn>", value)
+                props.write_text(value)
+                values = evaluated_properties(self.prepared.root, "Package/Release.Package.csproj",
+                    properties=("WarningsNotAsErrors", "NoWarn", "TreatWarningsAsErrors"), flags=self.flags)
+                self.assertEqual("true", values["TreatWarningsAsErrors"])
+                for name in ("WarningsNotAsErrors", "NoWarn"):
+                    codes = {part.strip() for part in re.split(r"[;,]", values[name]) if part.strip()}
+                    self.assertEqual({"NU1901", "NU1902", "CS1591"}, codes)
+                for code in ("NU1901", "NU1902"):
+                    build.audited_command(["dotnet", "restore", str(self.prepared.root / "Package/Release.Package.csproj"),
+                        f"-p:ReleaseFixtureAuditCode={code}", *self.flags], self.prepared.root, VERSION)
 
     def test_real_sdk_audit_codes_and_inherited_exemptions(self):
         project = str(self.prepared.root / "Package/Release.Package.csproj")
@@ -154,6 +185,68 @@ class BuildTests(unittest.TestCase):
             self.assertIn("architecture", build.platform_for_rid(rid))
         with self.assertRaises(PipelineError):
             build.platform_for_rid("alien-x128")
+
+    def test_effective_sdk_rid_precedence_for_singular_and_plural_properties(self):
+        self.prepared = fixture(self.root / "rid-precedence", "Release.slnx")
+        path = self.prepared.root / "Container/Release.Container.csproj"
+        original = re.sub(r"<RuntimeIdentifiers>.*?</RuntimeIdentifiers>", "", path.read_text())
+        cases = (
+            ({"ContainerRuntimeIdentifier": "linux-x64", "ContainerRuntimeIdentifiers": "linux-arm64"}, ("linux-x64",)),
+            ({"RuntimeIdentifier": "linux-x64", "RuntimeIdentifiers": "linux-arm64"}, ("linux-x64",)),
+            ({"RuntimeIdentifier": "linux-x64", "ContainerRuntimeIdentifiers": "linux-arm64"}, ("linux-x64",)),
+            ({"ContainerRuntimeIdentifier": "linux-arm64", "RuntimeIdentifier": "linux-x64"}, ("linux-arm64",)),
+            ({"ContainerRuntimeIdentifiers": "linux-arm64", "RuntimeIdentifiers": "linux-x64"}, ("linux-arm64",)),
+            ({"RuntimeIdentifiers": "linux-x64;linux-arm64"}, ("linux-x64", "linux-arm64")),
+        )
+        for properties, expected in cases:
+            with self.subTest(properties=properties):
+                additions = "".join(f"<{name}>{value}</{name}>" for name, value in properties.items())
+                path.write_text(original.replace("</PropertyGroup>", additions + "</PropertyGroup>"))
+                project = next(project for project in build.discover_projects(self.prepared, self.flags) if project.container)
+                self.assertEqual(expected, project.runtimes)
+
+    def test_real_default_rid_and_sdk_normalized_repository_publish_without_extra_restore(self):
+        self.prepared = fixture(self.root / "default-rid", "Release.slnx")
+        path = self.prepared.root / "Container/Release.Container.csproj"
+        path.write_text(re.sub(r"<(ContainerRepository|RuntimeIdentifiers)>.*?</\1>", "", path.read_text()))
+        calls = []
+        command = build.audited_command
+        def record(arguments, *args):
+            calls.append(arguments)
+            return command(arguments, *args)
+        with patch.object(build, "audited_command", side_effect=record):
+            manifest = build.build_release(self.prepared, self.root / "default-payload", version=VERSION,
+                sha=SHA, repository=REPOSITORY)
+        container, = manifest["containers"]
+        self.assertEqual("release-container", container["name"])
+        graph = build.inspect_archive(self.root / "default-payload" / container["path"],
+            revision=SHA, version=VERSION, repository=REPOSITORY, name=container["name"])
+        self.assertEqual(["linux/amd64"], graph["platforms"])
+        self.assertEqual(1, sum(arguments[1] == "restore" for arguments in calls))
+        self.assertEqual(1, sum(arguments[1] == "build" for arguments in calls))
+        self.assertEqual(1, sum(arguments[1] == "publish" for arguments in calls))
+
+    def test_container_specific_rid_assets_and_colliding_repository_names_publish(self):
+        self.prepared = fixture(self.root / "collision", "Release.slnx")
+        path = self.prepared.root / "Container/Release.Container.csproj"
+        original = re.sub(r"<RuntimeIdentifiers>.*?</RuntimeIdentifiers>",
+            "<ContainerRuntimeIdentifier>linux-x64</ContainerRuntimeIdentifier>", path.read_text())
+        path.write_text(original.replace("hexalith-release-create-disposable", "a/b_c"))
+        other = self.prepared.root / "Other"
+        shutil.copytree(path.parent, other)
+        other_project = other / "Other.Container.csproj"
+        (other / path.name).rename(other_project)
+        other_project.write_text(original.replace("hexalith-release-create-disposable", "a_b/c"))
+        (self.prepared.root / "Release.slnx").write_text('<Solution><Project Path="Container/Release.Container.csproj" />'
+            '<Project Path="Other/Other.Container.csproj" /></Solution>')
+        manifest = build.build_release(self.prepared, self.root / "collision-payload", version=VERSION,
+            sha=SHA, repository=REPOSITORY)
+        self.assertEqual(["a/b_c", "a_b/c"], [value["name"] for value in manifest["containers"]])
+        self.assertEqual(2, len({value["path"] for value in manifest["containers"]}))
+        for container in manifest["containers"]:
+            graph = build.inspect_archive(self.root / "collision-payload" / container["path"],
+                revision=SHA, version=VERSION, repository=REPOSITORY, name=container["name"])
+            self.assertEqual(["linux/amd64"], graph["platforms"])
 
     def test_real_sdk_complete_container_graph(self):
         self.prepared = fixture(self.root / "container-real", "Release.slnx")

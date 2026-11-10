@@ -200,6 +200,13 @@ def safe_member(name):
             and not any(ord(char) < 32 or ord(char) == 127 for char in name))
 
 
+class NoDeclarations(ET.TreeBuilder):
+    """Reject DTDs before entity expansion, independent of XML byte encoding."""
+
+    def doctype(self, name, pubid, system):
+        raise ReleaseError("package XML declarations are forbidden")
+
+
 def package_identity(data, *, package_id, version, sha):
     """Read NuGet metadata as data; reject ambiguous identities and commit stamps."""
     try:
@@ -211,9 +218,7 @@ def package_identity(data, *, package_id, version, sha):
             if len(specs) != 1 or "/" in specs[0].filename or specs[0].file_size > MAX_MANIFEST:
                 raise ReleaseError("package must contain one bounded root nuspec")
             xml = archive.read(specs[0])
-        if b"<!DOCTYPE" in xml.upper() or b"<!ENTITY" in xml.upper():
-            raise ReleaseError("package XML declarations are forbidden")
-        root = ET.fromstring(xml)
+        root = ET.fromstring(xml, parser=ET.XMLParser(target=NoDeclarations()))
         metadata = [element for element in root if element.tag.rsplit("}", 1)[-1] == "metadata"]
         if len(metadata) != 1:
             raise ReleaseError("package metadata is ambiguous")

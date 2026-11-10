@@ -218,17 +218,22 @@ def target_frameworks(properties: dict[str, str]) -> list[str]:
 
 def evaluated_properties(root: Path, project: str, *, framework: str = "",
                          properties: tuple[str, ...] = PROPERTIES,
-                         flags: list[str] | None = None) -> dict[str, str]:
+                         flags: list[str] | None = None,
+                         targets: tuple[str, ...] = ()) -> dict[str, str]:
     """Read real MSBuild evaluation in the same package-mode Release context."""
     sdk_project = project if flags is None else str(contained_path(root, project, kind="project"))
     arguments = ["dotnet", "msbuild", sdk_project, "-nologo", "-verbosity:quiet",
                  "-getProperty:" + ",".join(properties), *(build_flags() if flags is None else flags)]
     if framework:
         arguments.append(f"-p:TargetFramework={framework}")
+    if targets:
+        arguments.append("-target:" + ";".join(targets))
     output = run_command(arguments, root, capture=True)
     try:
-        document = json.loads(output)
-        values = document["Properties"]
+        # MSBuild emits a plain value for one -getProperty name, even for
+        # values such as true, numbers or an empty string that resemble JSON.
+        values = ({properties[0]: output.rstrip("\r\n")} if len(properties) == 1
+                  else json.loads(output)["Properties"])
         if not isinstance(values, dict) or any(not isinstance(values.get(key), str) for key in properties):
             raise ValueError("missing or non-string properties")
         for name in ("IsTestProject", "XunitTestProject"):

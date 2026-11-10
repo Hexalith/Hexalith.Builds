@@ -888,6 +888,21 @@ public sealed class ProbeTests
                                  (prepared.root / "test dir/A.Tests/bin/Release/net10.0/xunit.runner.json").read_bytes())
 
 
+class SinglePropertySdkTests(unittest.TestCase):
+    def test_real_sdk_single_property_values_remain_strings(self):
+        with tempfile.TemporaryDirectory(prefix="ci-single-property-") as directory:
+            root = Path(directory)
+            (root / "global.json").write_bytes((ROOT / "global.json").read_bytes())
+            (root / "Fixture.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup>'
+                '<TargetFramework>net10.0</TargetFramework><PackageId>123</PackageId>'
+                '<IsPackable>true</IsPackable></PropertyGroup></Project>')
+            for name, expected in (("PackageId", "123"), ("IsPackable", "true"),
+                                   ("TargetFramework", "net10.0"), ("MissingProperty", "")):
+                with self.subTest(property=name):
+                    self.assertEqual({name: expected}, PIPE.evaluated_properties(root, "Fixture.csproj",
+                        properties=(name,)))
+
+
 class NuGetTrustPolicyTests(unittest.TestCase):
     """The real trusted config rejects unsigned and unmapped packages."""
 

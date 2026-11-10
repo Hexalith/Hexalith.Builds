@@ -172,6 +172,22 @@ class InventoryTests(History):
         self.assertEqual(self.inventory(self.payload), {"packages": ["Fixture.Package"], "containers": []})
         self.assertEqual(self.inventory(artifact(self.sha, packages=False)), {"packages": [], "containers": []})
 
+    def test_nuspec_dtd_entities_rejected_for_utf8_and_utf16_encodings(self):
+        with zipfile.ZipFile(io.BytesIO(package(self.sha))) as archive:
+            xml = archive.read("Fixture.Package.nuspec").decode("utf-8")
+        for encoding, declaration in (("utf-8", "UTF-8"), ("utf-16", "UTF-16"),
+                                      ("utf-16-le", "UTF-16"), ("utf-16-be", "UTF-16")):
+            header = '<?xml version="1.0" encoding="' + declaration + '"?>'
+            valid = zip_bytes([("Fixture.Package.nuspec", (header + xml).encode(encoding))])
+            with self.subTest(encoding=encoding, declaration=False):
+                self.assertEqual(self.inventory(artifact(self.sha, nuspec=valid))["packages"], ["Fixture.Package"])
+            poisoned = (header + '<!DOCTYPE package [<!ENTITY id "Fixture.Package">]>'
+                        + xml.replace("<id>Fixture.Package</id>", "<id>&id;</id>"))
+            malicious = zip_bytes([("Fixture.Package.nuspec", poisoned.encode(encoding))])
+            with self.subTest(encoding=encoding, declaration=True), self.assertRaisesRegex(
+                    ReleaseError, "package XML declarations are forbidden"):
+                self.inventory(artifact(self.sha, nuspec=malicious))
+
     def test_tampered_digest_and_package_metadata(self):
         with self.assertRaisesRegex(ReleaseError, "digest"):
             draft.artifact_inventory(self.payload + b"tampered", sha=self.sha, version=VERSION,
@@ -335,6 +351,40 @@ class DraftCreationTests(History):
         self.assertEqual(self.invoke(api)["sha"], self.sha)
         self.assertEqual(api.writes[0]["target_commitish"], self.sha)
 
+    def test_fresh_fetch_force_rewrite_with_identical_workflows_blocks_post_and_handoff(self):
+        api = self.api()
+        unrelated = git_command(self.root, "commit-tree", self.sha + "^{tree}", "-m", "unrelated same tree")
+        git_command(self.root, "update-ref", "refs/heads/rewritten", unrelated)
+        temporary = tempfile.TemporaryDirectory(prefix="release-draft-force-rewrite-")
+        self.addCleanup(temporary.cleanup)
+        remote, frozen = Path(temporary.name) / "remote.git", Path(temporary.name) / "frozen.git"
+        git_command(self.root, "clone", "--bare", str(self.root), str(remote))
+        git_command(self.root, "clone", "--bare", str(self.root), str(frozen))
+        fetches = []
+        class FetchRemote(Git):
+            def run(inner, *arguments, **keywords):
+                if arguments[0] == "fetch":
+                    # Rewrite the remote only when the production fresh-main fetch starts.
+                    git_command(remote, "update-ref", "refs/heads/main", unrelated, self.sha)
+                    fetches.append(arguments)
+                    arguments = ("-c", "protocol.file.allow=always", *(
+                        str(remote) if value == "https://github.com/" + REPOSITORY + ".git" else value
+                        for value in arguments))
+                return super().run(*arguments, **keywords)
+        git = FetchRemote(frozen)
+        self.assertTrue(git.ancestor(self.sha, "refs/heads/main"))
+        self.assertEqual(git.run("ls-tree", "-z", self.sha, "--", ".github/workflows").stdout,
+                         git.run("ls-tree", "-z", unrelated, "--", ".github/workflows").stdout)
+        emitted = []
+        with self.assertRaisesRegex(ReleaseError, "release source is no longer an ancestor of main"):
+            draft.create_draft(git, api, sha=self.sha, version=VERSION, artifact_id=ARTIFACT,
+                               digest=digest(self.payload), run_id=RUN, notes="Release notes", emit=emitted.append)
+        self.assertEqual(len(fetches), 1)
+        self.assertEqual(git.run("rev-parse", "refs/heads/main").stdout.decode().strip(), unrelated)
+        self.assertFalse(git.ancestor(self.sha, "refs/heads/main"))
+        self.assertEqual(api.writes, [])
+        self.assertEqual(emitted, [])
+
     def test_returned_draft_must_validate_before_outputs(self):
         for change in (lambda value: {**value, "author": {"login": "other"}}, lambda _value: [],
                        lambda value: {**value, "draft": False},
@@ -378,6 +428,10 @@ def http_fixture(control, *, tls=None):
                 self.send_json(200, control.metadata)
             elif "/releases?" in self.path:
                 self.send_json(200, control.drafts)
+            elif "/releases/" in self.path:
+                release = next((value for value in control.drafts
+                                if str(value["id"]) == self.path.rsplit("/", 1)[-1]), None)
+                self.send_json(200 if release is not None else 404, release or {})
             else:
                 self.send_json(404, {})
         def do_POST(self):
@@ -404,6 +458,9 @@ class HttpDraftTests(History):
     def test_executed_metadata_signed_download_and_post_are_credential_separated(self):
         control = DraftApiFixture(self.sha, self.payload)
         control.requests, control.location, control.post_status = [], "https://signed.example.invalid/archive", 201
+        notes = ("## [2.3.5](https://github.com/Example/ReleaseFixture/compare/v2.3.4...v2.3.5) (2026-11-11)\n\n"
+                 "### Bug Fixes\n\n* preserve generated multiline notes ([abc1234](https://example.invalid/abc1234))\n\n"
+                 "### Performance Improvements\n\n* keep internal blank lines and punctuation: a:b\n")
         with http_fixture(control) as base:
             api = draft.DraftApi(REPOSITORY, "test-token", base)
             actual_opener = urllib.request.build_opener(draft.NoRedirect())
@@ -414,9 +471,18 @@ class HttpDraftTests(History):
                         raise AssertionError("unexpected signed destination")
                     return actual_opener.open(base + "/archive", timeout=timeout)
             with patch.object(urllib.request, "build_opener", return_value=SignedTransport()):
-                result = self.invoke(api)
+                result = self.invoke(api, notes=notes)
+            persisted = api.get(f"/repos/{REPOSITORY}/releases/{result['draft-id']}", deadline=time.monotonic() + 2)
         self.assertEqual(result["draft-id"], "789")
-        self.assertEqual([entry[0] for entry in control.requests], ["GET", "GET", "GET", "GET", "POST"])
+        prefix, boundary, trailers = persisted["body"].partition("\n\nhexalith-release:")
+        self.assertEqual(prefix, notes.rstrip())
+        self.assertEqual(boundary, "\n\nhexalith-release:")
+        self.assertEqual("hexalith-release:" + trailers, "\n".join([
+            "hexalith-release: " + self.sha, "hexalith-release-run: " + str(RUN),
+            f"hexalith-release-artifact: {ARTIFACT} {digest(self.payload)}",
+            "hexalith-release-packages: Fixture.Package", "hexalith-release-containers: ", ""]))
+        self.assertEqual(len(draft.RESERVED.findall(persisted["body"])), 5)
+        self.assertEqual([entry[0] for entry in control.requests], ["GET", "GET", "GET", "GET", "POST", "GET"])
         self.assertIsNone(next(entry[2] for entry in control.requests if entry[1] == "/archive"))
         self.assertTrue(all(entry[2] == "Bearer test-token" for entry in control.requests if entry[1] != "/archive"))
 

@@ -39,6 +39,7 @@ class Project:
     container: str
     framework: str
     runtimes: tuple[str, ...]
+    restore_runtimes: tuple[str, ...] = ()
 
 
 def release_flags(version: str, sha: str, repository: str) -> list[str]:
@@ -93,8 +94,11 @@ def platform_for_rid(rid: str) -> dict[str, str]:
 
 
 def runtime_ids(values: dict[str, str]) -> tuple[str, ...]:
-    text = (values["ContainerRuntimeIdentifiers"] or values["ContainerRuntimeIdentifier"]
-            or values["RuntimeIdentifiers"] or values["RuntimeIdentifier"])
+    # ComputeContainerConfig has applied SDK defaults. Its explicit singular
+    # ContainerRuntimeIdentifier (including one inherited from RuntimeIdentifier)
+    # selects a single image even when plural properties are also populated.
+    text = (values["ContainerRuntimeIdentifier"] or values["RuntimeIdentifier"]
+            or values["ContainerRuntimeIdentifiers"] or values["RuntimeIdentifiers"])
     if not text:
         host = values["NETCoreSdkPortableRuntimeIdentifier"].split("-")
         if len(host) < 2:
@@ -128,19 +132,33 @@ def discover_projects(prepared: PreparedConfig, flags: list[str]) -> tuple[Proje
             raise PipelineError(f"{path}: release identities differ across target frameworks")
         packable, package, test, container, name = identities[0]
         package = package if packable else ""
-        name = name if container and not test else ""
+        enabled_container = container and not test
+        name = ""
         if package and (not PACKAGE_ID.fullmatch(package) or package.casefold() in packages):
             raise PipelineError(f"{path}: invalid or duplicate package identity")
-        if name and (not CONTAINER_NAME.fullmatch(name) or name in containers):
-            raise PipelineError(f"{path}: invalid or duplicate container identity")
-        if name and len(values) != 1:
+        if enabled_container and len(values) != 1:
             raise PipelineError(f"{path}: container requires one evaluated target framework")
-        rids = runtime_ids(values[0]) if name else ()
+        if enabled_container:
+            # Repository normalization and runtime defaults belong to the SDK,
+            # including its lower-case AssemblyName fallback and RID precedence.
+            effective = evaluated_properties(prepared.root, path, framework=values[0]["TargetFramework"],
+                properties=PROPERTIES, flags=flags, targets=("ComputeContainerConfig",))
+            name = effective["ContainerRepository"]
+            if not CONTAINER_NAME.fullmatch(name) or name in containers:
+                raise PipelineError(f"{path}: invalid or duplicate container identity")
+            rids = runtime_ids(effective)
+        else:
+            rids = ()
+        restore_rids = tuple(dict.fromkeys([*rids, *(rid.strip() for value in values
+            for property_name in ("RuntimeIdentifier", "RuntimeIdentifiers")
+            for rid in value[property_name].split(";") if rid.strip())]))
+        if any(not re.fullmatch(r"[A-Za-z0-9_.-]+", rid) for rid in restore_rids):
+            raise PipelineError(f"{path}: invalid restore runtime metadata")
         if package:
             packages.add(package.casefold())
         if name:
             containers.add(name)
-        result.append(Project(path, package, name, values[0]["TargetFramework"] if name else "", rids))
+        result.append(Project(path, package, name, values[0]["TargetFramework"] if name else "", rids, restore_rids))
     return tuple(result)
 
 
@@ -175,7 +193,12 @@ def build_release(prepared: PreparedConfig, output: Path, *, version: str, sha: 
         initialize_submodules(prepared)
         projects = discover_projects(prepared, flags)
         solution = str(contained_path(prepared.root, prepared.document["solution"], kind="solution"))
-        audited_command(["dotnet", "restore", solution, *flags], prepared.root, version)
+        runtimes = sorted({runtime for project in projects for runtime in project.restore_runtimes})
+        # Prepare every selected container's assets in the one audited restore;
+        # SDK default/container-specific RIDs need not appear in RuntimeIdentifiers.
+        # Literal quotes preserve a list through MSBuild's command-line parser.
+        restore_flags = ['-p:RuntimeIdentifiers="' + ";".join(runtimes) + '"'] if runtimes else []
+        audited_command(["dotnet", "restore", solution, *flags, *restore_flags], prepared.root, version)
         audited_command(["dotnet", "build", solution, "--no-restore", *flags], prepared.root, version)
         with tempfile.TemporaryDirectory(prefix="hexalith-release-publish-") as temporary:
             work = Path(temporary)
@@ -202,7 +225,7 @@ def build_release(prepared: PreparedConfig, output: Path, *, version: str, sha: 
                                          f"-p:ContainerRuntimeIdentifier={runtime}",
                                          f"-p:ContainerArchiveOutputPath={destination}", *flags], prepared.root, version)
                         archives.append((destination, platform_for_rid(runtime)))
-                    destination = output / "containers" / (project.container.replace("/", "_") + ".tar")
+                    destination = output / "containers" / f"container-{index}.tar"
                     destination.parent.mkdir(exist_ok=True)
                     if destination.exists():
                         raise PipelineError("conflicting container archive filename")
