@@ -146,6 +146,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets a test-only CI policy override.</summary>
     internal bool? ContinuousIntegrationOverride { get; init; }
 
+    /// <summary>Gets a test-only boundary before cleanup request bookkeeping is durably published.</summary>
+    internal Func<CancellationToken, Task>? BeforeCleanupRequestWriteOverride { get; init; }
+
     /// <summary>Gets a test-only boundary immediately before the final ready deadline check.</summary>
     internal Func<CancellationToken, Task>? BeforeReadyCommitOverride { get; init; }
 

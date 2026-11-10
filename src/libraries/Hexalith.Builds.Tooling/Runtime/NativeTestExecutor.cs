@@ -36,6 +36,7 @@ internal static class NativeTestExecutor
     /// <param name="archiveDirectory">The optional durable owned diagnostic directory outside the child workspace.</param>
     /// <param name="onOutcome">The runner callback that commits the observed terminal result before optional archives.</param>
     /// <param name="ownerCancellationToken">The owner cancellation, distinct from the execution lifetime.</param>
+    /// <param name="nativeProcessScanner">An optional native-only process discovery replacement for verification.</param>
     /// <returns>A result that passes only for a zero native exit and a passing native report.</returns>
     public static async Task<NativeTestExecutionResult> ExecuteAsync(
         CompositionRunSession session,
@@ -46,7 +47,8 @@ internal static class NativeTestExecutor
         ModuleTestSelection? selection = null,
         string? archiveDirectory = null,
         Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome = null,
-        CancellationToken? ownerCancellationToken = null)
+        CancellationToken? ownerCancellationToken = null,
+        CompositionRunResourceScanner? nativeProcessScanner = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(tests);
@@ -54,7 +56,7 @@ internal static class NativeTestExecutor
 
         if (selection is not null)
         {
-            NativeTestExecutionResult selected = await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, onOutcome, ownerCancellationToken ?? cancellationToken, cancellationToken).ConfigureAwait(false);
+            NativeTestExecutionResult selected = await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, onOutcome, ownerCancellationToken ?? cancellationToken, cancellationToken, nativeProcessScanner: nativeProcessScanner).ConfigureAwait(false);
             return selected with { OwnerTermination = selected.OwnerTermination ?? session.NativeTermination };
         }
 
@@ -391,7 +393,7 @@ internal static class NativeTestExecutor
         }
     }
 
-    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken ownerCancellationToken, CancellationToken cancellationToken, AttachedSuiteIdentity? attached = null, Action<int>? onStarted = null, Action<IReadOnlyList<int>>? onStopFailure = null)
+    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken ownerCancellationToken, CancellationToken cancellationToken, AttachedSuiteIdentity? attached = null, Action<int>? onStarted = null, Action<IReadOnlyList<int>>? onStopFailure = null, CompositionRunResourceScanner? nativeProcessScanner = null)
     {
         // An attached run writes only inside its own workspace; the owner's workspace stays the shared read-only source mapping.
         string privateWorkspace = attached?.Workspace ?? session.Plan.Workspace;
@@ -513,8 +515,11 @@ internal static class NativeTestExecutor
             return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
         }
 
+        string nativeExecutionId = CompositionRunPlanFactory.NewRunId();
+        CompositionRunResourceScanner scanner = nativeProcessScanner ?? CompositionRunResourceScanner.CreateNativeScanner();
         Dictionary<string, string> environment = new(NativeTestHandoff.Create(session.Plan, session.Readiness, token, attached), StringComparer.Ordinal)
         {
+            [NativeTestHandoff._nativeExecutionId] = nativeExecutionId,
             ["HEXALITH_G4_TEST_REPORT_PATH"] = reportPath,
             [NativeTestHandoff.TestEnvironmentPath] = descriptorPath,
         };
@@ -526,10 +531,10 @@ internal static class NativeTestExecutor
             }
         }
 
-        if (attached is not null && selection.Executor != "python3")
+        if (selection.Executor != "python3")
         {
-            // An attached dotnet child starts no reusable MSBuild node, MSBuild server or compiler server: those would inherit
-            // the attached run tag and bearer, and the run-tag kill at attachment end would break owner or peer builds reusing them.
+            // Native dotnet children must not reuse MSBuild or compiler servers across runs: those workers would retain
+            // another execution's ownership tag, or let peers reuse workers being stopped at this execution's end.
             environment["MSBUILDDISABLENODEREUSE"] = "1";
             environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
             environment["UseSharedCompilation"] = "false";
@@ -614,18 +619,22 @@ internal static class NativeTestExecutor
             process = new CompositionProcessResult(true, -1, string.Empty, false);
         }
 
-        DateTimeOffset nativeObservedAt = DateTimeOffset.UtcNow;
         long stoppingTimestamp = firstStop == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : firstStop;
         session.StoppingTimestamp ??= stoppingTimestamp;
-        pending = CompositionOwnerTermination.ObserveNative(session.RunId, pending, new NativeTestExecutionResult(new ToolCommandResult("observed", ToolOutcome.Passed(), []), null, null)
-        {
-            Launched = launchedProcessId is not null,
-            StopObserved = stopObserved,
-            ProcessIds = launchedProcessId is { } observedPid ? [observedPid] : [],
-            SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()],
-            CredentialExpiresAtUtc = launchedProcessId is null ? null : credentialExpiry,
-            ObservedAtUtc = nativeObservedAt,
-        });
+        DateTimeOffset nativeObservedAt = DateTimeOffset.UtcNow;
+        pending = CompositionOwnerTermination.ObserveNative(
+            session.RunId,
+            pending,
+            new NativeTestExecutionResult(new ToolCommandResult("observed", ToolOutcome.Passed(), []), null, null)
+            {
+                Launched = launchedProcessId is not null,
+                StopObserved = false,
+                ProcessIds = launchedProcessId is { } observedPid ? [observedPid] : [],
+                SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()],
+                CredentialExpiresAtUtc = launchedProcessId is null ? null : credentialExpiry,
+                ObservedAtUtc = nativeObservedAt,
+            },
+            running: launchedProcessId is not null);
         session.NativeTermination = pending;
         try
         {
@@ -652,7 +661,7 @@ internal static class NativeTestExecutor
                     MetadataRecordingTimestamp = metadataRecordingTimestamp,
                     TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null,
                     Launched = launchedProcessId is not null,
-                    StopObserved = stopObserved,
+                    StopObserved = false,
                     ObservedAtUtc = nativeObservedAt,
                     ProcessIds = launchedProcessId is { } pid ? [pid] : [],
                     SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()],
@@ -667,19 +676,72 @@ internal static class NativeTestExecutor
         finally
         {
             await gate.DisposeAsync().ConfigureAwait(false);
-        }
+            if (launchedProcessId is not null)
+            {
+                // A launcher exit does not prove that detached native descendants exited. Only the private execution tag
+                // is stopped here; environment services and other native entries keep their existing ownership and lifetime.
+                TimeSpan remainingStop = TimeSpan.FromSeconds(selection.StopTimeoutSeconds) - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp);
+                using CancellationTokenSource stopping = new();
+                if (remainingStop > TimeSpan.Zero)
+                {
+                    stopping.CancelAfter(remainingStop);
+                }
+                else
+                {
+                    await stopping.CancelAsync().ConfigureAwait(false);
+                }
 
-        if (terminationPath is not null)
-        {
-            using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
-            try
-            {
-                await CompositionDocumentStore.WriteAsync(terminationPath, pending, recording.Token).ConfigureAwait(false);
-                launchMetadataFailed = false;
+                try
+                {
+                    (IReadOnlyList<int> descendants, bool verified) = await scanner.RemoveTaggedProcessesAsync(nativeExecutionId, stopping.Token).ConfigureAwait(false);
+                    survivors = [.. survivors.Concat(process.SurvivingProcessIds).Concat(descendants).Distinct()];
+                    stopObserved = stopObserved && verified && survivors.Count == 0;
+                }
+                catch (Exception exception) when (exception is OperationCanceledException or IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
+                {
+                    stopObserved = false;
+                }
+
+                if (!stopObserved)
+                {
+                    onStopFailure?.Invoke(survivors);
+                }
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+
+            nativeObservedAt = DateTimeOffset.UtcNow;
+            pending = CompositionOwnerTermination.ObserveNative(session.RunId, pending, new NativeTestExecutionResult(new ToolCommandResult("observed", ToolOutcome.Passed(), []), null, null)
             {
-                launchMetadataFailed = true;
+                Launched = launchedProcessId is not null,
+                StopObserved = stopObserved,
+                ProcessIds = launchedProcessId is { } stoppedPid ? [stoppedPid] : [],
+                SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()],
+                CredentialExpiresAtUtc = launchedProcessId is null ? null : credentialExpiry,
+                ObservedAtUtc = nativeObservedAt,
+            });
+            session.NativeTermination = pending;
+            if (session.FirstObservedOutcome is { } first)
+            {
+                session.FirstObservedOutcome = first with
+                {
+                    OwnerTermination = pending,
+                    StopObserved = stopObserved,
+                    ObservedAtUtc = nativeObservedAt,
+                    SurvivingProcessIds = [.. survivors.Concat(process.SurvivingProcessIds).Distinct()],
+                };
+            }
+
+            if (terminationPath is not null)
+            {
+                using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
+                try
+                {
+                    await CompositionDocumentStore.WriteAsync(terminationPath, pending, recording.Token).ConfigureAwait(false);
+                    launchMetadataFailed = false;
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+                {
+                    launchMetadataFailed = true;
+                }
             }
         }
 

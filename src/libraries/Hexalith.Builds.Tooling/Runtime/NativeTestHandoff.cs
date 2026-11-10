@@ -48,6 +48,9 @@ public static class NativeTestHandoff
     /// <summary>The strict private channel version, independent of the credential-free v1 environment schema.</summary>
     public const string EndpointCredentialsSchema = "hexalith.test-endpoint-credentials.v1";
 
+    /// <summary>The private execution tag inherited only by one native child and its descendants.</summary>
+    internal const string _nativeExecutionId = "HEXALITH_G4_NATIVE_EXECUTION_ID";
+
     /// <summary>
     /// Creates the handoff for one ready run. The signing key is never part of it.
     /// </summary>

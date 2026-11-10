@@ -32,6 +32,316 @@ public sealed class NativeTestExecutorTests
 
     private static readonly byte[] _reportBytes = Encoding.UTF8.GetBytes("<TestRun><ResultSummary outcome=\"Completed\" /></TestRun>");
 
+    /// <summary>Native descendant stopping verifies detached work without stopping owner services or peer executions.</summary>
+    /// <param name="discoveryVerified">Whether process ownership can be completely observed.</param>
+    /// <returns>The real detached-child stopping, uncertainty and peer-isolation assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReviewDetachedNativeDescendantsAreVerifiedAsync(bool discoveryVerified)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Assert.Skip("The detached-child regression observes Linux process state.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        const string runner = "import os, pathlib, subprocess, sys\n"
+            + "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)\n"
+            + "pathlib.Path(__file__).with_name('detached.pid').write_text(str(child.pid))\n"
+            + "pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>')\n";
+        (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, runner).ConfigureAwait(true);
+        using Process owner = Process.Start(CompositionProcess.CreateStartInfo("python3", ["-c", "import time; time.sleep(60)"], workspace.Root, new Dictionary<string, string> { [NativeTestHandoff.RunId] = plan.RunId }))!;
+        using Process peer = Process.Start(CompositionProcess.CreateStartInfo("python3", ["-c", "import time; time.sleep(60)"], workspace.Root, new Dictionary<string, string> { [NativeTestHandoff.RunId] = CompositionRunPlanFactory.NewRunId(), [NativeTestHandoff._nativeExecutionId] = CompositionRunPlanFactory.NewRunId() }))!;
+        using Process appHost = new();
+        int? detachedPid = null;
+        try
+        {
+            CompositionRunResourceScanner? scanner = discoveryVerified ? null : new CompositionRunResourceScanner(string.Empty) { ProcessDiscoveryOverride = (_, _) => ([], false) };
+            NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, HealthyReadiness(plan), "private-detached-key", appHost), new("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection, nativeProcessScanner: scanner).ConfigureAwait(true);
+            detachedPid = int.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, "detached.pid"), TestContext.Current.CancellationToken).ConfigureAwait(true), System.Globalization.CultureInfo.InvariantCulture);
+            result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+            result.StopObserved.ShouldBe(discoveryVerified);
+            CompositionOwnerTermination termination = result.OwnerTermination.ShouldNotBeNull();
+            termination.OwnedWork.Single().Status.ShouldBe(discoveryVerified ? "terminated" : "failed");
+            termination.EnvironmentAccess.Single().Status.ShouldBe("pending");
+            bool detachedAlive;
+            try
+            {
+                string stat = await File.ReadAllTextAsync("/proc/" + detachedPid + "/stat", TestContext.Current.CancellationToken).ConfigureAwait(true);
+                detachedAlive = !stat.Contains(") Z ", StringComparison.Ordinal);
+            }
+            catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+            {
+                detachedAlive = false;
+            }
+
+            detachedAlive.ShouldBe(!discoveryVerified);
+            if (!discoveryVerified)
+            {
+                termination.Failures.ShouldContain("native:" + plan.RunId);
+                termination.LeftoverWorkIds.ShouldContain("process:" + result.ProcessIds.Single().ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+
+            owner.HasExited.ShouldBeFalse("Retained owner work has no native execution tag.");
+            peer.HasExited.ShouldBeFalse("A different native execution tag cannot be stopped.");
+            result.StoppingTimestamp.ShouldNotBeNull().ShouldBeLessThanOrEqualTo(System.Diagnostics.Stopwatch.GetTimestamp());
+        }
+        finally
+        {
+            CompositionProcess.Kill(owner);
+            CompositionProcess.Kill(peer);
+            string pidPath = Path.Combine(workspace.Root, "detached.pid");
+            if (detachedPid is null && File.Exists(pidPath))
+            {
+                detachedPid = int.Parse(await File.ReadAllTextAsync(pidPath, TestContext.Current.CancellationToken).ConfigureAwait(true), System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            if (detachedPid is { } processId)
+            {
+                try
+                {
+                    using Process child = Process.GetProcessById(processId);
+                    CompositionProcess.Kill(child);
+                }
+                catch (ArgumentException)
+                {
+                    // Verified stopping already removed the detached child.
+                }
+            }
+        }
+    }
+
+    /// <summary>Pre-existing protected processes are excluded, but new unreadable native work remains unverified.</summary>
+    /// <param name="preexisting">Whether the protected process existed before the private execution snapshot.</param>
+    /// <returns>The actual Linux ownership uncertainty assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReviewProtectedProcessesPreserveNativeDiscoveryHonestyAsync(bool preexisting)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Assert.Skip("The protected-process regression requires Linux process environment permissions.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        string nativeId = CompositionRunPlanFactory.NewRunId();
+        CompositionRunResourceScanner? scanner = preexisting ? null : CompositionRunResourceScanner.CreateNativeScanner();
+        string ready = Path.Combine(workspace.Root, "protected-ready");
+        string script = "import ctypes, pathlib, time\n"
+            + "result = ctypes.CDLL(None).prctl(4, 0, 0, 0, 0)\n"
+            + "ready = pathlib.Path(" + JsonSerializer.Serialize(ready) + ")\n"
+            + "temporary = ready.with_suffix('.tmp')\n"
+            + "temporary.write_text(str(result))\n"
+            + "temporary.replace(ready)\n"
+            + "time.sleep(60)\n";
+        Dictionary<string, string> environment = preexisting
+            ? new() { [NativeTestHandoff.RunId] = CompositionRunPlanFactory.NewRunId() }
+            : new() { [NativeTestHandoff._nativeExecutionId] = nativeId };
+        using Process process = Process.Start(CompositionProcess.CreateStartInfo("python3", ["-c", script], workspace.Root, environment))!;
+        try
+        {
+            using CancellationTokenSource wait = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            wait.CancelAfter(TimeSpan.FromSeconds(30));
+            while (!File.Exists(ready) && !process.HasExited)
+            {
+                await Task.Delay(20, wait.Token).ConfigureAwait(true);
+            }
+
+            File.Exists(ready).ShouldBeTrue();
+            (await File.ReadAllTextAsync(ready, wait.Token).ConfigureAwait(true)).ShouldBe("0");
+            scanner ??= CompositionRunResourceScanner.CreateNativeScanner();
+            (IReadOnlyList<int> processes, bool verified) = scanner.FindTaggedProcesses(nativeId, wait.Token);
+            verified.ShouldBe(preexisting);
+            processes.ShouldBeEmpty("The protected environment is unreadable; new native work cannot be declared absent.");
+            process.HasExited.ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionProcess.Kill(process);
+        }
+    }
+
+    /// <summary>A cancelled scan preserves already discovered native identities and stops no work beyond its allowance.</summary>
+    /// <returns>The actual partial-discovery and unchanged child assertions.</returns>
+    [Fact]
+    public async Task ReviewCancelledNativeScanPreservesKnownDescendantsAsync()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Assert.Skip("The partial native scan regression observes Linux process environments.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        string identity = CompositionRunPlanFactory.NewRunId();
+        using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        using Process child = Process.Start(CompositionProcess.CreateStartInfo("python3", ["-c", "import time; time.sleep(60)"], workspace.Root, new Dictionary<string, string> { [NativeTestHandoff._nativeExecutionId] = identity }))!;
+        try
+        {
+            CompositionRunResourceScanner scanner = new(string.Empty)
+            {
+                ProcessEnvironmentVariable = NativeTestHandoff._nativeExecutionId,
+                ProcessMatchedOverride = _ => stop.Cancel(),
+            };
+            (IReadOnlyList<int> remaining, bool verified) = await scanner.RemoveTaggedProcessesAsync(identity, stop.Token).ConfigureAwait(true);
+            verified.ShouldBeFalse();
+            remaining.ShouldContain(child.Id);
+            child.HasExited.ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionProcess.Kill(child);
+        }
+    }
+
+    /// <summary>First-outcome recording cannot renew the original descendant-stopping allowance.</summary>
+    /// <returns>The surviving detached child and failed native termination after stopping has expired.</returns>
+    [Fact]
+    public async Task NativeStoppingDoesNotRenewAfterOutcomeRecordingAsync()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Assert.Skip("The detached-child allowance regression observes Linux process state.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        const string runner = "import pathlib, subprocess, sys\n"
+            + "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)\n"
+            + "pathlib.Path(__file__).with_name('detached.pid').write_text(str(child.pid))\n"
+            + "sys.exit(7)\n";
+        _ = await PrepareSelectedRunAsync(workspace, runner).ConfigureAwait(true);
+        workspace.Change("modules.0.tests.0.stopTimeoutSeconds", "1");
+        string manifest = workspace.Save();
+        ModuleTestSelection selection = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        SourceMapping mapping = new(WorkspaceMode.Source, workspace.Root, "sample", [new SourceMappingEntry("sample", "source", workspace.Root)], false);
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selection, SourceMapping = mapping, Modules = [], UiMarkers = [] }, manifest, workspace.Root).ConfigureAwait(true);
+        using Process appHost = new();
+        try
+        {
+            bool delayed = false;
+            async Task RecordOutcomeAsync(NativeTestExecutionResult first, CancellationToken token)
+            {
+                if (!delayed)
+                {
+                    first.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.ProductOrTest);
+                    delayed = true;
+                    await Task.Delay(TimeSpan.FromMilliseconds(1200), token).ConfigureAwait(false);
+                }
+            }
+
+            NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, HealthyReadiness(plan), "private-deadline-key", appHost), new("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection, onOutcome: RecordOutcomeAsync).ConfigureAwait(true);
+            int detachedPid = int.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, "detached.pid"), TestContext.Current.CancellationToken).ConfigureAwait(true), System.Globalization.CultureInfo.InvariantCulture);
+            using Process child = Process.GetProcessById(detachedPid);
+            child.HasExited.ShouldBeFalse("Expired stopping cannot be renewed by first-outcome recording.");
+            result.StopObserved.ShouldBeFalse();
+            result.OwnerTermination.ShouldNotBeNull().OwnedWork.Single().Status.ShouldBe("failed");
+        }
+        finally
+        {
+            string pidPath = Path.Combine(workspace.Root, "detached.pid");
+            if (File.Exists(pidPath))
+            {
+                int processId = int.Parse(await File.ReadAllTextAsync(pidPath, CancellationToken.None).ConfigureAwait(true), System.Globalization.CultureInfo.InvariantCulture);
+                try
+                {
+                    using Process child = Process.GetProcessById(processId);
+                    CompositionProcess.Kill(child);
+                }
+                catch (ArgumentException)
+                {
+                    // The test teardown never renews the runner's stopping allowance.
+                }
+            }
+        }
+    }
+
+    /// <summary>A causal native failure is published before detached-work stopping or discovery can delay it.</summary>
+    /// <param name="recordingFails">Whether first-outcome publication throws before descendant verification.</param>
+    /// <returns>The outcome-before-stopping and subsequently verified termination assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReviewCausalOutcomePrecedesDescendantStoppingAsync(bool recordingFails)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, "import sys\nsys.exit(7)\n").ConfigureAwait(true);
+        bool observed = false;
+        bool observedBeforeDiscovery = false;
+        CompositionRunResourceScanner scanner = new(string.Empty)
+        {
+            ProcessDiscoveryOverride = (_, _) =>
+            {
+                observedBeforeDiscovery = observed;
+                return ([], true);
+            },
+        };
+        using Process appHost = new();
+        CompositionRunSession session = new(plan, HealthyReadiness(plan), "private-causal-key", appHost);
+        IOException recordingFailure = new("First outcome recording failed.");
+        Task RecordOutcomeAsync(NativeTestExecutionResult first, CancellationToken metadataToken)
+        {
+            metadataToken.ThrowIfCancellationRequested();
+            if (!observed)
+            {
+                first.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.ProductOrTest);
+                first.StopObserved.ShouldBeFalse();
+                first.OwnerTermination.ShouldNotBeNull().OwnedWork.Single().Status.ShouldBe("pending");
+                observed = true;
+                if (recordingFails)
+                {
+                    return Task.FromException(recordingFailure);
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        string archive = Path.Combine(workspace.Root, "retained");
+        Task<NativeTestExecutionResult> ExecuteAsync() => NativeTestExecutor.ExecuteAsync(session, new("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection, archiveDirectory: archive, onOutcome: RecordOutcomeAsync, nativeProcessScanner: scanner);
+        if (recordingFails)
+        {
+            IOException failure = await Should.ThrowAsync<IOException>(ExecuteAsync).ConfigureAwait(true);
+            failure.ShouldBeSameAs(recordingFailure);
+        }
+        else
+        {
+            (await ExecuteAsync().ConfigureAwait(true)).StopObserved.ShouldBeTrue();
+        }
+
+        observed.ShouldBeTrue();
+        observedBeforeDiscovery.ShouldBeTrue();
+        session.NativeTermination.ShouldNotBeNull().OwnedWork.Single().Status.ShouldBe("terminated");
+        session.FirstObservedOutcome.ShouldNotBeNull().OwnerTermination.ShouldNotBeNull().OwnedWork.Single().Status.ShouldBe("terminated");
+        CompositionOwnerTermination durable = (await CompositionDocumentStore.ReadIfExistsAsync<CompositionOwnerTermination>(Path.Combine(archive, "native-termination.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        CompositionDocumentStore.Serialize(durable).ShouldBe(CompositionDocumentStore.Serialize(session.NativeTermination));
+    }
+
+    /// <summary>Launch and completion keep the first pending-access observation while later expiry facts advance.</summary>
+    [Fact]
+    public void ReviewNativeAccessKeepsFirstPendingObservation()
+    {
+        DateTimeOffset launchedAt = DateTimeOffset.UtcNow.AddSeconds(-2);
+        NativeTestExecutionResult launch = new(new("running", ToolOutcome.Passed(), []), null, null)
+        {
+            Launched = true,
+            ProcessIds = [12345],
+            ObservedAtUtc = launchedAt,
+            CredentialExpiresAtUtc = launchedAt.AddSeconds(60),
+        };
+        CompositionOwnerTermination running = CompositionOwnerTermination.ObserveNative(CompositionTestFiles.RunId, null, launch, running: true);
+        NativeTestExecutionResult completion = launch with { StopObserved = true, ObservedAtUtc = launchedAt.AddSeconds(1), CredentialExpiresAtUtc = launchedAt.AddSeconds(90) };
+        CompositionOwnerTermination finished = CompositionOwnerTermination.ObserveNative(CompositionTestFiles.RunId, running, completion);
+        finished.EnvironmentAccess.Single().Status.ShouldBe("pending");
+        finished.EnvironmentAccess.Single().ObservedAtUtc.ShouldBe(launchedAt);
+        finished.CredentialExpiresAtUtc.ShouldBe(completion.CredentialExpiresAtUtc);
+        finished.NativeProcessIds.ShouldBe([12345]);
+        finished.OwnedWork.Single().Status.ShouldBe("terminated");
+        finished.OwnedWork.Single().ObservedAtUtc.ShouldBe(completion.ObservedAtUtc.ShouldNotBeNull());
+        CompositionOwnerTermination repeated = CompositionOwnerTermination.ObserveNative(CompositionTestFiles.RunId, finished, completion with { ObservedAtUtc = launchedAt.AddSeconds(2) });
+        CompositionDocumentStore.Serialize(repeated).ShouldBe(CompositionDocumentStore.Serialize(finished));
+    }
+
     /// <summary>A native ledger that cannot be durably written is reported instead of being silently dropped.</summary>
     /// <returns>The launch-metadata retention failure assertions.</returns>
     [Fact]
@@ -693,7 +1003,7 @@ public sealed class NativeTestExecutorTests
         validated.IsValid.ShouldBeTrue();
         ModuleTestSelection selection = ModuleTestSelection.Select(validated.Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
         SourceMapping mapping = new(WorkspaceMode.Source, workspace.Root, "sample", [new SourceMappingEntry("sample", "source", workspace.Root)], false);
-        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selection, SourceMapping = mapping, Modules = [], UiMarkers = [] };
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selection, SourceMapping = mapping, Modules = [], UiMarkers = [] };
         plan = await TestEnvironmentProvisioningFixture.PrepareAsync(plan, manifest, workspace.Root).ConfigureAwait(false);
         return (plan, selection, manifest);
     }

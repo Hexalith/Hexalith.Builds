@@ -32,7 +32,7 @@ public sealed record CompositionOwnerTermination(
     internal static CompositionOwnerTermination Observe(CompositionRunState state, ModuleTestRunRecord record, NativeTestExecutionResult? native)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        CompositionOwnerTermination? prior = native is null ? record.Termination : ObserveNative(state.RunId, record.Termination, native);
+        CompositionOwnerTermination? prior = native is null ? record.Termination : native.OwnerTermination ?? ObserveNative(state.RunId, record.Termination, native);
         string childId = "native:" + state.RunId;
         string environmentId = "environment:" + state.RunId;
         string accessId = "access:" + state.RunId;
@@ -91,11 +91,11 @@ public sealed record CompositionOwnerTermination(
 
         CompositionTerminationItem Stable(CompositionTerminationItem item)
         {
-            CompositionTerminationItem? previous = new[] { prior, record.Termination }
+            CompositionTerminationItem? previous = new[] { record.Termination, prior }
                 .Where(observed => observed is not null)
                 .SelectMany(observed => observed!.OwnedWork.Concat(observed.EnvironmentAccess))
-                .FirstOrDefault(observed => observed.Id == item.Id);
-            return previous is not null && previous.Status == item.Status ? previous : item;
+                .FirstOrDefault(observed => observed.Id == item.Id && observed.Status == item.Status);
+            return previous ?? item;
         }
 
         return new([Stable(child), Stable(environment)], [Stable(access)], [.. record.RemainingResources.ResourceIds.Concat(unresolved).Distinct(StringComparer.Ordinal)])
@@ -145,7 +145,7 @@ public sealed record CompositionOwnerTermination(
             "pending" => "Native work was launched; stopping is not yet observed.",
             _ => "Native process stopping could not be verified.",
         });
-        if (!native.Launched && historyIssued && previous is not null)
+        if (previous is not null && previous.Status == child.Status)
         {
             child = previous;
         }
@@ -158,7 +158,8 @@ public sealed record CompositionOwnerTermination(
 
         bool accessApplicable = native.Launched || expiry is not null || prior?.EnvironmentAccess.Any(item => item.Status != "not-applicable") == true;
         CompositionTerminationItem access = new("access:" + runId, accessApplicable ? "pending" : "not-applicable", now, accessApplicable ? "Native access ending has not been verified." : "No native environment access was issued.");
-        return new([child], [access], unresolved)
+        CompositionTerminationItem? previousAccess = prior?.EnvironmentAccess.FirstOrDefault(item => item.Id == access.Id && item.Status == access.Status);
+        return new([child], [previousAccess ?? access], unresolved)
         {
             NativeProcessIds = [.. (prior?.NativeProcessIds ?? []).Concat(native.ProcessIds).Concat(native.SurvivingProcessIds).Distinct()],
             CredentialExpiresAtUtc = expiry,
