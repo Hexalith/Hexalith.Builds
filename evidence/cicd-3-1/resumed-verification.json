@@ -44,5 +44,16 @@
   "frozen_baseline": "f81486cb532e2e166f5c363fa8e9f75c1313c2a1",
   "frozen_git_blobs_preserved": 104,
   "temporary_metadata_absent": true,
-  "git_diff_check": 0
+  "git_diff_check": 0,
+  "cleanup_revision": "82eebdbff0074f62abe5a6b9a14a6ae9bd62b469",
+  "evidence_json_and_document_links_valid": true,
+  "post_cleanup_public_api": {
+    "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/check_public_api.py",
+    "exit_code": 0,
+    "checked_revision": "82eebdbff0074f62abe5a6b9a14a6ae9bd62b469",
+    "baseline_tag": "v4.47.0",
+    "baseline_revision": "5ec1779040606be89306129a7d2b245258c9acd2",
+    "entries": 2494,
+    "removals": 0
+  }
 }

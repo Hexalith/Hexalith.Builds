@@ -176,8 +176,10 @@ needed only `contents: read`). OCI labels remain metadata, not attestations.
 ## Cleanup and verification
 
 The temporary `.github/workflows/publish-spike.yml` and
-`Github/publish-spike/action.yml` are removed after retaining exact source and
-hosted evidence. The fixture, archive driver, helper, tool pin and behavioral
+`Github/publish-spike/action.yml` were removed in cleanup revision
+`82eebdbff0074f62abe5a6b9a14a6ae9bd62b469`, after retaining exact source and
+hosted evidence. The committed-source API check passed at that revision:
+2494 entries and no removals versus stable `v4.47.0`. The fixture, archive driver, helper, tool pin and behavioral
 controls remain reproducible evidence. No Builds release was dispatched while
 experimental action metadata existed; no release state machine, production
 `Github/publish`, Git tag, module pin or frozen workflow/action was changed.
