@@ -20,6 +20,89 @@ using Xunit;
 /// <summary>Verifies durable validated result snapshots with truthful partial-startup observations.</summary>
 public sealed class TestResultWriterTests
 {
+    /// <summary>Reader-valid snapshots cannot relabel known original startup observations.</summary>
+    /// <param name="conflict">The independent known startup binding to contradict.</param>
+    /// <returns>The valid-input refusal and unchanged publication assertions.</returns>
+    [Theory]
+    [InlineData("origin")]
+    [InlineData("override")]
+    [InlineData("budget")]
+    public async Task ReviewConflictingKnownStartupBindingIsRejectedAsync(string conflict)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        state = state with { StartupDurationSeconds = 0.25 };
+        ModuleTestRunRecord record = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, "HXT007", ToolExitCode.ProductOrTest), DateTimeOffset.UtcNow, "unknown", new([], [], true));
+        string path = await TestResultWriter.WriteAsync(workspace.Root, state, record, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        byte[] original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonNode document = JsonNode.Parse(original).ShouldNotBeNull();
+        JsonObject startup = document["bindings"]!["deadlines"]!["startup"]!.AsObject();
+        if (conflict == "origin")
+        {
+            startup["originAt"] = state.CreatedAt!.Value.AddSeconds(1).UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+            startup["expiresAt"] = state.StartupDeadlineUtc!.Value.AddSeconds(1).UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            int seconds = conflict == "budget" ? 601 : 600;
+            startup["effectiveSeconds"] = seconds;
+            startup["expiresAt"] = state.CreatedAt!.Value.AddSeconds(seconds).UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+            startup["override"] = JsonSerializer.SerializeToNode(new { state = "declared", requestedSeconds = seconds, justification = "conflicting declaration" });
+        }
+
+        string candidate = Path.Combine(workspace.Root, "valid-conflict.json");
+        await File.WriteAllTextAsync(candidate, document.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TestEnvironmentContractReader.ReadResult(candidate, TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+        record = record with { EnvironmentBindings = JsonSerializer.SerializeToElement(document["bindings"]) };
+        _ = await Should.ThrowAsync<InvalidDataException>(() => TestResultWriter.WriteAsync(workspace.Root, state, record, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        (await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(original);
+    }
+
+    /// <summary>First and refreshed partial results preserve measured startup and the original binary manifest after workspace deletion.</summary>
+    /// <returns>The reader, original identity and diagnostic-byte assertions.</returns>
+    [Fact]
+    public async Task PartialResultsPreserveFrozenStartupAndExecutorAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        state = state with { ExecutingTool = ExecutingToolIdentity.Capture(), StartupDurationSeconds = 1.25, StartupObservedAtUtc = selected.RequestedAtUtc.AddSeconds(1.25), EffectiveDeadlineSeconds = 12, StartupDeadlineUtc = selected.RequestedAtUtc.AddSeconds(12), EffectiveDeadlineIsOverride = true, EffectiveDeadlineJustification = "controlled startup measurement" };
+        ModuleTestRunRecord record = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "failed", ToolOutcome.Passed().Fail(ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "HXR021", ToolExitCode.TopologyOrLifecycle), DateTimeOffset.UtcNow, "retained", new([], [], true)) { TerminalCause = "startup-timeout" };
+        string directory = Path.Combine(workspace.Root, "diagnostics");
+        string path = await TestResultWriter.WriteAsync(directory, state, record, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonElement first = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
+        JsonElement startup = first.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup");
+        startup.GetProperty("actualDurationSeconds").GetDouble().ShouldBe(1.25);
+        startup.GetProperty("originAt").GetDateTimeOffset().ShouldBe(selected.RequestedAtUtc);
+        startup.GetProperty("override").GetProperty("justification").GetString().ShouldBe("controlled startup measurement");
+        ModuleTestRunRecord removed = record with { CleanupDisposition = "complete", CleanupAttemptId = CompositionRunPlanFactory.NewRunId(), RemainingResources = new([], []) };
+        _ = await TestResultWriter.WriteAsync(directory, state, removed, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TestEnvironmentContractReadResult refreshed = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        refreshed.IsValid.ShouldBeTrue();
+        JsonElement last = refreshed.Document!.Value;
+        JsonElement.DeepEquals(first.GetProperty("terminal"), last.GetProperty("terminal")).ShouldBeTrue();
+        JsonElement.DeepEquals(startup, last.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup")).ShouldBeTrue();
+        last.GetProperty("bindings").GetProperty("tool").GetProperty("contentIdentity").GetString().ShouldBe(state.ExecutingTool.ContentIdentity);
+        JsonElement manifest = last.GetProperty("diagnostics").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "executing-tool");
+        (await File.ReadAllBytesAsync(Path.Combine(directory, manifest.GetProperty("reference").GetString()!), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(System.Text.Encoding.UTF8.GetBytes(state.ExecutingTool.Manifest));
+    }
+
+    /// <summary>Legacy unknown executor facts stay unavailable with explicit classified diagnostics.</summary>
+    /// <returns>The unavailable binding and safe explanation assertions.</returns>
+    [Fact]
+    public async Task LegacyExecutorRemainsUnavailableWithDiagnosticsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        ModuleTestRunRecord record = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "cancelled", ToolOutcome.Passed().Fail(ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "HXC130", ToolExitCode.Cancelled), DateTimeOffset.UtcNow, "unknown", new([], [], true));
+        string path = await TestResultWriter.WriteAsync(workspace.Root, state, record, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonElement document = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
+        document.GetProperty("bindings").GetProperty("tool").GetProperty("state").GetString().ShouldBe("not-yet-populated");
+        string reference = document.GetProperty("diagnostics")[0].GetProperty("reference").GetString()!;
+        using JsonDocument detail = JsonDocument.Parse(await File.ReadAllBytesAsync(Path.Combine(workspace.Root, reference), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        detail.RootElement.GetProperty("toolIdentityUnavailable").GetBoolean().ShouldBeTrue();
+        detail.RootElement.GetProperty("startupDurationUnavailable").GetBoolean().ShouldBeTrue();
+    }
+
     /// <summary>A passed owner's existing result records attached failure retention and explicit release without changing the first outcome.</summary>
     /// <param name="local">Whether the attachment can establish local retention.</param>
     /// <returns>The reader-valid retained/released snapshots, failed ids and immutable owner outcome.</returns>

@@ -40,6 +40,9 @@ public sealed record ModuleTestRunRecord(
     string ResourceDisposition,
     CompositionRunResources RemainingResources)
 {
+    /// <summary>Gets persisted native, environment and access termination observations.</summary>
+    public CompositionOwnerTermination? Termination { get; init; }
+
     /// <summary>Gets the content hash of bounded inspected detailed native observations, when present.</summary>
     public string? ObservationHash { get; init; }
 

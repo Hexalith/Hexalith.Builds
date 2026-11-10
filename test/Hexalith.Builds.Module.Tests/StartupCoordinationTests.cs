@@ -12,6 +12,7 @@ using System.Text.Json.Nodes;
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.TestEnvironment;
 using Hexalith.Builds.Tooling.Workspace;
 
 using Shouldly;
@@ -21,6 +22,101 @@ using Xunit;
 /// <summary>Verifies one startup clock, authoritative dependency tasks, and post-task readiness.</summary>
 public sealed class StartupCoordinationTests
 {
+    /// <summary>Cancellation before recorded-reference restoration never issues a working-tree suite.</summary>
+    /// <returns>The stale-binding nonissuance assertions.</returns>
+    [Fact]
+    public async Task ReviewCancelledDirectReferenceDoesNotIssueStaleSuiteAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection stale, _) = LocalRunLifecycleFixture.Create(workspace);
+        using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        bool resolving = false;
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, stale) with
+        {
+            RootManifestCheckOverride = (_, _) => Task.FromResult(false),
+            MappingResolverOverride = async (_, _, token) =>
+            {
+                resolving = true;
+                await owner.CancelAsync().ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                throw new InvalidOperationException("Unreachable reference restoration.");
+            },
+        };
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), "verify", null, null, ToolOutputFormat.Json, output, owner.Token, "child.dll", compositionOptions: options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.Cancelled);
+        resolving.ShouldBeTrue();
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
+    /// <summary>Failed cancellation recording remains cancellation with a fixed independent diagnostic.</summary>
+    /// <returns>The cancellation and recording-failure assertions.</returns>
+    [Fact]
+    public async Task ReviewUnwritableCancellationStatePreservesCancellationAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        string state = Path.Combine(workspace.Root, "blocked-state");
+        await File.WriteAllTextAsync(state, "private-recording-detail", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            StateDirectory = state,
+            RootManifestCheckOverride = (_, _) => Task.FromResult(true),
+            MappingResolverOverride = async (_, _, token) =>
+            {
+                await owner.CancelAsync().ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                throw new InvalidOperationException("Unreachable mapping.");
+            },
+        };
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), "verify", null, null, ToolOutputFormat.Json, output, owner.Token, "child.dll", compositionOptions: options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.Cancelled, output.ToString());
+        using JsonDocument result = JsonDocument.Parse(output.ToString());
+        result.RootElement.GetProperty("status").GetString().ShouldBe("cancelled");
+        string?[] rules = [.. result.RootElement.GetProperty("diagnostics").EnumerateArray().Select(diagnostic => diagnostic.GetProperty("ruleId").GetString())];
+        rules.ShouldContain("HXC130");
+        rules.ShouldContain("HXT008");
+        output.ToString().ShouldNotContain("private-recording-detail");
+    }
+
+    /// <summary>Owner cancellation during mapping produces the same original startup binding as other partial startups.</summary>
+    /// <returns>The observed cancellation, duration and unissued-work assertions.</returns>
+    [Fact]
+    public async Task SetupCancellationRecordsOriginalStartupAndUnissuedWorkAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            SourceMapping = null,
+            RootManifestCheckOverride = (_, _) => Task.FromResult(true),
+            MappingResolverOverride = async (_, _, token) =>
+            {
+                owner.CancelAfter(TimeSpan.FromMilliseconds(100));
+                await Task.Delay(TimeSpan.FromSeconds(30), token).ConfigureAwait(false);
+                throw new InvalidOperationException("Mapping must observe owner cancellation.");
+            },
+        };
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), "verify", null, null, ToolOutputFormat.Json, output, owner.Token, "child.dll", compositionOptions: options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.Cancelled, output.ToString());
+        string resultPath = Directory.GetFiles(options.StateDirectory, "test-result.json", SearchOption.AllDirectories).Single();
+        TestEnvironmentContractReadResult result = TestEnvironmentContractReader.ReadResult(resultPath, TestContext.Current.CancellationToken);
+        result.IsValid.ShouldBeTrue();
+        JsonElement document = result.Document!.Value;
+        document.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("run-cancelled");
+        document.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup").GetProperty("actualDurationSeconds").GetDouble().ShouldBeGreaterThanOrEqualTo(0.09);
+        document.GetProperty("termination").GetProperty("ownedWork").EnumerateArray().ShouldAllBe(item => item.GetProperty("status").GetString() == "not-applicable");
+        document.GetProperty("termination").GetProperty("environmentAccess")[0].GetProperty("status").GetString().ShouldBe("not-applicable");
+    }
+
     /// <summary>Verifies a short active override cannot cancel discovery of the larger selected dependency override.</summary>
     /// <returns>The original-clock and live-token assertions.</returns>
     [Fact]

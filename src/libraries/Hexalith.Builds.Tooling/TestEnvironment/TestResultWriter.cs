@@ -57,6 +57,7 @@ public static class TestResultWriter
             }
 
             current["attachments"] = new JsonObject { ["state"] = "populated", ["holds"] = holds };
+            PopulateOriginalObservations(current, state);
         }
 
         if (bindings is not JsonObject || bindings["run"] is not JsonObject run
@@ -139,6 +140,9 @@ public static class TestResultWriter
             discoveryFailures = record.RemainingResources.DiscoveryFailures.Where(category => category is "containers" or "processes" or "cleanup-verification" or "runtime-resources" or "workspaces-or-claims" or "claim-release" or "claims" or "ownership" or "state-finalization").Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
             ruleIds = record.DiagnosticRuleIds.Concat(record.LaterDiagnosticRuleIds).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
             terminalRuleIds = record.DiagnosticRuleIds,
+            toolIdentityUnavailable = state.ExecutingTool is null,
+            startupDurationUnavailable = state.StartupDurationSeconds is null,
+            startupInterruptionObserved = state.StartupInterruptionObserved,
         });
 
         // Content-addressed diagnostics remain immutable across result updates and retries.
@@ -149,6 +153,25 @@ public static class TestResultWriter
         string diagnosticReference = "lifecycle-" + hash + ".json";
         await NativeTestExecutor.WriteSnapshotAsync(Path.Combine(directory, diagnosticReference), directory, retainedDiagnostic, cancellationToken).ConfigureAwait(false);
         List<object> diagnostics = [new { id = "lifecycle", classification = "internal", redacted = true, reference = diagnosticReference, contentIdentity = diagnosticIdentity }];
+        if (state.ExecutingTool is { } executor)
+        {
+            diagnostics.Add(await executor.RetainAsync(directory, cancellationToken).ConfigureAwait(false));
+        }
+
+        CompositionOwnerTermination? termination = record.Termination;
+        if (termination is not null)
+        {
+            byte[] terminationBytes = Canonical(new
+            {
+                runId = state.RunId,
+                ownedWork = termination.OwnedWork,
+                environmentAccess = termination.EnvironmentAccess,
+                leftoverWorkIds = termination.LeftoverWorkIds,
+                credentialExpiresAtUtc = termination.CredentialExpiresAtUtc,
+            });
+            diagnostics.Add(await RetainedDiagnosticAsync(directory, "termination", "termination", terminationBytes, cancellationToken).ConfigureAwait(false));
+        }
+
         if (record.ReportHash is not null)
         {
             string reference = "native-" + record.ReportHash.ToLowerInvariant() + ".trx";
@@ -178,6 +201,19 @@ public static class TestResultWriter
             cleanupNode["attemptId"] = record.CleanupAttemptId ?? throw new InvalidDataException("The cleanup attempt identity is unavailable.");
         }
 
+        JsonObject terminationNode = Unavailable();
+        if (termination is not null)
+        {
+            terminationNode = Node(new
+            {
+                state = "populated",
+                ownedWork = termination.OwnedWork.Select(item => new { id = item.Id, status = item.Status, observedAt = Utc(item.ObservedAtUtc), diagnosticIds = _terminationDiagnosticIds }),
+                environmentAccess = termination.EnvironmentAccess.Select(item => new { id = item.Id, status = item.Status, observedAt = Utc(item.ObservedAtUtc), diagnosticIds = _terminationDiagnosticIds }),
+                leftoverWorkIds = termination.LeftoverWorkIds,
+                failures = termination.Failures,
+            });
+        }
+
         JsonObject document = new()
         {
             ["schema"] = TestEnvironmentContractReader.ResultSchema,
@@ -185,8 +221,7 @@ public static class TestResultWriter
             ["bindings"] = bindings,
             ["terminal"] = Node(new { outcome, recordedAt = Utc(record.TerminalAtUtc), cause, diagnosticIds }),
 
-            // The native child has stopped, but discovery alone cannot authenticate every work/access termination.
-            ["termination"] = Unavailable(),
+            ["termination"] = terminationNode,
             ["retention"] = Node(new { state = "populated", disposition = retention, failureRunIds, retainedResourceIds = retained ? leftovers : [], reason = retentionReason, recordedAt = now }),
             ["cleanup"] = cleanupNode,
             ["diagnostics"] = JsonSerializer.SerializeToNode(diagnostics),
@@ -249,6 +284,7 @@ public static class TestResultWriter
         }
 
         current["attachments"] = new JsonObject { ["state"] = "populated", ["holds"] = holds };
+        PopulateOriginalObservations(current, owner);
         if (timing is { ActualDurationSeconds: { } actual } && current["deadlines"]?["execution"] is JsonObject executionDeadline
             && executionDeadline["state"]?.GetValue<string>() == "populated")
         {
@@ -270,6 +306,9 @@ public static class TestResultWriter
             cause,
             endReason = attachment.EndReason,
             exitCode = execution.ExitCode,
+            toolIdentityUnavailable = owner.ExecutingTool is null,
+            startupDurationUnavailable = owner.StartupDurationSeconds is null,
+            startupInterruptionObserved = owner.StartupInterruptionObserved,
             ruleIds = ruleIds.Where(rule => rule.Length is >= 5 and <= 8 && rule.StartsWith("HX", StringComparison.Ordinal) && rule.All(char.IsAsciiLetterOrDigit)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
         });
         byte[] terminationDetail = Canonical(new
@@ -286,6 +325,11 @@ public static class TestResultWriter
             await RetainedDiagnosticAsync(directory, "lifecycle", "lifecycle", lifecycle, cancellationToken).ConfigureAwait(false),
             await RetainedDiagnosticAsync(directory, "termination", "termination", terminationDetail, cancellationToken).ConfigureAwait(false),
         ];
+        if (owner.ExecutingTool is { } executor)
+        {
+            diagnostics.Add(await executor.RetainAsync(directory, cancellationToken).ConfigureAwait(false));
+        }
+
         if (reportBytes is { Length: > 0 })
         {
             string hash = Convert.ToHexStringLower(SHA256.HashData(reportBytes));
@@ -403,6 +447,63 @@ public static class TestResultWriter
             await NativeTestExecutor.WriteSnapshotAsync(target, directory, bytes, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1244:Floating point numbers should not be tested for equality", Justification = "Immutable startup budgets and frozen observations require exact equality; tolerance would authorize a different binding.")]
+    private static void PopulateOriginalObservations(JsonObject bindings, CompositionRunState owner)
+    {
+        if (owner.ExecutingTool is { } executor)
+        {
+            JsonNode tool = JsonSerializer.SerializeToNode(executor.ToContract())!;
+            if (bindings["tool"] is JsonObject existing && existing["state"]?.GetValue<string>() == "populated")
+            {
+                if (!JsonNode.DeepEquals(existing["name"], tool["name"]) || !JsonNode.DeepEquals(existing["version"], tool["version"])
+                    || !JsonNode.DeepEquals(existing["contentIdentity"], tool["contentIdentity"]))
+                {
+                    throw new InvalidDataException("The result changed its original executing tool.");
+                }
+
+                // Qualifications belong to independent authorities; original snapshot references never change here.
+            }
+            else
+            {
+                bindings["tool"] = tool;
+            }
+        }
+
+        if (bindings["deadlines"] is JsonObject deadlines && deadlines["startup"] is JsonObject startup
+            && startup["state"]?.GetValue<string>() == "populated")
+        {
+            bool valid = startup["origin"]?.GetValue<string>() == "environment-requested"
+                && (owner.CreatedAt is null || SameTime(startup["originAt"], owner.CreatedAt.Value))
+                && (owner.StartupDeadlineUtc is null || SameTime(startup["expiresAt"], owner.StartupDeadlineUtc.Value));
+            if (owner.EffectiveDeadlineSeconds is { } seconds)
+            {
+                JsonNode expectedOverride = owner.EffectiveDeadlineIsOverride
+                    ? Node(new { state = "declared", requestedSeconds = seconds, justification = owner.EffectiveDeadlineJustification })
+                    : Node(new { state = "not-overridden" });
+                valid = valid && startup["effectiveSeconds"] is JsonValue budget && budget.TryGetValue(out double effective) && effective.Equals(seconds)
+                    && JsonNode.DeepEquals(startup["override"], expectedOverride);
+            }
+
+            if (!valid)
+            {
+                throw new InvalidDataException("The result changed its original startup binding.");
+            }
+
+            if (owner.StartupDurationSeconds is { } duration)
+            {
+                if (startup["actualDurationSeconds"] is JsonValue actual && (!actual.TryGetValue(out double observed) || !observed.Equals(duration)))
+                {
+                    throw new InvalidDataException("The result changed its frozen startup duration.");
+                }
+
+                startup["actualDurationSeconds"] = duration;
+            }
+        }
+    }
+
+    private static bool SameTime(JsonNode? node, DateTimeOffset expected) => node is JsonValue value && value.TryGetValue(out string? text)
+        && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset actual) && actual == expected;
 
     private static JsonObject PartialBindings(CompositionRunState state, ModuleTestRunRecord record)
     {

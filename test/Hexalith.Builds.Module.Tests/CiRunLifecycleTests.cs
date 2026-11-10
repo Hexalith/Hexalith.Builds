@@ -21,6 +21,42 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class CiRunLifecycleTests
 {
+    /// <summary>CI discovery failure reports failed termination, then exact retry advances observations without changing the first outcome or executor.</summary>
+    /// <returns>The failure, retry and immutable-binding assertions.</returns>
+    [Fact]
+    public async Task CiTerminationDiscoveryFailureAndRetryPreserveFirstIdentityAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState owner) = LocalRunLifecycleFixture.Create(workspace, "package");
+        owner = owner with { ExecutionContext = Context(), RetainOnFailure = false, EnvironmentWorkIssued = true, StartupDurationSeconds = 0.5, ExecutingTool = Hexalith.Builds.Tooling.TestEnvironment.ExecutingToolIdentity.Capture() };
+        CompositionWorkspace.CreatePrivateDirectory(owner.Workspace);
+        string docker = Path.Combine(workspace.Root, "discovery-docker");
+        CompositionTestFiles.WriteScript(docker, "exit 1");
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with { DockerCommand = docker, ContinuousIntegrationOverride = true, RetainOnFailure = false };
+        CompositionEngine engine = new(options);
+        await engine.StateStore.WriteAsync(owner, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ToolCommandResult failed = new("failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, "HXT007", ToolExitCode.ProductOrTest), []);
+        NativeTestExecutionResult native = new(failed, null, null) { Launched = true, StopObserved = true, CredentialExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1) };
+        _ = await engine.RecordTestOutcomeAsync(owner.RunId, [], failed, "unknown", new([], [], true), TestContext.Current.CancellationToken, native).ConfigureAwait(true);
+        CompositionDownResult first = await engine.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        first.Remaining.Unverified.ShouldBeTrue();
+        string path = Path.Combine(engine.StateStore.Directory, "diagnostics", owner.RunId, "test-result.json");
+        Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReadResult failedRead = Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        failedRead.IsValid.ShouldBeTrue();
+        JsonElement before = failedRead.Document!.Value;
+        before.GetProperty("termination").GetProperty("ownedWork").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "environment:" + owner.RunId).GetProperty("status").GetString().ShouldBe("failed");
+        before.GetProperty("termination").GetProperty("environmentAccess")[0].GetProperty("status").GetString().ShouldBe("failed");
+        before.GetProperty("termination").GetProperty("failures").GetArrayLength().ShouldBeGreaterThan(0);
+        CompositionTestFiles.WriteScript(docker, "exit 0");
+        CompositionEngine cleaner = new(options with { ExecutingToolCaptureOverride = () => throw new InvalidOperationException("Cleanup must preserve the original executor.") });
+        (await cleaner.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Remaining.IsEmpty.ShouldBeTrue();
+        JsonElement after = Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
+        JsonElement.DeepEquals(before.GetProperty("terminal"), after.GetProperty("terminal")).ShouldBeTrue();
+        JsonElement.DeepEquals(before.GetProperty("bindings"), after.GetProperty("bindings")).ShouldBeTrue();
+        after.GetProperty("termination").GetProperty("ownedWork").EnumerateArray().ShouldAllBe(item => item.GetProperty("status").GetString() == "terminated");
+        after.GetProperty("termination").GetProperty("environmentAccess")[0].GetProperty("status").GetString().ShouldBe("terminated");
+    }
+
     /// <summary>A durable external receipt preserves exact identities before allocation and cannot be rebound.</summary>
     /// <returns>The recovery binding assertions.</returns>
     [Fact]

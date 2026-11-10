@@ -63,6 +63,9 @@ public sealed record CompositionRunPlan(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? QualificationOwnersBinding { get; init; }
 
+    /// <summary>Gets the original executing CLI and Tooling binary identity, unavailable on legacy state.</summary>
+    public TestEnvironment.ExecutingToolIdentity? ExecutingTool { get; init; }
+
     /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
     public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }
 

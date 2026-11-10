@@ -229,11 +229,12 @@ public static class CompositionProcess
     /// <param name="cancellationToken">The original execution token.</param>
     /// <param name="onStopFailure">Receives surviving process identities when the tree kill cannot be confirmed within the stop allowance.</param>
     /// <param name="onStarted">Receives the started child process identity.</param>
+    /// <param name="onStartedAsync">Durably records launch metadata before waiting for the child.</param>
     /// <returns>The process result, preserving owner cancellation.</returns>
-    internal static Task<CompositionProcessResult> RunSelectedAsync(ProcessStartInfo start, TimeSpan timeout, TimeSpan stopTimeout, Action<long> onStopping, CancellationToken cancellationToken, Action<IReadOnlyList<int>>? onStopFailure = null, Action<int>? onStarted = null) =>
-        RunCoreAsync(start, timeout, _maximumOutputCharacters, stopTimeout, onStopping, cancellationToken, onStopFailure, onStarted);
+    internal static Task<CompositionProcessResult> RunSelectedAsync(ProcessStartInfo start, TimeSpan timeout, TimeSpan stopTimeout, Action<long> onStopping, CancellationToken cancellationToken, Action<IReadOnlyList<int>>? onStopFailure = null, Action<int>? onStarted = null, Func<int, CancellationToken, Task>? onStartedAsync = null) =>
+        RunCoreAsync(start, timeout, _maximumOutputCharacters, stopTimeout, onStopping, cancellationToken, onStopFailure, onStarted, onStartedAsync);
 
-    private static async Task<CompositionProcessResult> RunCoreAsync(ProcessStartInfo start, TimeSpan timeout, int maximumOutputCharacters, TimeSpan? selectedStopTimeout, Action<long>? onStopping, CancellationToken cancellationToken, Action<IReadOnlyList<int>>? onStopFailure = null, Action<int>? onStarted = null)
+    private static async Task<CompositionProcessResult> RunCoreAsync(ProcessStartInfo start, TimeSpan timeout, int maximumOutputCharacters, TimeSpan? selectedStopTimeout, Action<long>? onStopping, CancellationToken cancellationToken, Action<IReadOnlyList<int>>? onStopFailure = null, Action<int>? onStarted = null, Func<int, CancellationToken, Task>? onStartedAsync = null)
     {
         ArgumentNullException.ThrowIfNull(start);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumOutputCharacters);
@@ -245,7 +246,6 @@ public static class CompositionProcess
 
         process.StandardInput.Close();
         int processId = process.Id;
-        onStarted?.Invoke(processId);
         using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bound.CancelAfter(timeout);
         long stoppingAt = 0;
@@ -262,6 +262,12 @@ public static class CompositionProcess
         Task<string> error = ReadTailAsync(process.StandardError, bound.Token);
         try
         {
+            onStarted?.Invoke(processId);
+            if (onStartedAsync is not null)
+            {
+                await onStartedAsync(processId, bound.Token).WaitAsync(bound.Token).ConfigureAwait(false);
+            }
+
             await process.WaitForExitAsync(bound.Token).ConfigureAwait(false);
             (string text, bool truncated) = await output.ConfigureAwait(false);
             string errorText = await error.ConfigureAwait(false);
@@ -309,6 +315,19 @@ public static class CompositionProcess
             Kill(process);
             cancellationToken.ThrowIfCancellationRequested();
             return new CompositionProcessResult(true, -1, string.Empty, true);
+        }
+        catch
+        {
+            try
+            {
+                process.Kill(entireProcessTree: true);
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or Win32Exception or NotSupportedException or AggregateException)
+            {
+                // Exact owned cleanup verifies this failure; no stop allowance is renewed here.
+            }
+
+            throw;
         }
     }
 

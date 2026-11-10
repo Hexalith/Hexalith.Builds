@@ -140,6 +140,12 @@ public static class TestEnvironmentDescriptorWriter
         object startupOverride = plan.EffectiveDeadline.IsOverride
             ? new { state = "declared", requestedSeconds = plan.EffectiveDeadline.TimeoutSeconds, justification = plan.EffectiveDeadline.Justification }
             : new { state = "not-overridden" };
+        List<object> diagnostics = [];
+        if (plan.ExecutingTool is { } executor)
+        {
+            diagnostics.Add(await executor.RetainAsync(attached?.DiagnosticsDirectory ?? ownerDiagnosticsDirectory ?? plan.Workspace, cancellationToken).ConfigureAwait(false));
+        }
+
         object descriptor = new
         {
             schema = TestEnvironmentContractReader.DescriptorSchema,
@@ -160,7 +166,7 @@ public static class TestEnvironmentDescriptorWriter
                     readiness = new { state = "populated", status = "ready", observedAt = Utc(ready.ObservedAt.Value), resources = ready.Resources.Select(resource => new { resourceId = resource.Name, status = "ready", observedAt = Utc(resource.ObservedAt!.Value), diagnosticIds = Array.Empty<string>() }) },
                     startupTasks = new { state = "populated", tasks = ready.StartupTaskResults.Select(task => new { taskId = task.TaskId, required = true, status = task.Status, startedAt = Utc(task.StartedAt!.Value), finishedAt = Utc(task.FinishedAt!.Value), diagnosticIds = Array.Empty<string>() }) },
                 },
-                tool = unavailable,
+                tool = plan.ExecutingTool?.ToContract() ?? unavailable,
                 candidate = CandidateBinding(plan, attached),
                 decision = attached is null && plan.CandidatePolicy is { } decision ? decision.Decision : unavailable,
                 reuseLineage = attached is null && plan.CandidatePolicy is { } lineage ? lineage.ReuseLineage : unavailable,
@@ -169,14 +175,12 @@ public static class TestEnvironmentDescriptorWriter
                 attachments = System.Text.Json.Nodes.JsonNode.Parse(CompositionAttachmentStore.ReadContractBinding(ownerDiagnosticsDirectory, plan.RunId, DateTimeOffset.UtcNow).ToJsonString()),
                 deadlines = new
                 {
-                    // An attached run shares the environment's startup deadline; its own startup duration is not produced in this revision.
-                    startup = attached is null
-                        ? (object)new { state = "populated", origin = "environment-requested", originAt = Utc(startupOrigin), effectiveSeconds = plan.EffectiveDeadline.TimeoutSeconds, expiresAt = Utc(plan.StartupDeadlineUtc.Value), actualDurationSeconds = ready.StartupDurationSeconds.Value, @override = startupOverride }
-                        : new { state = "populated", origin = "environment-requested", originAt = Utc(startupOrigin), effectiveSeconds = plan.EffectiveDeadline.TimeoutSeconds, expiresAt = Utc(plan.StartupDeadlineUtc.Value), @override = startupOverride },
+                    // Attached suites bind the owner's measured environment startup, excluding attachment preparation.
+                    startup = new { state = "populated", origin = "environment-requested", originAt = Utc(startupOrigin), effectiveSeconds = plan.EffectiveDeadline.TimeoutSeconds, expiresAt = Utc(plan.StartupDeadlineUtc.Value), actualDurationSeconds = ready.StartupDurationSeconds.Value, @override = startupOverride },
                     execution = new { state = "populated", origin = "test-execution-started", originAt = Utc(timing.StartedAtUtc), effectiveSeconds = timing.EffectiveSeconds, expiresAt = Utc(timing.DeadlineUtc), configurationContentIdentity = timing.ConfigurationContentIdentity },
                 },
             },
-            diagnostics = Array.Empty<object>(),
+            diagnostics,
         };
         string path = attached?.DescriptorPath ?? Path.GetFullPath(Path.Combine(plan.Workspace, "test-environment.json"));
         await CompositionDocumentStore.WriteAsync(path, descriptor, cancellationToken).ConfigureAwait(false);

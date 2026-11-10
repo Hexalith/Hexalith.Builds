@@ -24,6 +24,96 @@ using Xunit;
 /// </summary>
 public sealed class StartupReadinessTests
 {
+    /// <summary>Interruption observation precedes delayed identity/issuance bookkeeping.</summary>
+    /// <param name="cancelled">Whether setup was cancelled rather than timed out.</param>
+    /// <returns>The first result, state and summary timestamp assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S2925:Do not use Thread.Sleep in a test", Justification = "The capture seam is synchronous; this deliberate delay represents post-observation hashing.")]
+    public async Task ReviewSetupObservationPrecedesDelayedCaptureAsync(bool cancelled)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        ExecutingToolIdentity identity = ExecutingToolIdentity.Capture();
+        DateTimeOffset captureStarted = default;
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            RetainOnFailure = false,
+            ExecutingToolCaptureOverride = () =>
+            {
+                captureStarted = DateTimeOffset.UtcNow;
+                Thread.Sleep(300);
+                return identity;
+            },
+        });
+        CompositionEffectiveDeadline deadline = new(600, false, null, null);
+        CompositionStartResult stopped = cancelled
+            ? await engine.ReportSetupCancellationAsync(selected.RequestedAtUtc, deadline).ConfigureAwait(true)
+            : await engine.ReportSetupTimeoutAsync(selected.RequestedAtUtc, deadline).ConfigureAwait(true);
+        string directory = Path.Combine(engine.StateStore.Directory, "diagnostics", stopped.RunId!);
+        CompositionRunState state = (await CompositionDocumentStore.ReadIfExistsAsync<CompositionRunState>(Path.Combine(directory, "owner.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        state.StartupObservedAtUtc.ShouldNotBeNull().ShouldBeLessThanOrEqualTo(captureStarted);
+        state.StartupDurationSeconds.ShouldNotBeNull().ShouldBeLessThan((DateTimeOffset.UtcNow - selected.RequestedAtUtc).TotalSeconds - 0.25);
+        JsonElement result = TestEnvironmentContractReader.ReadResult(Path.Combine(directory, "test-result.json"), TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
+        result.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup").GetProperty("actualDurationSeconds").GetDouble().ShouldBe(state.StartupDurationSeconds.Value);
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllBytesAsync(Path.Combine(directory, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBe(state.StartupDurationSeconds.Value);
+    }
+
+    /// <summary>Delayed deletion cannot change first startup observations, including setup cancellation.</summary>
+    /// <param name="cancelled">Whether setup ends by explicit owner cancellation.</param>
+    /// <returns>The first/final result, durable state, summary and delayed-teardown assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StartupObservationExcludesDelayedTeardownAsync(bool cancelled)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The delayed Docker double uses POSIX scripts.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        selected = selected with { RequestedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-2) };
+        string firstPath = Path.Combine(workspace.Root, "first-result.json");
+        string docker = Path.Combine(workspace.Root, "delayed-docker");
+        string delayedDocker = "for result in '" + workspace.Root + "/state/diagnostics/'*/test-result.json; do\n"
+            + "  if [ -f \"$result\" ] && [ ! -f '" + firstPath + "' ]; then cp \"$result\" '" + firstPath + "'; fi\n"
+            + "done\nsleep 0.3\nexit 0\n";
+        CompositionTestFiles.WriteScript(docker, delayedDocker);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected) with { DockerCommand = docker, RetainOnFailure = false, StopTimeout = TimeSpan.FromSeconds(4) });
+        CompositionEffectiveDeadline deadline = new(1, true, "controlled delayed teardown", "sample");
+        Stopwatch elapsed = Stopwatch.StartNew();
+        CompositionStartResult stopped = cancelled
+            ? await engine.ReportSetupCancellationAsync(selected.RequestedAtUtc, deadline).ConfigureAwait(true)
+            : await engine.ReportSetupTimeoutAsync(selected.RequestedAtUtc, deadline).ConfigureAwait(true);
+        string runId = stopped.RunId.ShouldNotBeNull();
+        string directory = Path.Combine(engine.StateStore.Directory, "diagnostics", runId);
+        TestEnvironmentContractReadResult firstRead = TestEnvironmentContractReader.ReadResult(firstPath, TestContext.Current.CancellationToken);
+        firstRead.IsValid.ShouldBeTrue();
+        TestEnvironmentContractReadResult finalRead = TestEnvironmentContractReader.ReadResult(Path.Combine(directory, "test-result.json"), TestContext.Current.CancellationToken);
+        finalRead.IsValid.ShouldBeTrue();
+        JsonElement first = firstRead.Document!.Value;
+        JsonElement final = finalRead.Document!.Value;
+        JsonElement startup = first.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup");
+        double duration = startup.GetProperty("actualDurationSeconds").GetDouble();
+        duration.ShouldBeGreaterThanOrEqualTo(2);
+        elapsed.Elapsed.TotalSeconds.ShouldBeGreaterThan(0.3);
+        (DateTimeOffset.UtcNow - selected.RequestedAtUtc).TotalSeconds.ShouldBeGreaterThan(duration + 0.25);
+        JsonElement.DeepEquals(startup, final.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup")).ShouldBeTrue();
+        JsonElement.DeepEquals(first.GetProperty("terminal"), final.GetProperty("terminal")).ShouldBeTrue();
+        first.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe(cancelled ? "run-cancelled" : "startup-timeout");
+        CompositionRunState owner = (await CompositionDocumentStore.ReadIfExistsAsync<CompositionRunState>(Path.Combine(directory, "owner.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        owner.StartupDurationSeconds.ShouldBe(duration);
+        _ = owner.StartupObservedAtUtc.ShouldNotBeNull();
+        owner.StartupInterruptionObserved.ShouldBeFalse();
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllBytesAsync(Path.Combine(directory, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBe(duration);
+        final.GetProperty("termination").GetProperty("ownedWork").EnumerateArray().ShouldAllBe(item => item.GetProperty("status").GetString() == "not-applicable");
+    }
+
     /// <summary>Verifies the schema default is 600 seconds and is not labelled an override.</summary>
     [Fact]
     public void DefaultDeadlineIsSixHundredSeconds()
@@ -131,6 +221,9 @@ public sealed class StartupReadinessTests
                 _ = state.ShouldNotBeNull();
                 state.Status.ShouldBe(CompositionRunStatus.Ready);
                 state.StartupDurationSeconds.ShouldNotBeNull().ShouldBeGreaterThan(0);
+                state.StartupDurationSeconds.ShouldBe(result.Session.Readiness.StartupDurationSeconds);
+                _ = state.StartupObservedAtUtc.ShouldNotBeNull();
+                _ = state.ExecutingTool.ShouldNotBeNull();
                 state.EffectiveDeadlineSeconds.ShouldBe(600);
                 state.EffectiveDeadlineIsOverride.ShouldBeFalse();
                 state.ReadinessResults.ShouldContain(resource => resource.Name == "eventstore" && resource.State == "Healthy");
@@ -977,6 +1070,12 @@ public sealed class StartupReadinessTests
         startup.GetProperty("effectiveSeconds").GetInt32().ShouldBe(effectiveSeconds);
         startup.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(selected.RequestedAtUtc.AddSeconds(effectiveSeconds));
         startup.GetProperty("override").GetProperty("state").GetString().ShouldBe(declaredOverride ? "declared" : "not-overridden");
+        double duration = startup.GetProperty("actualDurationSeconds").GetDouble();
+        duration.ShouldBeGreaterThan(0);
+        using JsonDocument owner = JsonDocument.Parse(File.ReadAllText(Path.Combine(diagnosticsPath, "owner.json")));
+        owner.RootElement.GetProperty("startupDurationSeconds").GetDouble().ShouldBe(duration);
+        using JsonDocument summary = JsonDocument.Parse(File.ReadAllText(Path.Combine(diagnosticsPath, "summary.json")));
+        summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBe(duration);
         document.GetProperty("bindings").GetProperty("deadlines").GetProperty("execution").GetProperty("state").GetString().ShouldBe("not-yet-populated");
         return document;
     }

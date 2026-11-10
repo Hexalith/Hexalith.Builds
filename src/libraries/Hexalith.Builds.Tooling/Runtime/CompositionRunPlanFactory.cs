@@ -26,10 +26,12 @@ public static class CompositionRunPlanFactory
     /// <param name="workspace">The exact owner workspace.</param>
     /// <param name="manifestHash">The immutable declaration fingerprint.</param>
     /// <param name="requestedAt">The original environment request.</param>
+    /// <param name="executingTool">The original captured executor, or unavailable for legacy callers.</param>
     /// <returns>The initial durable state.</returns>
-    public static CompositionRunState CreateInitialState(string runId, string workspace, string manifestHash, DateTimeOffset requestedAt) =>
+    public static CompositionRunState CreateInitialState(string runId, string workspace, string manifestHash, DateTimeOffset requestedAt, TestEnvironment.ExecutingToolIdentity? executingTool = null) =>
         new(CompositionRunState.SupportedSchema, runId, CompositionRunStatus.Starting, manifestHash, workspace, null, null, null, requestedAt)
         {
+            ExecutingTool = executingTool,
             CreatedAt = requestedAt,
             AttemptId = NewRunId(),
             EnvironmentId = NewRunId(),

@@ -29,11 +29,16 @@ internal static partial class PlatformIdentityResolver
         {
             Assembly? entry = Assembly.GetEntryAssembly();
             Assembly tool = string.Equals(entry?.GetName().Name, "Hexalith.Builds.Module.Cli", StringComparison.Ordinal) ? entry! : typeof(PlatformIdentityResolver).Assembly;
-            return (tool.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-                ?? tool.GetName().Version?.ToString()
-                ?? "unavailable").Split('+', 2)[0];
+            return VersionFor(tool);
         }
     }
+
+    /// <summary>Reads an executing assembly's actual informational version using the CLI version convention.</summary>
+    /// <param name="tool">The executing assembly.</param>
+    /// <returns>The informational version without build metadata.</returns>
+    internal static string VersionFor(Assembly tool) => (tool.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        ?? tool.GetName().Version?.ToString()
+        ?? "unavailable").Split('+', 2)[0];
 
     /// <summary>Creates the no-Git identity finding.</summary>
     /// <param name="root">The standalone root.</param>

@@ -376,6 +376,15 @@ class IntegrationTests(unittest.TestCase):
                 "qualificationCredit": False, "observations": {"persisted": True},
             }, indent=2).encode() + b"\n"),
         }
+        manifest = {"schema": "hexalith.executing-tool-manifest.v1", "algorithm": "sha256", "binaries": [
+            {"name": "Hexalith.Builds.Module.Cli.dll", "contentIdentity": "sha256:" + "1" * 64},
+            {"name": "Hexalith.Builds.Tooling.dll", "contentIdentity": "sha256:" + "2" * 64},
+        ]}
+        bodies["executing-tool"] = ("executing-tool", ".json", json.dumps(manifest, separators=(",", ":")).encode())
+        bodies["termination"] = ("termination", ".json", json.dumps({
+            "runId": self.owner["runId"], "ownedWork": [{"id": "native:" + self.owner["runId"], "status": "terminated"}],
+            "environmentAccess": [{"id": "access:" + self.owner["runId"], "status": "terminated"}], "leftoverWorkIds": [],
+        }).encode())
         references = []
         files = {}
         for identity, (prefix, suffix, body) in bodies.items():
@@ -394,6 +403,14 @@ class IntegrationTests(unittest.TestCase):
         result["bindings"]["environment"].update(mode="package", executionContext=self.owner["executionContext"])
         result["terminal"] = {"outcome": "failed", "recordedAt": "2026-11-04T05:28:06Z", "cause": "test-failure", "diagnosticIds": ["lifecycle"]}
         result["diagnostics"] = references
+        result["bindings"]["tool"] = {"state": "populated", "name": "hexalith-module", "version": "1.2.3",
+            "contentIdentity": "sha256:" + hashlib.sha256(bodies["executing-tool"][2]).hexdigest(),
+            **{key: {"state": "not-yet-populated"} for key in ("buildsAdoption", "platformAcceptance", "integrationQualification")}}
+        result["termination"] = {"state": "populated", "ownedWork": [
+            {"id": "native:" + self.owner["runId"], "status": "terminated", "observedAt": "2026-11-04T05:28:06Z", "diagnosticIds": ["termination"]},
+            {"id": "environment:" + self.owner["runId"], "status": "terminated", "observedAt": "2026-11-04T05:28:06Z", "diagnosticIds": ["termination"]}],
+            "environmentAccess": [{"id": "access:" + self.owner["runId"], "status": "terminated", "observedAt": "2026-11-04T05:28:06Z", "diagnosticIds": ["termination"]}],
+            "leftoverWorkIds": [], "failures": []}
         self.publish_result(directory, result)
         return directory, result, files
 
@@ -416,7 +433,44 @@ class IntegrationTests(unittest.TestCase):
             before = {name: (self.evidence / name).stat().st_mtime_ns for name in files if (self.evidence / name).exists()}
             self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
         self.assertEqual(before, {name: (self.evidence / name).stat().st_mtime_ns for name in before})
-        self.assertEqual(json.loads((self.evidence / "test-result.json").read_text())["terminal"], result["terminal"])
+        retained = json.loads((self.evidence / "test-result.json").read_text())
+        self.assertEqual(retained["terminal"], result["terminal"])
+        self.assertEqual(retained["bindings"]["tool"], result["bindings"]["tool"])
+        self.assertEqual(retained["bindings"]["deadlines"]["startup"], result["bindings"]["deadlines"]["startup"])
+        self.assertEqual(retained["termination"], result["termination"])
+
+    def test_executing_manifest_must_match_the_receipt_bound_results_original_tool(self):
+        self.write_receipt()
+        directory, result, _ = self.published_diagnostics()
+        result["bindings"]["tool"]["contentIdentity"] = "sha256:" + "0" * 64
+        self.publish_result(directory, result)
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+        self.assertFalse(list(self.evidence.glob("executing-tool-*.json")))
+
+    def test_malformed_executing_manifest_refuses_without_escaping_collection(self):
+        self.write_receipt()
+        directory, baseline, _ = self.published_diagnostics()
+        reference = next(item for item in baseline["diagnostics"] if item["id"] == "executing-tool")
+        original = json.loads((directory / reference["reference"]).read_text())
+        for fault in ("hash-type", "extra-field", "tool-type"):
+            result = copy.deepcopy(baseline)
+            manifest = copy.deepcopy(original)
+            if fault == "hash-type":
+                manifest["binaries"][0]["contentIdentity"] = 123
+            elif fault == "extra-field":
+                manifest["unexpected"] = "unclassified"
+            body = json.dumps(manifest).encode()
+            digest = hashlib.sha256(body).hexdigest()
+            filename = "executing-tool-" + digest + ".json"
+            path = directory / filename
+            path.write_bytes(body)
+            path.chmod(0o600)
+            next(item for item in result["diagnostics"] if item["id"] == "executing-tool").update(reference=filename, contentIdentity="sha256:" + digest)
+            result["bindings"]["tool"] = None if fault == "tool-type" else {**result["bindings"]["tool"], "contentIdentity": "sha256:" + digest}
+            self.publish_result(directory, result)
+            with self.subTest(fault=fault), patch.object(helper, "verify_tool"), patch.object(helper, "run_down", return_value=self.down_result()):
+                self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
 
     def assert_declared_result_refuses_after_exact_cleanup(self, directory, result, terminal):
         self.publish_result(directory, result)

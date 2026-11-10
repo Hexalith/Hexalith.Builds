@@ -74,6 +74,8 @@ FIXED_METADATA_BYTES = 4 * 1024 * 1024
 JSON_DIAGNOSTIC_BYTES = 1024 * 1024
 DIAGNOSTICS = {
     "lifecycle": ("lifecycle", ".json", JSON_DIAGNOSTIC_BYTES),
+    "termination": ("termination", ".json", JSON_DIAGNOSTIC_BYTES),
+    "executing-tool": ("executing-tool", ".json", JSON_DIAGNOSTIC_BYTES),
     "native-report": ("native", ".trx", 4 * 1024 * 1024),
     "functional-observations": ("functional-observations", ".json", JSON_DIAGNOSTIC_BYTES),
 }
@@ -505,7 +507,17 @@ def retain_artifacts(owner: dict, evidence: Path) -> None:
             body = read_private_artifact(held, filename, maximum)
             if hashlib.sha256(body).hexdigest() != digest:
                 raise ValueError("declared diagnostic bytes differ from their content identity")
-            if identity != "native-report" and read_json(body.decode("utf-8")).get("runId") != owner["runId"]:
+            if identity == "executing-tool":
+                manifest = read_json(body.decode("utf-8"))
+                binaries = manifest.get("binaries")
+                tool = (result or {}).get("bindings", {}).get("tool", {})
+                if (set(manifest) != {"schema", "algorithm", "binaries"} or manifest.get("schema") != "hexalith.executing-tool-manifest.v1" or manifest.get("algorithm") != "sha256"
+                    or not isinstance(tool, dict) or tool.get("state") != "populated" or tool.get("name") != "hexalith-module" or tool.get("contentIdentity") != "sha256:" + digest
+                    or not isinstance(binaries, list) or len(binaries) != 2
+                    or [item.get("name") for item in binaries if isinstance(item, dict)] != ["Hexalith.Builds.Module.Cli.dll", "Hexalith.Builds.Tooling.dll"]
+                    or any(set(item) != {"name", "contentIdentity"} or not isinstance(item.get("contentIdentity"), str) or not re.fullmatch(r"sha256:[a-f0-9]{64}", item.get("contentIdentity", ""), re.ASCII) for item in binaries)):
+                    raise ValueError("executing binary manifest differs from the owner's tool binding")
+            elif identity != "native-report" and read_json(body.decode("utf-8")).get("runId") != owner["runId"]:
                 raise ValueError("declared diagnostic bytes belong to another owner")
             retained.append((filename, body, maximum))
         for filename, body, maximum in retained:

@@ -67,6 +67,7 @@ public static class ModuleCommandExecutionService
     /// <param name="candidateRequestPath">Optional GitHub-authenticated candidate request envelope.</param>
     /// <param name="attachedSuite">Hold options when <paramref name="runId"/> names the owner a declared suite attaches to.</param>
     /// <returns>The stable process exit code.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The nullable startup request is owned by a using declaration across every early return and exception path.")]
     public static async Task<int> ExecuteAsync(
         ModuleInvocationCommand command,
         string manifestPath,
@@ -143,6 +144,19 @@ public static class ModuleCommandExecutionService
                 return await ExecuteExactDownAsync(manifestPath, runId, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, compositionOptions, cancellationToken).ConfigureAwait(false);
             }
 
+            if (command != ModuleInvocationCommand.Down && runId is null && compositionOptions is not null)
+            {
+                // Hash before mapping, workspaces, receipts or service allocation; cleaners never replace this executor.
+                compositionOptions = compositionOptions with
+                {
+                    ExecutingTool = compositionOptions.ExecutingTool ?? compositionOptions.ExecutingToolCaptureOverride?.Invoke() ?? TestEnvironment.ExecutingToolIdentity.Capture(),
+                };
+                if (command == ModuleInvocationCommand.Test)
+                {
+                    compositionOptions = compositionOptions with { SelectedTest = null, SelectedTests = [] };
+                }
+            }
+
             // A direct reference may contain a stale or absent working-tree manifest.
             // Resolve its recorded gitlink before parsing any of its bytes.
             SourceMapping? preResolvedMapping = null;
@@ -158,6 +172,23 @@ public static class ModuleCommandExecutionService
                 bool rootManifest = await (compositionOptions?.RootManifestCheckOverride?.Invoke(manifestPath, setupToken) ?? WorkspaceRootResolver.IsRootManifestAsync(manifestPath, setupToken)).ConfigureAwait(false);
                 if (rootManifest && startupRequest is not null)
                 {
+                    if (command == ModuleInvocationCommand.Test && candidateRequestPath is null && PlatformManifestCommand.IsV2(manifestPath))
+                    {
+                        CompositionEngineOptions earlyOptions = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
+                        PlatformManifestValidationResult earlyValidation = PlatformManifestValidator.Validate([manifestPath], setupToken);
+                        IReadOnlyList<string> fallbackProfiles = profile is null ? [] : [profile];
+                        IReadOnlyList<string> earlyProfiles = profiles is { Count: > 0 } ? profiles : fallbackProfiles;
+                        IReadOnlyList<ModuleTestSelection> earlySelections = earlyValidation.IsValid
+                            ? ModuleTestSelection.SelectBatch(earlyValidation.Declarations!, earlyProfiles, manifestPath, startedUtc, out _)
+                            : [];
+                        compositionOptions = earlyOptions with
+                        {
+                            SelectedTest = earlySelections.Count == 0 ? null : earlySelections[0],
+                            SelectedTests = earlySelections,
+                            RetainOnFailure = !(earlyOptions.ContinuousIntegrationOverride ?? !TestEnvironment.TestEnvironmentDescriptorWriter.IsLocalExecution()),
+                        };
+                    }
+
                     await startupRequest.ConfigureAsync(manifestPath, mode, compositionOptions?.SourceMapping).ConfigureAwait(false);
                 }
 
@@ -808,6 +839,12 @@ public static class ModuleCommandExecutionService
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            if (session is null && startupRequest is not null && compositionOptions?.SelectedTest is not null && runId is null)
+            {
+                CompositionStartResult cancelled = await ReportSetupCancellationSafelyAsync(new CompositionEngine(compositionOptions), startedUtc, startupRequest.Deadline).ConfigureAwait(false);
+                return await WriteResultAsync(cancelled.Result.Status, cancelled.Result.Outcome, cancelled.Result.Diagnostics, format, writer, command, manifestPath, loadedManifest, profile, filter, evidencePath, startedUtc, CancellationToken.None, cancelled.RunId).ConfigureAwait(false);
+            }
+
             if (session is not null && engine is not null)
             {
                 _ = await engine.DownAsync(session, CancellationToken.None).ConfigureAwait(false);
@@ -1030,6 +1067,20 @@ public static class ModuleCommandExecutionService
         return (int)result.Outcome.ExitCode;
     }
 
+    private static async Task<CompositionStartResult> ReportSetupCancellationSafelyAsync(CompositionEngine engine, DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline)
+    {
+        try
+        {
+            return await engine.ReportSetupCancellationAsync(requestedAt, deadline).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+        {
+            ToolCommandResult cancelled = PlatformRefusal("HXC130", "The owner cancelled startup setup.", ToolExitCode.Cancelled) with { Status = "cancelled" };
+            ToolDiagnostic recording = new("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The startup cancellation could not be durably recorded.", "evidence");
+            return new CompositionStartResult(cancelled with { Diagnostics = [.. cancelled.Diagnostics, recording] }, null, null);
+        }
+    }
+
     private static async Task<int> ExecuteExactDownAsync(string manifestPath, string runId, string? evidencePath, DateTimeOffset startedUtc, ToolOutputFormat format, TextWriter writer, string? runnerAssembly, CompositionEngineOptions? options, CancellationToken cancellationToken)
     {
         ToolCommandResult result;
@@ -1230,8 +1281,18 @@ public static class ModuleCommandExecutionService
                 bool ownerAvailable = true;
                 if (session is not null)
                 {
+                    session.Plan = session.Plan with { ExecutingTool = session.Plan.ExecutingTool ?? options.ExecutingTool };
                     CompositionRunState issued = CompositionRunPlanFactory.CreateInitialState(session.RunId, session.Plan.Workspace, selected!.ManifestHash, startedUtc) with
                     {
+                        ExecutingTool = session.Plan.ExecutingTool ?? options.ExecutingTool,
+                        StartupDurationSeconds = session.Readiness.StartupDurationSeconds,
+                        StartupObservedAtUtc = session.Readiness.ObservedAt,
+                        EnvironmentWorkIssued = true,
+                        StartupDeadlineUtc = session.Plan.StartupDeadlineUtc,
+                        EffectiveDeadlineSeconds = session.Plan.EffectiveDeadline?.TimeoutSeconds,
+                        EffectiveDeadlineIsOverride = session.Plan.EffectiveDeadline?.IsOverride ?? false,
+                        EffectiveDeadlineJustification = session.Plan.EffectiveDeadline?.Justification,
+                        EffectiveDeadlineModuleId = session.Plan.EffectiveDeadline?.ModuleId,
                         AttemptId = session.Plan.AttemptId,
                         CandidatePolicy = session.Plan.CandidatePolicy,
                         QualificationOwners = session.Plan.QualificationOwners ?? (options.QualificationOwners.Count == 0 ? null : options.QualificationOwners),
@@ -1321,6 +1382,14 @@ public static class ModuleCommandExecutionService
                     result = expired.Result;
                     ownedRunId = expired.RunId;
                     startupStoppingTimestamp = expired.StoppingTimestamp;
+                }
+                else if (ownerCancelled && ownedRunId is null && session is null)
+                {
+                    engine ??= new CompositionEngine(options);
+                    CompositionStartResult cancelled = await ReportSetupCancellationSafelyAsync(engine, startedUtc, startupDeadline ?? CompositionStartupDeadlineResolver.Resolve(validation.Declarations, options.ReadinessTimeout)).ConfigureAwait(false);
+                    result = cancelled.Result;
+                    ownedRunId = cancelled.RunId;
+                    startupStoppingTimestamp = cancelled.StoppingTimestamp;
                 }
                 else
                 {
@@ -1592,7 +1661,7 @@ public static class ModuleCommandExecutionService
                 {
                     using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
                     CompositionRunResources survivors = await engine!.ObserveOwnedResourcesAsync(ownedRunId, metadata.Token).ConfigureAwait(false);
-                    record = await engine.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, "retained", survivors, metadata.Token, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, archiveMetadata: false).ConfigureAwait(false);
+                    record = await engine.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, "retained", survivors, metadata.Token, native: native, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, archiveMetadata: false).ConfigureAwait(false);
                     if (attachedFailure && record is { TerminalOutcome.ExitCode: ToolExitCode.Success, ResourceDisposition: "retained", CleanupDisposition: "not-requested" })
                     {
                         result = result with { Diagnostics = [.. result.Diagnostics, new ToolDiagnostic("HXI012", ToolPhase.Cleanup, ToolFailureCategory.None, $"Attached runs failed: {string.Join(", ", attachedFailureRunIds)}. The environment remains running for debugging; run down to release.", "retained")] };

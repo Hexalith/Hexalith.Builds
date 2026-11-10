@@ -17,6 +17,31 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class CompositionProcessTests
 {
+    /// <summary>Launch bookkeeping spends the child's original execution allowance.</summary>
+    /// <returns>The bounded timeout and stopping-origin assertions.</returns>
+    [Fact]
+    public async Task ReviewSlowLaunchMetadataDoesNotRenewExecutionAsync()
+    {
+        System.Diagnostics.Stopwatch elapsed = System.Diagnostics.Stopwatch.StartNew();
+        long stopping = 0;
+        CancellationToken launchAllowance = default;
+        CompositionProcessResult result = await CompositionProcess.RunSelectedAsync(
+            CompositionProcess.CreateStartInfo("python3", ["-c", "import time; time.sleep(30)"], null, null),
+            TimeSpan.FromMilliseconds(100),
+            TimeSpan.FromSeconds(1),
+            timestamp => stopping = timestamp,
+            TestContext.Current.CancellationToken,
+            onStartedAsync: (_, token) =>
+            {
+                launchAllowance = token;
+                return Task.Delay(TimeSpan.FromMilliseconds(500), token);
+            }).ConfigureAwait(true);
+        result.TimedOut.ShouldBeTrue();
+        launchAllowance.IsCancellationRequested.ShouldBeTrue();
+        stopping.ShouldBeGreaterThan(0);
+        elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(400));
+    }
+
     /// <summary>Verifies missing executables retain native metadata without sensitive process inputs.</summary>
     /// <returns>The bounded launch refusal assertion.</returns>
     [Fact]
