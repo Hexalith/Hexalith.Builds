@@ -27,6 +27,49 @@ public sealed class AttachedSuiteExecutionTests
 {
     private const int _unkillableProcessId = 2_000_000_123;
 
+    private const string _attachedScript = """
+        import base64, json, os, pathlib, shutil, sys, time
+        root = pathlib.Path(__file__).parent
+        run = os.environ['HEXALITH_G4_RUN_ID']
+        token = os.environ['HEXALITH_G4_ACCESS_TOKEN'].split('.')[1]
+        claims = json.loads(base64.urlsafe_b64decode(token + '=' * (-len(token) % 4)))
+        credentials = os.environ.get('HEXALITH_TEST_ENDPOINT_CREDENTIALS_PATH')
+        bound = json.loads(pathlib.Path(credentials).read_text())['runId'] if credentials else None
+        shutil.copy(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], root / ('descriptor-' + run + '.json'))
+        report = os.environ['HEXALITH_G4_TEST_REPORT_PATH']
+        (root / ('observed-' + run + '.json')).write_text(json.dumps({'exp': claims['exp'], 'sub': claims['sub'], 'descriptor': os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], 'report': report, 'credentials': credentials, 'credentialsRunId': bound, 'credentialExpiry': os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']}))
+        (root / ('started-' + run)).write_text(str(os.getpid()))
+        passing = '<TestRun><ResultSummary outcome="Completed"><Counters total="1" passed="1" failed="0" /></ResultSummary></TestRun>'
+        if (root / 'report-first').exists():
+            pathlib.Path(report).write_text(passing)
+            (root / ('reported-' + run)).write_text('reported')
+        while not (root / ('release-' + run)).exists() and not (root / 'release-all').exists():
+            time.sleep(0.02)
+        pathlib.Path(report).write_text(passing)
+        raise SystemExit(1 if (root / 'fail-all').exists() else 0)
+        """;
+
+    private const string _ownerScript = """
+        import os, pathlib, time
+        root = pathlib.Path(__file__).parent
+        (root / 'owner-started').write_text('started')
+        while not (root / 'release-owner').exists():
+            time.sleep(0.02)
+        pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome="Completed"><Counters total="1" passed="1" failed="0" /></ResultSummary></TestRun>')
+        raise SystemExit(1 if (root / 'owner-fail').exists() else 0)
+        """;
+
+    private const string _appHostScript = """
+        import datetime, pathlib, signal, sys, time
+        def stop(*_):
+            pathlib.Path(sys.argv[1]).write_text(datetime.datetime.now(datetime.timezone.utc).isoformat())
+            sys.exit(0)
+        signal.signal(signal.SIGTERM, stop)
+        print('ready', flush=True)
+        while True:
+            time.sleep(0.05)
+        """;
+
     private static readonly JsonElement _local = JsonSerializer.SerializeToElement(new { kind = "local" });
 
     private static readonly JsonElement _ci = JsonSerializer.SerializeToElement(new { kind = "ci", repository = "o/r", workflowRunId = "101", workflowAttempt = 2, jobId = "ci", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
@@ -113,29 +156,320 @@ public sealed class AttachedSuiteExecutionTests
         }
     }
 
-    /// <summary>Expiry stops a still-running child at the runner's expiry; a passing report written before then is ignored.</summary>
+    /// <summary>Expiry stops a still-running child at the runner's expiry; a passing report written before then is ignored, locally and in CI.</summary>
+    /// <param name="ci">Whether the owner runs in a CI job.</param>
     /// <returns>The expiry assertions.</returns>
-    [Fact]
-    public async Task ExpiryStopsRunningChildAndIgnoresLateReportAsync()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExpiryStopsRunningChildAndIgnoresLateReportAsync(bool ci)
     {
         using PlatformManifestTestWorkspace workspace = new();
-        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "report-first"), "report", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        Dictionary<string, string?>? previous = ci ? EnterCiContext() : null;
+        try
+        {
+            await AssertExpiryAsync(workspace, ci).ConfigureAwait(true);
+        }
+        finally
+        {
+            ExitCiContext(previous);
+        }
+    }
+
+    /// <summary>Owner cancellation in a CI job withdraws an active attachment as ci-job-cancelled before owner cleanup.</summary>
+    /// <returns>The CI cancellation assertions.</returns>
+    [Fact]
+    public async Task CiOwnerCancellationWithdrawsActiveAttachmentAsJobCancelledAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        Dictionary<string, string?> previous = EnterCiContext();
+        try
+        {
+            using CancellationTokenSource ownerToken = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            Owner owner = await Owner.StartAsync(workspace, ownerToken.Token, ci: true).ConfigureAwait(true);
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownerLifetime = owner.ConfigureAwait(true);
+            Task<(int Exit, JsonElement Output)> attached = owner.AttachAsync([], TestContext.Current.CancellationToken);
+            string attachedRunId = await owner.WaitForStartedAsync(1).ConfigureAwait(true);
+            await ownerToken.CancelAsync().ConfigureAwait(true);
+            _ = await owner.Running.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            (int exit, JsonElement output) = await attached.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exit.ShouldBe((int)ToolExitCode.Cancelled, output.GetRawText());
+            JsonElement result = AssertAttachedResult(owner, attachedRunId, "withdrawn", "ci-job-cancelled", "ci-job-cancelled");
+            result.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("not-retained");
+            owner.Cleanups.ShouldBe(1);
+            owner.AttachmentsAtCleanup.Single(item => item.AttachedRunId == attachedRunId).Termination.ShouldNotBeNull().Failures.ShouldBeEmpty();
+            AssertNoTaggedProcess(attachedRunId);
+        }
+        finally
+        {
+            ExitCiContext(previous);
+        }
+    }
+
+    /// <summary>A reconnect presenting a lineage that runs another suite is refused and never relays that suite's result.</summary>
+    /// <returns>The lineage-suite assertions.</returns>
+    [Fact]
+    public async Task ReconnectNamingAnotherSuiteIsRefusedAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
         Owner owner = await Owner.StartAsync(workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownerLifetime = owner.ConfigureAwait(true);
-        (int exit, JsonElement output) = await owner.AttachAsync(["--hold-seconds", "2"], TestContext.Current.CancellationToken).ConfigureAwait(true);
-        exit.ShouldBe((int)ToolExitCode.Cancelled, output.GetRawText());
-        output.GetProperty("status").GetString().ShouldBe("withdrawn");
-        string attachedRunId = output.GetProperty("runId").GetString().ShouldNotBeNull();
-        JsonElement result = AssertAttachedResult(owner, attachedRunId, "withdrawn", "hold-expired", "expired");
-        CompositionAttachment recorded = await owner.RecordAsync(attachedRunId).ConfigureAwait(true);
-        result.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset().ShouldBe(recorded.ExpiresAtUtc);
-        recorded.EndedAtUtc.ShouldBe(recorded.ExpiresAtUtc);
-        recorded.Termination.ShouldNotBeNull().OwnedWork.Single().Status.ShouldBe("terminated");
-        File.Exists(Path.Combine(workspace.Root, "reported-" + attachedRunId)).ShouldBeTrue("The child wrote a passing report before expiry.");
-        using JsonDocument observed = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, "observed-" + attachedRunId + ".json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
-        observed.RootElement.GetProperty("exp").GetInt64().ShouldBe(recorded.ExpiresAtUtc.ToUnixTimeSeconds(), "A hold shorter than the execution deadline bounds the bearer.");
-        AssertNoTaggedProcess(attachedRunId);
-        owner.Running.IsCompleted.ShouldBeFalse();
+        Task<(int Exit, JsonElement Output)> first = owner.AttachAsync([], TestContext.Current.CancellationToken);
+        string attachedRunId = await owner.WaitForStartedAsync(1).ConfigureAwait(true);
+        CompositionAttachment lineage = await owner.RecordAsync(attachedRunId).ConfigureAwait(true);
+        (int exit, JsonElement output) = await owner.AttachAsync(["--attachment-request-id", lineage.OriginalAttachmentRequestId], TestContext.Current.CancellationToken, profile: "other").ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.GetRawText());
+        AssertRefusal(output, "HXR036", "lineage-suite-mismatch");
+        output.TryGetProperty("testResultPath", out _).ShouldBeFalse();
+        (await owner.RecordAsync(attachedRunId).ConfigureAwait(true)).EndedAtUtc.ShouldBeNull();
+        first.IsCompleted.ShouldBeFalse();
+        Release(workspace, attachedRunId);
+        (await first.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true)).Exit.ShouldBe(0);
+        Directory.GetFiles(workspace.Root, "started-*").Length.ShouldBe(1);
+    }
+
+    /// <summary>An attached-suite request presenting a hold-only lineage is refused; the hold stays hold-only and endable.</summary>
+    /// <returns>The hold-only lineage assertions.</returns>
+    [Fact]
+    public async Task HoldOnlyLineageNeverBecomesRunnerOwnedAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        Owner owner = await Owner.StartAsync(workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownerLifetime = owner.ConfigureAwait(true);
+        CompositionAttachment hold = (await owner.HoldOnlyAsync("600").ConfigureAwait(true)).ShouldNotBeNull();
+        (int exit, JsonElement output) = await owner.AttachAsync(["--attachment-request-id", hold.OriginalAttachmentRequestId], TestContext.Current.CancellationToken).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.GetRawText());
+        AssertRefusal(output, "HXR036", "hold-only-lineage");
+        CompositionAttachment unchanged = await owner.RecordAsync(hold.AttachedRunId).ConfigureAwait(true);
+        unchanged.ShouldBe(hold);
+        unchanged.Execution.ShouldBeNull();
+        Directory.GetFiles(workspace.Root, "started-*").ShouldBeEmpty();
+        ToolCommandResult ended = await CompositionAttachAdmission.EndAsync(new CompositionRunStateStore(owner.Options.StateDirectory), owner.Session!.RunId, hold.AttachedRunId, "passed", DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ended.Status.ShouldBe("ended");
+    }
+
+    /// <summary>attach --end cannot end a running runner-owned suite; the child keeps running and later passes.</summary>
+    /// <returns>The end-refusal assertions.</returns>
+    [Fact]
+    public async Task AttachEndRefusesRunningRunnerOwnedSuiteAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        Owner owner = await Owner.StartAsync(workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownerLifetime = owner.ConfigureAwait(true);
+        Task<(int Exit, JsonElement Output)> attached = owner.AttachAsync([], TestContext.Current.CancellationToken);
+        string attachedRunId = await owner.WaitForStartedAsync(1).ConfigureAwait(true);
+        ToolCommandResult end = await CompositionAttachAdmission.EndAsync(new CompositionRunStateStore(owner.Options.StateDirectory), owner.Session!.RunId, attachedRunId, "passed", DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        end.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+        end.Diagnostics.Single().RuleId.ShouldBe("HXR036");
+        end.Diagnostics.Single().Field.ShouldBe("runner-owned-attachment");
+        (await owner.RecordAsync(attachedRunId).ConfigureAwait(true)).EndedAtUtc.ShouldBeNull();
+        AssertTaggedProcess(attachedRunId);
+        Release(workspace, attachedRunId);
+        (await attached.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true)).Exit.ShouldBe(0);
+        _ = AssertAttachedResult(owner, attachedRunId, "passed", "tests-completed", "terminal-outcome");
+    }
+
+    /// <summary>A lease that is expired, closed, held by an exited process or by a reused process identity is not live.</summary>
+    /// <param name="scenario">The stale lease.</param>
+    /// <returns>The owner-not-live assertions.</returns>
+    [Theory]
+    [InlineData("expired")]
+    [InlineData("closed")]
+    [InlineData("exited")]
+    [InlineData("start-mismatch")]
+    public async Task StaleLeaseRefusesAttachedSuiteBeforeAdmissionAsync(string scenario)
+    {
+        ArgumentNullException.ThrowIfNull(scenario);
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionEngineOptions options, CompositionRunState owner, _, string manifest) = await SeedOwnerAsync(workspace).ConfigureAwait(true);
+        string directory = Path.Combine(options.StateDirectory, "diagnostics", owner.RunId);
+        using Process holder = new() { StartInfo = CompositionProcess.CreateStartInfo("python3", ["-c", scenario == "exited" ? "pass" : "import time; time.sleep(30)"], workspace.Root, null) };
+        holder.Start().ShouldBeTrue();
+        try
+        {
+            if (scenario == "exited")
+            {
+                await holder.WaitForExitAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            int processId = scenario is "exited" or "start-mismatch" ? holder.Id : Environment.ProcessId;
+            DateTimeOffset? started = scenario == "start-mismatch" ? holder.StartTime.ToUniversalTime().AddHours(-1) : null;
+            await WriteLeaseAsync(directory, owner.RunId, processId, started, scenario == "expired" ? now.AddSeconds(-1) : now.AddMinutes(1), scenario == "closed" ? "closed" : "open").ConfigureAwait(true);
+            (int exit, JsonElement output) = await InvokeAttachAsync(manifest, "verify", owner.RunId, options, []).ConfigureAwait(true);
+            exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.GetRawText());
+            AssertRefusal(output, "HXR033", "owner-not-live");
+            (await CompositionAttachmentStore.ReadAsync(directory, owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeEmpty();
+        }
+        finally
+        {
+            if (!holder.HasExited)
+            {
+                CompositionProcess.Kill(holder);
+            }
+        }
+    }
+
+    /// <summary>A down for an owner whose command vanished stops the tagged attached child itself, records it and publishes the result.</summary>
+    /// <param name="survivor">Whether a tagged process survives every stop attempt.</param>
+    /// <returns>The vanished-owner down assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DownStopsAttachedWorkOfVanishedOwnerAsync(bool survivor)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionEngineOptions options, CompositionRunState owner, ModuleTestSelection selected, _) = await SeedOwnerAsync(workspace, survivor).ConfigureAwait(true);
+        string directory = Path.Combine(options.StateDirectory, "diagnostics", owner.RunId);
+        CompositionAttachment seeded = await SeedLaunchedAsync(directory, owner, selected).ConfigureAwait(true);
+        await WriteLeaseAsync(directory, owner.RunId, await ExitedProcessIdAsync(workspace.Root).ConfigureAwait(true), null, DateTimeOffset.UtcNow.AddMinutes(1), "open").ConfigureAwait(true);
+        using Process child = StartTaggedChild(workspace.Root, seeded.AttachedRunId);
+        try
+        {
+            CompositionDownResult down = await new CompositionEngine(options with { SelectedTest = owner.SelectedTest }).DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionAttachment recorded = (await CompositionAttachmentStore.ReadAsync(directory, owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
+            recorded.Termination.ShouldNotBeNull().Recorder.ShouldBe("down");
+            _ = recorded.Execution.ShouldNotBeNull().ResultPublishedAtUtc.ShouldNotBeNull();
+            _ = AssertAttachedResult(options.StateDirectory, owner.RunId, seeded.AttachedRunId, "withdrawn", "developer-stop", "developer-stop");
+            if (survivor)
+            {
+                down.Result.Diagnostics.ShouldContain(item => item.RuleId == "HXR038");
+                down.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
+                recorded.Termination.Failures.ShouldNotBeEmpty();
+                recorded.Termination.LeftoverWorkIds.ShouldContain("process:" + _unkillableProcessId.ToString(CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, string.Join(";", down.Result.Diagnostics.Select(item => item.RuleId + ":" + item.Message)));
+                down.Result.Diagnostics.ShouldContain(item => item.RuleId == "HXI013");
+                recorded.Termination.Failures.ShouldBeEmpty();
+                await child.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                AssertNoTaggedProcess(seeded.AttachedRunId);
+            }
+        }
+        finally
+        {
+            if (!child.HasExited)
+            {
+                CompositionProcess.Kill(child);
+            }
+        }
+    }
+
+    /// <summary>When the owner command vanishes mid-run, the attacher stops its own tagged child, records termination and publishes.</summary>
+    /// <returns>The attacher fallback assertions.</returns>
+    [Fact]
+    public async Task AttacherTakesOverWhenOwnerVanishesMidRunAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionEngineOptions options, CompositionRunState owner, ModuleTestSelection selected, string manifest) = await SeedOwnerAsync(workspace).ConfigureAwait(true);
+        string directory = Path.Combine(options.StateDirectory, "diagnostics", owner.RunId);
+        CompositionAttachment seeded = await SeedLaunchedAsync(directory, owner, selected).ConfigureAwait(true);
+        await WriteLeaseAsync(directory, owner.RunId, Environment.ProcessId, null, DateTimeOffset.UtcNow.AddMinutes(1), "open").ConfigureAwait(true);
+        using Process child = StartTaggedChild(workspace.Root, seeded.AttachedRunId);
+        try
+        {
+            Task<(int Exit, JsonElement Output)> reconnect = InvokeAttachAsync(manifest, "verify", owner.RunId, options, ["--attachment-request-id", seeded.OriginalAttachmentRequestId]);
+            await Task.Delay(500, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            reconnect.IsCompleted.ShouldBeFalse();
+            await WriteLeaseAsync(directory, owner.RunId, await ExitedProcessIdAsync(workspace.Root).ConfigureAwait(true), null, DateTimeOffset.UtcNow.AddMinutes(1), "open").ConfigureAwait(true);
+            (int exit, JsonElement output) = await reconnect.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.GetRawText());
+            CompositionAttachment recorded = (await CompositionAttachmentStore.ReadAsync(directory, owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
+            recorded.Termination.ShouldNotBeNull().Recorder.ShouldBe("attacher");
+            recorded.Termination.Failures.ShouldBeEmpty();
+            _ = AssertAttachedResult(options.StateDirectory, owner.RunId, seeded.AttachedRunId, "failed", "test-failure", "terminal-outcome");
+            await child.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            AssertNoTaggedProcess(seeded.AttachedRunId);
+        }
+        finally
+        {
+            if (!child.HasExited)
+            {
+                CompositionProcess.Kill(child);
+            }
+        }
+    }
+
+    /// <summary>The owner re-selects every request from its own manifest; a gate suite or changed entry fails before any child starts.</summary>
+    /// <param name="scenario">The request the owner must refuse.</param>
+    /// <returns>The owner re-check assertions.</returns>
+    [Theory]
+    [InlineData("gate")]
+    [InlineData("entry-hash")]
+    public async Task OwnerReselectionRefusesUnsupportedRequestBeforeLaunchAsync(string scenario)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        Owner owner = await Owner.StartAsync(workspace, TestContext.Current.CancellationToken, gateSuite: true).ConfigureAwait(true);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownerLifetime = owner.ConfigureAwait(true);
+        CompositionRunStateStore store = new(owner.Options.StateDirectory);
+        CompositionRunState state = (await store.TryReadAsync(owner.Session!.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        ModuleTestSelection suite = ModuleTestSelection.Select(PlatformManifestValidator.Validate([owner.Manifest], TestContext.Current.CancellationToken).Declarations!, scenario == "gate" ? "gated" : "attached", owner.Manifest, now).ShouldNotBeNull();
+        CompositionAttachedExecution execution = new(suite.Name, suite.Mode, suite.ManifestHash, scenario == "gate" ? suite.EntryHash : new string('0', 64), now);
+        ToolCommandResult admitted = await CompositionAttachAdmission.AdmitAsync(store, new CompositionAttachRequest(state.RunId, "source", state.SelectedTest!.ManifestHash) { AttacherContext = _local, Execution = execution }, now, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string attachedRunId = admitted.Attachment.ShouldNotBeNull().AttachedRunId;
+        CompositionAttachment recorded = await owner.WaitForPublishedAsync(attachedRunId).ConfigureAwait(true);
+        recorded.Outcome.ShouldBe("failed");
+        recorded.Execution.ShouldNotBeNull().Cause.ShouldBe("startup-failure");
+        recorded.Execution.RuleId.ShouldBe("HXC002");
+        recorded.Execution.LaunchedAtUtc.ShouldBeNull();
+        _ = AssertAttachedResult(owner, attachedRunId, "failed", "startup-failure", "terminal-outcome");
+        Directory.GetFiles(workspace.Root, "started-*").ShouldBeEmpty();
+        Directory.Exists(Path.Combine(owner.Session.Plan.Workspace, "attachments", attachedRunId)).ShouldBeFalse();
+    }
+
+    /// <summary>Malformed or unsupported attached requests are usage refusals that admit nothing and start nothing.</summary>
+    /// <param name="scenario">The refused command line.</param>
+    /// <param name="rule">The usage rule.</param>
+    /// <param name="message">The refusal reason the diagnostic must state.</param>
+    /// <returns>The usage-refusal assertions.</returns>
+    [Theory]
+    [InlineData("hold-without-attach", "HXC001", "command line is invalid")]
+    [InlineData("request-without-attach", "HXC001", "command line is invalid")]
+    [InlineData("two-profiles", "HXC002", "exactly one declared suite")]
+    [InlineData("mode", "HXC002", "mode does not match")]
+    [InlineData("v1-manifest", "HXC002", "v2 manifest")]
+    [InlineData("retention", "HXC002", "retention gate")]
+    public async Task UnsupportedAttachedCommandIsUsageRefusalAsync(string scenario, string rule, string message)
+    {
+        ArgumentNullException.ThrowIfNull(scenario);
+        using PlatformManifestTestWorkspace workspace = new();
+        string manifest = await DeclareSuitesAsync(workspace, gateSuite: false).ConfigureAwait(true);
+        ModuleTestSelection verify = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, verify);
+        string profile = "attached";
+        if (scenario == "retention")
+        {
+            workspace.Document["modules"]![0] = JsonNode.Parse(workspace.Document["modules"]![0]!.ToJsonString().Replace("sample", "memories", StringComparison.Ordinal));
+            workspace.Change("modules.0.tests.1.name", "\"functional-retention\"");
+            manifest = workspace.Save();
+            profile = "functional-retention";
+        }
+
+        if (scenario == "v1-manifest")
+        {
+            manifest = Path.Combine(workspace.Root, "legacy.json");
+            await File.WriteAllTextAsync(manifest, "{\"schema\":\"hexalith.module-manifest.v1\"}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        string ownerRunId = CompositionRunPlanFactory.NewRunId();
+        string[] arguments = scenario switch
+        {
+            "hold-without-attach" => ["test", "--manifest", manifest, "--profile", profile, "--hold-seconds", "60", "--output", "json"],
+            "request-without-attach" => ["test", "--manifest", manifest, "--profile", profile, "--attachment-request-id", CompositionRunPlanFactory.NewRunId(), "--output", "json"],
+            "two-profiles" => ["test", "--manifest", manifest, "--profile", "verify", "--profile", profile, "--attach-to", ownerRunId, "--output", "json"],
+            "mode" => ["test", "--manifest", manifest, "--profile", profile, "--mode", "package", "--attach-to", ownerRunId, "--output", "json"],
+            _ => ["test", "--manifest", manifest, "--profile", profile, "--attach-to", ownerRunId, "--output", "json"],
+        };
+        StringWriter writer = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable writerLifetime = writer.ConfigureAwait(true);
+        int exit = await ModuleCommandApplication.InvokeAsync(arguments, writer, TextWriter.Null, TestContext.Current.CancellationToken, "child.dll", options, _local).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest, writer.ToString());
+        using JsonDocument output = JsonDocument.Parse(writer.ToString());
+        output.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(item => item.GetProperty("ruleId").GetString() == rule && item.GetProperty("message").GetString()!.Contains(message, StringComparison.Ordinal), writer.ToString());
+        Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics", ownerRunId)).ShouldBeFalse();
+        Directory.GetFiles(workspace.Root, "started-*").ShouldBeEmpty();
     }
 
     /// <summary>Two concurrent attachments: one expiring leaves the other attachment and the owner running.</summary>
@@ -284,6 +618,10 @@ public sealed class AttachedSuiteExecutionTests
         termination.GetProperty("environmentAccess")[0].GetProperty("status").GetString().ShouldBe("failed");
         termination.GetProperty("leftoverWorkIds").EnumerateArray().Select(item => item.GetString()).ShouldContain("process:" + _unkillableProcessId.ToString(CultureInfo.InvariantCulture));
         termination.GetProperty("failures").GetArrayLength().ShouldBe(2);
+        string terminationDetail = await File.ReadAllTextAsync(Path.Combine(owner.Options.StateDirectory, "diagnostics", attachedRunId, Reference(result, "termination")), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        terminationDetail.ShouldNotContain("no holder");
+        terminationDetail.ShouldContain("may survive");
+        terminationDetail.ShouldContain("copied endpoint secrets");
         CompositionAttachment recorded = await owner.RecordAsync(attachedRunId).ConfigureAwait(true);
         (recorded.ExpiresAtUtc - recorded.AcceptedAtUtc).ShouldBe(TimeSpan.FromSeconds(CompositionAttachment.DefaultHoldSeconds));
     }
@@ -492,6 +830,107 @@ public sealed class AttachedSuiteExecutionTests
         recorded.Execution.ShouldNotBeNull().LaunchedAtUtc.ShouldBeNull();
     }
 
+    private static async Task<string> DeclareSuitesAsync(PlatformManifestTestWorkspace workspace, bool gateSuite)
+    {
+        _ = LocalRunLifecycleFixture.Create(workspace);
+        const string gated = """,{"name":"gated","executor":"python3","entry":"attached.py","reportFormat":"trx","executionTimeoutSeconds":120,"stopTimeoutSeconds":4,"mode":"source","daprRuntimeVersion":"1.18.1"}""";
+        string suites = """
+            [{"name":"verify","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":120,"stopTimeoutSeconds":4,"mode":"source"},
+             {"name":"attached","executor":"python3","entry":"attached.py","reportFormat":"trx","executionTimeoutSeconds":120,"stopTimeoutSeconds":4,"mode":"source"},
+             {"name":"other","executor":"python3","entry":"attached.py","reportFormat":"trx","executionTimeoutSeconds":120,"stopTimeoutSeconds":4,"mode":"source"}
+            """ + (gateSuite ? gated : string.Empty) + "]";
+        workspace.Change("modules.0.tests", suites);
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), _ownerScript, TestContext.Current.CancellationToken).ConfigureAwait(false);
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "attached.py"), _attachedScript, TestContext.Current.CancellationToken).ConfigureAwait(false);
+        return workspace.Save();
+    }
+
+    private static async Task<(CompositionEngineOptions Options, CompositionRunState Owner, ModuleTestSelection Selected, string Manifest)> SeedOwnerAsync(PlatformManifestTestWorkspace workspace, bool survivor = false)
+    {
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        string manifest = workspace.Save();
+        string runId = CompositionRunPlanFactory.NewRunId();
+        state = state with { RunId = runId, Workspace = Path.Combine(workspace.Root, "runs", runId), Status = CompositionRunStatus.Ready, ReadinessResults = [new CompositionResourceReadiness("owned", "process", "Healthy")], RemainingResources = null };
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            HoldPollInterval = TimeSpan.FromMilliseconds(25),
+            AttachedPickupTimeout = TimeSpan.FromSeconds(2),
+            AttachedProcessDiscoveryOverride = survivor ? Survivor : null,
+        };
+        await new CompositionRunStateStore(options.StateDirectory).WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(false);
+        CompositionWorkspace.CreatePrivateDirectory(state.Workspace);
+        return (options, state, selected, manifest);
+    }
+
+    private static async Task<CompositionAttachment> SeedLaunchedAsync(string directory, CompositionRunState owner, ModuleTestSelection selected)
+    {
+        DateTimeOffset accepted = DateTimeOffset.UtcNow;
+        CompositionAttachment seeded = new(CompositionRunPlanFactory.NewRunId(), owner.EnvironmentId!, owner.RunId, CompositionRunPlanFactory.NewRunId(), 600, accepted, 600, accepted.AddSeconds(600))
+        {
+            Execution = new CompositionAttachedExecution(selected.Name, selected.Mode, selected.ManifestHash, selected.EntryHash, accepted) { AttemptId = CompositionRunPlanFactory.NewRunId(), PickedUpAtUtc = accepted, LaunchedAtUtc = accepted },
+        };
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, owner.RunId, _ => (0, [seeded]), TestContext.Current.CancellationToken).ConfigureAwait(false);
+        string attachmentWorkspace = Path.Combine(owner.Workspace, "attachments", seeded.AttachedRunId);
+        CompositionWorkspace.CreatePrivateDirectory(attachmentWorkspace);
+        await File.WriteAllTextAsync(Path.Combine(attachmentWorkspace, "test-environment.json"), "{}", TestContext.Current.CancellationToken).ConfigureAwait(false);
+        return seeded;
+    }
+
+    private static Task WriteLeaseAsync(string directory, string ownerRunId, int processId, DateTimeOffset? startedAt, DateTimeOffset expiresAt, string state)
+    {
+        CompositionWorkspace.CreatePrivateDirectory(directory);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        return CompositionDocumentStore.WriteAsync(AttachedSuiteSupervisorLease.PathFor(directory), new AttachedSuiteSupervisorLease(AttachedSuiteSupervisorLease.SupportedSchema, ownerRunId, processId, startedAt, now, expiresAt, state), TestContext.Current.CancellationToken);
+    }
+
+    private static async Task<int> ExitedProcessIdAsync(string root)
+    {
+        using Process exited = new() { StartInfo = CompositionProcess.CreateStartInfo("python3", ["-c", "pass"], root, null) };
+        exited.Start().ShouldBeTrue();
+        await exited.WaitForExitAsync(TestContext.Current.CancellationToken).ConfigureAwait(false);
+        return exited.Id;
+    }
+
+    private static Process StartTaggedChild(string root, string attachedRunId)
+    {
+        Process child = new() { StartInfo = CompositionProcess.CreateStartInfo("python3", ["-c", "import time; time.sleep(60)"], root, new Dictionary<string, string> { [CompositionEnvironment.RunId] = attachedRunId }) };
+        child.Start().ShouldBeTrue();
+        return child;
+    }
+
+    private static async Task<(int Exit, JsonElement Output)> InvokeAttachAsync(string manifest, string profile, string ownerRunId, CompositionEngineOptions options, string[] extra)
+    {
+        StringWriter writer = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = writer.ConfigureAwait(false);
+        int exit = await ModuleCommandApplication.InvokeAsync(["test", "--manifest", manifest, "--profile", profile, "--attach-to", ownerRunId, "--output", "json", .. extra], writer, TextWriter.Null, TestContext.Current.CancellationToken, "child.dll", options, _local).ConfigureAwait(false);
+        using JsonDocument document = JsonDocument.Parse(writer.ToString());
+        return (exit, document.RootElement.Clone());
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1172:Unused method parameters should be removed", Justification = "The discovery seam signature is fixed; this double reports one unkillable tagged survivor for every attached run.")]
+    private static (IReadOnlyList<int> ProcessIds, bool Verified) Survivor(string runId, CancellationToken cancellationToken) => ([_unkillableProcessId], true);
+
+    private static async Task AssertExpiryAsync(PlatformManifestTestWorkspace workspace, bool ci)
+    {
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "report-first"), "report", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        Owner owner = await Owner.StartAsync(workspace, TestContext.Current.CancellationToken, ci: ci).ConfigureAwait(true);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownerLifetime = owner.ConfigureAwait(true);
+        (int exit, JsonElement output) = await owner.AttachAsync(["--hold-seconds", "2"], TestContext.Current.CancellationToken).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.Cancelled, output.GetRawText());
+        output.GetProperty("status").GetString().ShouldBe("withdrawn");
+        string attachedRunId = output.GetProperty("runId").GetString().ShouldNotBeNull();
+        JsonElement result = AssertAttachedResult(owner, attachedRunId, "withdrawn", "hold-expired", "expired");
+        CompositionAttachment recorded = await owner.RecordAsync(attachedRunId).ConfigureAwait(true);
+        result.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset().ShouldBe(recorded.ExpiresAtUtc);
+        recorded.EndedAtUtc.ShouldBe(recorded.ExpiresAtUtc);
+        recorded.Termination.ShouldNotBeNull().OwnedWork.Single().Status.ShouldBe("terminated");
+        File.Exists(Path.Combine(workspace.Root, "reported-" + attachedRunId)).ShouldBeTrue("The child wrote a passing report before expiry.");
+        using JsonDocument observed = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, "observed-" + attachedRunId + ".json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        observed.RootElement.GetProperty("exp").GetInt64().ShouldBe(recorded.ExpiresAtUtc.ToUnixTimeSeconds(), "A hold shorter than the execution deadline bounds the bearer.");
+        AssertNoTaggedProcess(attachedRunId);
+        owner.Running.IsCompleted.ShouldBeFalse();
+    }
+
     private static JsonElement AssertAttachedResult(Owner owner, string attachedRunId, string outcome, string cause, string endReason) =>
         AssertAttachedResult(owner.Options.StateDirectory, owner.Session!.RunId, attachedRunId, outcome, cause, endReason);
 
@@ -613,49 +1052,6 @@ public sealed class AttachedSuiteExecutionTests
 
     private sealed class Owner : IAsyncDisposable
     {
-        private const string _attachedScript = """
-            import base64, json, os, pathlib, shutil, sys, time
-            root = pathlib.Path(__file__).parent
-            run = os.environ['HEXALITH_G4_RUN_ID']
-            token = os.environ['HEXALITH_G4_ACCESS_TOKEN'].split('.')[1]
-            claims = json.loads(base64.urlsafe_b64decode(token + '=' * (-len(token) % 4)))
-            credentials = os.environ.get('HEXALITH_TEST_ENDPOINT_CREDENTIALS_PATH')
-            bound = json.loads(pathlib.Path(credentials).read_text())['runId'] if credentials else None
-            shutil.copy(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], root / ('descriptor-' + run + '.json'))
-            report = os.environ['HEXALITH_G4_TEST_REPORT_PATH']
-            (root / ('observed-' + run + '.json')).write_text(json.dumps({'exp': claims['exp'], 'sub': claims['sub'], 'descriptor': os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], 'report': report, 'credentials': credentials, 'credentialsRunId': bound, 'credentialExpiry': os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']}))
-            (root / ('started-' + run)).write_text(str(os.getpid()))
-            passing = '<TestRun><ResultSummary outcome="Completed"><Counters total="1" passed="1" failed="0" /></ResultSummary></TestRun>'
-            if (root / 'report-first').exists():
-                pathlib.Path(report).write_text(passing)
-                (root / ('reported-' + run)).write_text('reported')
-            while not (root / ('release-' + run)).exists() and not (root / 'release-all').exists():
-                time.sleep(0.02)
-            pathlib.Path(report).write_text(passing)
-            raise SystemExit(1 if (root / 'fail-all').exists() else 0)
-            """;
-
-        private const string _ownerScript = """
-            import os, pathlib, time
-            root = pathlib.Path(__file__).parent
-            (root / 'owner-started').write_text('started')
-            while not (root / 'release-owner').exists():
-                time.sleep(0.02)
-            pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome="Completed"><Counters total="1" passed="1" failed="0" /></ResultSummary></TestRun>')
-            raise SystemExit(1 if (root / 'owner-fail').exists() else 0)
-            """;
-
-        private const string _appHostScript = """
-            import datetime, pathlib, signal, sys, time
-            def stop(*_):
-                pathlib.Path(sys.argv[1]).write_text(datetime.datetime.now(datetime.timezone.utc).isoformat())
-                sys.exit(0)
-            signal.signal(signal.SIGTERM, stop)
-            print('ready', flush=True)
-            while True:
-                time.sleep(0.05)
-            """;
-
         private readonly Process _appHost = new();
         private JsonElement _context = _local;
 
@@ -682,16 +1078,7 @@ public sealed class AttachedSuiteExecutionTests
         public static async Task<Owner> StartAsync(PlatformManifestTestWorkspace workspace, CancellationToken ownerToken, bool ci = false, bool liveAppHost = false, bool survivor = false, bool credentials = false, bool gateSuite = false)
         {
             Owner owner = new() { _context = ci ? _ci : _local, AppHostStoppedPath = Path.Combine(workspace.Root, "apphost-stopped") };
-            _ = LocalRunLifecycleFixture.Create(workspace);
-            const string gated = """,{"name":"gated","executor":"python3","entry":"attached.py","reportFormat":"trx","executionTimeoutSeconds":120,"stopTimeoutSeconds":4,"mode":"source","daprRuntimeVersion":"1.18.1"}""";
-            string suites = """
-                [{"name":"verify","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":120,"stopTimeoutSeconds":4,"mode":"source"},
-                 {"name":"attached","executor":"python3","entry":"attached.py","reportFormat":"trx","executionTimeoutSeconds":120,"stopTimeoutSeconds":4,"mode":"source"}
-                """ + (gateSuite ? gated : string.Empty) + "]";
-            workspace.Change("modules.0.tests", suites);
-            await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), _ownerScript, TestContext.Current.CancellationToken).ConfigureAwait(false);
-            await File.WriteAllTextAsync(Path.Combine(workspace.Root, "attached.py"), _attachedScript, TestContext.Current.CancellationToken).ConfigureAwait(false);
-            string manifest = workspace.Save();
+            string manifest = await DeclareSuitesAsync(workspace, gateSuite).ConfigureAwait(false);
             owner.Manifest = manifest;
             ModuleTestSelection selected = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
             owner.Options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
@@ -794,6 +1181,21 @@ public sealed class AttachedSuiteExecutionTests
             throw new TimeoutException("The attached child did not start: " + Output);
         }
 
+        public async Task<CompositionAttachment> WaitForPublishedAsync(string attachedRunId)
+        {
+            for (int attempt = 0; attempt < 1500; attempt++)
+            {
+                if ((await AttachmentsAsync().ConfigureAwait(false)).FirstOrDefault(item => item.AttachedRunId == attachedRunId) is { Execution.ResultPublishedAtUtc: not null } published)
+                {
+                    return published;
+                }
+
+                await Task.Delay(20, TestContext.Current.CancellationToken).ConfigureAwait(false);
+            }
+
+            throw new TimeoutException("The attached result was not published: " + Output);
+        }
+
         public async Task WaitForOwnerOutcomeAsync()
         {
             for (int attempt = 0; attempt < 1500; attempt++)
@@ -854,9 +1256,6 @@ public sealed class AttachedSuiteExecutionTests
             _appHost.Dispose();
             await Output.DisposeAsync().ConfigureAwait(false);
         }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1172:Unused method parameters should be removed", Justification = "The discovery seam signature is fixed; this double reports one unkillable tagged survivor for every attached run.")]
-        private static (IReadOnlyList<int> ProcessIds, bool Verified) Survivor(string runId, CancellationToken cancellationToken) => ([_unkillableProcessId], true);
 
         private static async Task<CompositionReadiness> WithCredentialsAsync(CompositionRunPlan plan, CompositionReadiness ready, CancellationToken token)
         {

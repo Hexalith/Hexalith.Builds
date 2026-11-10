@@ -98,9 +98,11 @@ public static class CompositionAttachAdmission
         if (request.PresentedRequestId is { } presented)
         {
             ToolCommandResult retried = Retry(existing.FirstOrDefault(item => item.OriginalAttachmentRequestId == presented || item.AttachedRunId == presented), now);
-            return request.Execution is null || retried.Attachment is not { Execution: null } lineage
-                ? retried
-                : await RecordExecutionAsync(directory, request, lineage, now, cancellationToken).ConfigureAwait(false);
+
+            // A hold-only lineage stays hold-only, so its holder's attach --end keeps working; a suite needs its own lineage.
+            return request.Execution is not null && retried.Attachment is { Execution: null }
+                ? Refuse("HXR036", "hold-only-lineage", "The presented lineage is a hold-only attachment; an attached suite needs its own attachment request.")
+                : retried;
         }
 
         if (request.EnvironmentId is not null && request.EnvironmentId != owner.EnvironmentId)
@@ -233,39 +235,6 @@ public static class CompositionAttachAdmission
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
         {
             return Refuse("HXR033", "attachment-unrecordable", "The attachment end could not be durably recorded.");
-        }
-    }
-
-    private static async Task<ToolCommandResult> RecordExecutionAsync(string directory, CompositionAttachRequest request, CompositionAttachment lineage, DateTimeOffset now, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await CompositionAttachmentStore.UpdateAsync<ToolCommandResult>(
-                directory,
-                request.OwnerRunId,
-                current =>
-                {
-                    CompositionAttachment? latest = current.FirstOrDefault(item => item.AttachedRunId == lineage.AttachedRunId);
-                    ToolCommandResult retried = Retry(latest, now);
-                    if (retried.Attachment is not { } live || live.Execution is not null)
-                    {
-                        // A reconnect to an existing attached suite keeps its execution and never starts another child.
-                        return (retried, null);
-                    }
-
-                    if (!AttachedSuiteSupervisorLease.IsLive(directory, request.OwnerRunId, now))
-                    {
-                        return (NotLive(), null);
-                    }
-
-                    CompositionAttachment updated = live with { Execution = request.Execution };
-                    return (Accepted(updated, retry: true), [.. current.Select(item => ReferenceEquals(item, latest) ? updated : item)]);
-                },
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
-        {
-            return Refuse("HXR033", "attachment-unrecordable", "The attached suite request could not be durably recorded; nothing was attached.");
         }
     }
 

@@ -525,6 +525,15 @@ internal static class NativeTestExecutor
             }
         }
 
+        if (attached is not null && selection.Executor != "python3")
+        {
+            // An attached dotnet child starts no reusable MSBuild node, MSBuild server or compiler server: those would inherit
+            // the attached run tag and bearer, and the run-tag kill at attachment end would break owner or peer builds reusing them.
+            environment["MSBUILDDISABLENODEREUSE"] = "1";
+            environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
+            environment["UseSharedCompilation"] = "false";
+        }
+
         CompositionSelectedTestGate gate = new(session, cancellationToken);
 
         CompositionProcessResult process;

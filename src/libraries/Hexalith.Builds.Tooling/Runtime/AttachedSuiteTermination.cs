@@ -7,7 +7,6 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
-using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 
@@ -16,6 +15,8 @@ using Hexalith.Builds.Tooling.Diagnostics;
 /// <summary>Records first outcomes, stops leftover attached work, ends access and publishes attached results.</summary>
 internal static class AttachedSuiteTermination
 {
+    private const string _accessScope = "Only the run binding (runId, subject) and expiry are narrowed; the copied endpoint secrets and the bearer's tenant, domain and permission scopes are the environment's own.";
+
     /// <summary>Records an attached run's first outcome; an earlier outcome is never replaced and expiry wins at its deadline.</summary>
     /// <param name="ownerDirectory">The owner's durable diagnostics directory.</param>
     /// <param name="ownerRunId">The owner.</param>
@@ -82,17 +83,17 @@ internal static class AttachedSuiteTermination
     /// <param name="scanner">The run-tag scanner.</param>
     /// <param name="workspace">The attachment's private workspace.</param>
     /// <param name="attachedRunId">The attached run tag.</param>
-    /// <param name="processId">The launched child, when known.</param>
-    /// <param name="reportedSurvivors">Processes whose tree kill could not be confirmed.</param>
+    /// <param name="processId">The launched child, when known; it is only named, and is killed only through the run-tag scan.</param>
     /// <param name="launched">Whether a child may have been launched.</param>
     /// <param name="bearerExpiry">The latest instant the narrowed bearer can be valid, when one may have been issued.</param>
     /// <param name="recorder">The recording component.</param>
     /// <param name="cancellationToken">The stop allowance.</param>
     /// <returns>The termination observation; failures are reported, never hidden.</returns>
-    internal static async Task<CompositionAttachmentTermination> TerminateAsync(CompositionRunResourceScanner scanner, string workspace, string attachedRunId, int? processId, IReadOnlyList<int> reportedSurvivors, bool launched, DateTimeOffset? bearerExpiry, string recorder, CancellationToken cancellationToken)
+    internal static async Task<CompositionAttachmentTermination> TerminateAsync(CompositionRunResourceScanner scanner, string workspace, string attachedRunId, int? processId, bool launched, DateTimeOffset? bearerExpiry, string recorder, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scanner);
-        ArgumentNullException.ThrowIfNull(reportedSurvivors);
+
+        // Only processes that still carry the attached run tag are killed or reported: a reused process identity is never touched.
         IReadOnlyList<int> remaining;
         bool verified;
         try
@@ -104,25 +105,7 @@ internal static class AttachedSuiteTermination
             (remaining, verified) = ([], false);
         }
 
-        int[] reported = [.. reportedSurvivors.Where(IsRunning)];
-        foreach (int survivor in reported)
-        {
-            TryKill(survivor);
-        }
-
-        try
-        {
-            for (int attempt = 0; attempt < 20 && reported.Any(IsRunning); attempt++)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // The allowance ended; whatever still runs is reported below.
-        }
-
-        int[] survivors = [.. remaining.Concat(reported.Where(IsRunning)).Distinct().Order()];
+        int[] survivors = [.. remaining.Distinct().Order()];
         DateTimeOffset observedAt = DateTimeOffset.UtcNow;
         List<string> leftovers = [.. survivors.Select(id => "process:" + id.ToString(CultureInfo.InvariantCulture))];
         if (!verified)
@@ -168,8 +151,8 @@ internal static class AttachedSuiteTermination
         string bearer = bearerExpiry is { } expiry ? "bearer valid until " + Utc(expiry) : "no bearer was issued";
         bool accessEnded = workStopped && filesDeleted;
         CompositionTerminationItem access = accessEnded
-            ? new("access:" + attachedRunId, "terminated", observedAt, bearer + "; no holder")
-            : new("access:" + attachedRunId, "failed", observedAt, bearer + "; a holder or private access file may survive");
+            ? new("access:" + attachedRunId, "terminated", observedAt, bearer + "; no holder. " + _accessScope)
+            : new("access:" + attachedRunId, "failed", observedAt, bearer + "; a holder or private access file may survive. " + _accessScope);
         if (bearerExpiry is null && !filesExisted && accessEnded)
         {
             access = new("access:" + attachedRunId, "not-applicable", observedAt, "The runner issued no environment access for this attached run.");
@@ -198,6 +181,14 @@ internal static class AttachedSuiteTermination
         ArgumentNullException.ThrowIfNull(ended);
         try
         {
+            // A fallback publisher never overwrites a result the owner already published.
+            string ownerDirectory = Path.Combine(stateDirectory, "diagnostics", owner.RunId);
+            CompositionAttachment? recorded = (await CompositionAttachmentStore.ReadAsync(ownerDirectory, owner.RunId, cancellationToken).ConfigureAwait(false)).FirstOrDefault(item => item.AttachedRunId == ended.AttachedRunId);
+            if (recorded?.Execution?.ResultPublishedAtUtc is not null)
+            {
+                return Path.Combine(stateDirectory, "diagnostics", ended.AttachedRunId, "test-result.json");
+            }
+
             string path = await TestEnvironment.TestResultWriter.WriteAttachedAsync(stateDirectory, owner, ended, ended.Execution?.AttemptId ?? string.Empty, descriptor, timing, report, ruleIds, cancellationToken).ConfigureAwait(false);
             _ = await CompositionAttachmentStore.UpdateOneAsync(
                 Path.Combine(stateDirectory, "diagnostics", owner.RunId),
@@ -271,7 +262,6 @@ internal static class AttachedSuiteTermination
                 AttachedSuiteIdentity.WorkspaceFor(owner.Workspace, attachedRunId),
                 attachedRunId,
                 null,
-                [],
                 current.Execution.LaunchedAtUtc is not null,
                 current.Execution.LaunchedAtUtc is null ? null : current.ExpiresAtUtc,
                 recorder,
@@ -281,7 +271,7 @@ internal static class AttachedSuiteTermination
 
         if (current.Execution?.ResultPublishedAtUtc is null && current.Termination is not null)
         {
-            _ = await PublishAsync(stateDirectory, owner, current, ArchivedDescriptor(Path.Combine(stateDirectory, "diagnostics", attachedRunId)), null, null, [current.Execution?.RuleId ?? "HXT009"], cancellationToken).ConfigureAwait(false);
+            _ = await PublishAsync(stateDirectory, owner, current, ArchivedDescriptor(Path.Combine(stateDirectory, "diagnostics", attachedRunId)), null, null, FallbackRules(current), cancellationToken).ConfigureAwait(false);
         }
 
         return (await CompositionAttachmentStore.ReadAsync(directory, owner.RunId, cancellationToken).ConfigureAwait(false)).FirstOrDefault(item => item.AttachedRunId == attachedRunId);
@@ -424,6 +414,11 @@ internal static class AttachedSuiteTermination
         return validated.IsValid ? System.Text.Encoding.UTF8.GetBytes(validated.Document!.Value.GetRawText()) : null;
     }
 
+    /// <summary>Gets the rules a fallback publication reports: none for a pass, otherwise the recorded first rule.</summary>
+    /// <param name="ended">The ended attachment.</param>
+    /// <returns>The rule identities.</returns>
+    internal static IReadOnlyList<string> FallbackRules(CompositionAttachment ended) => ended.Outcome == "passed" ? [] : [ended.Execution?.RuleId ?? "HXT009"];
+
     private static CompositionAttachment Stamp(CompositionAttachment ended, ToolExitCode exitCode, string? ruleId)
     {
         if (ended.Execution is not { ExitCode: null } execution)
@@ -433,32 +428,6 @@ internal static class AttachedSuiteTermination
 
         string? failedRule = exitCode == ToolExitCode.Success ? null : ruleId;
         return ended with { Execution = execution with { ExitCode = (int)exitCode, RuleId = failedRule } };
-    }
-
-    private static bool IsRunning(int processId)
-    {
-        try
-        {
-            using Process process = Process.GetProcessById(processId);
-            return !process.HasExited;
-        }
-        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
-        {
-            return false;
-        }
-    }
-
-    private static void TryKill(int processId)
-    {
-        try
-        {
-            using Process process = Process.GetProcessById(processId);
-            process.Kill(entireProcessTree: true);
-        }
-        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException or AggregateException)
-        {
-            // Already exited; the rescan decides what survives.
-        }
     }
 
     private static string Utc(DateTimeOffset value) => value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);

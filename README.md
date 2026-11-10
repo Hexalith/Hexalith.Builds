@@ -588,7 +588,12 @@ narrowed to subject `g4-attached-tests:<attachedRunId>` with
 `exp = min(execution deadline, expiresAt)`, hands it only to the child, and tags the child with
 the attached run identity. No AppHost change is involved and the key is never persisted.
 Attached runs are always `baseline-only` diagnostics and never inherit an owner's candidate
-decision, gate or paths.
+decision, gate or paths. Only the run binding (`runId`, token subject) and the expiry are
+narrowed: the copied endpoint secrets (the environment-wide Dapr API token) and the bearer's
+tenant, domain and permission scopes are the environment's own, and the access termination
+detail says so. Attached `dotnet test` children run with MSBuild node reuse, the MSBuild server
+and shared compilation disabled, so the run-tag kill never reaches build servers shared with the
+owner or peers.
 
 The child stops at the earliest of the runner's UTC `expiresAt` (even mid-execution; a later
 passing report stays `withdrawn`/`hold-expired`), environment withdrawal (`owner-cancelled`,
@@ -620,9 +625,13 @@ admission with `HXR033` reason `owner-not-live`, while hold-only `attach` still 
 local owner command stays open until its runner-owned attached runs end. A request the owner
 never picks up is recorded as `failed` (`startup-failure`) with not-applicable termination. A
 retry presenting the lineage reconnects to the same run without launching a second child and
-keeps the first acceptance and expiry; ended or expired lineages refuse with `HXR036`. Hold-only
-`attach`/`attach --end` is unchanged; its ended holds record `not-applicable` termination items,
-and `attach --end` refuses a runner-owned attached suite (`HXR036` `runner-owned-attachment`).
+keeps the first acceptance and expiry; ended or expired lineages refuse with `HXR036`, as do a
+lineage that runs another suite (`lineage-suite-mismatch`) and a hold-only lineage
+(`hold-only-lineage`, which stays hold-only). Hold-only `attach`/`attach --end` is unchanged; its
+ended holds record `not-applicable` termination items, and `attach --end` refuses a runner-owned
+attached suite (`HXR036` `runner-owned-attachment`). A `down` retries every runner-owned run
+whose termination failed or whose result is unpublished, and an unverifiable drain refuses
+teardown like an unrecorded withdrawal (`HXR037`), so nothing stops while attached work may live.
 `--attach-to` with `--filter`, `--evidence`, `--candidate-request`, `--with-owner` or
 `--ci-owner-receipt`, more than one `--profile`, or a suite needing an owner's retention gate or
 access observation (a declared `daprRuntimeVersion`, Memories `functional-retention`) refuses

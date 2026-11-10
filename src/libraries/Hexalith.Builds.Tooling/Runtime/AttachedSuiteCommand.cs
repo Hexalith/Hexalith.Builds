@@ -85,9 +85,17 @@ internal static class AttachedSuiteCommand
             return Cancelled("The attached run was cancelled before admission completed.");
         }
 
-        if (admitted.Attachment is not { Execution: not null } accepted)
+        if (admitted.Attachment is not { Execution: { } execution } accepted)
         {
             return admitted;
+        }
+
+        // A reconnect relays only the suite it asked for; another suite's result and exit code are never relayed.
+        if (execution.Profile != selection.Name || execution.Mode != selection.Mode
+            || !string.Equals(execution.ManifestHash, selection.ManifestHash, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(execution.EntryHash, selection.EntryHash, StringComparison.OrdinalIgnoreCase))
+        {
+            return Refuse("HXR036", "lineage-suite-mismatch", "The presented lineage runs another declared suite; reconnect with the same suite or request a new attachment.");
         }
 
         // The owner's issued identities are immutable; a cleanup completing after admission still drains this request.
@@ -156,7 +164,6 @@ internal static class AttachedSuiteCommand
                 {
                     if (cancellationToken.IsCancellationRequested && cancelGiveUp is null)
                     {
-                        cancelGiveUp = now + stopAllowance;
                         _ = await CompositionAttachmentStore.UpdateOneAsync(
                             directory,
                             owner.RunId,
@@ -165,6 +172,9 @@ internal static class AttachedSuiteCommand
                                 ? target with { Execution = execution with { CancelRequestedAtUtc = DateTimeOffset.UtcNow } }
                                 : target,
                             CancellationToken.None).ConfigureAwait(false);
+
+                        // Only a durable cancel request starts the give-up allowance; a failed write is retried on the next pass.
+                        cancelGiveUp = now + stopAllowance;
                     }
 
                     bool hostLost = hostLostAt is { } lostAt && now - lostAt > hostGrace;

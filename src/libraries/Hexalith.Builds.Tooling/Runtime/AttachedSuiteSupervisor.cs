@@ -177,6 +177,8 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
         AttachedSuiteRun[] active = [.. _runs.Values];
         foreach (AttachedSuiteRun run in active.Where(run => run.StopReason is null))
         {
+            // Stop first so lock contention never lets the child outlive the withdrawal; the record follows.
+            _ = run.Signal(reason);
             try
             {
                 _ = await AttachedSuiteTermination.RecordOutcomeAsync(_directory, OwnerRunId, run.AttachedRunId, "withdrawn", reason, null, ToolExitCode.Cancelled, "HXC130", bound).ConfigureAwait(false);
@@ -185,8 +187,6 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
             {
                 // The stop proceeds regardless: access never continues because a record could not be written.
             }
-
-            _ = run.Signal(reason);
         }
 
         try
@@ -198,18 +198,44 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
             await ForceTerminateAsync(active.Where(run => !run.Completion.IsCompleted)).ConfigureAwait(false);
         }
 
-        IReadOnlyList<CompositionAttachment> recorded = [];
+        // Every recorded runner-owned run of this owner whose termination failed or whose result is unpublished is retried
+        // and reported, not only the runs active now, so owner cleanup stays incomplete while a tagged process survives.
+        List<CompositionAttachment> reported = [];
         try
         {
             using CancellationTokenSource reading = new(TimeSpan.FromSeconds(5));
-            recorded = await CompositionAttachmentStore.ReadAsync(_directory, OwnerRunId, reading.Token).ConfigureAwait(false);
+            foreach (CompositionAttachment item in await CompositionAttachmentStore.ReadAsync(_directory, OwnerRunId, reading.Token).ConfigureAwait(false))
+            {
+                if (item.Execution is null || _runs.ContainsKey(item.AttachedRunId))
+                {
+                    continue;
+                }
+
+                bool retry = item.Termination is null || item.Termination.Failures.Count > 0 || item.Execution.ResultPublishedAtUtc is null;
+                CompositionAttachment current = item;
+                if (retry)
+                {
+                    if (current.EndedAtUtc is null)
+                    {
+                        current = await AttachedSuiteTermination.RecordOutcomeAsync(_directory, OwnerRunId, current.AttachedRunId, "withdrawn", reason, null, ToolExitCode.Cancelled, "HXC130", bound).ConfigureAwait(false) ?? current;
+                    }
+
+                    current = await AttachedSuiteTermination.TerminateForeignAsync(_scanner, _options.StateDirectory, _owner, current.AttachedRunId, "owner", bound).ConfigureAwait(false) ?? current;
+                }
+
+                if (retry || active.Any(run => run.AttachedRunId == current.AttachedRunId))
+                {
+                    reported.Add(current);
+                }
+            }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException or OperationCanceledException)
         {
-            // The drain report is best effort; termination is already durable or reported by the attached results.
+            // An unverifiable retry is reported as a leftover: cleanup must not be recorded complete.
+            return [.. AttachedSuiteTermination.Diagnostics(reported), new ToolDiagnostic("HXR038", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Attached run termination could not be verified before owner teardown.", "attachments", "Retry down for the same owner run; the original hold expiry is never extended.")];
         }
 
-        return AttachedSuiteTermination.Diagnostics([.. recorded.Where(item => active.Any(run => run.AttachedRunId == item.AttachedRunId))]);
+        return AttachedSuiteTermination.Diagnostics(reported);
     }
 
     private static bool IsPending(CompositionAttachment item) => item.Execution is { PickedUpAtUtc: null } && item.Termination is null;
@@ -304,9 +330,9 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
             }
             else if (record.EndedAtUtc is null && record.Execution?.CancelRequestedAtUtc is not null)
             {
-                // The attached command's own cancellation ends only this run: record it first, then stop the child.
-                _ = await AttachedSuiteTermination.RecordOutcomeAsync(_directory, OwnerRunId, run.AttachedRunId, "cancelled", null, "run-cancelled", ToolExitCode.Cancelled, "HXC130", cancellationToken).ConfigureAwait(false);
+                // The attached command's own cancellation ends only this run: stop the child, then record; expiry still wins by time.
                 _ = run.Signal("run-cancelled");
+                _ = await AttachedSuiteTermination.RecordOutcomeAsync(_directory, OwnerRunId, run.AttachedRunId, "cancelled", null, "run-cancelled", ToolExitCode.Cancelled, "HXC130", cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -389,18 +415,10 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
         Task expiry = WatchExpiryAsync(hold.AttachedRunId, hold.ExpiresAtUtc, expiryWatch.Token);
         try
         {
-            selection = ResolveSelection(hold.Execution);
+            // A hold that ended before pickup is only finalized: no workspace, credentials or child are ever prepared for it.
+            selection = hold.EndedAtUtc is null ? ResolveSelection(hold.Execution) : null;
             if (selection is not null && run.StopReason is null && DateTimeOffset.UtcNow < hold.ExpiresAtUtc)
             {
-                CompositionWorkspace.CreatePrivateDirectory(identity.Workspace);
-                CompositionWorkspace.CreatePrivateDirectory(identity.DiagnosticsDirectory);
-                CompositionReadiness readiness = _session.Readiness;
-                if (readiness.NativeEndpointCredentialsPath is { } ownerCredentials)
-                {
-                    await WriteAttachedCredentialsAsync(ownerCredentials, identity, run.StopToken).ConfigureAwait(false);
-                    readiness = readiness with { NativeEndpointCredentialsPath = identity.CredentialsPath };
-                }
-
                 CompositionAttachment? launching = await CompositionAttachmentStore.UpdateOneAsync(
                     _directory,
                     OwnerRunId,
@@ -409,9 +427,18 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
                         ? target with { Execution = execution with { LaunchedAtUtc = DateTimeOffset.UtcNow } }
                         : target,
                     run.StopToken).ConfigureAwait(false);
-                launchRecorded = launching?.Execution?.LaunchedAtUtc is not null;
+                launchRecorded = launching is { EndedAtUtc: null, Execution.LaunchedAtUtc: not null };
                 if (launchRecorded && run.StopReason is null)
                 {
+                    CompositionWorkspace.CreatePrivateDirectory(identity.Workspace);
+                    CompositionWorkspace.CreatePrivateDirectory(identity.DiagnosticsDirectory);
+                    CompositionReadiness readiness = _session.Readiness;
+                    if (readiness.NativeEndpointCredentialsPath is { } ownerCredentials)
+                    {
+                        await WriteAttachedCredentialsAsync(ownerCredentials, identity, run.StopToken).ConfigureAwait(false);
+                        readiness = readiness with { NativeEndpointCredentialsPath = identity.CredentialsPath };
+                    }
+
                     CompositionRunSession attached = new(_session.Plan with { SelectedTest = selection, SelectedTests = [selection], ExecutionTiming = null }, readiness, _session.SigningKey, _session.AppHost);
                     native = await NativeTestExecutor.ExecuteAttachedAsync(attached, selection, _manifestPath, _options.NativeDotnetCommand ?? "dotnet", identity, run.Started, null, run.StopToken).ConfigureAwait(false);
                     timing = attached.Plan.ExecutionTiming;
@@ -448,16 +475,16 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
                 identity.Workspace,
                 hold.AttachedRunId,
                 run.ProcessId,
-                native?.SurvivingProcessIds ?? [],
-                launchRecorded,
-                native?.CredentialExpiresAtUtc ?? (launchRecorded ? hold.ExpiresAtUtc : null),
+                native?.Launched == true || run.ProcessId is not null,
+                native?.CredentialExpiresAtUtc,
                 "owner",
                 stopping.Token).ConfigureAwait(false);
             using CancellationTokenSource publication = new(TimeSpan.FromSeconds(10));
             ended = await AttachedSuiteTermination.RecordTerminationAsync(_directory, OwnerRunId, hold.AttachedRunId, termination, publication.Token).ConfigureAwait(false) ?? ended;
             if (ended?.Termination is not null && ended.Execution?.ResultPublishedAtUtc is null)
             {
-                _ = await AttachedSuiteTermination.PublishAsync(_options.StateDirectory, _owner, ended, native?.DescriptorSnapshot, timing, native?.ReportBytes, [.. native?.Result.Diagnostics.Select(item => item.RuleId) ?? [ruleId ?? "HXT009"]], publication.Token).ConfigureAwait(false);
+                IReadOnlyList<string> rules = ended.Outcome == "passed" ? [] : [.. native?.Result.Diagnostics.Select(item => item.RuleId) ?? [ruleId ?? "HXT009"]];
+                _ = await AttachedSuiteTermination.PublishAsync(_options.StateDirectory, _owner, ended, native?.DescriptorSnapshot, timing, native?.ReportBytes, rules, publication.Token).ConfigureAwait(false);
             }
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
@@ -487,6 +514,12 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
             await Task.Delay(remaining > TimeSpan.FromDays(1) ? TimeSpan.FromDays(1) : remaining, cancellationToken).ConfigureAwait(false);
         }
 
+        // Stop the child at expiry before taking the attachment lock; the record follows and expiry wins by its timestamp.
+        if (_runs.TryGetValue(attachedRunId, out AttachedSuiteRun? run))
+        {
+            _ = run.Signal("expired");
+        }
+
         try
         {
             using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(10));
@@ -494,12 +527,7 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException or OperationCanceledException)
         {
-            // Expiry is still enforced: the child stops even when the record must be retried by the outcome decision.
-        }
-
-        if (_runs.TryGetValue(attachedRunId, out AttachedSuiteRun? run))
-        {
-            _ = run.Signal("expired");
+            // Expiry is still enforced: the child is stopped and the outcome decision records expiry by time.
         }
     }
 
@@ -604,30 +632,36 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
             },
             cancellationToken);
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "A forced stop at the end of the owner allowance must report every attached run, whatever failed.")]
     private async Task ForceTerminateAsync(IEnumerable<AttachedSuiteRun> unfinished)
     {
-        foreach (AttachedSuiteRun run in unfinished)
+        // One shared finite allowance for every unfinished run, stopped in parallel; nothing is renewed per run.
+        using CancellationTokenSource forced = new(TimeSpan.FromSeconds(3));
+        await Task.WhenAll(unfinished.Select(run => ForceTerminateOneAsync(run.AttachedRunId, run.ProcessId, run.Hold.ExpiresAtUtc, forced.Token))).ConfigureAwait(false);
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "A forced stop at the end of the owner allowance must report every attached run, whatever failed.")]
+    private async Task ForceTerminateOneAsync(string attachedRunId, int? processId, DateTimeOffset expiresAt, CancellationToken forced)
+    {
+        try
         {
-            try
+            CompositionAttachmentTermination termination = await AttachedSuiteTermination.TerminateAsync(
+                _scanner,
+                AttachedSuiteIdentity.WorkspaceFor(_session.Plan.Workspace, attachedRunId),
+                attachedRunId,
+                processId,
+                processId is not null,
+                processId is null ? null : expiresAt,
+                "owner",
+                forced).ConfigureAwait(false);
+            CompositionAttachment? recorded = await AttachedSuiteTermination.RecordTerminationAsync(_directory, OwnerRunId, attachedRunId, termination, forced).ConfigureAwait(false);
+            if (recorded is { Termination: not null, Execution.ResultPublishedAtUtc: null })
             {
-                using CancellationTokenSource forced = new(TimeSpan.FromSeconds(3));
-                CompositionAttachmentTermination termination = await AttachedSuiteTermination.TerminateAsync(
-                    _scanner,
-                    AttachedSuiteIdentity.WorkspaceFor(_session.Plan.Workspace, run.AttachedRunId),
-                    run.AttachedRunId,
-                    run.ProcessId,
-                    run.ProcessId is int id ? [id] : [],
-                    run.ProcessId is not null,
-                    run.Hold.ExpiresAtUtc,
-                    "owner",
-                    forced.Token).ConfigureAwait(false);
-                _ = await AttachedSuiteTermination.RecordTerminationAsync(_directory, OwnerRunId, run.AttachedRunId, termination, forced.Token).ConfigureAwait(false);
+                _ = await AttachedSuiteTermination.PublishAsync(_options.StateDirectory, _owner, recorded, AttachedSuiteTermination.ArchivedDescriptor(Path.Combine(_options.StateDirectory, "diagnostics", attachedRunId)), null, null, AttachedSuiteTermination.FallbackRules(recorded), forced).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
-            {
-                // The external down retries tagged leftovers; nothing here reports an unconfirmed stop as complete.
-            }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // The external down retries tagged leftovers; nothing here reports an unconfirmed stop as complete.
         }
     }
 }

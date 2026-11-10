@@ -1500,7 +1500,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                AddRecordingFailure(bookkeeping);
+                // An unverified drain is treated like an unrecorded withdrawal: nothing is torn down and down stays retryable.
+                return WithdrawalRefusal(state, bookkeeping);
             }
         }
 

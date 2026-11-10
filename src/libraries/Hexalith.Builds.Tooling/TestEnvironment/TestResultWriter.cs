@@ -258,9 +258,9 @@ public static class TestResultWriter
         bool local = owner.ExecutionContext is { ValueKind: JsonValueKind.Object } context && context.TryGetProperty("kind", out JsonElement kind) && kind.ValueKind == JsonValueKind.String && kind.GetString() == "local";
         bool failureRetained = local && attachment.Outcome == "failed";
         string now = Utc(observedAt);
-        string accessStatement = termination.CredentialExpiresAtUtc is { } bearer
-            ? "bearer valid until " + Utc(bearer) + "; no holder"
-            : "no bearer was issued";
+
+        // The access statement is the recorded access observation itself, so a failed item never claims "no holder".
+        string accessStatement = string.Join(" ", termination.EnvironmentAccess.Select(item => item.Status + ": " + item.Detail));
         byte[] lifecycle = Canonical(new
         {
             runId = attachment.AttachedRunId,
