@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "id": 13850760915,
+    "node_id": "MDg6QXJ0aWZhY3QxMzg1MDc2MDkxNQ==",
+    "name": "release",
+    "size_in_bytes": 83256215,
+    "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13850760915",
+    "archive_download_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13850760915/zip",
+    "expired": false,
+    "digest": "sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30",
+    "created_at": "2026-11-11T11:17:15Z",
+    "updated_at": "2026-11-11T11:17:15Z",
+    "expires_at": "2027-02-09T11:16:45Z",
+    "workflow_run": {
+      "id": 43010609603,
+      "repository_id": 952945989,
+      "head_repository_id": 952945989,
+      "head_branch": "main",
+      "head_sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53"
+    }
+  },
+  "downloadedSha256": "18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30",
+  "inventory": {
+    "packages": [
+      "Hexalith.Builds.PublishProbe.20261111"
+    ],
+    "containers": [
+      "cicd-publish-spike-3-1"
+    ]
+  },
+  "files": {
+    "packages/Hexalith.Builds.PublishProbe.20261111.4.47.1.nupkg": {
+      "size": 4226,
+      "sha256": "ccef50a5127b8061356401eeb3941b1f6903528552d963c326e3f4f59f15509a"
+    },
+    "containers/probe.tar": {
+      "size": 83251200,
+      "sha256": "0c5ff11b967d61b8ae02cff2ef2906cd9efa74dd4d334292d8d8ad8209d361ef"
+    }
+  },
+  "ociGraph": {
+    "root": "sha256:1ed33f761db376a008e60f7520ca0d715d380e9d8d329c54028030da72b868a7",
+    "children": [
+      "sha256:19780f7da65ebe3c9335c1d8eeab85e59e0d893e667442aaabc6e4970091b889",
+      "sha256:ec338b6b06700aa9ddfdf5c4f838f57ffb4b0d28299441186875d5b83febeac9"
+    ],
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "blobs": {
+      "sha256:1ed33f761db376a008e60f7520ca0d715d380e9d8d329c54028030da72b868a7": 769,
+      "sha256:19780f7da65ebe3c9335c1d8eeab85e59e0d893e667442aaabc6e4970091b889": 1232,
+      "sha256:941292ae1dbb9dc1efe83903026b41fe354bf182c7bd141a0189fcf5b72bbd23": 3471,
+      "sha256:881fc932939efef04ca120ad44bbd2c0917851eb247aa4995428afb1e80ede17": 3853673,
+      "sha256:45d3410d360403450f5b988d820cb5f984537d79c1bef31c920bf3681bc052bb": 1169627,
+      "sha256:cab0214eab46d1873bf6ad683a860558d35067ee3f8ed3e42e1f6fe1ad569b8a": 949,
+      "sha256:5ef336b1638f369236230d30c23a9fece6fdf7cdc1b16d906e56a0c4c97b1f5c": 37569216,
+      "sha256:8caa380cde9a60a515af53182c2cf1dc3d53b89ae584194cd6d6621b36122323": 168,
+      "sha256:f7ceb0e49996d687745257c883bc2ecf34a222935b4a2745e609c6d191c6a68a": 36940,
+      "sha256:ec338b6b06700aa9ddfdf5c4f838f57ffb4b0d28299441186875d5b83febeac9": 1232,
+      "sha256:b340b58d23bc5f52f352c39e911f13415e7ac75d1161063453a8ad2f14ab76e8": 3472,
+      "sha256:b90627b8f4292fd3cb63f0f27f0b11c37f04ba88ef3b78d4948ea0ace18c85e9": 4190595,
+      "sha256:4ba53de9eb1cca8816d8d77cccde53a960fa95a234c3d27f4ba1817b6c813f50": 1094351,
+      "sha256:fd1ce79ae6fb722a4d1550a19c19a0412183c6d16b5d56782bd196d909c0ac34": 950,
+      "sha256:45eea2de616ccd1c179d6a751ce93fe390c2e3c84c8711205d9807aa2f625ad5": 35269233,
+      "sha256:7649b47e685a24cee7763c41b73e731e89f9bde21734c00cb9bd7b45f4a60a30": 171,
+      "sha256:0cb33768e8bd96a18e16ae6d33d87ad3adeae47e274404a7d2b9d18e6085846a": 36177
+    }
+  }
+}

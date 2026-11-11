@@ -1,0 +1,162 @@
+{
+  "verifiedAt": "2026-11-11T11:29:33.018834+00:00",
+  "workingRepository": "/home/administrator/projects/hexalith/cicd/references/Hexalith.Builds",
+  "resumedBaseline": "967d3d058df27397da39011c95da0a7e45ebc24e",
+  "retainedUpstreamMerge": "e588605ccf2c6577a2490e1a3fc512f8ffdc3960",
+  "productionImplementation": "e9741b56ac6f6512734b368492dbab892e109877",
+  "committedSourceChecked": "246572da7b7db541fef697fe0164f503b8957e53",
+  "checks": {
+    "focusedPublisher": {
+      "command": [
+        "uv",
+        "run",
+        "--no-cache",
+        "--with",
+        "PyYAML==6.0.3",
+        "--with",
+        "jsonschema==4.26.0",
+        "--python",
+        "3.12",
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "Github/lib/tests",
+        "-p",
+        "test_release_publish.py"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/cicd-3-4-resumed-test_release_publish.log",
+      "logSha256": "35083334fa6c05c774c4fde0669b692d6e3b069ef3d600b1abecc27726a61e8c"
+    },
+    "focusedOCI": {
+      "command": [
+        "uv",
+        "run",
+        "--no-cache",
+        "--with",
+        "PyYAML==6.0.3",
+        "--with",
+        "jsonschema==4.26.0",
+        "--python",
+        "3.12",
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "Github/lib/tests",
+        "-p",
+        "test_oci_publish.py"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/cicd-3-4-resumed-test_oci_publish.log",
+      "logSha256": "f2e9f99fb154b3516779cf6967da0219db609c4bb540e3cc133aab4e5ef09fb6"
+    },
+    "python312": {
+      "command": [
+        "uv",
+        "run",
+        "--no-cache",
+        "--locked",
+        "--script",
+        "--python",
+        "3.12",
+        "Tools/ci/run_python_tests.py"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/cicd-3-4-resumed-python312.log",
+      "logSha256": "8a40eb44fcd21a14bde86fbfe10825273505f2410b92c315e58e35e75e43e4e4",
+      "result": "20/20 groups passed",
+      "interpreter": "Python suite: /tmp/.tmpNtx52s/environments-v2/run-python-tests-46c8ad21b249e504/bin/python (3.12.13), 20 groups"
+    },
+    "runnerPython": {
+      "command": [
+        "uv",
+        "run",
+        "--no-cache",
+        "--locked",
+        "--script",
+        "--python",
+        "/usr/bin/python3",
+        "Tools/ci/run_python_tests.py"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/cicd-3-4-resumed-runner-python.log",
+      "logSha256": "7708f52a5079bb6d9ca5295a2582c385c9cf9cec4ee9813923a9bd60ee2926b0",
+      "result": "20/20 groups passed",
+      "interpreter": "Python suite: /tmp/.tmpkQqHuT/environments-v2/run-python-tests-46c8ad21b249e504/bin/python (3.14.4), 20 groups"
+    },
+    "workflowLint": {
+      "command": [
+        "python3",
+        "Tools/ci/lint_workflows.py"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/cicd-3-4-resumed-final-lint.log",
+      "logSha256": "b62acd9c363859a03ccd682e9828e77fe5d199bafc9df78389edb0b04f6ac483"
+    },
+    "publicAPI": {
+      "command": [
+        "uv",
+        "run",
+        "--no-cache",
+        "--locked",
+        "--script",
+        "--python",
+        "3.12",
+        "Tools/ci/check_public_api.py"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/cicd-3-4-resumed-public-api.log",
+      "logSha256": "a7491094d87906e78d881385a841b17edb1661a61dae3e84b4defb660c70cafb",
+      "result": "Public API baseline: v4.47.1 (75e1d4a3809b30684e67c7e9b2c8043720b49c53); checked revision: 246572da7b7db541fef697fe0164f503b8957e53\nPublic API compatible: 2554 entries; no removals"
+    }
+  },
+  "focusedMatrixMethods": {
+    "Github/lib/tests/test_release_publish.py": [
+      "PublisherTests.test_both_tag_forms_conflict_and_noncommit_ref_fail_before_materialization",
+      "PublisherTests.test_absent_and_correct_lightweight_and_annotated_tags_publish_tag_last",
+      "PublisherTests.test_source_uses_captured_base_without_recomputing_newer_reachable_tag",
+      "PublisherTests.test_producer_draft_artifact_errors_have_no_writes",
+      "PublisherTests.test_unsafe_archive_fails_without_any_materialized_payload",
+      "PublisherTests.test_main_advancement_workflow_difference_and_postpatch_race",
+      "PublisherTests.test_draft_and_tag_revalidated_before_patch_and_returned_identity_verified",
+      "PublisherTests.test_all_images_precede_first_package_and_late_conflict_stops_copy",
+      "PublisherTests.test_empty_payload_no_package_command_and_partial_package_retry_same_bytes",
+      "PublisherTests.test_nuget_status_reports_duplicate_without_exposing_tool_output",
+      "PublishCompositeTests.test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff"
+    ],
+    "Github/lib/tests/test_oci_publish.py": [
+      "OciPublishTests.test_complete_remote_bytes_and_correct_retry",
+      "OciPublishTests.test_absence_conflict_auth_and_redirect_are_distinct",
+      "OciPublishTests.test_private_auth_lifetime_exact_tool_and_original_archive"
+    ]
+  },
+  "executedCompositeCases": [
+    "success",
+    "login failure",
+    "package push failure",
+    "GitHub read failure",
+    "malformed handoff",
+    "empty payload",
+    "GitHub PATCH failure",
+    "conflicting lightweight tag",
+    "conflicting annotated tag",
+    "non-commit tag",
+    "correct lightweight tag",
+    "correct annotated tag",
+    "ready after workflow change"
+  ],
+  "hostedProducerRun": 43010609603,
+  "hostedFirstPublisherRun": 43010882516,
+  "hostedRetryPublisherRun": 43011306951,
+  "downloadedOutcomesIndependentlySchemaValidated": true,
+  "originalDraftBodyAndFiveTrailersPreserved": true,
+  "originalArtifactDownloadedAndDigestValidated": true,
+  "completeRemoteOCIValidatedByProductionControllerTwice": true,
+  "whitespaceCheck": "git diff --check and git diff --cached --check passed",
+  "publicNuGetDownload": "HTTP 404 in retained observations; hosted successful OIDC/push and same-original duplicate-safe retry are independently retained. No public package-byte comparison is claimed.",
+  "protectionPolicyWrites": 0
+}

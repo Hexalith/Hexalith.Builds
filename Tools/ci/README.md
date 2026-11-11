@@ -515,3 +515,12 @@ publication with unchanged child bytes. Disposable fixtures live under
 payloads and must never be published. Temporary hosted probe callers/helpers
 are removed after evidence collection. Frozen legacy runtime and production
 caller bytes are compared with the canonical story's implementation baseline.
+
+[Story 3-4 verification results](../../docs/cicd-3-4-publish-composite-results.md)
+retain the isolated caller's successful Trusted Publishing exchange, original
+package/complete OCI publication, `ready` outcome, and duplicate-safe
+`published` replay from the same original handoff. Publisher tests execute
+both tag forms and conflict refusal through the actual composite, cover every
+failure/finalizer boundary, and ensure package status logs never expose raw
+tool output or keys. Retained full source, run/artifact/release/tag identities
+and public package observations distinguish hosted effects from local controls.

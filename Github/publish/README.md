@@ -49,9 +49,17 @@ and the captured `lastTag`. The reusable reporter relinquishes ownership only
 for a successful validated handoff and must not upload a second outcome.
 
 Retries consume identical authenticated original bytes and skip duplicate
-NuGet versions. External races can fail after partial publication; retain the
+NuGet versions. Successful package commands emit only fixed published,
+skipped-duplicate or completed statuses; raw command output and temporary keys
+are never logged. External races can fail after partial publication; retain the
 draft and replay the same handoff. Runtime never moves or deletes Git refs and
 never rolls back package/image writes. Empty inventories permit GitHub-only
 publication. Complete-mode artifact selection/recovery/deletion, rendered
 callers and nightly/App publication are separate downstream work; production
 callers and switches are unchanged by this addition.
+
+[Story 3-4 qualification](../../docs/cicd-3-4-publish-composite-results.md)
+records an isolated hosted package/image publication that ended `ready`, then
+a duplicate-safe `published` retry from the same original producer run,
+artifact ID/digest, source and version. The temporary caller used its own
+Trusted Publishing policy; no production caller or API-key fallback was used.

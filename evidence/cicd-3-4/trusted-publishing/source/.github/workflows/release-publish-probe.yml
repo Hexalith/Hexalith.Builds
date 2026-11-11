@@ -1,0 +1,123 @@
+name: Isolated original release publication probe
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Build one original artifact or publish its existing handoff
+        type: choice
+        options: [produce, publish]
+        default: produce
+      version:
+        description: Original version for publish mode
+        type: string
+      sha:
+        description: Original source SHA for publish mode
+        type: string
+      last-tag:
+        description: Original captured base for publish mode
+        type: string
+      draft-id:
+        description: Original marked draft for publish mode
+        type: string
+      artifact-id:
+        description: Original release artifact for publish mode
+        type: string
+      artifact-digest:
+        description: Original artifact SHA256 for publish mode
+        type: string
+      artifact-run:
+        description: Original producer run for publish mode
+        type: string
+permissions: {}
+cache-mode: none
+concurrency:
+  group: release-publish-probe
+  cancel-in-progress: false
+jobs:
+  producer:
+    if: inputs.mode == 'produce'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.build.outputs.version }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      artifact-digest: ${{ format('sha256:{0}', steps.upload.outputs.artifact-digest) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+      - name: Build isolated original package and dual platform image once
+        id: build
+        run: python3 -I Tools/ci/probe_release_publish.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: upload
+        with:
+          name: release
+          path: ${{ runner.temp }}/publish-probe-payload/
+          compression-level: 0
+          retention-days: 90
+          if-no-files-found: error
+  draft:
+    needs: producer
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e
+        id: draft
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          sha: ${{ github.sha }}
+          version: ${{ needs.producer.outputs.version }}
+          notes: Disposable story 3-4 publication qualification. Only the identified isolated package and registry image are authorized.
+          artifact-id: ${{ needs.producer.outputs.artifact-id }}
+          artifact-digest: ${{ needs.producer.outputs.artifact-digest }}
+      - name: Preserve the authenticated original handoff
+        env:
+          HANDOFF_PUBLISH: ${{ steps.draft.outputs.publish }}
+          HANDOFF_VERSION: ${{ steps.draft.outputs.version }}
+          HANDOFF_SHA: ${{ steps.draft.outputs.sha }}
+          HANDOFF_LAST_TAG: ${{ steps.draft.outputs.last-tag }}
+          HANDOFF_DRAFT_ID: ${{ steps.draft.outputs.draft-id }}
+          HANDOFF_ARTIFACT_ID: ${{ steps.draft.outputs.artifact-id }}
+          HANDOFF_ARTIFACT_DIGEST: ${{ steps.draft.outputs.artifact-digest }}
+          HANDOFF_ARTIFACT_RUN: ${{ steps.draft.outputs.artifact-run }}
+        run: python3 -c "import json,os,pathlib; pathlib.Path(os.environ['RUNNER_TEMP'],'publish-probe-handoff.json').write_text(json.dumps({name[8:].lower().replace('_','-'):value for name,value in os.environ.items() if name.startswith('HANDOFF_')})+'\n')"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: publish-probe-handoff
+          path: ${{ runner.temp }}/publish-probe-handoff.json
+          retention-days: 90
+          if-no-files-found: error
+  publish:
+    if: inputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    environment: hexalith-release
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+    steps:
+      - name: Poison workspace configuration before the no checkout publisher
+        run: python3 -c "from pathlib import Path; Path('NuGet.Config').write_text('poison'); Path('global.json').write_text('poison')"
+      - uses: Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877
+        with:
+          publish: 'true'
+          version: ${{ inputs.version }}
+          sha: ${{ inputs.sha }}
+          last-tag: ${{ inputs.last-tag }}
+          draft-id: ${{ inputs.draft-id }}
+          artifact-id: ${{ inputs.artifact-id }}
+          artifact-digest: ${{ inputs.artifact-digest }}
+          artifact-run: ${{ inputs.artifact-run }}
+          nuget-user: jpiquot
+          registry-username: ${{ secrets.HEXALITH_REGISTRY_PUSH_USERNAME }}
+          registry-password: ${{ secrets.HEXALITH_REGISTRY_PUSH_PASSWORD }}

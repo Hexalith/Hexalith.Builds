@@ -1,0 +1,130 @@
+publish	Set up job	﻿2026-11-11T11:18:48.2067052Z Current runner version: '2.338.2'
+publish	Set up job	2026-11-11T11:18:48.2092161Z ##[group]Runner Image Provisioner
+publish	Set up job	2026-11-11T11:18:48.2093023Z Hosted Compute Agent
+publish	Set up job	2026-11-11T11:18:48.2093593Z Version: 20261028.624
+publish	Set up job	2026-11-11T11:18:48.2094260Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+publish	Set up job	2026-11-11T11:18:48.2094911Z Build Date: 2026-10-28T21:51:42Z
+publish	Set up job	2026-11-11T11:18:48.2095755Z Worker ID: {72b4feba-7fe2-429e-9d9c-6eeaad356c19}
+publish	Set up job	2026-11-11T11:18:48.2096406Z Region: centralus
+publish	Set up job	2026-11-11T11:18:48.2096963Z Cloud: Azure
+publish	Set up job	2026-11-11T11:18:48.2097526Z ##[endgroup]
+publish	Set up job	2026-11-11T11:18:48.2098874Z ##[group]Operating System
+publish	Set up job	2026-11-11T11:18:48.2099508Z Ubuntu
+publish	Set up job	2026-11-11T11:18:48.2099985Z 26.04.1
+publish	Set up job	2026-11-11T11:18:48.2100511Z LTS
+publish	Set up job	2026-11-11T11:18:48.2101033Z ##[endgroup]
+publish	Set up job	2026-11-11T11:18:48.2101523Z ##[group]Runner Image
+publish	Set up job	2026-11-11T11:18:48.2102476Z Image: ubuntu-26.04
+publish	Set up job	2026-11-11T11:18:48.2103084Z Version: 20261101.186.1
+publish	Set up job	2026-11-11T11:18:48.2104047Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261101.186/images/ubuntu/Ubuntu2604-Readme.md
+publish	Set up job	2026-11-11T11:18:48.2105891Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261101.186
+publish	Set up job	2026-11-11T11:18:48.2106833Z ##[endgroup]
+publish	Set up job	2026-11-11T11:18:48.2107929Z ##[group]GITHUB_TOKEN Permissions
+publish	Set up job	2026-11-11T11:18:48.2110066Z Actions: read
+publish	Set up job	2026-11-11T11:18:48.2110639Z Contents: write
+publish	Set up job	2026-11-11T11:18:48.2111209Z Metadata: read
+publish	Set up job	2026-11-11T11:18:48.2111744Z ##[endgroup]
+publish	Set up job	2026-11-11T11:18:48.2113696Z Secret source: Actions
+publish	Set up job	2026-11-11T11:18:48.2114616Z Cache mode: none
+publish	Set up job	2026-11-11T11:18:48.2115400Z Prepare workflow directory
+publish	Set up job	2026-11-11T11:18:48.2359178Z Prepare all required actions
+publish	Set up job	2026-11-11T11:18:48.2390558Z Getting action download info
+publish	Set up job	2026-11-11T11:18:48.4657474Z Download action repository 'Hexalith/Hexalith.Builds@e9741b56ac6f6512734b368492dbab892e109877' (SHA:e9741b56ac6f6512734b368492dbab892e109877)
+publish	Set up job	2026-11-11T11:18:50.9068529Z Getting action download info
+publish	Set up job	2026-11-11T11:18:51.0270855Z Download action repository 'NuGet/login@8d196754b4036150537f80ac539e15c2f1028841' (SHA:8d196754b4036150537f80ac539e15c2f1028841)
+publish	Set up job	2026-11-11T11:18:51.2936513Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+publish	Set up job	2026-11-11T11:18:51.4623764Z Complete job name: publish
+publish	Poison workspace configuration before the no checkout publisher	﻿2026-11-11T11:18:51.5193121Z ##[group]Run python3 -c "from pathlib import Path; Path('NuGet.Config').write_text('poison'); Path('global.json').write_text('poison')"
+publish	Poison workspace configuration before the no checkout publisher	2026-11-11T11:18:51.5194812Z python3 -c "from pathlib import Path; Path('NuGet.Config').write_text('poison'); Path('global.json').write_text('poison')"
+publish	Poison workspace configuration before the no checkout publisher	2026-11-11T11:18:51.5239341Z shell: /usr/bin/bash -e {0}
+publish	Poison workspace configuration before the no checkout publisher	2026-11-11T11:18:51.5239989Z ##[endgroup]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	﻿2026-11-11T11:18:51.5706747Z ##[group]Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5707650Z with:
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5708095Z   publish: true
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5708553Z   version: 4.47.1
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5709073Z   sha: 75e1d4a3809b30684e67c7e9b2c8043720b49c53
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5709681Z   last-tag: v4.47.0
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5710158Z   draft-id: 441591623
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5710661Z   artifact-id: 13850760915
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5711444Z   artifact-digest: sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5712290Z   artifact-run: 43010609603
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5712796Z   nuget-user: jpiquot
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5713549Z   registry-username: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5714231Z   registry-password: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5714763Z ##[endgroup]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5763961Z ##[start-action display=Authenticate original artifact and preflight every destination;id=__Hexalith_Hexalith_Builds.prepare]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5794291Z ##[group]Run python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" prepare
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5795529Z python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" prepare
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5838113Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5838937Z env:
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5843152Z   GITHUB_TOKEN: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5843642Z   RELEASE_PUBLISH: true
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5844155Z   RELEASE_VERSION: 4.47.1
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5844773Z   RELEASE_SHA: 75e1d4a3809b30684e67c7e9b2c8043720b49c53
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5845486Z   RELEASE_LAST_TAG: v4.47.0
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5846004Z   RELEASE_DRAFT_ID: 441591623
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5846548Z   RELEASE_ARTIFACT_ID: 13850760915
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5847391Z   RELEASE_ARTIFACT_DIGEST: sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5848260Z   RELEASE_ARTIFACT_RUN: 43010609603
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5848914Z   REGISTRY_USERNAME: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5849588Z   REGISTRY_PASSWORD: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:51.5850087Z ##[endgroup]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:59.0475460Z ##[end-action id=__Hexalith_Hexalith_Builds.prepare;outcome=success;conclusion=success;duration_ms=7470]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:59.0479523Z ##[start-action display=Exchange caller OIDC identity for a temporary NuGet key;id=__Hexalith_Hexalith_Builds.login]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:59.0526979Z ##[group]Run NuGet/login@8d196754b4036150537f80ac539e15c2f1028841
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:59.0527232Z with:
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:59.0527382Z   user: jpiquot
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:59.0527586Z   token-service-url: https://www.nuget.org/api/v2/token
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:59.0527808Z   audience: https://www.nuget.org
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:18:59.0527996Z ##[endgroup]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.7934155Z Successfully exchanged OIDC token for NuGet API key.
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8005988Z ##[end-action id=__Hexalith_Hexalith_Builds.login;outcome=success;conclusion=success;duration_ms=2752]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8010809Z ##[start-action display=Publish original packages and images, then finalize GitHub;id=__Hexalith_Hexalith_Builds.publish]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8024601Z ##[group]Run python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" publish
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8025118Z python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" publish
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8066988Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8067202Z env:
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8068980Z   GITHUB_TOKEN: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8069160Z   RELEASE_STATE: /tmp/hexalith-release-publish-ne5s8e9r
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8069512Z   NUGET_API_KEY: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8069674Z   REGISTRY_USERNAME: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8069886Z   REGISTRY_PASSWORD: ***
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:01.8070027Z ##[endgroup]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:06.6283758Z NuGet package version published
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2308858Z ##[end-action id=__Hexalith_Hexalith_Builds.publish;outcome=success;conclusion=success;duration_ms=43429]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2314035Z ##[start-action display=Write the sole publisher outcome and remove private payload;id=__Hexalith_Hexalith_Builds.outcome]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2329160Z ##[group]Run python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" outcome
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2329491Z python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" outcome
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2371431Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2371645Z env:
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2371814Z   RELEASE_STATE: /tmp/hexalith-release-publish-ne5s8e9r
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2372031Z   RELEASE_PREPARE_RESULT: success
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2372248Z   RELEASE_LOGIN_RESULT: success
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2372408Z   RELEASE_PUBLISH_RESULT: success
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.2372560Z ##[endgroup]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3256621Z ##[end-action id=__Hexalith_Hexalith_Builds.outcome;outcome=success;conclusion=success;duration_ms=94]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3259362Z ##[start-action display=Upload the sole release outcome;id=__Hexalith_Hexalith_Builds.__actions_upload-artifact]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3296742Z ##[group]Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3296993Z with:
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3297130Z   name: hexalith-release-outcome
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3297327Z   path: /tmp/hexalith-release-publish-4mm9mcme/outcome.json
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3297535Z   if-no-files-found: error
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3297820Z   overwrite: true
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3297949Z   compression-level: 6
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3298097Z   include-hidden-files: false
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3298245Z   archive: true
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.3298369Z ##[endgroup]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.4298131Z With the provided path, there will be 1 file uploaded
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.5707326Z Artifact name is valid!
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.5707878Z Root directory input is valid!
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.8130632Z Uploading artifact: hexalith-release-outcome.zip
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:45.8163549Z Beginning upload of artifact content to blob storage
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:46.0752882Z Uploaded bytes 278
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:46.1119733Z Finished uploading artifact content to blob storage!
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:46.1120397Z SHA256 digest of uploaded artifact is 247c1176b6ecd31392953f7f58f63776b906e8423946864f8b47bbde7c464c0e
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:46.1120739Z Finalizing artifact upload
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:46.5500610Z Artifact hexalith-release-outcome successfully finalized. Artifact ID 13849813543
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:46.5501436Z Artifact hexalith-release-outcome has been successfully uploaded! Final size is 278 bytes. Artifact ID is 13849813543
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:46.5503883Z Artifact download URL: https://github.com/Hexalith/Hexalith.Builds/actions/runs/43010882516/artifacts/13849813543
+publish	Run Hexalith/Hexalith.Builds/Github/publish@e9741b56ac6f6512734b368492dbab892e109877	2026-11-11T11:19:46.5599866Z ##[end-action id=__Hexalith_Hexalith_Builds.__actions_upload-artifact;outcome=success;conclusion=success;duration_ms=1233]
+publish	Complete job	﻿2026-11-11T11:19:46.5671939Z Cleaning up orphan processes

@@ -1,0 +1,21 @@
+{
+  "baselineRevision": "891886ddc60a9924d053bb74bf6bcc73e101b2ce",
+  "comparedFiles": 215,
+  "changedExistingFiles": [
+    "Github/lib/release_draft.py",
+    "Github/lib/tests/actions_expressions.py",
+    "Tools/ci/README.md"
+  ],
+  "permittedNewPipelineFactoringAndTestDocs": [
+    "Github/lib/release_draft.py",
+    "Github/lib/tests/actions_expressions.py",
+    "Tools/ci/README.md"
+  ],
+  "preservedOtherBaselineFiles": 212,
+  "legacyRuntimeUnchanged": true,
+  "productionCallersUnchanged": true,
+  "toolPinsUnchanged": true,
+  "temporaryWorkflowAbsent": true,
+  "temporaryHelperAbsent": true,
+  "comparison": "canonical Git blob bytes with tracked attributes applied to working files"
+}

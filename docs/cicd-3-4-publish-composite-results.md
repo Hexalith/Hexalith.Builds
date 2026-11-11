@@ -1,21 +1,22 @@
 ---
 story: '3-4'
 created: '2026-11-11'
-status: hosted-nuget-blocked
+status: hosted-publication-qualified
 implementation_baseline_revision: 891886ddc60a9924d053bb74bf6bcc73e101b2ce
-implementation_revision: 9517bca108b07750e31b1af6df6cfde2bd691bc9
+implementation_revision: e9741b56ac6f6512734b368492dbab892e109877
 ---
 
 # Original release publication results
 
 The production `Github/publish` composite and stdlib controllers are implemented.
 Local behavioral controls, both complete Python suites, authenticated online
-workflow lint and the committed-source public API check pass. Hosted remote
-OCI/GitHub publication passes. **Hosted NuGet publication remains incomplete:**
-nuget.org rejected the temporary caller's OIDC exchange with HTTP 401 because
-none of its existing policies names `release-publish-probe.yml`. No API-key
-fallback or production policy/caller change was made. This is not a completed
-hosted package-publication acceptance claim.
+workflow lint and the committed-source public API check pass. The confirmed
+dedicated Trusted Publishing policy now passes its hosted OIDC exchange and
+isolated package/image publication. A second hosted publisher consumes the
+same fresh original handoff, skips the duplicate NuGet version, verifies the
+complete OCI graph again and publishes the GitHub release/tag last. Earlier
+HTTP 401 observations below remain historical evidence. No API-key fallback
+or production policy/caller change was made.
 
 ## Production behavior and local controls
 
@@ -62,7 +63,7 @@ both hosted original artifacts and both outcome ZIPs, validated their bytes and
 inventories, and confirmed one outcome artifact per run. Details and retained
 log hashes are in [parent-verification.json](../evidence/cicd-3-4/parent-verification.json).
 
-## Hosted package/image attempt
+## Initial hosted package/image attempt
 
 [Run 42999230320](https://github.com/Hexalith/Hexalith.Builds/actions/runs/42999230320)
 used caller source `76e192ac556ee2a1b6dc59c4cdc32c77e15e4370` and remotely
@@ -127,6 +128,63 @@ surfaces. Exact production/probe sources and Git blob/content hashes are in
 [container-exact-source.json](../evidence/cicd-3-4/container-exact-source.json).
 Neither publisher job checked out source, restored, built or repacked.
 
+## Confirmed-policy hosted publication and original-byte retry
+
+The operator confirmed the dedicated nuget.org policy for
+`Hexalith/Hexalith.Builds`, caller `release-publish-probe.yml`, environment
+`hexalith-release`, creator/user `jpiquot` and exact package ID
+`Hexalith.Builds.PublishProbe.20261111`. The retained temporary controls were
+restored with separate produce/publish modes, then removed after qualification.
+Both publication dispatches skipped producer/draft jobs and remotely resolved
+the production publisher at `e9741b56ac6f6512734b368492dbab892e109877`.
+
+| Surface | Retained observation |
+| --- | --- |
+| Fresh producer | [43010609603](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43010609603), source `75e1d4a3809b30684e67c7e9b2c8043720b49c53` |
+| Original version/base | `4.47.1`, captured `v4.47.0` |
+| Original artifact | `13850760915`, digest `sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30` |
+| Original package bytes | 4,226 bytes, SHA-256 `ccef50a5127b8061356401eeb3941b1f6903528552d963c326e3f4f59f15509a` |
+| Original OCI graph | `registry.hexalith.com/cicd-publish-spike-3-1:4.47.1`; two Linux platforms, 17 blobs, root `sha256:1ed33f761db376a008e60f7520ca0d715d380e9d8d329c54028030da72b868a7` |
+| First publisher | [43010882516](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43010882516), dispatch source `491b17d5383061f9eaeee872db91c2f096a07807` |
+| First package effect | Successful OIDC exchange; `NuGet package version published` at 11:19:06 UTC |
+| First finalization | Workflow tree differed; `ready`, marked draft `441591623` preserved, no version tag |
+| Sole first outcome | Artifact `13849813543`, digest `sha256:247c1176b6ecd31392953f7f58f63776b906e8423946864f8b47bbde7c464c0e` |
+| Retry publisher | [43011306951](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43011306951), dispatch source `246572da7b7db541fef697fe0164f503b8957e53` |
+| Retry package effect | Successful OIDC exchange; `NuGet package version already exists; skipped duplicate` at 11:22:08 UTC |
+| Retry finalization | Original workflow tree restored; release `441591623` published; independent live `v4.47.1` commit ref equals original producer source |
+| Sole retry outcome | Artifact `13850901688`, digest `sha256:1227eb8e492395dccb9ace3b3786aa4991b51bf394af6b946cc9195d66d75d51`; `published` |
+
+The downloaded original ZIP matches its API/handoff digest and passes the same
+independent inventory inspection, with exact original package and uncompressed
+OCI hashes. Both publisher runs retain the same producer run, artifact ID/digest,
+source and version; neither rebuilds or changes the payload. Poisoned workspace
+`NuGet.Config` and `global.json` remained outside the private execution directory.
+Both successful controller executions verify every remote OCI manifest/config/
+layer by digest and size. This is production-controller evidence; anonymous
+independent registry reads return HTTP 401 and establish no content identity.
+
+The downloaded outcome ZIPs each contain only schema-valid `outcome.json` and
+match their API SHA-256. Full source/run/jobs, safe hosted logs, authenticated
+original handoff/inventory, both outcomes and live release/tag readbacks are in
+[trusted-publishing](../evidence/cicd-3-4/trusted-publishing/). The two fixed NuGet
+status lines reveal recognized success/duplicate effects without exposing raw
+tool output or temporary credentials. Public feed retrieval observations are
+retained separately from the accepted hosted pushes: the public page and package
+feed returned HTTP 404 through the last observation after the successful retry.
+The hosted NuGet service acceptance and duplicate response are established;
+independent download/comparison of the repository-signed public package remains
+unverified. This visibility limit does not replace or weaken either hosted push
+result.
+
+Resumed verification passes all 20 groups on both Python 3.12.13 and runner
+Python 3.14.4, the 11 publisher and 3 OCI focused cases on Python 3.12, pinned
+authenticated workflow lint with zero new findings, and the committed-source
+API check with 2554 entries and no removals. The original five draft trailers
+and body, both downloaded outcome schemas/digests, final live tag and all frozen
+bytes are independently checked. Commands, full log locations/hashes and matrix
+case names are in
+[verification.json](../evidence/cicd-3-4/trusted-publishing/verification.json).
+
 ## Cleanup, retained checks and remaining work
 
 The temporary probe workflow/helper were removed after preserving their full
@@ -158,10 +216,14 @@ implementation API check reports 2554 entries and no removals versus stable
 results. Frozen legacy runtime, root npm release configuration, original tool
 pins, `builds-release.yml` and all production callers retain their bytes.
 
-To finish hosted package acceptance, provision a nuget.org Trusted Publishing
-policy for the isolated caller `release-publish-probe.yml`, environment
-`hexalith-release`, creator `jpiquot` and the isolated package-ID scope, then
-restore the retained temporary controls for a fresh authorized probe. Successful
-hosted package publication and same-original hosted package retry are not
-claimed. Complete-mode selection/recovery/deletion, production caller rewrite,
-nightly/App publication and audit-bypass lint remain downstream as specified.
+The resumed qualification made no protection-policy changes. Active tag ruleset
+`26812219` forbids deletion of every `v*` tag and has no bypass actor. The
+identified probe release `441591623` and `v4.47.1` are retained together, avoiding
+an orphan tag. Its package and registry version also remain as isolated evidence;
+they are qualification payloads, not a Builds product release. Temporary controls
+are removed and normal 90-day Actions artifact retention remains. The retained
+probe tag is now a reachable stable version and can affect future version-base
+selection until the maintainer removes the disposable resources through an
+authorized process. Complete-mode selection/recovery/deletion, production
+caller rewrite, nightly/App publication and audit-bypass lint remain downstream
+as specified.

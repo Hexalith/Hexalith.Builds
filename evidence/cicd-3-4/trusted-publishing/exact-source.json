@@ -1,0 +1,29 @@
+{
+  "producerSource": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+  "publisherImplementation": "e9741b56ac6f6512734b368492dbab892e109877",
+  "files": {
+    ".github/workflows/release-publish-probe.yml": {
+      "gitBlob": "621a8d93d4528743ed9dab94bb815e1b2cf4f25b",
+      "sha256": "b533f2f31f2ee73281656e946aecdc57e63aad91d60b1200caa0617ab3bfce02"
+    },
+    "Tools/ci/probe_release_publish.py": {
+      "gitBlob": "2b14c2ab66178c5a793045f7745a43fabbb273df",
+      "sha256": "e6be70dad52faac696661524d6a0bc3c0a8106fac5e2fe25247e3e37676016c9"
+    },
+    "Github/publish/action.yml": {
+      "gitBlob": "2409e483d50373c08889c5b1d4c9898c192cc8ea",
+      "sha256": "0c9a4cc4d166d85b7b43fd0d38f4c1c5eeb10775c9f8d199be74633bf07b5670"
+    },
+    "Github/lib/release_publish.py": {
+      "gitBlob": "8a2574bb4414dc62960514ecea3a825e983787d1",
+      "sha256": "0c63a83ada8a18083335ee92839a3030201df27bc1d090d7cd7a662c68fb9f80"
+    }
+  },
+  "firstPublisherSource": "491b17d5383061f9eaeee872db91c2f096a07807",
+  "retryPublisherSource": "246572da7b7db541fef697fe0164f503b8957e53",
+  "workflowTrees": {
+    "producer": "84b44d553faa78109a3307bcf80b9b2dbf5bfd7e",
+    "firstPublisher": "2e61be738fbe3f1da393525b77673566882b3457",
+    "retryPublisher": "84b44d553faa78109a3307bcf80b9b2dbf5bfd7e"
+  }
+}

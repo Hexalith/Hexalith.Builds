@@ -1,0 +1,591 @@
+producer	Set up job	﻿2026-11-11T11:16:49.2333831Z Current runner version: '2.338.2'
+producer	Set up job	2026-11-11T11:16:49.2372435Z ##[group]Runner Image Provisioner
+producer	Set up job	2026-11-11T11:16:49.2373844Z Hosted Compute Agent
+producer	Set up job	2026-11-11T11:16:49.2374999Z Version: 20261028.624
+producer	Set up job	2026-11-11T11:16:49.2376420Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+producer	Set up job	2026-11-11T11:16:49.2377776Z Build Date: 2026-10-28T21:51:42Z
+producer	Set up job	2026-11-11T11:16:49.2379222Z Worker ID: {eac955cd-7e8f-4a66-b3c8-587ef05a2f69}
+producer	Set up job	2026-11-11T11:16:49.2380510Z Region: centralus
+producer	Set up job	2026-11-11T11:16:49.2381512Z Cloud: Azure
+producer	Set up job	2026-11-11T11:16:49.2382695Z ##[endgroup]
+producer	Set up job	2026-11-11T11:16:49.2385075Z ##[group]Operating System
+producer	Set up job	2026-11-11T11:16:49.2386681Z Ubuntu
+producer	Set up job	2026-11-11T11:16:49.2387711Z 26.04.1
+producer	Set up job	2026-11-11T11:16:49.2388245Z LTS
+producer	Set up job	2026-11-11T11:16:49.2388849Z ##[endgroup]
+producer	Set up job	2026-11-11T11:16:49.2389429Z ##[group]Runner Image
+producer	Set up job	2026-11-11T11:16:49.2390128Z Image: ubuntu-26.04
+producer	Set up job	2026-11-11T11:16:49.2390739Z Version: 20261101.186.1
+producer	Set up job	2026-11-11T11:16:49.2391828Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261101.186/images/ubuntu/Ubuntu2604-Readme.md
+producer	Set up job	2026-11-11T11:16:49.2393637Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261101.186
+producer	Set up job	2026-11-11T11:16:49.2394680Z ##[endgroup]
+producer	Set up job	2026-11-11T11:16:49.2395839Z ##[group]GITHUB_TOKEN Permissions
+producer	Set up job	2026-11-11T11:16:49.2398687Z Contents: read
+producer	Set up job	2026-11-11T11:16:49.2399381Z Metadata: read
+producer	Set up job	2026-11-11T11:16:49.2399992Z ##[endgroup]
+producer	Set up job	2026-11-11T11:16:49.2402209Z Secret source: Actions
+producer	Set up job	2026-11-11T11:16:49.2403197Z Cache mode: none
+producer	Set up job	2026-11-11T11:16:49.2404209Z Prepare workflow directory
+producer	Set up job	2026-11-11T11:16:49.2779675Z Prepare all required actions
+producer	Set up job	2026-11-11T11:16:49.2853508Z Getting action download info
+producer	Set up job	2026-11-11T11:16:49.5365915Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+producer	Set up job	2026-11-11T11:16:49.6618991Z Download action repository 'actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73' (SHA:0f4a354dd5547a28c70b7853dbd95d5b67886e73)
+producer	Set up job	2026-11-11T11:16:50.1147211Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+producer	Set up job	2026-11-11T11:16:50.2812744Z Complete job name: producer
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-11T11:16:50.3756709Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3758580Z with:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3759439Z   fetch-depth: 0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3760291Z   persist-credentials: false
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3760885Z   submodules: false
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3761805Z   repository: Hexalith/Hexalith.Builds
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3766738Z   token: ***
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3767288Z   ssh-strict: true
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3767789Z   ssh-user: git
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3768269Z   clean: true
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3768771Z   sparse-checkout-cone-mode: true
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3769382Z   fetch-tags: false
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3770115Z   show-progress: true
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3770809Z   lfs: false
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3771369Z   set-safe-directory: true
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3771955Z   allow-unsafe-pr-checkout: false
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.3772960Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7363658Z Syncing repository: Hexalith/Hexalith.Builds
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7368238Z ##[group]Getting Git version info
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7370552Z Working directory is '/home/runner/work/Hexalith.Builds/Hexalith.Builds'
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7373726Z [command]/usr/bin/git version
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7375449Z git version 2.56.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7394897Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7408123Z Temporarily overriding HOME='/home/runner/work/_temp/8421b1ef-e606-4ce4-9aae-3df30069a23e' before making global git config changes
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7412580Z Adding repository directory to the temporary git global config as a safe directory
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7416747Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Hexalith.Builds/Hexalith.Builds
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7490721Z Deleting the contents of '/home/runner/work/Hexalith.Builds/Hexalith.Builds'
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7493638Z ##[group]Determining repository object format
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7496532Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7499939Z ##[group]Initializing the repository
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7503428Z [command]/usr/bin/git init /home/runner/work/Hexalith.Builds/Hexalith.Builds
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7592900Z hint: Using 'master' as the name for the initial branch. This default branch name
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7597103Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7600855Z hint: to use in all of your new repositories, which will suppress this warning,
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7603891Z hint: call:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7605586Z hint:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7607776Z hint: 	git config --global init.defaultBranch <name>
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7610382Z hint:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7612745Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7616674Z hint: 'development'. The just-created branch can be renamed via this command:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7619745Z hint:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7621522Z hint: 	git branch -m <name>
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7623480Z hint:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7626022Z hint: Disable this message with "git config set advice.defaultBranchName false"
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7630921Z Initialized empty Git repository in /home/runner/work/Hexalith.Builds/Hexalith.Builds/.git/
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7638426Z [command]/usr/bin/git remote add origin https://github.com/Hexalith/Hexalith.Builds
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7682972Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7685979Z ##[group]Disabling automatic garbage collection
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7688760Z [command]/usr/bin/git config --local gc.auto 0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7722760Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7725760Z ##[group]Setting up auth
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7727943Z Removing SSH command configuration
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7730863Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.7773307Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.8313142Z Removing HTTP extra header
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.8320181Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.8358717Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.8641316Z Removing includeIf entries pointing to credentials config files
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.8645400Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.8677530Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.8959654Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.9000788Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Hexalith.Builds/Hexalith.Builds/.git.path /home/runner/work/_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.9035509Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Hexalith.Builds/Hexalith.Builds/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.9079347Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.9115019Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.9144838Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.9146948Z ##[group]Fetching the repository
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:50.9151875Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7466095Z From https://github.com/Hexalith/Hexalith.Builds
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7467784Z  * [new branch]        main       -> origin/main
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7468579Z  * [new tag]           v1.60.0    -> v1.60.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7469323Z  * [new tag]           v1.61.0    -> v1.61.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7470143Z  * [new tag]           v1.62.0    -> v1.62.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7470938Z  * [new tag]           v1.63.0    -> v1.63.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7471564Z  * [new tag]           v2.0.0     -> v2.0.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7472242Z  * [new tag]           v2.0.1     -> v2.0.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7472982Z  * [new tag]           v2.0.2     -> v2.0.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7473687Z  * [new tag]           v2.0.3     -> v2.0.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7474339Z  * [new tag]           v3.0.0     -> v3.0.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7475037Z  * [new tag]           v3.0.1     -> v3.0.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7475702Z  * [new tag]           v3.0.2     -> v3.0.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7476571Z  * [new tag]           v3.0.3     -> v3.0.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7477295Z  * [new tag]           v3.0.4     -> v3.0.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7478035Z  * [new tag]           v3.0.5     -> v3.0.5
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7478687Z  * [new tag]           v3.1.0     -> v3.1.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7479352Z  * [new tag]           v3.10.0    -> v3.10.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7480025Z  * [new tag]           v3.10.1    -> v3.10.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7480441Z  * [new tag]           v3.10.2    -> v3.10.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7480852Z  * [new tag]           v3.10.3    -> v3.10.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7481264Z  * [new tag]           v3.11.0    -> v3.11.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7481590Z  * [new tag]           v3.11.1    -> v3.11.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7481886Z  * [new tag]           v3.12.0    -> v3.12.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7482172Z  * [new tag]           v3.12.1    -> v3.12.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7482471Z  * [new tag]           v3.12.2    -> v3.12.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7482778Z  * [new tag]           v3.13.0    -> v3.13.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7483208Z  * [new tag]           v3.14.0    -> v3.14.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7484098Z  * [new tag]           v3.14.1    -> v3.14.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7484579Z  * [new tag]           v3.14.2    -> v3.14.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7484953Z  * [new tag]           v3.14.3    -> v3.14.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7485256Z  * [new tag]           v3.14.4    -> v3.14.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7485559Z  * [new tag]           v3.14.5    -> v3.14.5
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7485883Z  * [new tag]           v3.14.6    -> v3.14.6
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7486387Z  * [new tag]           v3.15.0    -> v3.15.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7486702Z  * [new tag]           v3.16.0    -> v3.16.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7486999Z  * [new tag]           v3.17.0    -> v3.17.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7487281Z  * [new tag]           v3.17.1    -> v3.17.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7487739Z  * [new tag]           v3.17.10   -> v3.17.10
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7488054Z  * [new tag]           v3.17.11   -> v3.17.11
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7488349Z  * [new tag]           v3.17.12   -> v3.17.12
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7488661Z  * [new tag]           v3.17.13   -> v3.17.13
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7488952Z  * [new tag]           v3.17.14   -> v3.17.14
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7489233Z  * [new tag]           v3.17.15   -> v3.17.15
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7489547Z  * [new tag]           v3.17.16   -> v3.17.16
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7489836Z  * [new tag]           v3.17.17   -> v3.17.17
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7490120Z  * [new tag]           v3.17.18   -> v3.17.18
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7490401Z  * [new tag]           v3.17.19   -> v3.17.19
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7490701Z  * [new tag]           v3.17.2    -> v3.17.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7491042Z  * [new tag]           v3.17.20   -> v3.17.20
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7491364Z  * [new tag]           v3.17.21   -> v3.17.21
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7491723Z  * [new tag]           v3.17.22   -> v3.17.22
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7492053Z  * [new tag]           v3.17.3    -> v3.17.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7492564Z  * [new tag]           v3.17.4    -> v3.17.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7492858Z  * [new tag]           v3.17.5    -> v3.17.5
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7493138Z  * [new tag]           v3.17.6    -> v3.17.6
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7493421Z  * [new tag]           v3.17.7    -> v3.17.7
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7493701Z  * [new tag]           v3.17.8    -> v3.17.8
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7493997Z  * [new tag]           v3.17.9    -> v3.17.9
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7494282Z  * [new tag]           v3.18.0    -> v3.18.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7494558Z  * [new tag]           v3.18.1    -> v3.18.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7494835Z  * [new tag]           v3.18.2    -> v3.18.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7495133Z  * [new tag]           v3.2.0     -> v3.2.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7495431Z  * [new tag]           v3.3.0     -> v3.3.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7495719Z  * [new tag]           v3.4.0     -> v3.4.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7496014Z  * [new tag]           v3.4.1     -> v3.4.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7496575Z  * [new tag]           v3.5.0     -> v3.5.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7496863Z  * [new tag]           v3.5.1     -> v3.5.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7497141Z  * [new tag]           v3.5.2     -> v3.5.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7497417Z  * [new tag]           v3.5.3     -> v3.5.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7497698Z  * [new tag]           v3.6.0     -> v3.6.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7497976Z  * [new tag]           v3.6.1     -> v3.6.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7498243Z  * [new tag]           v3.6.2     -> v3.6.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7498515Z  * [new tag]           v3.7.0     -> v3.7.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7498790Z  * [new tag]           v3.7.1     -> v3.7.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7499066Z  * [new tag]           v3.7.2     -> v3.7.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7499340Z  * [new tag]           v3.8.0     -> v3.8.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7499610Z  * [new tag]           v3.8.1     -> v3.8.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7499882Z  * [new tag]           v3.8.2     -> v3.8.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7500151Z  * [new tag]           v3.8.3     -> v3.8.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7500436Z  * [new tag]           v3.9.0     -> v3.9.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7500716Z  * [new tag]           v3.9.1     -> v3.9.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7500988Z  * [new tag]           v4.0.0     -> v4.0.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7501260Z  * [new tag]           v4.1.0     -> v4.1.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7501711Z  * [new tag]           v4.10.0    -> v4.10.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7502006Z  * [new tag]           v4.11.0    -> v4.11.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7502297Z  * [new tag]           v4.12.0    -> v4.12.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7502583Z  * [new tag]           v4.13.0    -> v4.13.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7502868Z  * [new tag]           v4.13.1    -> v4.13.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7503150Z  * [new tag]           v4.13.2    -> v4.13.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7503436Z  * [new tag]           v4.13.3    -> v4.13.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7503730Z  * [new tag]           v4.13.4    -> v4.13.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7504017Z  * [new tag]           v4.14.0    -> v4.14.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7504299Z  * [new tag]           v4.15.0    -> v4.15.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7504583Z  * [new tag]           v4.16.0    -> v4.16.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7504873Z  * [new tag]           v4.16.1    -> v4.16.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7505163Z  * [new tag]           v4.16.2    -> v4.16.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7505460Z  * [new tag]           v4.16.3    -> v4.16.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7505764Z  * [new tag]           v4.16.4    -> v4.16.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7506061Z  * [new tag]           v4.16.5    -> v4.16.5
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7506639Z  * [new tag]           v4.17.0    -> v4.17.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7506949Z  * [new tag]           v4.17.1    -> v4.17.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7507254Z  * [new tag]           v4.17.10   -> v4.17.10
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7507561Z  * [new tag]           v4.17.2    -> v4.17.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7507858Z  * [new tag]           v4.17.3    -> v4.17.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7508154Z  * [new tag]           v4.17.4    -> v4.17.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7508450Z  * [new tag]           v4.17.5    -> v4.17.5
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7508744Z  * [new tag]           v4.17.6    -> v4.17.6
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7509036Z  * [new tag]           v4.17.7    -> v4.17.7
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7509482Z  * [new tag]           v4.17.8    -> v4.17.8
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7509780Z  * [new tag]           v4.17.9    -> v4.17.9
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7510079Z  * [new tag]           v4.18.0    -> v4.18.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7510375Z  * [new tag]           v4.18.1    -> v4.18.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7510671Z  * [new tag]           v4.18.10   -> v4.18.10
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7510977Z  * [new tag]           v4.18.11   -> v4.18.11
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7511277Z  * [new tag]           v4.18.2    -> v4.18.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7511574Z  * [new tag]           v4.18.3    -> v4.18.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7511871Z  * [new tag]           v4.18.4    -> v4.18.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7512163Z  * [new tag]           v4.18.5    -> v4.18.5
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7512462Z  * [new tag]           v4.18.6    -> v4.18.6
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7512752Z  * [new tag]           v4.18.7    -> v4.18.7
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7513041Z  * [new tag]           v4.18.8    -> v4.18.8
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7513342Z  * [new tag]           v4.18.9    -> v4.18.9
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7513942Z  * [new tag]           v4.19.0    -> v4.19.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7514481Z  * [new tag]           v4.19.1    -> v4.19.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7515011Z  * [new tag]           v4.19.2    -> v4.19.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7515558Z  * [new tag]           v4.2.0     -> v4.2.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7516084Z  * [new tag]           v4.20.0    -> v4.20.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7516777Z  * [new tag]           v4.23.0    -> v4.23.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7517300Z  * [new tag]           v4.24.0    -> v4.24.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7517839Z  * [new tag]           v4.25.0    -> v4.25.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7518236Z  * [new tag]           v4.25.1    -> v4.25.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7518724Z  * [new tag]           v4.26.0    -> v4.26.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7519114Z  * [new tag]           v4.27.0    -> v4.27.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7519418Z  * [new tag]           v4.27.1    -> v4.27.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7519712Z  * [new tag]           v4.27.2    -> v4.27.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7520018Z  * [new tag]           v4.27.3    -> v4.27.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7520311Z  * [new tag]           v4.27.4    -> v4.27.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7603014Z  * [new tag]           v4.29.1    -> v4.29.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7603798Z  * [new tag]           v4.3.0     -> v4.3.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7604180Z  * [new tag]           v4.30.0    -> v4.30.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7604824Z  * [new tag]           v4.30.1    -> v4.30.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7605324Z  * [new tag]           v4.31.2    -> v4.31.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7605653Z  * [new tag]           v4.32.0    -> v4.32.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7605970Z  * [new tag]           v4.33.0    -> v4.33.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7606702Z  * [new tag]           v4.33.1    -> v4.33.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7607055Z  * [new tag]           v4.34.0    -> v4.34.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7607367Z  * [new tag]           v4.35.0    -> v4.35.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7607801Z  * [new tag]           v4.35.1    -> v4.35.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7608397Z  * [new tag]           v4.35.2    -> v4.35.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7609059Z  * [new tag]           v4.36.0    -> v4.36.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7609728Z  * [new tag]           v4.37.0    -> v4.37.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7610380Z  * [new tag]           v4.38.0    -> v4.38.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7610994Z  * [new tag]           v4.38.1    -> v4.38.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7611633Z  * [new tag]           v4.38.2    -> v4.38.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7612190Z  * [new tag]           v4.38.3    -> v4.38.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7612803Z  * [new tag]           v4.39.0    -> v4.39.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7613380Z  * [new tag]           v4.4.0     -> v4.4.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7613960Z  * [new tag]           v4.40.1    -> v4.40.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7614588Z  * [new tag]           v4.41.0    -> v4.41.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7615201Z  * [new tag]           v4.41.1    -> v4.41.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7615804Z  * [new tag]           v4.42.0    -> v4.42.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7616578Z  * [new tag]           v4.42.1    -> v4.42.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7617210Z  * [new tag]           v4.43.0    -> v4.43.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7618297Z  * [new tag]           v4.43.1    -> v4.43.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7618993Z  * [new tag]           v4.43.2    -> v4.43.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7619682Z  * [new tag]           v4.43.3    -> v4.43.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7620388Z  * [new tag]           v4.43.4    -> v4.43.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7621064Z  * [new tag]           v4.43.5    -> v4.43.5
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7621687Z  * [new tag]           v4.43.6    -> v4.43.6
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7622314Z  * [new tag]           v4.44.0    -> v4.44.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7622861Z  * [new tag]           v4.44.1    -> v4.44.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7623396Z  * [new tag]           v4.44.10   -> v4.44.10
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7623933Z  * [new tag]           v4.44.11   -> v4.44.11
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7624465Z  * [new tag]           v4.44.12   -> v4.44.12
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7625001Z  * [new tag]           v4.44.13   -> v4.44.13
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7625516Z  * [new tag]           v4.44.2    -> v4.44.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7626036Z  * [new tag]           v4.44.3    -> v4.44.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7626782Z  * [new tag]           v4.44.4    -> v4.44.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7627310Z  * [new tag]           v4.44.5    -> v4.44.5
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7627832Z  * [new tag]           v4.44.6    -> v4.44.6
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7628435Z  * [new tag]           v4.44.7    -> v4.44.7
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7628961Z  * [new tag]           v4.44.8    -> v4.44.8
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7629723Z  * [new tag]           v4.44.9    -> v4.44.9
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7630288Z  * [new tag]           v4.45.0    -> v4.45.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7630617Z  * [new tag]           v4.45.1    -> v4.45.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7630929Z  * [new tag]           v4.46.0    -> v4.46.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7631233Z  * [new tag]           v4.47.0    -> v4.47.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7631542Z  * [new tag]           v4.5.0     -> v4.5.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7631852Z  * [new tag]           v4.5.1     -> v4.5.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7632148Z  * [new tag]           v4.6.0     -> v4.6.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7632441Z  * [new tag]           v4.6.1     -> v4.6.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7632737Z  * [new tag]           v4.6.2     -> v4.6.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7633056Z  * [new tag]           v4.6.3     -> v4.6.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7633351Z  * [new tag]           v4.6.4     -> v4.6.4
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7633847Z  * [new tag]           v4.7.0     -> v4.7.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7634159Z  * [new tag]           v4.8.0     -> v4.8.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7634452Z  * [new tag]           v4.9.0     -> v4.9.0
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7634734Z  * [new tag]           v4.9.1     -> v4.9.1
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7635026Z  * [new tag]           v4.9.2     -> v4.9.2
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7635317Z  * [new tag]           v4.9.3     -> v4.9.3
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7636827Z [command]/usr/bin/git branch --list --remote origin/main
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7637511Z   origin/main
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7638795Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7639573Z 75e1d4a3809b30684e67c7e9b2c8043720b49c53
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7640538Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7640956Z ##[group]Determining the checkout info
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7641385Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7641648Z [command]/usr/bin/git sparse-checkout disable
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7642420Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7655396Z ##[group]Checking out the ref
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:55.7660478Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0698630Z Switched to a new branch 'main'
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0703537Z branch 'main' set up to track 'origin/main'.
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0728908Z ##[endgroup]
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0781321Z [command]/usr/bin/git log -1 --format=%H
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0812782Z 75e1d4a3809b30684e67c7e9b2c8043720b49c53
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0823894Z ##[group]Removing auth
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0824606Z Removing SSH command configuration
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0827701Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.0863981Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1171554Z Removing HTTP extra header
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1175008Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1214364Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1512956Z Removing includeIf entries pointing to credentials config files
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1513603Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1538574Z includeif.gitdir:/home/runner/work/Hexalith.Builds/Hexalith.Builds/.git.path
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1539537Z includeif.gitdir:/home/runner/work/Hexalith.Builds/Hexalith.Builds/.git/worktrees/*.path
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1540565Z includeif.gitdir:/github/workspace/.git.path
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1541283Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1549035Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Hexalith.Builds/Hexalith.Builds/.git.path
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1574175Z /home/runner/work/_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1585348Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Hexalith.Builds/Hexalith.Builds/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-2d93c235\-2ebb\-4114\-b527\-dfcf6c4f1faa\.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1623628Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Hexalith.Builds/Hexalith.Builds/.git/worktrees/*.path
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1647169Z /home/runner/work/_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1656746Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Hexalith.Builds/Hexalith.Builds/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-2d93c235\-2ebb\-4114\-b527\-dfcf6c4f1faa\.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1697097Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1728389Z /github/runner_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1738087Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-2d93c235\-2ebb\-4114\-b527\-dfcf6c4f1faa\.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1772449Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1796463Z /github/runner_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1804409Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-2d93c235\-2ebb\-4114\-b527\-dfcf6c4f1faa\.config
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.1838839Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.2116574Z Removing credentials config '/home/runner/work/_temp/git-credentials-2d93c235-2ebb-4114-b527-dfcf6c4f1faa.config'
+producer	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:16:56.2126345Z ##[endgroup]
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	﻿2026-11-11T11:16:56.2369085Z ##[group]Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:56.2369501Z with:
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:56.2369711Z   global-json-file: global.json
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:56.2369973Z   skip-lts-prepass: false
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:56.2370204Z   cache: false
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:56.2370399Z ##[endgroup]
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:56.3715159Z [command]/home/runner/work/_actions/actions/setup-dotnet/0f4a354dd5547a28c70b7853dbd95d5b67886e73/externals/install-dotnet.sh --skip-non-versioned-files --runtime dotnet --channel LTS
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:56.7965951Z dotnet-install: Attempting to download using aka.ms link https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.15/dotnet-runtime-10.0.15-linux-x64.tar.gz
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.3112533Z dotnet-install: Remote file https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.15/dotnet-runtime-10.0.15-linux-x64.tar.gz size is 36659264 bytes.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.3117416Z dotnet-install: Extracting archive from https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.15/dotnet-runtime-10.0.15-linux-x64.tar.gz
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.7617151Z dotnet-install: Downloaded file size is 36659264 bytes.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.7618332Z dotnet-install: The remote and local file sizes are equal.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.7908938Z dotnet-install: Installed version is 10.0.15
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.8001944Z dotnet-install: Adding to current process PATH: `/usr/share/dotnet`. Note: This change will be visible only when sourcing script.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.8003636Z dotnet-install: Note that the script does not resolve dependencies during installation.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.8005057Z dotnet-install: To check the list of dependencies, go to https://learn.microsoft.com/dotnet/core/install, select your operating system and check the "Dependencies" section.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.8006386Z dotnet-install: Installation finished successfully.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:57.8030179Z [command]/home/runner/work/_actions/actions/setup-dotnet/0f4a354dd5547a28c70b7853dbd95d5b67886e73/externals/install-dotnet.sh --skip-non-versioned-files --channel 10.0.4xx
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:16:58.1840794Z dotnet-install: Attempting to download using aka.ms link https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.404/dotnet-sdk-10.0.404-linux-x64.tar.gz
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:00.6033159Z dotnet-install: Remote file https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.404/dotnet-sdk-10.0.404-linux-x64.tar.gz size is 243138887 bytes.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:00.6035872Z dotnet-install: Extracting archive from https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.404/dotnet-sdk-10.0.404-linux-x64.tar.gz
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:03.6436808Z dotnet-install: Downloaded file size is 243138887 bytes.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:03.6437577Z dotnet-install: The remote and local file sizes are equal.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:03.8929914Z dotnet-install: Installed version is 10.0.404
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:03.9028563Z dotnet-install: Adding to current process PATH: `/usr/share/dotnet`. Note: This change will be visible only when sourcing script.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:03.9030195Z dotnet-install: Note that the script does not resolve dependencies during installation.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:03.9031911Z dotnet-install: To check the list of dependencies, go to https://learn.microsoft.com/dotnet/core/install, select your operating system and check the "Dependencies" section.
+producer	Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	2026-11-11T11:17:03.9032938Z dotnet-install: Installation finished successfully.
+producer	Build isolated original package and dual platform image once	﻿2026-11-11T11:17:03.9188307Z ##[group]Run python3 -I Tools/ci/probe_release_publish.py
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:03.9188808Z python3 -I Tools/ci/probe_release_publish.py
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:03.9246684Z shell: /usr/bin/bash -e {0}
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:03.9246982Z env:
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:03.9247190Z   DOTNET_ROOT: /usr/share/dotnet
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:03.9247449Z ##[endgroup]
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:04.9872321Z   Determining projects to restore...
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:06.6164546Z   Restored /tmp/publish-probe-build-xjdrej84/PublishProbe.csproj (in 1.38 sec).
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:09.0559396Z   PublishProbe -> /tmp/publish-probe-build-xjdrej84/bin/Release/net10.0/linux-x64/PublishProbe.dll
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:09.0872460Z   PublishProbe -> /tmp/publish-probe-build-xjdrej84/bin/Release/net10.0/linux-x64/publish/
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:09.5734712Z   Building image 'cicd-publish-spike-3-1' with tags '4.47.1' on top of base image 'mcr.microsoft.com/dotnet/runtime:10.0-alpine'.
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:10.1176055Z   Pushed image 'cicd-publish-spike-3-1:4.47.1' to local archive at '/tmp/publish-probe-build-xjdrej84/amd64.tar'.
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:11.1411378Z   PublishProbe -> /tmp/publish-probe-build-xjdrej84/bin/Release/net10.0/linux-arm64/PublishProbe.dll
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:11.1614340Z   PublishProbe -> /tmp/publish-probe-build-xjdrej84/bin/Release/net10.0/linux-arm64/publish/
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:11.4416439Z   Building image 'cicd-publish-spike-3-1' with tags '4.47.1' on top of base image 'mcr.microsoft.com/dotnet/runtime:10.0-alpine'.
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:12.1844483Z   Pushed image 'cicd-publish-spike-3-1:4.47.1' to local archive at '/tmp/publish-probe-build-xjdrej84/arm64.tar'.
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4462692Z   The package Hexalith.Builds.PublishProbe.20261111.4.47.1 is missing a readme. Go to https://aka.ms/nuget/authoring-best-practices/readme to learn why package readmes are important.
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4465886Z   Successfully created package '/home/runner/work/_temp/publish-probe-payload/packages/Hexalith.Builds.PublishProbe.20261111.4.47.1.nupkg'.
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4925142Z {
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4925638Z   "manifest": {
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4926372Z     "sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4926944Z     "version": "4.47.1",
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4927325Z     "packages": [
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4927637Z       {
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4928085Z         "id": "Hexalith.Builds.PublishProbe.20261111",
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4928884Z         "path": "packages/Hexalith.Builds.PublishProbe.20261111.4.47.1.nupkg"
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4929527Z       }
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4929803Z     ],
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4930126Z     "containers": [
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4930449Z       {
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4930826Z         "name": "cicd-publish-spike-3-1",
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4931334Z         "path": "containers/probe.tar"
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4931718Z       }
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4931970Z     ]
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4932231Z   },
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4932505Z   "graph": {
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4933134Z     "root": "sha256:1ed33f761db376a008e60f7520ca0d715d380e9d8d329c54028030da72b868a7",
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4933868Z     "children": [
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4934508Z       "sha256:19780f7da65ebe3c9335c1d8eeab85e59e0d893e667442aaabc6e4970091b889",
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4935449Z       "sha256:ec338b6b06700aa9ddfdf5c4f838f57ffb4b0d28299441186875d5b83febeac9"
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4936316Z     ],
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4936641Z     "platforms": [
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4937027Z       "linux/amd64",
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4937439Z       "linux/arm64"
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4937762Z     ],
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4938091Z     "blobs": {
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4938742Z       "sha256:1ed33f761db376a008e60f7520ca0d715d380e9d8d329c54028030da72b868a7": 769,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4939884Z       "sha256:19780f7da65ebe3c9335c1d8eeab85e59e0d893e667442aaabc6e4970091b889": 1232,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4940901Z       "sha256:941292ae1dbb9dc1efe83903026b41fe354bf182c7bd141a0189fcf5b72bbd23": 3471,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4942005Z       "sha256:881fc932939efef04ca120ad44bbd2c0917851eb247aa4995428afb1e80ede17": 3853673,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4943045Z       "sha256:45d3410d360403450f5b988d820cb5f984537d79c1bef31c920bf3681bc052bb": 1169627,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4944399Z       "sha256:cab0214eab46d1873bf6ad683a860558d35067ee3f8ed3e42e1f6fe1ad569b8a": 949,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4945479Z       "sha256:5ef336b1638f369236230d30c23a9fece6fdf7cdc1b16d906e56a0c4c97b1f5c": 37569216,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4946693Z       "sha256:8caa380cde9a60a515af53182c2cf1dc3d53b89ae584194cd6d6621b36122323": 168,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4947721Z       "sha256:f7ceb0e49996d687745257c883bc2ecf34a222935b4a2745e609c6d191c6a68a": 36940,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4948759Z       "sha256:ec338b6b06700aa9ddfdf5c4f838f57ffb4b0d28299441186875d5b83febeac9": 1232,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4949804Z       "sha256:b340b58d23bc5f52f352c39e911f13415e7ac75d1161063453a8ad2f14ab76e8": 3472,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4950867Z       "sha256:b90627b8f4292fd3cb63f0f27f0b11c37f04ba88ef3b78d4948ea0ace18c85e9": 4190595,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4951952Z       "sha256:4ba53de9eb1cca8816d8d77cccde53a960fa95a234c3d27f4ba1817b6c813f50": 1094351,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4953018Z       "sha256:fd1ce79ae6fb722a4d1550a19c19a0412183c6d16b5d56782bd196d909c0ac34": 950,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4954100Z       "sha256:45eea2de616ccd1c179d6a751ce93fe390c2e3c84c8711205d9807aa2f625ad5": 35269233,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4955465Z       "sha256:7649b47e685a24cee7763c41b73e731e89f9bde21734c00cb9bd7b45f4a60a30": 171,
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4956724Z       "sha256:0cb33768e8bd96a18e16ae6d33d87ad3adeae47e274404a7d2b9d18e6085846a": 36177
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4957440Z     }
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4957744Z   }
+producer	Build isolated original package and dual platform image once	2026-11-11T11:17:13.4958031Z }
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	﻿2026-11-11T11:17:13.5181563Z ##[group]Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5182007Z with:
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5182200Z   name: release
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5182479Z   path: /home/runner/work/_temp/publish-probe-payload/
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5182810Z   compression-level: 0
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5183036Z   retention-days: 90
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5183259Z   if-no-files-found: error
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5183490Z   overwrite: false
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5183709Z   include-hidden-files: false
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5183951Z   archive: true
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5184150Z env:
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5184347Z   DOTNET_ROOT: /usr/share/dotnet
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.5184607Z ##[endgroup]
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.6656432Z With the provided path, there will be 3 files uploaded
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.6657918Z Artifact name is valid!
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.6658603Z Root directory input is valid!
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.9719683Z Uploading artifact: release.zip
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:13.9762544Z Beginning upload of artifact content to blob storage
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.5315534Z Uploaded bytes 8388608
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.5629764Z Uploaded bytes 16777216
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.5720764Z Uploaded bytes 25165824
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.6373138Z Uploaded bytes 33554432
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.7489132Z Uploaded bytes 41943040
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.7738296Z Uploaded bytes 50331648
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.8247308Z Uploaded bytes 58720256
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.8707351Z Uploaded bytes 67108864
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:14.9255014Z Uploaded bytes 75497472
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:15.2163239Z Uploaded bytes 83256215
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:15.2506569Z Finished uploading artifact content to blob storage!
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:15.2508485Z SHA256 digest of uploaded artifact is 18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:15.2510422Z Finalizing artifact upload
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:15.7206511Z Artifact release successfully finalized. Artifact ID 13850760915
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:15.7208483Z Artifact release has been successfully uploaded! Final size is 83256215 bytes. Artifact ID is 13850760915
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:15.7210212Z Artifact download URL: https://github.com/Hexalith/Hexalith.Builds/actions/runs/43010609603/artifacts/13850760915
+producer	Post Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73	﻿2026-11-11T11:17:15.7441171Z Post job cleanup.
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-11T11:17:15.8752933Z Post job cleanup.
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:15.9655553Z [command]/usr/bin/git version
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:15.9702672Z git version 2.56.0
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:15.9741013Z Temporarily overriding HOME='/home/runner/work/_temp/c286404c-a734-4893-a2cb-76eb55c570b2' before making global git config changes
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:15.9742453Z Adding repository directory to the temporary git global config as a safe directory
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:15.9746790Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Hexalith.Builds/Hexalith.Builds
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:15.9784403Z Removing SSH command configuration
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:15.9791343Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:15.9859034Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:16.0191552Z Removing HTTP extra header
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:16.0197934Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:16.0245217Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:16.0612489Z Removing includeIf entries pointing to credentials config files
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:16.0621628Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+producer	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-11T11:17:16.0661381Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+producer	Complete job	﻿2026-11-11T11:17:16.1119754Z Evaluate and set job outputs
+producer	Complete job	2026-11-11T11:17:16.1126660Z Set output 'version'
+producer	Complete job	2026-11-11T11:17:16.1128733Z Set output 'artifact-id'
+producer	Complete job	2026-11-11T11:17:16.1129554Z Set output 'artifact-digest'
+producer	Complete job	2026-11-11T11:17:16.1130286Z Cleaning up orphan processes
+producer	Complete job	2026-11-11T11:17:16.1549518Z Terminate orphan process: pid (3034) (VBCSCompiler)
+draft	Set up job	﻿2026-11-11T11:17:20.8175604Z Current runner version: '2.338.2'
+draft	Set up job	2026-11-11T11:17:20.8198076Z ##[group]Runner Image Provisioner
+draft	Set up job	2026-11-11T11:17:20.8198792Z Hosted Compute Agent
+draft	Set up job	2026-11-11T11:17:20.8199282Z Version: 20261028.624
+draft	Set up job	2026-11-11T11:17:20.8199848Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+draft	Set up job	2026-11-11T11:17:20.8200583Z Build Date: 2026-10-28T21:51:42Z
+draft	Set up job	2026-11-11T11:17:20.8201286Z Worker ID: {1ba62f90-b03f-47a2-9535-2087c3d60f54}
+draft	Set up job	2026-11-11T11:17:20.8201912Z Region: eastus2
+draft	Set up job	2026-11-11T11:17:20.8202403Z Cloud: Azure
+draft	Set up job	2026-11-11T11:17:20.8202886Z ##[endgroup]
+draft	Set up job	2026-11-11T11:17:20.8204122Z ##[group]Operating System
+draft	Set up job	2026-11-11T11:17:20.8204692Z Ubuntu
+draft	Set up job	2026-11-11T11:17:20.8205260Z 26.04.1
+draft	Set up job	2026-11-11T11:17:20.8205684Z LTS
+draft	Set up job	2026-11-11T11:17:20.8206143Z ##[endgroup]
+draft	Set up job	2026-11-11T11:17:20.8206612Z ##[group]Runner Image
+draft	Set up job	2026-11-11T11:17:20.8207156Z Image: ubuntu-26.04
+draft	Set up job	2026-11-11T11:17:20.8207656Z Version: 20261101.186.1
+draft	Set up job	2026-11-11T11:17:20.8208544Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261101.186/images/ubuntu/Ubuntu2604-Readme.md
+draft	Set up job	2026-11-11T11:17:20.8210276Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261101.186
+draft	Set up job	2026-11-11T11:17:20.8211350Z ##[endgroup]
+draft	Set up job	2026-11-11T11:17:20.8212385Z ##[group]GITHUB_TOKEN Permissions
+draft	Set up job	2026-11-11T11:17:20.8214207Z Actions: read
+draft	Set up job	2026-11-11T11:17:20.8214789Z Contents: write
+draft	Set up job	2026-11-11T11:17:20.8215293Z Metadata: read
+draft	Set up job	2026-11-11T11:17:20.8215781Z ##[endgroup]
+draft	Set up job	2026-11-11T11:17:20.8218123Z Secret source: Actions
+draft	Set up job	2026-11-11T11:17:20.8218964Z Cache mode: none
+draft	Set up job	2026-11-11T11:17:20.8219720Z Prepare workflow directory
+draft	Set up job	2026-11-11T11:17:20.8486761Z Prepare all required actions
+draft	Set up job	2026-11-11T11:17:20.8525181Z Getting action download info
+draft	Set up job	2026-11-11T11:17:21.0516903Z Download action repository 'Hexalith/Hexalith.Builds@967d3d058df27397da39011c95da0a7e45ebc24e' (SHA:967d3d058df27397da39011c95da0a7e45ebc24e)
+draft	Set up job	2026-11-11T11:17:23.8566946Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+draft	Set up job	2026-11-11T11:17:24.0565477Z Complete job name: draft
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	﻿2026-11-11T11:17:24.1356232Z ##[group]Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1356949Z with:
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1357193Z   sha: 75e1d4a3809b30684e67c7e9b2c8043720b49c53
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1357467Z   version: 4.47.1
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1357918Z   notes: Disposable story 3-4 publication qualification. Only the identified isolated package and registry image are authorized.
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1358412Z   artifact-id: 13850760915
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1358788Z   artifact-digest: sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1359311Z env:
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1361845Z   GITHUB_TOKEN: ***
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1362097Z ##[endgroup]
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1424759Z ##[start-action display=Authenticate artifact and create marked draft;id=draft.draft]
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1470049Z ##[group]Run python3 -I "$GITHUB_ACTION_PATH/../lib/release_draft.py"
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1470849Z python3 -I "$GITHUB_ACTION_PATH/../lib/release_draft.py"
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1518559Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1518929Z env:
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1521295Z   GITHUB_TOKEN: ***
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1521584Z   RELEASE_SHA: 75e1d4a3809b30684e67c7e9b2c8043720b49c53
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1521888Z   RELEASE_VERSION: 4.47.1
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1522374Z   RELEASE_NOTES: Disposable story 3-4 publication qualification. Only the identified isolated package and registry image are authorized.
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1522888Z   RELEASE_ARTIFACT_ID: 13850760915
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1523283Z   RELEASE_ARTIFACT_DIGEST: sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:24.1523695Z ##[endgroup]
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@967d3d058df27397da39011c95da0a7e45ebc24e	2026-11-11T11:17:33.1467548Z ##[end-action id=draft.draft;outcome=success;conclusion=success;duration_ms=9004]
+draft	Preserve the authenticated original handoff	﻿2026-11-11T11:17:33.1535577Z ##[group]Run python3 -c "import json,os,pathlib; pathlib.Path(os.environ['RUNNER_TEMP'],'publish-probe-handoff.json').write_text(json.dumps({name[8:].lower().replace('_','-'):value for name,value in os.environ.items() if name.startswith('HANDOFF_')})+'\n')"
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1537136Z python3 -c "import json,os,pathlib; pathlib.Path(os.environ['RUNNER_TEMP'],'publish-probe-handoff.json').write_text(json.dumps({name[8:].lower().replace('_','-'):value for name,value in os.environ.items() if name.startswith('HANDOFF_')})+'\n')"
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1581746Z shell: /usr/bin/bash -e {0}
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1582020Z env:
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1582248Z   HANDOFF_PUBLISH: true
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1582498Z   HANDOFF_VERSION: 4.47.1
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1582764Z   HANDOFF_SHA: 75e1d4a3809b30684e67c7e9b2c8043720b49c53
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1583057Z   HANDOFF_LAST_TAG: v4.47.0
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1583293Z   HANDOFF_DRAFT_ID: 441591623
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1583536Z   HANDOFF_ARTIFACT_ID: 13850760915
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1583964Z   HANDOFF_ARTIFACT_DIGEST: sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1584399Z   HANDOFF_ARTIFACT_RUN: 43010609603
+draft	Preserve the authenticated original handoff	2026-11-11T11:17:33.1584648Z ##[endgroup]
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	﻿2026-11-11T11:17:33.1927207Z ##[group]Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1927677Z with:
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1927926Z   name: publish-probe-handoff
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1928233Z   path: /home/runner/work/_temp/publish-probe-handoff.json
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1928543Z   retention-days: 90
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1928770Z   if-no-files-found: error
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1928999Z   compression-level: 6
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1929222Z   overwrite: false
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1929458Z   include-hidden-files: false
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1929694Z   archive: true
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:33.1929902Z ##[endgroup]
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.3748332Z With the provided path, there will be 1 file uploaded
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.3752765Z Artifact name is valid!
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.3753382Z Root directory input is valid!
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.6828742Z Uploading artifact: publish-probe-handoff.zip
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.6858704Z Beginning upload of artifact content to blob storage
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.8391848Z Uploaded bytes 357
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.8574365Z Finished uploading artifact content to blob storage!
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.8575256Z SHA256 digest of uploaded artifact is e4cf12a3305d79314abb328d8b98ca338c96e6de191e04dec20757fe522c2de2
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:35.8575824Z Finalizing artifact upload
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:36.2283310Z Artifact publish-probe-handoff successfully finalized. Artifact ID 13849519585
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:36.2284127Z Artifact publish-probe-handoff has been successfully uploaded! Final size is 357 bytes. Artifact ID is 13849519585
+draft	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T11:17:36.2286799Z Artifact download URL: https://github.com/Hexalith/Hexalith.Builds/actions/runs/43010609603/artifacts/13849519585
+draft	Complete job	﻿2026-11-11T11:17:36.2448314Z Cleaning up orphan processes

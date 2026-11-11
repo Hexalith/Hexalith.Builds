@@ -1,0 +1,17 @@
+{
+  "producer-effects.txt": {
+    "downloadedLogSha256": "f80c6ee6a89675f41046dff141532b2f74e1a38dbc3b8129be8d03eba65142ab",
+    "retainedLogSha256": "0ec5741c25e1e2c7995667a23ccec790decb0d28678697d439dd20f5f73a1a48",
+    "sanitization": "Remove terminal ANSI sequences and trailing whitespace. Preserve every log line and GitHub-masked credential placeholders."
+  },
+  "first-publisher-effects.txt": {
+    "downloadedLogSha256": "abaa091731ec5acd372b32939a79ce8c6e07998bd6f05049cc2bac509b04438d",
+    "retainedLogSha256": "85bfaaea2e707a3a9350c3333747419fb73be3657849b1c3b7ca2b6cedfee655",
+    "sanitization": "Remove terminal ANSI sequences and trailing whitespace. Preserve every log line and GitHub-masked credential placeholders."
+  },
+  "retry-publisher-effects.txt": {
+    "downloadedLogSha256": "07a23bba6efb116b94a5710901bbe72658d66ef9c56ce0ad910f9fe7f522f772",
+    "retainedLogSha256": "8c70fc2bd39b46a9b783ff3a3e8688944c6e9dd803bcdce9c822b4b85f7b6822",
+    "sanitization": "Remove terminal ANSI sequences and trailing whitespace. Preserve every log line and GitHub-masked credential placeholders."
+  }
+}
