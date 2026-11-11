@@ -406,6 +406,18 @@ to the future publisher; the
 reusable reporter then writes and uploads nothing. The publisher remains the
 sole writer for published, ready and publishing-failure outcomes.
 
+`Github/publish` now consumes that eight-field handoff in the caller-owned
+`hexalith-release` job. Its permission union is `contents: write`, `actions:
+read`, `id-token: write`; its only additional inputs are the NuGet user and
+scoped registry push pair. It authenticates original files, preflights the Git
+tag and every image before package writes, exchanges OIDC through pinned
+NuGet/login, pushes original packages and complete OCI graphs, then creates
+the GitHub tag last or reports `ready` when fresh workflow trees differ.
+Its always-run finalizer owns the single outcome even when login or push fails.
+See the [publisher interface](../../Github/publish/README.md) for retry, credential
+and downstream caller/recovery boundaries. Production callers still use the
+legacy release until their separate rewrite.
+
 Create mode computes a version, produces an audited original artifact and
 creates a marked draft. `release-rules` defaults to `module`; only the actual
 Builds repository with no sample `module-root` may select `builds`. Version

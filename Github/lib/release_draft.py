@@ -234,7 +234,7 @@ def package_identity(data, *, package_id, version, sha):
         raise ReleaseError("invalid package metadata") from error
 
 
-def artifact_inventory(payload, *, sha, version, digest, repository):
+def artifact_inventory(payload, *, sha, version, digest, repository, files=None):
     """Read bounded ZIP members in memory; inventory never supplies executable code."""
     if len(payload) > MAX_ARCHIVE or "sha256:" + hashlib.sha256(payload).hexdigest() != digest:
         raise ReleaseError("downloaded artifact digest mismatch")
@@ -265,7 +265,7 @@ def artifact_inventory(payload, *, sha, version, digest, repository):
             if (not isinstance(manifest, dict) or set(manifest) != {"sha", "version", "packages", "containers"}
                     or manifest["sha"] != sha or manifest["version"] != version):
                 raise ReleaseError("release manifest source/version mismatch")
-            expected, result = {"release-manifest.json"}, {}
+            expected, result, validated = {"release-manifest.json"}, {}, {}
             for kind, key, expression, suffix in (("packages", "id", PACKAGE_ID, ".nupkg"),
                                                   ("containers", "name", CONTAINER_NAME, ".tar")):
                 values = manifest[kind]
@@ -283,6 +283,7 @@ def artifact_inventory(payload, *, sha, version, digest, repository):
                     expected.add(item["path"])
                     identities.append(item[key])
                     data = archive.read(members[item["path"]])
+                    validated[item["path"]] = data
                     if kind == "packages":
                         package_identity(data, package_id=item[key], version=version, sha=sha)
                     else:
@@ -295,6 +296,9 @@ def artifact_inventory(payload, *, sha, version, digest, repository):
                 result[kind] = sorted(identities)
             if set(members) != expected:
                 raise ReleaseError("release inventory and artifact payload disagree")
+            # Expose original bytes only after the entire archive has passed.
+            if files is not None:
+                files.update(validated)
             return result
     except (zipfile.BadZipFile, OSError, RuntimeError) as error:
         raise ReleaseError("invalid release artifact archive") from error
@@ -336,7 +340,7 @@ def validate_draft(git, draft, *, sha, version, body):
     return selected
 
 
-def refresh_workflows(git, repository, sha):
+def workflows_match(git, repository, sha):
     """Fetch fresh main immediately before writing and compare the complete tree."""
     git.run("fetch", "--no-recurse-submodules", "--no-write-fetch-head",
             "https://github.com/" + repository + ".git", "+refs/heads/main:refs/heads/main")
@@ -344,7 +348,11 @@ def refresh_workflows(git, repository, sha):
         raise ReleaseError("release source is no longer an ancestor of main")
     original = git.run("ls-tree", "-z", sha, "--", ".github/workflows").stdout
     current = git.run("ls-tree", "-z", "refs/heads/main", "--", ".github/workflows").stdout
-    if original != current:
+    return original == current
+
+
+def refresh_workflows(git, repository, sha):
+    if not workflows_match(git, repository, sha):
         raise ReleaseError("workflows changed on main during the release, nothing released")
 
 

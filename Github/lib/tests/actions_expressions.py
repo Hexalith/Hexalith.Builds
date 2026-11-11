@@ -231,16 +231,28 @@ def run_composite(action, inputs, environment, *, cwd, runner_temp, external=Non
         raise AssertionError(f"undeclared composite inputs: {sorted(unknown)}")
     values = {name: str(entry.get("default", "")) for name, entry in declared.items()}
     values.update(inputs)
-    context = {"inputs": values, "runner": {"temp": str(runner_temp)}, "steps": {}}
-    evaluator = Evaluator(context)
+    context = {"inputs": values, "runner": {"temp": str(runner_temp)}, "steps": {},
+               "github": {"token": environment.get("GITHUB_TOKEN", "")}}
+    status = {"success": True, "failure": False}
+    evaluator = Evaluator(context, status=status)
     processes = []
     for step in document["runs"]["steps"]:
         if "if" in step and not evaluator.condition(step["if"]):
+            if "id" in step:
+                context["steps"][step["id"]] = {"outputs": {}, "outcome": "skipped"}
+            continue
+        if "if" not in step and not status["success"]:
+            if "id" in step:
+                context["steps"][step["id"]] = {"outputs": {}, "outcome": "skipped"}
             continue
         outputs = {}
+        failed = False
         if "uses" in step:
             arguments = {name: evaluator.template(value) for name, value in step.get("with", {}).items()}
-            outputs = external(step["uses"], arguments) if external else {}
+            try:
+                outputs = external(step["uses"], arguments) if external else {}
+            except subprocess.CalledProcessError:
+                failed = True
         else:
             env = dict(environment, GITHUB_ACTION_PATH=str(action))
             env.update({name: evaluator.template(value) for name, value in step.get("env", {}).items()})
@@ -248,11 +260,13 @@ def run_composite(action, inputs, environment, *, cwd, runner_temp, external=Non
             result = subprocess.run(["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", step["run"]],
                                     cwd=cwd, env=env, text=True, capture_output=True, check=False)
             processes.append(result)
-            if result.returncode:
-                return None, processes
+            failed = bool(result.returncode)
             if output_file and Path(output_file).exists():
                 outputs = parse_outputs(Path(output_file).read_text(encoding="utf-8")[before:])
         if "id" in step:
-            context["steps"][step["id"]] = {"outputs": outputs}
-    return ({name: evaluator.template(entry["value"]) for name, entry in document.get("outputs", {}).items()},
+            context["steps"][step["id"]] = {"outputs": outputs, "outcome": "failure" if failed else "success"}
+        if failed:
+            status.update(success=False, failure=True)
+    return (None if status["failure"] else
+            {name: evaluator.template(entry["value"]) for name, entry in document.get("outputs", {}).items()},
             processes)
