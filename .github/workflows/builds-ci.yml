@@ -98,6 +98,11 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Install .NET 10 targeting packs for offline catalog fixtures
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '10.0.404'
+
       - name: Validate central package versions
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1
@@ -171,6 +176,11 @@ jobs:
         uses: ./Github/initialize-dotnet
         with:
           global-json-file: global.json
+
+      - name: Install .NET 10 targeting packs for offline package fixtures
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '10.0.404'
 
       - name: Test domain workflow test-platform contracts
         shell: pwsh
