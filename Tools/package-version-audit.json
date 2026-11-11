@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "4e0cda04889c8129ca7a58c299fe618415a8b828",
+  "generatedFromRevision": "377773c9c3c9356f708f1f06b373ca3886623f94",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "21d5aa94c50805c6df431008562903266b667f45335ed240f2ac77db8fd37742",
-  "catalogRawSha256": "c02f7967e0689d4bc6b72340f356008384e5f47398ae042c3f1770764ac26ac8",
+  "catalogSha256": "24a8de9413dddf283a3a01dead0c21ca79e71188e1a72bbe11a5cbfbdff9f530",
+  "catalogRawSha256": "5132476a8b8c9ac95eac1011fc5862211b9bc6afd8ee018f0b164bfb900dd52b",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-11T22:11:08.2983872+00:00",
+    "auditedAtUtc": "2026-11-11T22:44:36.5801670+00:00",
     "refreshedFamilies": [
       "dotnet-10"
     ],
@@ -183,7 +183,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "4e0cda04889c8129ca7a58c299fe618415a8b828",
+    "repositoryRevision": "377773c9c3c9356f708f1f06b373ca3886623f94",
     "sha256": "2280be99c685c27bf52daf88e5e220dd3d43a893bb64c5a45b17a3ef9fc95f37",
     "entries": [
       {
@@ -3409,8 +3409,8 @@
         "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-11T22:11:08.2983872+00:00",
-        "generatedFromRevision": "4e0cda04889c8129ca7a58c299fe618415a8b828",
+        "auditedAtUtc": "2026-11-11T22:44:36.5801670+00:00",
+        "generatedFromRevision": "377773c9c3c9356f708f1f06b373ca3886623f94",
         "familySelectionSha256": "58a3aa1918488993ed6f7f6a0a3de57e90f84295f7d4eadc65b67fc6c1882a6a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "48cd38ea7d7f9128fe9c491ac07140f6246188e79ecdf8d3d594837dfb3659cf",
