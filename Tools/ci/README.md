@@ -419,7 +419,7 @@ NuGet/login, pushes original packages and complete OCI graphs, then creates
 the GitHub tag last or reports `ready` when fresh workflow trees differ.
 Its always-run finalizer owns the single outcome even when login or push fails.
 See the [publisher interface](../../Github/publish/README.md) for retry, credential
-and downstream caller/recovery boundaries. Production callers still use the
+and downstream caller boundaries. Production callers still use the
 legacy release until their separate rewrite.
 
 Create mode computes a version, produces an audited original artifact and
@@ -477,9 +477,34 @@ inject reserved lines. The reusable workflow exposes validated `publish`,
 `version`, `sha`, `last-tag`, `draft-id`, `artifact-id`, `artifact-digest` and
 `artifact-run`; only a successful identity-matching handoff with successful
 required jobs authorizes `publish=true`. Draft creation does not report
-`published` or `ready` and creates no Git ref. Complete mode skips version/build
-and remains fail-closed with `release publication stages are not installed`;
-artifact selection/recovery/deletion and caller integration remain downstream work.
+`published` or `ready` and creates no Git ref.
+
+Complete mode skips version/build and authenticates the selected draft's saved
+producer workflow path, manual dispatch on main, source and exact original
+artifact ID/digest. The caller receives the saved run identity even after a
+later dispatch or Builds bump. Recovery reads the source through bare Git,
+never executes it, and never reloads its historical configuration, CI or audit.
+Current-dispatch CodeQL and nightly hooks keep their existing contract.
+
+When the original producer is missing or mismatched, or its artifact is
+verifiably absent or expired, recovery checks every persisted destination.
+NuGet service-index discovery and exact-version content HEAD include unlisted
+packages; registry HEAD accepts OCI and Docker manifest/index media types.
+Only authoritative 404 establishes absence. Credentials are endpoint-bound:
+NuGet receives none, recovery receives only the existing named pull-only pair,
+and missing credentials, redirects or uncertain reads retain the draft.
+Digest/identity disagreement, corrupt bytes and service failures never authorize
+stale deletion. Explicit empty inventories make no destination requests.
+
+Only after every destination is absent does recovery revalidate the unchanged
+bot draft and DELETE that release ID, requiring HTTP 204. It emits internal
+`stale-draft-deleted` and `publish=false`; the reusable reporter uploads the
+single `nothing` outcome. No tag, replacement draft or build is created. Any
+existing or uncertain destination fails with
+`draft vX.Y.Z cannot be completed: its build artifact is gone`. A successful
+original-artifact handoff instead transfers outcome ownership to the publisher;
+the reusable reporter uploads nothing. Failed/cancelled gates and unexpected
+recovery skips remain failures. Caller integration remains downstream work.
 
 Production callers remain on their existing workflows. `delivered-sha` is the
 integration slot for story 5-1;
@@ -528,3 +553,9 @@ both tag forms and conflict refusal through the actual composite, cover every
 failure/finalizer boundary, and ensure package status logs never expose raw
 tool output or keys. Retained full source, run/artifact/release/tag identities
 and public package observations distinguish hosted effects from local controls.
+
+
+[Story 3-5 verification results](../../docs/cicd-3-5-release-complete-mode-results.md)
+record original-artifact recovery, conservative absence/deletion controls and
+actual reusable workflow handoff separately from hosted publication evidence.
+The probe has no publisher job and preserves the retained 3-4 draft/resources.

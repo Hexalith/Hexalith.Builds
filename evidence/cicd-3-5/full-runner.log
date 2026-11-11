@@ -1,0 +1,75 @@
+Python suite: /tmp/.tmp9ZUhvG/environments-v2/run-python-tests-46c8ad21b249e504/bin/python (3.13.13), 20 groups
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-archive-g4-qualification-evidence.py in .
+Ran 12 tests in 0.028s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-g6-cli-paths.py in .
+Ran 4 tests in 0.006s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-domain-release.py in .
+Ran 10 tests in 0.718s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-g4-synthetic-acceptance.py in .
+Ran 7 tests in 0.049s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-disposition.py in .
+Ran 5 tests in 0.180s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-evidence-validator.py in .
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_g6_current.py in .
+Ran 8 tests in 68.777s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_package_readme.py in .
+Ran 8 tests in 125.549s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_runtime_toolchain_v2.py in .
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_works_package_versions.py in .
+Ran 1 test in 2.359s
+OK
+Running -v in Github/commitlint/tests
+Ran 3 tests in 1.535s
+OK
+Running -v in Github/create-release/tests
+Ran 8 tests in 1.069s
+OK
+Running -v in Github/governed-provenance/tests
+Ran 90 tests in 0.795s
+OK
+Running -v in Github/lib/tests
+Running tests from /tmp/ci-real-sdk-xe43i0ek/test dir/A.Tests/bin/Release/net10.0/A.Tests.dll (net10.0|x64)
+Running tests from /tmp/ci-real-sdk-xe43i0ek/test dir/A.Tests/bin/Release/net10.0/A.Tests.dll (net10.0|x64)
+Ran 289 tests in 256.928s
+OK
+Running -v in Github/prepare-module-build/tests
+Ran 12 tests in 1.743s
+OK
+Running -v in Github/publish-containers/tests
+Ran 135 tests in 12.432s
+OK
+Running -v in Github/run-module-integration/tests
+Ran 75 tests in 32.890s
+OK
+Running -v in Github/split-publication/tests
+Ran 17 tests in 0.060s
+OK
+Running -v in test/qualification
+Ran 7 tests in 0.002s
+OK
+Running -v in Tools/ci/tests
+Ran 1 test in 0.000s
+OK
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+FAIL: test_behavior (test_failure.ExecutedTest.test_behavior)
+Ran 1 test in 0.000s
+FAILED (failures=1)
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+Ran 1 test in 0.000s
+OK
+Ran 1 test in 0.000s
+OK
+Ran 1 test in 0.000s
+OK
+Ran 46 tests in 9.142s
+OK
+Python suite: 20/20 groups passed

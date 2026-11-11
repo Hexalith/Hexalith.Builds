@@ -21,7 +21,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from oci_archive import inspect_archive
 from oci_publish import Registry, publish as publish_oci
 from release_draft import (DIGEST, MARKERS, MAX_JSON, RESERVED, DraftApi, artifact_inventory,
-                           artifact_metadata, bounded, limited_read, release_body, strict_json, workflows_match)
+                           artifact_metadata, bounded, limited_read, release_body, release_trailers,
+                           strict_json, workflows_match)
 from release_outcome import outcome_document, validate_outcome, write_document
 from release_state import Git, ReleaseError, SHA, STABLE, outputs
 
@@ -88,6 +89,7 @@ def validate_release(document, values, *, draft, body=None):
             or document.get("target_commitish") != values["sha"] or not isinstance(document.get("body"), str)):
         raise ReleaseError("live release identity/state mismatch")
     actual = document["body"]
+    release_trailers(actual)
     if len(RESERVED.findall(actual)) != len(MARKERS):
         raise ReleaseError("draft release trailer identity mismatch")
     expected = release_body("", sha=values["sha"], run_id=positive(values["artifact-run"]),
@@ -132,16 +134,31 @@ def version_tag(api, values, *, required=False):
     raise ReleaseError(message)
 
 
-def producer(api, values, workflow_ref):
-    prefix = api.repository + "/"
+def caller_workflow_path(repository, workflow_ref):
+    """Authenticate the current caller's main-branch workflow identity."""
+    prefix = repository + "/"
     if (not workflow_ref.startswith(prefix) or not workflow_ref.endswith("@refs/heads/main")
             or not re.fullmatch(r"\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml", workflow_ref[len(prefix):].split("@")[0])):
         raise ReleaseError("publisher must be dispatched from a caller workflow on main")
-    path = workflow_ref[len(prefix):].split("@")[0]
+    return workflow_ref[len(prefix):].split("@")[0]
+
+
+def producer_identity(run, values, path):
+    """Separate a well-formed identity mismatch from malformed service data."""
+    if (not isinstance(run, dict) or type(run.get("id")) is not int or run["id"] < 1
+            or any(not isinstance(run.get(key), str) or not run[key]
+                   for key in ("path", "event", "head_branch", "head_sha"))
+            or SHA.fullmatch(run["head_sha"]) is None):
+        raise ReleaseError("original producer run metadata is malformed")
+    return (run["id"] == positive(values["artifact-run"]) and run["path"] == path
+            and run["event"] == "workflow_dispatch" and run["head_branch"] == "main"
+            and run["head_sha"] == values["sha"])
+
+
+def producer(api, values, workflow_ref):
+    path = caller_workflow_path(api.repository, workflow_ref)
     run = api.get(f"/repos/{api.repository}/actions/runs/{values['artifact-run']}", deadline=api.clock() + 120)
-    if (not isinstance(run, dict) or type(run.get("id")) is not int or run["id"] != positive(values["artifact-run"])
-            or run.get("path") != path or run.get("event") != "workflow_dispatch"
-            or run.get("head_branch") != "main" or run.get("head_sha") != values["sha"]):
+    if not producer_identity(run, values, path):
         raise ReleaseError("original producer run/caller workflow/source identity mismatch")
 
 

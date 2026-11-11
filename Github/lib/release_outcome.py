@@ -114,10 +114,6 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
         intentional_skips.update(("version", "build", "draft"))
     if mode == "complete":
         intentional_skips.update(("version", "build"))
-        if publish == "false" and not noop_reason:
-            # Recovery has not landed: no historical build or draft mutation
-            # runs, and the final incomplete-stage diagnostic remains red.
-            intentional_skips.add("draft")
     if noop_reason == "no-version":
         intentional_skips.update(("build", "draft"))
     for name, job in needs.items():
@@ -162,9 +158,18 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
         owner = "version" if noop_reason == "no-version" else "draft"
         if needs.get(owner, {}).get("result") != "success":
             return failed(f"release no-op requires successful {owner}")
+        if noop_reason == "stale-draft-deleted":
+            draft_outputs = needs["draft"].get("outputs", {})
+            if (mode != "complete" or not version or not isinstance(draft_outputs, dict)
+                    or draft_outputs.get("noop-reason") != noop_reason
+                    or draft_outputs.get("publish") != "false"
+                    or draft_outputs.get("sha") != sha or draft_outputs.get("version") != version):
+                return failed("release stale no-op lacks matching complete-mode draft evidence")
+        elif mode != "create":
+            return failed("release no-version no-op requires create mode")
         document["outcome"] = "nothing"
     else:
-        return failed("release publication stages are not installed")
+        return failed("release publication did not produce a handoff or validated no-op")
     return {"document": validate_outcome(document), "upload": "true", "publish": "false", "error": ""}
 
 

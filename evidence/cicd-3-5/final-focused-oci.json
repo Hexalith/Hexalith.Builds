@@ -1,0 +1,26 @@
+{
+  "summary": "final-focused-oci.log",
+  "summary_sha256": "8608d1345aa65cfe65afd7ebf946b0278354b1b73b4a96d4717b617417451523",
+  "tested_source": {
+    "head": "e35dd39872baf071aec6a7be1b252b16f460e08c",
+    "manifest": "tested-source-2f83ea55d5ecaec554d3c57b23c5e6f219885ef506dbbca3147bbf0406129d58.json",
+    "sha256": "2f83ea55d5ecaec554d3c57b23c5e6f219885ef506dbbca3147bbf0406129d58"
+  },
+  "source_unchanged_during_check": true,
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "Github/lib/tests",
+    "-p",
+    "test_oci_publish.py",
+    "-v"
+  ],
+  "started_at": "2026-11-11T13:54:33.954042+00:00",
+  "finished_at": "2026-11-11T13:54:35.134842+00:00",
+  "returncode": 0,
+  "raw_log": "/tmp/cicd-3-5-final-focused-oci.raw.log",
+  "raw_sha256": "3dbfb79c67562d87509d37734522833adce9027a052a76d4700e91cb042816ce"
+}

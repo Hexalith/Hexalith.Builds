@@ -1,6 +1,15 @@
-name: Create validated release draft
-description: Independently authenticate original artifact data and create or reuse its marked draft using trusted stdlib only.
+name: Validate release draft
+description: Authenticate original release data and create or complete its marked draft using trusted stdlib only.
 inputs:
+  mode:
+    description: Validated create or complete mode from resolve.
+    default: create
+  draft-id:
+    description: Selected marked draft identity in complete mode.
+    default: ''
+  last-tag:
+    description: Captured stable base tag, or empty.
+    default: ''
   sha:
     description: Frozen full source SHA from resolve.
     required: true
@@ -9,14 +18,17 @@ inputs:
     required: true
   notes:
     description: Release notes as data; reserved release trailers are forbidden.
-    required: true
+    default: ''
   artifact-id:
-    description: This run's uploaded release artifact identity.
-    required: true
+    description: This run's uploaded release artifact identity in create mode.
+    default: ''
   artifact-digest:
-    description: Original uploaded artifact SHA-256 digest with sha256 prefix.
-    required: true
+    description: Original uploaded artifact SHA-256 digest with sha256 prefix in create mode.
+    default: ''
 outputs:
+  noop-reason:
+    description: stale-draft-deleted only after confirmed complete-mode deletion, otherwise empty.
+    value: ${{ steps.draft.outputs.noop-reason }}
   publish:
     description: True only after all independent draft checks pass.
     value: ${{ steps.draft.outputs.publish }}
@@ -44,13 +56,21 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Authenticate artifact and create marked draft
+    - name: Authenticate original release and process marked draft
       id: draft
       shell: bash
       env:
+        RELEASE_MODE: ${{ inputs.mode }}
+        RELEASE_DRAFT_ID: ${{ inputs.draft-id }}
+        RELEASE_LAST_TAG: ${{ inputs.last-tag }}
         RELEASE_SHA: ${{ inputs.sha }}
         RELEASE_VERSION: ${{ inputs.version }}
         RELEASE_NOTES: ${{ inputs.notes }}
         RELEASE_ARTIFACT_ID: ${{ inputs.artifact-id }}
         RELEASE_ARTIFACT_DIGEST: ${{ inputs.artifact-digest }}
-      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_draft.py"
+      run: |
+        case "$RELEASE_MODE" in
+          create) python3 -I "$GITHUB_ACTION_PATH/../lib/release_draft.py" ;;
+          complete) python3 -I "$GITHUB_ACTION_PATH/../lib/release_complete.py" ;;
+          *) echo 'release mode must be exactly create or complete' >&2; exit 1 ;;
+        esac

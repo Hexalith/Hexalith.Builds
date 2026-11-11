@@ -1,0 +1,20 @@
+{
+  "summary": "focused-release.log",
+  "summary_sha256": "fc50838e0d0c270174cd0dfb504bcc05a096a799c2c1afe42f2219b3aff8c0c0",
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "Github/lib/tests",
+    "-p",
+    "test_release_*.py",
+    "-v"
+  ],
+  "started_at": "2026-11-11T13:29:09.287060+00:00",
+  "finished_at": "2026-11-11T13:31:19.285105+00:00",
+  "returncode": 0,
+  "raw_sha256": "f2c38e2175810c9c88fcb683736d9fc58066c34db95d2984fae0463c60b0ee86",
+  "raw_log": "/tmp/cicd-3-5-focused-release.raw.log"
+}

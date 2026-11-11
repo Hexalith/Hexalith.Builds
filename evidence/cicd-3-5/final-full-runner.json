@@ -1,0 +1,25 @@
+{
+  "summary": "final-full-runner.log",
+  "summary_sha256": "81266c65b87ef80d03369ef84107ec815e2b21098733563c1404f62bd5974a23",
+  "tested_source": {
+    "head": "e35dd39872baf071aec6a7be1b252b16f460e08c",
+    "manifest": "tested-source-2f83ea55d5ecaec554d3c57b23c5e6f219885ef506dbbca3147bbf0406129d58.json",
+    "sha256": "2f83ea55d5ecaec554d3c57b23c5e6f219885ef506dbbca3147bbf0406129d58"
+  },
+  "source_unchanged_during_check": true,
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "python3",
+    "Tools/ci/run_python_tests.py"
+  ],
+  "started_at": "2026-11-11T13:54:21.309254+00:00",
+  "finished_at": "2026-11-11T14:04:58.552228+00:00",
+  "returncode": 0,
+  "raw_log": "/tmp/cicd-3-5-final-full-runner.raw.log",
+  "raw_sha256": "7573c197dd7d3cebce08ffeb48b767640abb12162e3726019b00b9bdccd79b58"
+}

@@ -21,7 +21,7 @@ on:
         default: ''
     secrets:
       registry-pull-username:
-        description: Dedicated pull-only registry identity, required only with registry enabled.
+        description: Dedicated pull-only registry identity for enabled setup or complete-mode image existence checks.
         required: false
       registry-pull-password:
         description: Password for the dedicated pull-only registry identity.
@@ -204,21 +204,26 @@ jobs:
           module-root: ${{ inputs.module-root }}
 
   draft:
-    name: Validate artifact and create marked draft
+    name: Authenticate original artifact and process marked draft
     needs: [resolve, codeql, nightly-hook, version, build]
     if: >-
       ${{ !cancelled() && needs.resolve.result == 'success' &&
-          needs.resolve.outputs.enabled == 'true' && needs.resolve.outputs.mode == 'create' &&
-          (needs.codeql.result == 'success' || needs.codeql.result == 'skipped') &&
-          (needs.nightly-hook.result == 'success' || needs.nightly-hook.result == 'skipped') &&
-          needs.version.result == 'success' && needs.version.outputs.no-version == 'false' &&
-          needs.build.result == 'success' }}
+          needs.resolve.outputs.enabled == 'true' &&
+          (needs.codeql.result == 'success' ||
+           (needs.codeql.result == 'skipped' && needs.resolve.outputs.codeql == '[]')) &&
+          (needs.nightly-hook.result == 'success' ||
+           (needs.nightly-hook.result == 'skipped' && needs.resolve.outputs.nightly-hook == 'false')) &&
+          ((needs.resolve.outputs.mode == 'complete' && needs.version.result == 'skipped' &&
+            needs.build.result == 'skipped') ||
+           (needs.resolve.outputs.mode == 'create' && needs.version.result == 'success' &&
+            needs.version.outputs.no-version == 'false' && needs.build.result == 'success')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write
       actions: read
     outputs:
+      noop-reason: ${{ steps.draft.outputs.noop-reason }}
       publish: ${{ steps.draft.outputs.publish }}
       version: ${{ steps.draft.outputs.version }}
       sha: ${{ steps.draft.outputs.sha }}
@@ -228,17 +233,23 @@ jobs:
       artifact-digest: ${{ steps.draft.outputs.artifact-digest }}
       artifact-run: ${{ steps.draft.outputs.artifact-run }}
     steps:
-      - name: Authenticate the release handoff and write the draft
+      - name: Authenticate and create or complete the release draft
         id: draft
         uses: $/Github/release-draft
         with:
+          mode: ${{ needs.resolve.outputs.mode }}
+          draft-id: ${{ needs.resolve.outputs.draft-id }}
+          last-tag: ${{ needs.resolve.outputs.last-tag }}
           sha: ${{ needs.resolve.outputs.sha }}
-          version: ${{ needs.version.outputs.version }}
+          version: ${{ needs.resolve.outputs.mode == 'complete' && needs.resolve.outputs.version || needs.version.outputs.version }}
           notes: ${{ needs.version.outputs.notes }}
           artifact-id: ${{ needs.build.outputs.artifact-id }}
           artifact-digest: ${{ needs.build.outputs.artifact-digest }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_WORKFLOW_REF: ${{ github.workflow_ref }}
+          REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}
+          REGISTRY_PULL_PASSWORD: ${{ secrets.registry-pull-password }}
 
   outcome:
     name: Report release outcome
@@ -264,7 +275,7 @@ jobs:
           RELEASE_NIGHTLY_HOOK: ${{ needs.resolve.outputs.nightly-hook }}
           RELEASE_NEEDS: ${{ toJSON(needs) }}
           RELEASE_PUBLISH: ${{ needs.draft.outputs.publish || 'false' }}
-          RELEASE_NOOP_REASON: ${{ needs.version.outputs.no-version == 'true' && 'no-version' || '' }}
+          RELEASE_NOOP_REASON: ${{ needs.draft.outputs.noop-reason || (needs.version.outputs.no-version == 'true' && 'no-version' || '') }}
           RELEASE_OUTPUT_DIRECTORY: ${{ runner.temp }}/hexalith-release-outcome
 
       - name: Upload the sole reusable outcome

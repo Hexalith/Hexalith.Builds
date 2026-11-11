@@ -1,0 +1,27 @@
+{
+  "summary": "final-public-api.log",
+  "summary_sha256": "2e3dd2a1afd891eb381b239d132e34f7372a9c5de8d1b0c6dd1881d1bf5d781e",
+  "tested_source": {
+    "head": "e35dd39872baf071aec6a7be1b252b16f460e08c",
+    "manifest": "tested-source-2f83ea55d5ecaec554d3c57b23c5e6f219885ef506dbbca3147bbf0406129d58.json",
+    "sha256": "2f83ea55d5ecaec554d3c57b23c5e6f219885ef506dbbca3147bbf0406129d58"
+  },
+  "source_unchanged_during_check": true,
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "3.12",
+    "Tools/ci/check_public_api.py",
+    "--ref",
+    "7c8325104f2826421adf69d35d07fbf6dd1bd03d"
+  ],
+  "started_at": "2026-11-11T13:58:33.223214+00:00",
+  "finished_at": "2026-11-11T13:58:33.919705+00:00",
+  "returncode": 0,
+  "raw_log": "/tmp/cicd-3-5-final-public-api.raw.log",
+  "raw_sha256": "39ce70d5353c51094461cbdc8c40a7cdbb0d799ee6cf7415f36d4342b5aa1dcd"
+}

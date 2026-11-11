@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-11-11T13:19:57.130745+00:00",
+  "artifact_id": 13850760915,
+  "producer_run": 43010609603,
+  "source_revision": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+  "digest": "sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30",
+  "archive_bytes": 83256215,
+  "validated_inventory": {
+    "packages": [
+      "Hexalith.Builds.PublishProbe.20261111"
+    ],
+    "containers": [
+      "cicd-publish-spike-3-1"
+    ]
+  },
+  "observation": "Read-only local download and original-byte/inventory validation; no graph dispatch, mutation or publication."
+}

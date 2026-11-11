@@ -47,6 +47,13 @@ def handoff(version="2.0.0"):
     return needs
 
 
+def stale_draft(version="2.0.0"):
+    needs = handoff(version)
+    needs["version"]["result"] = needs["build"]["result"] = "skipped"
+    needs["draft"]["outputs"].update(publish="false", **{"noop-reason": "stale-draft-deleted"})
+    return needs
+
+
 class OutcomeContractTests(unittest.TestCase):
     def test_json_schema_and_stdlib_agree_on_the_shared_corpus(self):
         Draft202012Validator.check_schema(SCHEMA)
@@ -158,21 +165,48 @@ class OutcomeReductionTests(unittest.TestCase):
         self.assertEqual("disabled", self.decide(codeql=sorted(ci_config.LANGUAGES))["document"]["outcome"])
 
     def test_enabled_gates_without_publication_stages_fail_explicitly(self):
-        self.assert_failed(self.decide(enabled="true"), "release publication stages are not installed")
+        self.assert_failed(self.decide(enabled="true"), "release publication did not produce a handoff or validated no-op")
 
     def test_only_explicit_successful_downstream_noops_are_nothing(self):
-        for reason, owner in (("no-version", "version"), ("stale-draft-deleted", "draft")):
-            with self.subTest(reason=reason):
-                self.assert_failed(self.decide(enabled="true", noop_reason=reason), "requires successful")
-                needs = prerequisites()
-                needs[owner] = {"result": "success"}
-                decision = self.decide(enabled="true", noop_reason=reason, needs=needs)
-                self.assertEqual("nothing", decision["document"]["outcome"])
-                self.assertEqual("", decision["error"])
-                self.assert_failed(self.decide(noop_reason=reason, needs=needs), "disabled release")
+        self.assert_failed(self.decide(enabled="true", noop_reason="no-version"), "requires successful")
         needs = prerequisites()
         needs.update(version={"result": "success"}, build={"result": "skipped"}, draft={"result": "skipped"})
-        self.assertEqual("nothing", self.decide(enabled="true", noop_reason="no-version", needs=needs)["document"]["outcome"])
+        decision = self.decide(enabled="true", noop_reason="no-version", needs=needs)
+        self.assertEqual("nothing", decision["document"]["outcome"])
+        self.assertEqual("", decision["error"])
+        self.assert_failed(self.decide(noop_reason="no-version", needs=needs), "disabled release")
+        self.assert_failed(self.decide(enabled="true", mode="complete", noop_reason="no-version", needs=needs),
+                           "requires create mode")
+
+    def test_stale_deletion_requires_the_matching_successful_complete_draft(self):
+        choices = dict(enabled="true", version="2.0.0", mode="complete",
+                       noop_reason="stale-draft-deleted", needs=stale_draft())
+        decision = self.decide(**choices)
+        self.assertEqual({"schema": "hexalith.release-outcome.v1", "sha": SELECTED_SHA,
+                          "outcome": "nothing", "version": "2.0.0"}, decision["document"])
+        self.assertEqual(("false", "true", ""), (decision["publish"], decision["upload"], decision["error"]))
+        for overrides in ({"mode": "create"}, {"version": ""}, {"enabled": "false"}, {"publish": "true"}):
+            with self.subTest(overrides=overrides):
+                self.assert_failed(self.decide(**(choices | overrides)))
+        for name, value in (("noop-reason", ""), ("noop-reason", "no-version"), ("publish", "true"),
+                            ("sha", DISPATCH_SHA), ("version", "2.0.1")):
+            changed = stale_draft()
+            changed["draft"]["outputs"][name] = value
+            with self.subTest(name=name, value=value):
+                self.assert_failed(self.decide(**(choices | {"needs": changed})), "matching complete-mode")
+        for result in ("skipped", "failure", "cancelled"):
+            changed = stale_draft()
+            changed["draft"]["result"] = result
+            self.assert_failed(self.decide(**(choices | {"needs": changed})))
+        for outputs in ({}, None):
+            changed = stale_draft()
+            changed["draft"]["outputs"] = outputs
+            self.assert_failed(self.decide(**(choices | {"needs": changed})))
+        for job in ("resolve", "codeql", "nightly-hook", "version", "build"):
+            for result in ("failure", "cancelled"):
+                changed = stale_draft()
+                changed[job]["result"] = result
+                self.assert_failed(self.decide(**(choices | {"needs": changed})), result)
 
     def test_only_validated_successful_drafts_can_transfer_outcome_ownership(self):
         needs = handoff()
@@ -230,11 +264,11 @@ class OutcomeReductionTests(unittest.TestCase):
                     changed[name]["result"] = result
                     self.assert_failed(self.decide(**(choices | {"needs": changed})), result)
 
-    def test_complete_mode_without_recovery_skips_build_and_fails_closed(self):
+    def test_unexpected_complete_draft_skip_fails_closed(self):
         needs = prerequisites(codeql="skipped", hook="skipped")
         needs.update(version={"result": "skipped"}, build={"result": "skipped"}, draft={"result": "skipped"})
         self.assert_failed(self.decide(enabled="true", codeql=[], nightly_hook="false", mode="complete", needs=needs),
-                           "release publication stages are not installed")
+                           "'draft' was unexpectedly skipped")
 
 
 class OutcomeAdapterTests(unittest.TestCase):
@@ -365,7 +399,8 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
         (self.root / "runner-temp").mkdir()
         self.workflow = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
 
-    def run_graph(self, *, resolve=None, stages=None, inputs=None, codeql="skipped", hook="skipped"):
+    def run_graph(self, *, resolve=None, stages=None, inputs=None, codeql="skipped", hook="skipped",
+                  cancelled=False):
         stages = stages or {}
         trigger = self.workflow.get("on", self.workflow.get(True))["workflow_call"]
         values = {name: str(entry.get("default", "")) for name, entry in trigger["inputs"].items()}
@@ -375,18 +410,23 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
                      "nightly-hook": "false", "config-valid": "true", **(resolve or {})}},
                  "codeql": {"result": codeql, "outputs": {}},
                  "nightly-hook": {"result": hook, "outputs": {}}}
-        base = {"inputs": values, "github": {"sha": DISPATCH_SHA, "token": "token-marker"},
+        workflow_ref = "Hexalith/Hexalith.Builds/.github/workflows/release-probe.yml@refs/heads/main"
+        base = {"inputs": values, "github": {"sha": DISPATCH_SHA, "token": "token-marker",
+                                            "workflow_ref": workflow_ref},
+                "secrets": {"registry-pull-username": "pull-reader", "registry-pull-password": "pull-secret"},
                 "runner": {"temp": str(self.root / "runner-temp")}}
-        executed = {}
+        executed, stage_environment = {}, {}
         for name in ("version", "build", "draft"):
             job = self.workflow["jobs"][name]
             evaluator = Evaluator(dict(base, needs={key: needs[key] for key in job["needs"]}),
-                                  status={"success": all(needs[key]["result"] == "success" for key in job["needs"])})
+                                  status={"success": all(needs[key]["result"] == "success" for key in job["needs"]),
+                                          "cancelled": cancelled})
             if not evaluator.condition(job["if"]):
                 needs[name] = {"result": "skipped", "outputs": {}}
                 continue
             step, = job["steps"]
             executed[name] = {key: evaluator.template(value) for key, value in step.get("with", {}).items()}
+            stage_environment[name] = {key: evaluator.template(value) for key, value in step.get("env", {}).items()}
             if name not in stages:
                 self.fail(f"{name} must not run in this scenario")
             result, step_outputs = stages[name](executed[name])
@@ -412,7 +452,8 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
                                        for key, value in job["outputs"].items()}}
         published = {key: Evaluator({"jobs": jobs}).template(entry["value"])
                      for key, entry in trigger["outputs"].items()}
-        return {"executed": executed, "environment": environment, "process": processes[-1],
+        return {"executed": executed, "stage_environment": stage_environment, "needs": needs,
+                "environment": environment, "process": processes[-1],
                 "recorded": recorded, "uploaded": uploaded, "outputs": published}
 
     def document(self):
@@ -440,7 +481,8 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
             self.assertEqual({"sha": SELECTED_SHA, "version": "2.0.0", "module-root": ""}, values)
             return "success", {"artifact-id": "123", "artifact-digest": digest}
         def draft(values):
-            self.assertEqual({"sha": SELECTED_SHA, "version": "2.0.0", "notes": notes, "artifact-id": "123",
+            self.assertEqual({"mode": "create", "draft-id": "", "last-tag": "", "sha": SELECTED_SHA,
+                              "version": "2.0.0", "notes": notes, "artifact-id": "123",
                               "artifact-digest": digest}, values)
             return "success", draft_outputs
         graph = self.run_graph(stages={"version": lambda values: (
@@ -469,19 +511,93 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
         self.assertEqual("false", graph["outputs"]["publish"])
         self.assertTrue(graph["uploaded"])
 
-    def test_disabled_complete_mode_and_gate_failures_skip_every_create_stage(self):
-        cases = (({"enabled": "false"}, "skipped", 0, "disabled", ""),
-                 ({"mode": "complete", "version": "2.0.0"}, "skipped", 1, "failed",
-                  "release publication stages are not installed"),
-                 ({"codeql": '["csharp"]'}, "failure", 1, "failed", "codeql"))
-        for resolve, codeql, code, outcome, diagnostic in cases:
-            with self.subTest(resolve=resolve, codeql=codeql):
-                graph = self.run_graph(resolve=resolve, codeql=codeql)
+    def test_complete_handoff_uses_saved_identity_and_skips_version_and_build(self):
+        expected = handoff()["draft"]["outputs"]
+        def draft(values):
+            self.assertEqual({"mode": "complete", "draft-id": "456", "last-tag": "v1.9.0", "sha": SELECTED_SHA,
+                              "version": "2.0.0", "notes": "", "artifact-id": "", "artifact-digest": ""}, values)
+            return "success", expected
+        graph = self.run_graph(resolve={"mode": "complete", "version": "2.0.0", "draft-id": "456",
+                                        "last-tag": "v1.9.0", "codeql": '["csharp"]', "nightly-hook": "true"},
+                               codeql="success", hook="success", stages={"draft": draft})
+        self.assertEqual({"draft"}, set(graph["executed"]))
+        self.assertEqual(("skipped", "skipped"), tuple(graph["needs"][name]["result"] for name in ("version", "build")))
+        self.assertEqual({"GITHUB_TOKEN": "token-marker", "GITHUB_WORKFLOW_REF":
+                          "Hexalith/Hexalith.Builds/.github/workflows/release-probe.yml@refs/heads/main",
+                          "REGISTRY_PULL_USERNAME": "pull-reader", "REGISTRY_PULL_PASSWORD": "pull-secret"},
+                         graph["stage_environment"]["draft"])
+        self.assertEqual(0, graph["process"].returncode, graph["process"].stderr)
+        self.assertEqual("true", graph["outputs"]["publish"])
+        for name in expected:
+            self.assertEqual(expected[name], graph["outputs"][name])
+        self.assertEqual("complete", graph["outputs"]["mode"])
+        self.assertFalse(graph["uploaded"])
+        self.assertFalse((self.root / "runner-temp/hexalith-release-outcome").exists())
+
+    def test_complete_stale_deletion_reports_one_nothing_outcome(self):
+        graph = self.run_graph(resolve={"mode": "complete", "version": "2.0.0", "draft-id": "456",
+                                        "last-tag": "v1.9.0"},
+                               stages={"draft": lambda _values: ("success", stale_draft()["draft"]["outputs"])})
+        self.assertEqual({"draft"}, set(graph["executed"]))
+        self.assertEqual("stale-draft-deleted", graph["environment"]["RELEASE_NOOP_REASON"])
+        self.assertEqual(0, graph["process"].returncode, graph["process"].stderr)
+        self.assertEqual({"schema": "hexalith.release-outcome.v1", "sha": SELECTED_SHA,
+                          "outcome": "nothing", "version": "2.0.0"}, self.document())
+        self.assertEqual("false", graph["outputs"]["publish"])
+        self.assertTrue(graph["uploaded"])
+        self.assertEqual([self.root / "runner-temp/hexalith-release-outcome/outcome.json"],
+                         list((self.root / "runner-temp/hexalith-release-outcome").iterdir()))
+
+    def test_enabled_skipped_security_gate_blocks_draft_before_any_mutation(self):
+        for gate, codeql, hook in (("codeql", "skipped", "success"), ("nightly-hook", "success", "skipped")):
+            mutations = []
+            def stale(_values):
+                mutations.append("DELETE")
+                return "success", stale_draft()["draft"]["outputs"]
+            with self.subTest(gate=gate):
+                graph = self.run_graph(resolve={"mode": "complete", "version": "2.0.0", "draft-id": "456",
+                    "last-tag": "v1.9.0", "codeql": '["csharp"]', "nightly-hook": "true"},
+                    codeql=codeql, hook=hook, stages={"draft": stale})
+                self.assertEqual([], mutations)
+                self.assertEqual({}, graph["executed"])
+                self.assertEqual("skipped", graph["needs"]["draft"]["result"])
+                self.assertEqual(1, graph["process"].returncode)
+                self.assertIn(f"'{gate}' was unexpectedly skipped", graph["process"].stderr)
+                self.assertEqual("failed", self.document()["outcome"])
+                self.assertEqual("false", graph["outputs"]["publish"])
+                self.assertTrue(graph["uploaded"])
+
+    def test_complete_draft_failures_and_incomplete_handoffs_report_failed(self):
+        cases = (("failure", {}, "'draft' failure"), ("cancelled", {}, "'draft' cancelled"),
+                 ("skipped", {}, "'draft' was unexpectedly skipped"),
+                 ("success", {"publish": "true"}, "lacks a validated successful draft"),
+                 ("success", {"publish": "false", "noop-reason": "stale-draft-deleted"}, "matching complete-mode"))
+        for result, outputs, diagnostic in cases:
+            with self.subTest(result=result, outputs=outputs):
+                graph = self.run_graph(resolve={"mode": "complete", "version": "2.0.0"},
+                                       stages={"draft": lambda _values: (result, outputs)})
+                self.assertEqual({"draft"}, set(graph["executed"]))
+                self.assertEqual(1, graph["process"].returncode)
+                self.assertIn(diagnostic, graph["process"].stderr)
+                self.assertEqual(("failed", "2.0.0"), (self.document()["outcome"], self.document()["version"]))
+                self.assertEqual("false", graph["outputs"]["publish"])
+                self.assertTrue(graph["uploaded"])
+
+    def test_disabled_complete_and_gate_failures_skip_all_create_and_recovery_stages(self):
+        cases = (({"enabled": "false", "mode": "complete"}, "skipped", "skipped", 0, "disabled", ""),
+                 ({"codeql": '["csharp"]', "mode": "complete"}, "failure", "skipped", 1, "failed", "codeql"),
+                 ({"codeql": '["csharp"]', "mode": "complete"}, "cancelled", "skipped", 1, "failed", "cancelled"),
+                 ({"nightly-hook": "true", "mode": "complete"}, "skipped", "failure", 1, "failed", "nightly-hook"),
+                 ({"enabled": "invalid", "mode": "complete"}, "skipped", "skipped", 1, "failed", "exactly"))
+        for resolve, codeql, hook, code, outcome, diagnostic in cases:
+            with self.subTest(resolve=resolve, codeql=codeql, hook=hook):
+                graph = self.run_graph(resolve=resolve, codeql=codeql, hook=hook)
                 self.assertEqual({}, graph["executed"])
                 self.assertEqual(code, graph["process"].returncode, graph["process"].stderr)
                 self.assertIn(diagnostic, graph["process"].stderr)
                 self.assertEqual(outcome, self.document()["outcome"])
                 self.assertEqual("false", graph["outputs"]["publish"])
+
 
 
 if __name__ == "__main__":

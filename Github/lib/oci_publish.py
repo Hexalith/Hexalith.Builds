@@ -16,10 +16,14 @@ import urllib.request
 
 from oci_archive import INDEX, MANIFEST
 from release_draft import CONTAINER_NAME, bounded
-from release_state import NoRedirect, ReleaseError
+from release_state import NoRedirect, ReleaseError, STABLE
 
 HOST = "registry.hexalith.com"
 ROOT = Path(__file__).resolve().parents[2]
+EXISTENCE_ACCEPT = ", ".join((INDEX, MANIFEST, "application/vnd.docker.distribution.manifest.v2+json",
+                              "application/vnd.docker.distribution.manifest.list.v2+json",
+                              "application/vnd.docker.distribution.manifest.v1+json",
+                              "application/vnd.docker.distribution.manifest.v1+prettyjws"))
 
 
 def tool_environment():
@@ -37,6 +41,28 @@ class Registry:
         self.name = name
         self.authorization = "Basic " + base64.b64encode((username + ":" + password).encode()).decode()
         self.opener = urllib.request.build_opener(NoRedirect())
+
+    def version_absent(self, version):
+        """Only an authoritative manifest HEAD 404 establishes destination absence."""
+        if not isinstance(version, str) or not STABLE.fullmatch("v" + version):
+            raise ReleaseError("registry version must be stable major.minor.patch")
+        deadline = time.monotonic() + 120
+        def request():
+            url = f"https://{HOST}/v2/{self.name}/manifests/{version}"
+            headers = {"Authorization": self.authorization, "Accept": EXISTENCE_ACCEPT}
+            try:
+                with self.opener.open(urllib.request.Request(url, method="HEAD", headers=headers), timeout=60) as response:
+                    if response.status != 200:
+                        raise ReleaseError("registry version HEAD did not return HTTP 200")
+                    return False
+            except urllib.error.HTTPError as error:
+                with error:
+                    if error.code == 404:
+                        return True
+                    raise ReleaseError(f"registry version HEAD failed: HTTP {error.code}") from error
+            except (OSError, http.client.HTTPException) as error:
+                raise ReleaseError("registry version HEAD transport failed") from error
+        return bounded(request, deadline=deadline)
 
     def read(self, kind, reference, *, missing_ok=False, expected=None):
         """Return manifest bytes, or stream-check a blob's exact digest and length."""

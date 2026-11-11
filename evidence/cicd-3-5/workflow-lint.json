@@ -1,0 +1,13 @@
+{
+  "command": [
+    "python3",
+    "Tools/ci/lint_workflows.py"
+  ],
+  "started_at": "2026-11-11T13:20:57.537646+00:00",
+  "finished_at": "2026-11-11T13:21:05.134768+00:00",
+  "returncode": 0,
+  "raw_log": "/tmp/cicd-3-5-workflow-lint.raw.log",
+  "summary_sha256": "42233711cf05dc346bab284c061b21f16b3524cdb24e14f9e649d6bdc683137a",
+  "raw_sha256": "b62acd9c363859a03ccd682e9828e77fe5d199bafc9df78389edb0b04f6ac483",
+  "summary": "workflow-lint.log"
+}

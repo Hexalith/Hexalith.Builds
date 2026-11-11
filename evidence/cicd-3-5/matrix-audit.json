@@ -1,0 +1,77 @@
+{
+  "rows": {
+    "Original payload available": [
+      "test_actual_complete_adapter_flows_through_actual_graph_and_reporter",
+      "test_original_oci_artifact_handoff_and_container_trailer_disagreement"
+    ],
+    "Later dispatch / Builds bump": [
+      "test_original_handoff_survives_dispatch_workflow_config_and_current_run_changes",
+      "test_complete_handoff_uses_saved_identity_and_skips_version_and_build"
+    ],
+    "Artifact content disagrees": [
+      "test_source_release_artifact_and_inventory_disagreement_never_deletes",
+      "test_unsafe_corrupt_payload_and_invalid_expiry_are_never_absence",
+      "test_draft_changed_during_download_never_emits_a_publication_handoff"
+    ],
+    "Producer unavailable": [
+      "test_each_well_formed_producer_mismatch_and_404_allow_only_conservative_stale"
+    ],
+    "Artifact unavailable": [
+      "test_definitive_metadata_archive_disappearance_or_valid_expiry_allows_stale",
+      "test_executed_http_disappearance_and_delete_require_exact_status"
+    ],
+    "GitHub service failure": [
+      "test_http_transport_auth_redirect_and_malformed_producer_fail_without_stale",
+      "test_actual_complete_adapter_flows_through_actual_graph_and_reporter"
+    ],
+    "All packages/images absent": [
+      "test_all_destinations_checked_and_any_present_unknown_or_missing_credentials_retains",
+      "test_complete_stale_deletion_reports_one_nothing_outcome"
+    ],
+    "Any publication exists": [
+      "test_nuget_content_head_includes_unlisted_and_never_sends_credentials",
+      "test_all_destinations_checked_and_any_present_unknown_or_missing_credentials_retains"
+    ],
+    "Any existence check uncertain": [
+      "test_index_failure_invalid_json_and_transport_are_never_absence",
+      "test_registry_broad_head_404_only_and_credentials_bound_to_registry",
+      "test_all_destinations_checked_and_any_present_unknown_or_missing_credentials_retains"
+    ],
+    "Mixed inventory": [
+      "test_all_destinations_checked_and_any_present_unknown_or_missing_credentials_retains"
+    ],
+    "Empty inventory": [
+      "test_each_well_formed_producer_mismatch_and_404_allow_only_conservative_stale"
+    ],
+    "Invalid or ambiguous selected marker": [
+      "test_every_marker_missing_duplicated_or_malformed_fails_without_any_write",
+      "test_unmarked_release_preserved_and_ambiguous_drafts_rejected"
+    ],
+    "Unmarked draft": [
+      "test_unmarked_release_preserved_and_ambiguous_drafts_rejected"
+    ],
+    "Delete race / failure": [
+      "test_delete_race_and_non204_never_emit_success",
+      "test_executed_http_disappearance_and_delete_require_exact_status"
+    ],
+    "Publishing disabled": [
+      "test_disabled_complete_and_gate_failures_skip_all_create_and_recovery_stages",
+      "test_enabled_skipped_security_gate_blocks_draft_before_any_mutation"
+    ],
+    "Interrupted publication retry": [
+      "test_original_recovery_handoff_retries_actual_publisher_with_identical_package_bytes",
+      "test_complete_remote_bytes_and_correct_retry"
+    ],
+    "Unexpected recovery skip": [
+      "test_unexpected_complete_draft_skip_fails_closed",
+      "test_complete_draft_failures_and_incomplete_handoffs_report_failed"
+    ]
+  },
+  "row_count": 17,
+  "all_covering_tests_executed_and_passed": true,
+  "evidence": [
+    "final-focused-release.log",
+    "final-focused-oci.log"
+  ],
+  "surface": "Actual composite, workflow graph/reporter and publisher execution; real disposable Git histories and local HTTP destinations; hosted observations are recorded separately."
+}

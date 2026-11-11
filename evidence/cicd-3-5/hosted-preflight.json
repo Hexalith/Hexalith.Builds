@@ -1,0 +1,45 @@
+{
+  "release": {
+    "id": 441591623,
+    "tag_name": "v4.47.1",
+    "draft": true,
+    "target_commitish": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+    "body": "Disposable story 3-4 publication qualification. Only the identified isolated package and registry image are authorized.\n\nhexalith-release: 75e1d4a3809b30684e67c7e9b2c8043720b49c53\nhexalith-release-run: 43010609603\nhexalith-release-artifact: 13850760915 sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30\nhexalith-release-packages: Hexalith.Builds.PublishProbe.20261111\nhexalith-release-containers: cicd-publish-spike-3-1\n",
+    "author": "github-actions[bot]"
+  },
+  "producer": {
+    "id": 43010609603,
+    "path": ".github/workflows/release-publish-probe.yml",
+    "event": "workflow_dispatch",
+    "head_branch": "main",
+    "head_sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43010609603"
+  },
+  "artifact": {
+    "id": 13850760915,
+    "name": "release",
+    "expired": false,
+    "digest": "sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30",
+    "expires_at": "2027-02-09T11:16:45Z",
+    "workflow_run": {
+      "id": 43010609603,
+      "repository_id": 952945989,
+      "head_repository_id": 952945989,
+      "head_branch": "main",
+      "head_sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53"
+    }
+  },
+  "observed_at": "2026-11-11T13:16:28.496929+00:00",
+  "repository": "Hexalith/Hexalith.Builds",
+  "profile": "/home/administrator/.config/gh-cicd-agent",
+  "token_overrides_present": false,
+  "variable_read": {
+    "command": "gh api repos/Hexalith/Hexalith.Builds/actions/variables/HEXALITH_RELEASE_PUBLISH_ENABLED",
+    "http_status": 403,
+    "message": "Resource not accessible by personal access token",
+    "required_api_permission": "actions_variables=read",
+    "setting_verified": false
+  }
+}

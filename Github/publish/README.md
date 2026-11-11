@@ -56,12 +56,26 @@ skipped-duplicate or completed statuses; raw command output and temporary keys
 are never logged. External races can fail after partial publication; retain the
 draft and replay the same handoff. Runtime never moves or deletes Git refs and
 never rolls back package/image writes. Empty inventories permit GitHub-only
-publication. Complete-mode artifact selection/recovery/deletion, rendered
-callers and nightly/App publication are separate downstream work; production
-callers and switches are unchanged by this addition.
+publication.
+
+The reusable release now supplies the same handoff in complete mode after
+independently authenticating the selected draft's original artifact. This
+composite repeats its own checks and duplicate-safe publication from those
+same bytes. Recovery receives only pull credentials; publisher push credentials
+and OIDC stay in this caller job. If the original artifact is gone, recovery
+can delete only an unchanged marked draft whose entire saved destination
+inventory is definitely absent; an existing or uncertain destination fails
+and retains the draft. That branch yields one reusable `nothing` outcome,
+without invoking this publisher. Rendered callers and nightly/App publication
+remain downstream work; production callers and switches are unchanged.
 
 [Story 3-4 qualification](../../docs/cicd-3-4-publish-composite-results.md)
 records an isolated hosted package/image publication that ended `ready`, then
 a duplicate-safe `published` retry from the same original producer run,
 artifact ID/digest, source and version. The temporary caller used its own
 Trusted Publishing policy; no production caller or API-key fallback was used.
+
+
+[Story 3-5 recovery verification](../../docs/cicd-3-5-release-complete-mode-results.md)
+records the original handoff and its failure/deletion boundaries. Its hosted
+probe omits the publisher and makes no publication claim.

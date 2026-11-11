@@ -39,6 +39,39 @@ MAX_MANIFEST = 1024 * 1024
 MAX_JSON = 4 * 1024 * 1024
 
 
+class GitHubHttpError(ReleaseError):
+    """An HTTP failure with status preserved for conservative recovery decisions."""
+
+    def __init__(self, endpoint, status):
+        self.endpoint, self.status = endpoint, status
+        super().__init__(f"GitHub API {endpoint} returned HTTP {status}")
+
+
+def release_trailers(body):
+    """Parse exactly the five authenticated trailers, including explicit empty lists."""
+    if not isinstance(body, str) or len(body) > 120000 or len(RESERVED.findall(body)) != len(MARKERS):
+        raise ReleaseError("draft release trailer identity mismatch")
+    values = []
+    for marker in MARKERS:
+        matches = re.findall("^" + re.escape(marker) + r":[ \t]*(.*?)\r?$", body, re.MULTILINE)
+        if len(matches) != 1:
+            raise ReleaseError("draft release trailer identity mismatch")
+        values.append(matches[0])
+    sha, run, artifact, packages, containers = values
+    match = re.fullmatch(r"([1-9][0-9]*) (sha256:[0-9a-f]{64})", artifact)
+    if not SHA.fullmatch(sha) or not re.fullmatch(r"[1-9][0-9]*", run) or match is None:
+        raise ReleaseError("draft release trailer identity mismatch")
+    inventory = {}
+    for kind, value, expression in (("packages", packages, PACKAGE_ID), ("containers", containers, CONTAINER_NAME)):
+        names = value.split(",") if value else []
+        if (any(expression.fullmatch(name) is None for name in names)
+                or len({name.casefold() for name in names}) != len(names)):
+            raise ReleaseError("invalid or duplicate draft release inventory identity")
+        inventory[kind] = sorted(names)
+    return {"sha": sha, "artifact-run": run, "artifact-id": match[1],
+            "artifact-digest": match[2], "inventory": inventory}
+
+
 def strict_json(data):
     def pairs(values):
         result = {}
@@ -118,12 +151,14 @@ class DraftApi(Api):
             "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
         try:
             with self.opener.open(request, timeout=timeout) as response:
+                if response.status != 200:
+                    raise ReleaseError("GitHub JSON read did not return HTTP 200")
                 return strict_json(limited_read(response, MAX_JSON)), response.headers.get("Link", "")
         except urllib.error.HTTPError as error:
             with error:
                 prefix = urllib.parse.urlsplit(self.base_url).path.rstrip("/") + "/repos/" + self.repository
                 endpoint = urllib.parse.urlsplit(url).path.removeprefix(prefix) or "/"
-                raise ReleaseError(f"GitHub API {endpoint} returned HTTP {error.code}") from error
+                raise GitHubHttpError(endpoint, error.code) from error
         except (OSError, http.client.HTTPException) as error:
             raise ReleaseError("GitHub API transport failed") from error
 
@@ -146,6 +181,26 @@ class DraftApi(Api):
                 raise ReleaseError("GitHub draft creation transport failed") from error
         return bounded(request, deadline=deadline, clock=self.clock)
 
+    def delete_draft(self, identity):
+        """Delete only a validated numeric release ID; success requires HTTP 204."""
+        if type(identity) is not int or identity < 1:
+            raise ReleaseError("release ID must be a positive decimal integer")
+        deadline = self.clock() + 120
+        def request():
+            url = self._url(f"/repos/{self.repository}/releases/{identity}", deadline)
+            headers = {"Authorization": "Bearer " + self.token, "Accept": "application/vnd.github+json",
+                       "X-GitHub-Api-Version": "2022-11-28"}
+            try:
+                with self.opener.open(urllib.request.Request(url, method="DELETE", headers=headers), timeout=60) as response:
+                    if response.status != 204:
+                        raise ReleaseError("GitHub draft deletion did not return HTTP 204")
+            except urllib.error.HTTPError as error:
+                with error:
+                    raise GitHubHttpError(f"/releases/{identity}", error.code) from error
+            except (OSError, http.client.HTTPException) as error:
+                raise ReleaseError("GitHub draft deletion transport failed") from error
+        return bounded(request, deadline=deadline, clock=self.clock)
+
     def artifact_bytes(self, artifact_id):
         deadline = self.clock() + 600
         def request():
@@ -158,7 +213,7 @@ class DraftApi(Api):
             except urllib.error.HTTPError as error:
                 with error:
                     if error.code != 302:
-                        raise ReleaseError(f"GitHub artifact archive returned HTTP {error.code}") from error
+                        raise GitHubHttpError(f"/actions/artifacts/{artifact_id}/zip", error.code) from error
                     location = error.headers.get("Location", "")
             except (OSError, http.client.HTTPException) as error:
                 raise ReleaseError("GitHub artifact redirect transport failed") from error
@@ -168,6 +223,8 @@ class DraftApi(Api):
                 raise ReleaseError("artifact download location must be an uncredentialed HTTPS URL")
             try:
                 with urllib.request.build_opener(NoRedirect()).open(location, timeout=60) as response:
+                    if response.status != 200:
+                        raise ReleaseError("signed artifact download did not return HTTP 200")
                     return limited_read(response, MAX_ARCHIVE)
             except urllib.error.HTTPError as error:
                 with error:
@@ -177,22 +234,26 @@ class DraftApi(Api):
         return bounded(request, deadline=deadline, clock=self.clock)
 
 
-def artifact_metadata(metadata, *, artifact_id, run_id, digest, sha, now=None):
+def artifact_metadata(metadata, *, artifact_id, run_id, digest, sha, now=None, allow_expired=False):
     """Authenticate artifact name, producer, expiry and digest before download."""
     if not isinstance(metadata, dict):
         raise ReleaseError("invalid artifact metadata")
     run = metadata.get("workflow_run")
     if (type(metadata.get("id")) is not int or metadata["id"] != artifact_id
-            or metadata.get("name") != "release" or metadata.get("expired") is not False
+            or metadata.get("name") != "release" or type(metadata.get("expired")) is not bool
             or metadata.get("digest") != digest or not isinstance(run, dict)
             or type(run.get("id")) is not int or run["id"] != run_id or run.get("head_sha") != sha):
         raise ReleaseError("artifact ID/name/run/digest/source identity mismatch")
     try:
         expires_at = datetime.fromisoformat(metadata.get("expires_at").replace("Z", "+00:00"))
-        if expires_at.tzinfo is None or expires_at <= (now or datetime.now(timezone.utc)):
-            raise ValueError("expired")
+        if expires_at.tzinfo is None:
+            raise ValueError("expiry lacks timezone")
     except (AttributeError, TypeError, ValueError) as error:
         raise ReleaseError("artifact expiry could not be validated") from error
+    expired = metadata["expired"] or expires_at <= (now or datetime.now(timezone.utc))
+    if expired and not allow_expired:
+        raise ReleaseError("artifact expiry could not be validated")
+    return not expired
 
 
 def safe_member(name):
@@ -327,6 +388,7 @@ def validate_draft(git, draft, *, sha, version, body):
             or selected.get("version") != version):
         raise ReleaseError("created or reused draft release identity mismatch")
     actual = draft.get("body", "")
+    release_trailers(actual)
     if not isinstance(actual, str):
         raise ReleaseError("draft body must be text")
     if len(RESERVED.findall(actual)) != len(MARKERS):

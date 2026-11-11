@@ -1,0 +1,19 @@
+{
+  "summary": "full-runner.log",
+  "summary_sha256": "66bf6836ef69d749450e22ca69fcead5b54148d7283a1113f0fe98d1f9f89c9a",
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "python3",
+    "Tools/ci/run_python_tests.py"
+  ],
+  "started_at": "2026-11-11T13:30:57.452564+00:00",
+  "finished_at": "2026-11-11T13:42:03.596733+00:00",
+  "returncode": 0,
+  "raw_log": "/tmp/cicd-3-5-full-runner.raw.log",
+  "raw_sha256": "043ae1ea33fea705489499304c512f2b5263353d6dadf9205a02b2c732d29349"
+}

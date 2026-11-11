@@ -1,0 +1,19 @@
+{
+  "summary": "final-workflow-lint.log",
+  "summary_sha256": "42233711cf05dc346bab284c061b21f16b3524cdb24e14f9e649d6bdc683137a",
+  "tested_source": {
+    "head": "e35dd39872baf071aec6a7be1b252b16f460e08c",
+    "manifest": "tested-source-2f83ea55d5ecaec554d3c57b23c5e6f219885ef506dbbca3147bbf0406129d58.json",
+    "sha256": "2f83ea55d5ecaec554d3c57b23c5e6f219885ef506dbbca3147bbf0406129d58"
+  },
+  "source_unchanged_during_check": true,
+  "command": [
+    "python3",
+    "Tools/ci/lint_workflows.py"
+  ],
+  "started_at": "2026-11-11T13:54:21.518028+00:00",
+  "finished_at": "2026-11-11T13:54:28.281903+00:00",
+  "returncode": 0,
+  "raw_log": "/tmp/cicd-3-5-final-workflow-lint.raw.log",
+  "raw_sha256": "b62acd9c363859a03ccd682e9828e77fe5d199bafc9df78389edb0b04f6ac483"
+}

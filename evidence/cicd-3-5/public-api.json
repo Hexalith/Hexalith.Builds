@@ -1,0 +1,21 @@
+{
+  "summary": "public-api.log",
+  "summary_sha256": "84af693e716543d4292fa52fbff9174a7660846af81f807a5fcf367c1b2d94a6",
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "3.12",
+    "Tools/ci/check_public_api.py",
+    "--ref",
+    "6760ca2182c98bae6a30bb7d0a7fd7a6c2ea09ba"
+  ],
+  "started_at": "2026-11-11T13:32:24.520513+00:00",
+  "finished_at": "2026-11-11T13:32:25.771486+00:00",
+  "returncode": 0,
+  "raw_log": "/tmp/cicd-3-5-public-api.raw.log",
+  "raw_sha256": "0df36251aee8e263cd7b85970f87bb37511f3c6cd33e7a39332f26ccb7161601"
+}
