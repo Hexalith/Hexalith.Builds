@@ -22,6 +22,11 @@ def main():
     base = highest_reachable_stable_tag(Git(ROOT), sha)
     major, minor, patch = map(int, base[1:].split(".")) if base else (1, 0, -1)
     version = f"{major}.{minor}.{patch + 1}"
+    mode = os.environ.get("PROBE_PAYLOAD", "package-image")
+    if mode not in {"package-image", "container-only"}:
+        raise ValueError("unsupported isolated probe mode")
+    if mode == "container-only":
+        version = f"{major}.{minor + 1}.0"
     destination = Path(os.environ["RUNNER_TEMP"]) / "publish-probe-payload"
     (destination / "packages").mkdir(parents=True)
     (destination / "containers").mkdir()
@@ -56,10 +61,11 @@ def main():
         combined = destination / "containers/probe.tar"
         graph = combine_archives(archives, combined, revision=sha, version=version,
                                  repository=os.environ["GITHUB_REPOSITORY"], name=image)
-        subprocess.run(["dotnet", "pack", str(project), "--no-build", "--no-restore", "-p:RuntimeIdentifier=linux-x64",
-                        "--output", str(destination / "packages"), *flags], cwd=work, check=True)
+        if mode == "package-image":
+            subprocess.run(["dotnet", "pack", str(project), "--no-build", "--no-restore", "-p:RuntimeIdentifier=linux-x64",
+                            "--output", str(destination / "packages"), *flags], cwd=work, check=True)
     manifest = {"sha": sha, "version": version,
-        "packages": [{"id": package_id, "path": f"packages/{package_id}.{version}.nupkg"}],
+        "packages": [{"id": package_id, "path": f"packages/{package_id}.{version}.nupkg"}] if mode == "package-image" else [],
         "containers": [{"name": image, "path": "containers/probe.tar"}]}
     (destination / "release-manifest.json").write_text(json.dumps(manifest) + "\n")
     print(json.dumps({"manifest": manifest, "graph": graph}, indent=2))
