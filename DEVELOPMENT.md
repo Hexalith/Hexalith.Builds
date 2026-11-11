@@ -77,6 +77,15 @@ Extensions/System 11 packages do not remove this runtime ABI requirement.
 Revisit this hold only when the host's ASP.NET Core middleware and Authorization
 package advance together and application/browser startup passes.
 
+Keep `Microsoft.AspNetCore.SignalR.Client` and `Microsoft.AspNetCore.SignalR.Common`
+on `10.0.15` for ASP.NET Core 10 hosts. SignalR 11 selects its `netstandard2.0`
+Common asset for `net10.0`; that asset lacks
+`IInvocationBinder.GetTarget(ReadOnlySpan<byte>)`, which the ASP.NET Core 10
+Blazor MessagePack worker calls. The resulting `MissingMethodException` closes
+the circuit after a successful WebSocket handshake. Restore and compilation
+alone do not detect this mismatch. Revisit the hold when the server and SignalR
+advance together and a real browser reaches interactive rendering.
+
 ## Commit Messages and Releases
 
 All commits must follow Angular Conventional Commits so semantic-release can

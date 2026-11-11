@@ -241,9 +241,11 @@
     <PackageVersion Include="StackExchange.Redis" Version="3.4.31" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="11.0.0" />
+    <!-- ASP.NET Core 10 Blazor requires IInvocationBinder.GetTarget(ReadOnlySpan<byte>);
+         SignalR 11 falls back to netstandard2.0 and aborts interactive circuits. -->
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.15" />
     <!-- GHSA-334f-vvp4-7g6p: patched Common for consumers with CentralPackageTransitivePinningEnabled=true. -->
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.15" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.15" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.15" />
     <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.64.0" />
