@@ -30,6 +30,10 @@ inputs:
   dotnet-global-json:
     description: Caller SDK pin
     default: global.json
+  additional-sdk-version:
+    description: Optional SDK supplying runtimes required by tools and target frameworks
+    required: false
+    default: ''
   package-prepare-script:
     description: Optional caller-owned Bash script preparing verified package dependencies before restore
     required: false
@@ -110,6 +114,7 @@ runs:
       uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
       with:
         global-json-file: ${{ inputs.dotnet-global-json }}
+        dotnet-version: ${{ inputs.additional-sdk-version }}
     - name: Initialize Node.js
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:

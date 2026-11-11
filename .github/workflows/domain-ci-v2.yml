@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: 'global.json'
+      additional-sdk-version:
+        description: 'Optional SDK supplying runtimes required by tools and target frameworks.'
+        required: false
+        type: string
+        default: ''
       packages-lock-file:
         description: >-
           Comma-separated hashFiles() patterns for the NuGet cache key. The default
@@ -328,6 +333,7 @@ jobs:
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
+          dotnet-version: ${{ inputs.additional-sdk-version }}
       - name: Checkout workflow-owned Builds preparation
         if: ${{ inputs.module-manifest != '' && !inputs.governed-ci }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

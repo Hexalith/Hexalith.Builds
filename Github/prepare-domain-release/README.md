@@ -20,11 +20,16 @@ Required inputs are `solution` (an existing relative `.slnx`),
 `builds-execution-sha`, and `expected-package-count` (a positive integer declared
 by the caller). Optional inputs default to `source-branch: main`,
 `source-ci-workflow: ci.yml`, `package-manifest: tools/release-packages.json`,
-`dotnet-global-json: global.json`, `packages-lock-file: Directory.Packages.props`,
+`dotnet-global-json: global.json`, `additional-sdk-version: ''`,
+`packages-lock-file: Directory.Packages.props`,
 `node-version: '24'`, and `publication-flag: ''`. The manifest must contain exactly the declared unique
 package IDs and unique existing project paths. The `source-branch` input remains
 for compatibility; only the literal value `main` is supported. Other values fail
 before preparation or publication.
+
+Set `additional-sdk-version: '10.0.404'` when SDK 11 builds net10.0 tools or
+hosts. Setup installs both the SDK from global.json and this additional SDK,
+including the .NET and ASP.NET Core 10 runtimes.
 
 The caller checks out `${{ github.sha }}` with full history, `submodules: false`,
 and `persist-credentials: false` before calling the action. Its job owns
