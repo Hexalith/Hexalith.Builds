@@ -1,0 +1,8 @@
+name: Initialize Ubuntu APT
+description: Recover unavailable Ubuntu DNS mirrors using a verified HTTPS mirror before package installation.
+runs:
+  using: composite
+  steps:
+    - name: Check Ubuntu mirrors and refresh recovered indexes
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/initialize-apt.sh"
