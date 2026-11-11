@@ -240,6 +240,17 @@ def private_directory():
     return directory
 
 
+def write_state(directory, state):
+    descriptor, name = tempfile.mkstemp(prefix=".state-", dir=directory)
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            json.dump(state, stream)
+        temporary.replace(directory / "state.json")
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("phase", choices=("prepare", "publish", "outcome"))
@@ -252,7 +263,7 @@ def main():
             directory = private_directory()
             outputs({"state": str(directory)})
             state = {"document": outcome_document(os.environ.get("GITHUB_SHA", ""), "failed")}
-            (directory / "state.json").write_text(json.dumps(state))
+            write_state(directory, state)
             if os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch" or os.environ.get("GITHUB_REF") != "refs/heads/main":
                 raise ReleaseError("publisher must run from workflow_dispatch on main")
             values = handoff(os.environ)
@@ -262,10 +273,10 @@ def main():
             git = Git.fetch(directory / "git", api.repository)
             def authenticated(identity):
                 state["document"] = outcome_document(identity["sha"], "failed", identity["version"])
-                (directory / "state.json").write_text(json.dumps(state))
+                write_state(directory, state)
             authenticate(git, api, values, directory, os.environ.get("GITHUB_WORKFLOW_REF", ""), authenticated=authenticated)
             state.update(values=values, document=outcome_document(values["sha"], "failed", values["version"]))
-            (directory / "state.json").write_text(json.dumps(state))
+            write_state(directory, state)
             outputs({"packages": str(bool(values["packages"])).lower()})
         elif args.phase == "publish":
             directory = Path(os.environ["RELEASE_STATE"])
@@ -278,23 +289,28 @@ def main():
             api = PublishApi(os.environ.get("GITHUB_REPOSITORY", ""), os.environ.get("GITHUB_TOKEN", ""),
                              os.environ.get("GITHUB_API_URL", "https://api.github.com"))
             state["document"] = finalize_release(Git(directory / "git"), api, values)
-            (directory / "state.json").write_text(json.dumps(state))
+            write_state(directory, state)
         else:
-            state_path = os.environ.get("RELEASE_STATE", "")
-            document = outcome_document(os.environ.get("GITHUB_SHA", ""), "failed")
-            if state_path:
-                directory = Path(state_path)
-                state = strict_json((directory / "state.json").read_bytes())
-                document = validate_outcome(state["document"])
-            if (os.environ.get("RELEASE_PREPARE_RESULT") != "success"
-                    or os.environ.get("RELEASE_LOGIN_RESULT") not in {"success", "skipped"}
-                    or os.environ.get("RELEASE_PUBLISH_RESULT") != "success"):
-                document = outcome_document(document["sha"], "failed", document.get("version", ""))
-            output = private_directory()
-            path = write_document(output, document)
-            outputs({"path": str(path), "outcome": document["outcome"]})
-            if directory:
-                shutil.rmtree(directory)
+            try:
+                state_path = os.environ.get("RELEASE_STATE", "")
+                document = outcome_document(os.environ.get("GITHUB_SHA", ""), "failed")
+                if state_path:
+                    directory = Path(state_path)
+                    try:
+                        state = strict_json((directory / "state.json").read_bytes())
+                        document = validate_outcome(state["document"])
+                    except (ReleaseError, OSError, ValueError, KeyError, TypeError):
+                        print("release publication state unavailable; reporting failed dispatch", file=sys.stderr)
+                if (os.environ.get("RELEASE_PREPARE_RESULT") != "success"
+                        or os.environ.get("RELEASE_LOGIN_RESULT") not in {"success", "skipped"}
+                        or os.environ.get("RELEASE_PUBLISH_RESULT") != "success"):
+                    document = outcome_document(document["sha"], "failed", document.get("version", ""))
+                output = private_directory()
+                path = write_document(output, document)
+                outputs({"path": str(path), "outcome": document["outcome"]})
+            finally:
+                if directory and directory.exists():
+                    shutil.rmtree(directory)
         return 0
     except (ReleaseError, OSError, ValueError, KeyError, TypeError) as error:
         print("release publication failed: " + json.dumps(str(error), ensure_ascii=True), file=sys.stderr)

@@ -346,6 +346,20 @@ class PublisherTests(History):
                                       subprocess.CompletedProcess(args, 0, stdout=output))
             self.assertEqual(recorded.getvalue(), expected + "\n")
 
+    def test_interrupted_state_rewrite_preserves_previous_complete_document(self):
+        directory = self.root / "state-writes"
+        directory.mkdir()
+        original = {"document": {"sha": self.sha, "outcome": "failed"}}
+        publish.write_state(directory, original)
+        def interrupted(document, stream):
+            stream.write('{"document":')
+            raise OSError("interrupted write")
+        with patch.object(publish.json, "dump", side_effect=interrupted):
+            with self.assertRaisesRegex(OSError, "interrupted write"):
+                publish.write_state(directory, {"document": {"outcome": "published"}})
+        self.assertEqual(json.loads((directory / "state.json").read_text()), original)
+        self.assertEqual([path.name for path in directory.iterdir()], ["state.json"])
+
 
 def draft_files(payload):
     import zipfile
@@ -393,8 +407,10 @@ raise SystemExit({0})
         (work / "global.json").write_text("poison")
         action = Path(__file__).resolve().parents[2] / "publish"
         tag_conflicts = {"tag-lightweight", "tag-annotated", "tag-noncommit"}
+        state_faults = {"state-missing", "state-truncated", "state-invalid"}
         for scenario in ("success", "login", "push", "api", "malformed", "empty", "patch",
-                         *sorted(tag_conflicts), "tag-correct-lightweight", "tag-correct-annotated", "ready"):
+                         *sorted(tag_conflicts), "tag-correct-lightweight", "tag-correct-annotated",
+                         *sorted(state_faults), "ready"):
             with self.subTest(scenario=scenario):
                 if git_command(self.root, "tag", "--list", "v" + VERSION):
                     git_command(self.root, "tag", "-d", "v" + VERSION)
@@ -424,6 +440,8 @@ raise SystemExit({0})
                 if scenario == "ready":
                     (self.root / ".github/workflows/new.yml").write_text("new workflow")
                     environment["GITHUB_SHA"] = self.commit("ci: advance caller workflows")
+                if scenario in state_faults:
+                    environment["GITHUB_SHA"] = self.base
                 tool = binaries / "dotnet"
                 contents = tool.read_text()
                 if scenario == "push":
@@ -435,6 +453,15 @@ raise SystemExit({0})
                         self.assertEqual(arguments, {"user": "fixture-user"})
                         if scenario == "login":
                             raise subprocess.CalledProcessError(1, "NuGet/login")
+                        if scenario in state_faults:
+                            state = Path(next(line.split("=", 1)[1] for line in output.read_text().splitlines()
+                                              if line.startswith("state=")))
+                            self.assertTrue((state / "packages").is_dir())
+                            if scenario == "state-missing":
+                                (state / "state.json").unlink()
+                            else:
+                                (state / "state.json").write_text('{"document":' if scenario == "state-truncated"
+                                                                 else '{"document": {"sha": "invalid"}}')
                         return {"NUGET_API_KEY": "temporary-key-marker"}
                     self.assertTrue(reference.startswith("actions/upload-artifact@"))
                     self.assertEqual(arguments["name"], "hexalith-release-outcome")
@@ -457,8 +484,11 @@ raise SystemExit({0})
                 published = scenario in {"success", "empty", "tag-correct-lightweight", "tag-correct-annotated"}
                 expected = "ready" if scenario == "ready" else "published" if published else "failed"
                 self.assertEqual(uploads[0]["outcome"], expected)
+                if scenario in state_faults:
+                    self.assertEqual(uploads[0], {"schema": "hexalith.release-outcome.v1",
+                                                 "sha": environment["GITHUB_SHA"], "outcome": "failed"})
                 self.assertEqual(len(control.writes), 1 if published else 0)
-                no_push = scenario in {"malformed", "api", "empty", "login"} | tag_conflicts
+                no_push = scenario in {"malformed", "api", "empty", "login"} | tag_conflicts | state_faults
                 self.assertEqual(len(push_log.read_text().splitlines()), 0 if no_push else 1)
                 self.assertEqual(len(logins), 0 if scenario in {"malformed", "api", "empty"} | tag_conflicts else 1)
                 if scenario in tag_conflicts:
