@@ -1,0 +1,323 @@
+Story 3-4 post-review verification
+Production repair revision: 3699c6d6c72ca2a02940cdf73656ae7ebf53a6a8
+Both complete post-repair suite invocations passed 19 groups and failed only the online policy group because parent omitted its required token. That exact group was rerun on both interpreters with the same pinned dependencies and a privately supplied CiCd-agent token; all 46 tests passed on each. All 20 groups are therefore verified after repair. Initial pre-review authenticated full runs passed 20/20 and remain separately recorded.
+
+--- python312 ---
+Python suite: /tmp/.tmp80Phk0/environments-v2/run-python-tests-46c8ad21b249e504/bin/python (3.12.13), 20 groups
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-archive-g4-qualification-evidence.py in .
+Ran 12 tests in 0.031s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-g6-cli-paths.py in .
+Ran 4 tests in 0.005s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-domain-release.py in .
+Ran 10 tests in 0.728s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-g4-synthetic-acceptance.py in .
+Ran 7 tests in 0.046s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-disposition.py in .
+Ran 5 tests in 0.191s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-evidence-validator.py in .
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_g6_current.py in .
+Ran 8 tests in 75.813s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_package_readme.py in .
+Ran 8 tests in 12.614s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_runtime_toolchain_v2.py in .
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_works_package_versions.py in .
+Ran 1 test in 2.071s
+OK
+Running -v in Github/commitlint/tests
+Ran 3 tests in 1.570s
+OK
+Running -v in Github/create-release/tests
+Ran 8 tests in 1.064s
+OK
+Running -v in Github/governed-provenance/tests
+Ran 90 tests in 0.813s
+OK
+Running -v in Github/lib/tests
+Ran 267 tests in 229.921s
+OK
+Running -v in Github/prepare-module-build/tests
+Ran 12 tests in 1.833s
+OK
+Running -v in Github/publish-containers/tests
+Ran 135 tests in 8.601s
+OK
+Running -v in Github/run-module-integration/tests
+Ran 70 tests in 22.011s
+OK
+Running -v in Github/split-publication/tests
+Ran 17 tests in 0.072s
+OK
+Running -v in test/qualification
+Ran 7 tests in 0.002s
+OK
+Running -v in Tools/ci/tests
+Ran 1 test in 0.000s
+OK
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+Ran 1 test in 0.000s
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+Ran 1 test in 0.000s
+OK
+Ran 1 test in 0.000s
+OK
+Ran 1 test in 0.000s
+OK
+Ran 46 tests in 8.417s
+FAILED (1): /tmp/.tmp80Phk0/environments-v2/run-python-tests-46c8ad21b249e504/bin/python -m unittest discover -s /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/ci/tests -v
+Python suite: 19/20 groups passed
+Online policy setup error: missing GH_TOKEN/GITHUB_TOKEN/ZIZMOR_GITHUB_TOKEN; no other top-level group failed.
+
+--- runnerPython ---
+Python suite: /tmp/.tmpZg6nxH/environments-v2/run-python-tests-46c8ad21b249e504/bin/python (3.14.4), 20 groups
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-archive-g4-qualification-evidence.py in .
+Ran 12 tests in 0.027s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-g6-cli-paths.py in .
+Ran 4 tests in 0.006s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-domain-release.py in .
+Ran 10 tests in 0.711s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-g4-synthetic-acceptance.py in .
+Ran 7 tests in 0.047s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-disposition.py in .
+Ran 5 tests in 0.284s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-evidence-validator.py in .
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_g6_current.py in .
+Ran 8 tests in 75.934s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_package_readme.py in .
+Ran 8 tests in 12.677s
+OK
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_runtime_toolchain_v2.py in .
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_works_package_versions.py in .
+Ran 1 test in 2.098s
+OK
+Running -v in Github/commitlint/tests
+Ran 3 tests in 1.570s
+OK
+Running -v in Github/create-release/tests
+Ran 8 tests in 1.022s
+OK
+Running -v in Github/governed-provenance/tests
+Ran 90 tests in 0.830s
+OK
+Running -v in Github/lib/tests
+Ran 267 tests in 230.412s
+OK
+Running -v in Github/prepare-module-build/tests
+Ran 12 tests in 1.818s
+OK
+Running -v in Github/publish-containers/tests
+Ran 135 tests in 8.773s
+OK
+Running -v in Github/run-module-integration/tests
+Ran 70 tests in 22.056s
+OK
+Running -v in Github/split-publication/tests
+Ran 17 tests in 0.063s
+OK
+Running -v in test/qualification
+Ran 7 tests in 0.002s
+OK
+Running -v in Tools/ci/tests
+Ran 1 test in 0.000s
+OK
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+Ran 1 test in 0.000s
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+Ran 1 test in 0.000s
+OK
+Ran 1 test in 0.000s
+OK
+Ran 1 test in 0.000s
+OK
+Ran 46 tests in 6.686s
+FAILED (1): /tmp/.tmpZg6nxH/environments-v2/run-python-tests-46c8ad21b249e504/bin/python -m unittest discover -s /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/ci/tests -v
+Python suite: 19/20 groups passed
+Online policy setup error: missing GH_TOKEN/GITHUB_TOKEN/ZIZMOR_GITHUB_TOKEN; no other top-level group failed.
+
+--- python312AuthenticatedCiGroup ---
+test_actionlint_process_failure_stops_scan (test_lint_workflows.LintTests.test_actionlint_process_failure_stops_scan) ... ok
+test_baseline_cannot_hide_workflows_or_omit_rationale (test_lint_workflows.LintTests.test_baseline_cannot_hide_workflows_or_omit_rationale) ... ok
+test_fresh_download_requires_integrity_and_https_redirect (test_lint_workflows.LintTests.test_fresh_download_requires_integrity_and_https_redirect) ... ok
+test_insecure_url_and_missing_or_duplicate_executable_fail (test_lint_workflows.LintTests.test_insecure_url_and_missing_or_duplicate_executable_fail) ... ok
+test_missing_token_and_offline_environment_refuse_scan (test_lint_workflows.LintTests.test_missing_token_and_offline_environment_refuse_scan) ... ok
+test_new_finding_fails_and_exact_frozen_finding_passes_severity_exit (test_lint_workflows.LintTests.test_new_finding_fails_and_exact_frozen_finding_passes_severity_exit) ... ok
+test_only_exact_rule_path_location_and_feature_are_baselined (test_lint_workflows.LintTests.test_only_exact_rule_path_location_and_feature_are_baselined) ... ok
+test_reinstall_replaces_running_binary_without_interrupting_it (test_lint_workflows.LintTests.test_reinstall_replaces_running_binary_without_interrupting_it) ... ok
+test_scan_passes_all_required_surfaces_and_keeps_online_audits_enabled (test_lint_workflows.LintTests.test_scan_passes_all_required_surfaces_and_keeps_online_audits_enabled) ... ok
+test_tampered_cached_archive_fails_integrity_before_extraction (test_lint_workflows.LintTests.test_tampered_cached_archive_fails_integrity_before_extraction) ... ok
+test_verified_archive_installs_and_replaces_tampered_binary (test_lint_workflows.LintTests.test_verified_archive_installs_and_replaces_tampered_binary) ... ok
+test_zizmor_process_failure_and_invalid_json_are_not_swallowed (test_lint_workflows.LintTests.test_zizmor_process_failure_and_invalid_json_are_not_swallowed) ... ok
+test_real_actionlint_allows_native_cache_mode_and_rejects_unknown_action_input (test_lint_workflows.RealPolicyTests.test_real_actionlint_allows_native_cache_mode_and_rejects_unknown_action_input) ... ok
+test_real_zizmor_enforces_committed_third_party_pinning_policy_online (test_lint_workflows.RealPolicyTests.test_real_zizmor_enforces_committed_third_party_pinning_policy_online) ... ok
+test_additive_schema_annotations_and_instance_values_are_opaque (test_public_api.GitFixture.test_additive_schema_annotations_and_instance_values_are_opaque) ... ok
+test_api_uses_checked_git_revision_instead_of_working_tree (test_public_api.GitFixture.test_api_uses_checked_git_revision_instead_of_working_tree) ... ok
+test_bootstrap_validates_documents_and_names_full_revision (test_public_api.GitFixture.test_bootstrap_validates_documents_and_names_full_revision) ... ok
+test_breaking_header_and_both_footer_forms_authorize_removal (test_public_api.GitFixture.test_breaking_header_and_both_footer_forms_authorize_removal) ... ok
+test_highest_semver_reachable_stable_wins_over_date_prerelease_and_unreachable (test_public_api.GitFixture.test_highest_semver_reachable_stable_wins_over_date_prerelease_and_unreachable) ... ok
+test_imported_props_properties_and_package_names_are_protected (test_public_api.GitFixture.test_imported_props_properties_and_package_names_are_protected) ... ok
+test_invalid_revision_fails_without_bootstrap (test_public_api.GitFixture.test_invalid_revision_fails_without_bootstrap) ... ok
+test_invalid_yaml_json_xml_and_duplicate_keys_fail_explicitly (test_public_api.GitFixture.test_invalid_yaml_json_xml_and_duplicate_keys_fail_explicitly) ... ok
+test_markers_before_baseline_and_in_subject_prose_do_not_authorize (test_public_api.GitFixture.test_markers_before_baseline_and_in_subject_prose_do_not_authorize) ... ok
+test_missing_and_escaping_imports_fail_without_bootstrap (test_public_api.GitFixture.test_missing_and_escaping_imports_fail_without_bootstrap) ... ok
+test_new_property_and_package_versions_preserve_existing_api (test_public_api.GitFixture.test_new_property_and_package_versions_preserve_existing_api) ... ok
+test_public_schema_property_definition_enum_and_file_removals_are_protected (test_public_api.GitFixture.test_public_schema_property_definition_enum_and_file_removals_are_protected) ... ok
+test_relative_imports_msbuild_directory_and_cycles_are_read_once (test_public_api.GitFixture.test_relative_imports_msbuild_directory_and_cycles_are_read_once) ... ok
+test_removed_action_input_fails_and_names_baseline_and_entry (test_public_api.GitFixture.test_removed_action_input_fails_and_names_baseline_and_entry) ... ok
+test_removed_public_props_file_fails_even_when_no_import_remains (test_public_api.GitFixture.test_removed_public_props_file_fails_even_when_no_import_remains) ... ok
+test_removing_schema_annotations_does_not_remove_public_entries (test_public_api.GitFixture.test_removing_schema_annotations_does_not_remove_public_entries) ... ok
+test_reusable_workflow_inputs_secrets_outputs_and_file_removals_are_protected (test_public_api.GitFixture.test_reusable_workflow_inputs_secrets_outputs_and_file_removals_are_protected) ... ok
+test_same_names_remain_public_composite_inputs_secrets_and_outputs (test_public_api.GitFixture.test_same_names_remain_public_composite_inputs_secrets_and_outputs) ... ok
+test_shallow_history_fails_clearly (test_public_api.GitFixture.test_shallow_history_fails_clearly) ... ok
+test_slash_and_tilde_schema_names_have_distinct_pointer_components (test_public_api.GitFixture.test_slash_and_tilde_schema_names_have_distinct_pointer_components) ... ok
+test_test_only_schema_and_nested_action_fixtures_are_not_public (test_public_api.GitFixture.test_test_only_schema_and_nested_action_fixtures_are_not_public) ... ok
+test_test_only_workflow_inputs_may_be_removed_without_breaking_marker (test_public_api.GitFixture.test_test_only_workflow_inputs_may_be_removed_without_breaking_marker) ... ok
+test_tuple_schema_positions_remain_part_of_the_public_surface (test_public_api.GitFixture.test_tuple_schema_positions_remain_part_of_the_public_surface) ... ok
+test_unchanged_api_and_additive_surfaces_pass (test_public_api.GitFixture.test_unchanged_api_and_additive_surfaces_pass) ... ok
+test_unordered_schema_alternatives_can_be_reordered_and_extended (test_public_api.GitFixture.test_unordered_schema_alternatives_can_be_reordered_and_extended) ... ok
+test_yaml_merge_does_not_hide_duplicate_explicit_keys (test_public_api.GitFixture.test_yaml_merge_does_not_hide_duplicate_explicit_keys) ... ok
+test_yaml_merge_keys_preserve_inherited_entries_and_explicit_overrides (test_public_api.GitFixture.test_yaml_merge_keys_preserve_inherited_entries_and_explicit_overrides) ... ok
+test_yaml_on_key_and_yaml_aliases_are_parsed_as_public_names (test_public_api.GitFixture.test_yaml_on_key_and_yaml_aliases_are_parsed_as_public_names) ... ok
+test_failure_in_assertion_script_fails_suite_and_other_groups_still_run (test_python_runner.PythonRunnerTests.test_failure_in_assertion_script_fails_suite_and_other_groups_still_run) ... test_behavior (test_success.ExecutedTest.test_behavior) ... ok
+Ran 1 test in 0.000s
+OK
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+test_failure_in_discovered_group_fails_suite (test_python_runner.PythonRunnerTests.test_failure_in_discovered_group_fails_suite) ... test_behavior (test_failure.ExecutedTest.test_behavior) ... FAIL
+Ran 1 test in 0.000s
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter (test_python_runner.PythonRunnerTests.test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter) ... test_behavior (test_nested.ExecutedTest.test_behavior) ... ok
+Ran 1 test in 0.000s
+OK
+test_behavior (test_qualification.ExecutedTest.test_behavior) ... ok
+Ran 1 test in 0.000s
+OK
+test_behavior (test_quality.ExecutedTest.test_behavior) ... ok
+Ran 1 test in 0.000s
+OK
+test_missing_required_group_refuses_partial_suite (test_python_runner.PythonRunnerTests.test_missing_required_group_refuses_partial_suite) ... ok
+Ran 46 tests in 7.995s
+OK
+
+--- runnerAuthenticatedCiGroup ---
+test_actionlint_process_failure_stops_scan (test_lint_workflows.LintTests.test_actionlint_process_failure_stops_scan) ... ok
+test_baseline_cannot_hide_workflows_or_omit_rationale (test_lint_workflows.LintTests.test_baseline_cannot_hide_workflows_or_omit_rationale) ... ok
+test_fresh_download_requires_integrity_and_https_redirect (test_lint_workflows.LintTests.test_fresh_download_requires_integrity_and_https_redirect) ... ok
+test_insecure_url_and_missing_or_duplicate_executable_fail (test_lint_workflows.LintTests.test_insecure_url_and_missing_or_duplicate_executable_fail) ... ok
+test_missing_token_and_offline_environment_refuse_scan (test_lint_workflows.LintTests.test_missing_token_and_offline_environment_refuse_scan) ... ok
+test_new_finding_fails_and_exact_frozen_finding_passes_severity_exit (test_lint_workflows.LintTests.test_new_finding_fails_and_exact_frozen_finding_passes_severity_exit) ... ok
+test_only_exact_rule_path_location_and_feature_are_baselined (test_lint_workflows.LintTests.test_only_exact_rule_path_location_and_feature_are_baselined) ... ok
+test_reinstall_replaces_running_binary_without_interrupting_it (test_lint_workflows.LintTests.test_reinstall_replaces_running_binary_without_interrupting_it) ... ok
+test_scan_passes_all_required_surfaces_and_keeps_online_audits_enabled (test_lint_workflows.LintTests.test_scan_passes_all_required_surfaces_and_keeps_online_audits_enabled) ... ok
+test_tampered_cached_archive_fails_integrity_before_extraction (test_lint_workflows.LintTests.test_tampered_cached_archive_fails_integrity_before_extraction) ... ok
+test_verified_archive_installs_and_replaces_tampered_binary (test_lint_workflows.LintTests.test_verified_archive_installs_and_replaces_tampered_binary) ... ok
+test_zizmor_process_failure_and_invalid_json_are_not_swallowed (test_lint_workflows.LintTests.test_zizmor_process_failure_and_invalid_json_are_not_swallowed) ... ok
+test_real_actionlint_allows_native_cache_mode_and_rejects_unknown_action_input (test_lint_workflows.RealPolicyTests.test_real_actionlint_allows_native_cache_mode_and_rejects_unknown_action_input) ... ok
+test_real_zizmor_enforces_committed_third_party_pinning_policy_online (test_lint_workflows.RealPolicyTests.test_real_zizmor_enforces_committed_third_party_pinning_policy_online) ... ok
+test_additive_schema_annotations_and_instance_values_are_opaque (test_public_api.GitFixture.test_additive_schema_annotations_and_instance_values_are_opaque) ... ok
+test_api_uses_checked_git_revision_instead_of_working_tree (test_public_api.GitFixture.test_api_uses_checked_git_revision_instead_of_working_tree) ... ok
+test_bootstrap_validates_documents_and_names_full_revision (test_public_api.GitFixture.test_bootstrap_validates_documents_and_names_full_revision) ... ok
+test_breaking_header_and_both_footer_forms_authorize_removal (test_public_api.GitFixture.test_breaking_header_and_both_footer_forms_authorize_removal) ... ok
+test_highest_semver_reachable_stable_wins_over_date_prerelease_and_unreachable (test_public_api.GitFixture.test_highest_semver_reachable_stable_wins_over_date_prerelease_and_unreachable) ... ok
+test_imported_props_properties_and_package_names_are_protected (test_public_api.GitFixture.test_imported_props_properties_and_package_names_are_protected) ... ok
+test_invalid_revision_fails_without_bootstrap (test_public_api.GitFixture.test_invalid_revision_fails_without_bootstrap) ... ok
+test_invalid_yaml_json_xml_and_duplicate_keys_fail_explicitly (test_public_api.GitFixture.test_invalid_yaml_json_xml_and_duplicate_keys_fail_explicitly) ... ok
+test_markers_before_baseline_and_in_subject_prose_do_not_authorize (test_public_api.GitFixture.test_markers_before_baseline_and_in_subject_prose_do_not_authorize) ... ok
+test_missing_and_escaping_imports_fail_without_bootstrap (test_public_api.GitFixture.test_missing_and_escaping_imports_fail_without_bootstrap) ... ok
+test_new_property_and_package_versions_preserve_existing_api (test_public_api.GitFixture.test_new_property_and_package_versions_preserve_existing_api) ... ok
+test_public_schema_property_definition_enum_and_file_removals_are_protected (test_public_api.GitFixture.test_public_schema_property_definition_enum_and_file_removals_are_protected) ... ok
+test_relative_imports_msbuild_directory_and_cycles_are_read_once (test_public_api.GitFixture.test_relative_imports_msbuild_directory_and_cycles_are_read_once) ... ok
+test_removed_action_input_fails_and_names_baseline_and_entry (test_public_api.GitFixture.test_removed_action_input_fails_and_names_baseline_and_entry) ... ok
+test_removed_public_props_file_fails_even_when_no_import_remains (test_public_api.GitFixture.test_removed_public_props_file_fails_even_when_no_import_remains) ... ok
+test_removing_schema_annotations_does_not_remove_public_entries (test_public_api.GitFixture.test_removing_schema_annotations_does_not_remove_public_entries) ... ok
+test_reusable_workflow_inputs_secrets_outputs_and_file_removals_are_protected (test_public_api.GitFixture.test_reusable_workflow_inputs_secrets_outputs_and_file_removals_are_protected) ... ok
+test_same_names_remain_public_composite_inputs_secrets_and_outputs (test_public_api.GitFixture.test_same_names_remain_public_composite_inputs_secrets_and_outputs) ... ok
+test_shallow_history_fails_clearly (test_public_api.GitFixture.test_shallow_history_fails_clearly) ... ok
+test_slash_and_tilde_schema_names_have_distinct_pointer_components (test_public_api.GitFixture.test_slash_and_tilde_schema_names_have_distinct_pointer_components) ... ok
+test_test_only_schema_and_nested_action_fixtures_are_not_public (test_public_api.GitFixture.test_test_only_schema_and_nested_action_fixtures_are_not_public) ... ok
+test_test_only_workflow_inputs_may_be_removed_without_breaking_marker (test_public_api.GitFixture.test_test_only_workflow_inputs_may_be_removed_without_breaking_marker) ... ok
+test_tuple_schema_positions_remain_part_of_the_public_surface (test_public_api.GitFixture.test_tuple_schema_positions_remain_part_of_the_public_surface) ... ok
+test_unchanged_api_and_additive_surfaces_pass (test_public_api.GitFixture.test_unchanged_api_and_additive_surfaces_pass) ... ok
+test_unordered_schema_alternatives_can_be_reordered_and_extended (test_public_api.GitFixture.test_unordered_schema_alternatives_can_be_reordered_and_extended) ... ok
+test_yaml_merge_does_not_hide_duplicate_explicit_keys (test_public_api.GitFixture.test_yaml_merge_does_not_hide_duplicate_explicit_keys) ... ok
+test_yaml_merge_keys_preserve_inherited_entries_and_explicit_overrides (test_public_api.GitFixture.test_yaml_merge_keys_preserve_inherited_entries_and_explicit_overrides) ... ok
+test_yaml_on_key_and_yaml_aliases_are_parsed_as_public_names (test_public_api.GitFixture.test_yaml_on_key_and_yaml_aliases_are_parsed_as_public_names) ... ok
+test_failure_in_assertion_script_fails_suite_and_other_groups_still_run (test_python_runner.PythonRunnerTests.test_failure_in_assertion_script_fails_suite_and_other_groups_still_run) ... test_behavior (test_success.ExecutedTest.test_behavior) ... ok
+Ran 1 test in 0.000s
+OK
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+test_failure_in_discovered_group_fails_suite (test_python_runner.PythonRunnerTests.test_failure_in_discovered_group_fails_suite) ... test_behavior (test_failure.ExecutedTest.test_behavior) ... FAIL
+Ran 1 test in 0.000s
+Ran 0 tests in 0.000s
+Ran 0 tests in 0.000s
+test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter (test_python_runner.PythonRunnerTests.test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter) ... test_behavior (test_nested.ExecutedTest.test_behavior) ... ok
+Ran 1 test in 0.000s
+OK
+test_behavior (test_qualification.ExecutedTest.test_behavior) ... ok
+Ran 1 test in 0.000s
+OK
+test_behavior (test_quality.ExecutedTest.test_behavior) ... ok
+Ran 1 test in 0.000s
+OK
+test_missing_required_group_refuses_partial_suite (test_python_runner.PythonRunnerTests.test_missing_required_group_refuses_partial_suite) ... ok
+Ran 46 tests in 6.871s
+OK
+
+--- focusedPublisher ---
+Installed 6 packages in 6ms
+test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff (test_release_publish.PublishCompositeTests.test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff) ... ok
+test_absent_and_correct_lightweight_and_annotated_tags_publish_tag_last (test_release_publish.PublisherTests.test_absent_and_correct_lightweight_and_annotated_tags_publish_tag_last) ... ok
+test_all_images_precede_first_package_and_late_conflict_stops_copy (test_release_publish.PublisherTests.test_all_images_precede_first_package_and_late_conflict_stops_copy) ... NuGet package push completed
+ok
+test_both_tag_forms_conflict_and_noncommit_ref_fail_before_materialization (test_release_publish.PublisherTests.test_both_tag_forms_conflict_and_noncommit_ref_fail_before_materialization) ... ok
+test_draft_and_tag_revalidated_before_patch_and_returned_identity_verified (test_release_publish.PublisherTests.test_draft_and_tag_revalidated_before_patch_and_returned_identity_verified) ... ok
+test_empty_payload_no_package_command_and_partial_package_retry_same_bytes (test_release_publish.PublisherTests.test_empty_payload_no_package_command_and_partial_package_retry_same_bytes) ... NuGet package push completed
+ok
+test_interrupted_state_rewrite_preserves_previous_complete_document (test_release_publish.PublisherTests.test_interrupted_state_rewrite_preserves_previous_complete_document) ... ok
+test_main_advancement_workflow_difference_and_postpatch_race (test_release_publish.PublisherTests.test_main_advancement_workflow_difference_and_postpatch_race) ... ok
+test_nuget_status_reports_duplicate_without_exposing_tool_output (test_release_publish.PublisherTests.test_nuget_status_reports_duplicate_without_exposing_tool_output) ... ok
+test_producer_draft_artifact_errors_have_no_writes (test_release_publish.PublisherTests.test_producer_draft_artifact_errors_have_no_writes) ... ok
+test_source_uses_captured_base_without_recomputing_newer_reachable_tag (test_release_publish.PublisherTests.test_source_uses_captured_base_without_recomputing_newer_reachable_tag) ... ok
+test_unsafe_archive_fails_without_any_materialized_payload (test_release_publish.PublisherTests.test_unsafe_archive_fails_without_any_materialized_payload) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 19.398s
+
+OK
+
+--- focusedOCI ---
+Installed 6 packages in 7ms
+test_absence_conflict_auth_and_redirect_are_distinct (test_oci_publish.OciPublishTests.test_absence_conflict_auth_and_redirect_are_distinct) ... ok
+test_complete_remote_bytes_and_correct_retry (test_oci_publish.OciPublishTests.test_complete_remote_bytes_and_correct_retry) ... ok
+test_private_auth_lifetime_exact_tool_and_original_archive (test_oci_publish.OciPublishTests.test_private_auth_lifetime_exact_tool_and_original_archive) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.038s
+
+OK
+
+--- workflowLint ---
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/verify/action.yml
+zizmor: 12 exact frozen composite findings; 0 new findings
+
+--- commitlint ---
+⧗   --- input ---
+test(ci): retain publisher review verification
+✔   found 0 problems, 0 warnings

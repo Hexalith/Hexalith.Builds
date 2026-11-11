@@ -46,5 +46,38 @@
     "package": "Hexalith.Builds.PublishProbe.20261111/4.47.1",
     "container": "registry.hexalith.com/cicd-publish-spike-3-1:4.47.1"
   },
-  "reason": "Tag deletion is forbidden with no bypass actor. Retain release with its tag; no protection administration. Package and registry version remain isolated qualification evidence. Actions artifacts retain normal 90-day lifetime."
+  "reason": "Protected probe tag cannot be deleted within authorization. The identified release is retained as a draft after successful publication evidence was captured; genuine product latest is restored. No protection administration. Package and registry version remain qualification evidence.",
+  "nonLatestAdjustment": {
+    "observedAt": "2026-11-11T11:55:56.379443+00:00",
+    "releaseId": 441591623,
+    "request": {
+      "make_latest": "false"
+    },
+    "beforeLatest": {
+      "id": 441591623,
+      "tag": "v4.47.1"
+    },
+    "afterLatest": {
+      "id": 441591623,
+      "tag": "v4.47.1"
+    },
+    "probeBodyAndTargetUnchanged": true,
+    "protectionPolicyWrites": 0,
+    "immediateEffectObserved": false
+  },
+  "draftRetention": {
+    "observedAt": "2026-11-11T11:58:45.853949+00:00",
+    "releaseId": 441591623,
+    "request": {
+      "draft": true
+    },
+    "draft": true,
+    "bodyAndTargetPreserved": true,
+    "protectedTagPreserved": true,
+    "latestRelease": {
+      "id": 439458657,
+      "tag": "v4.47.0"
+    },
+    "reason": "Retain disposable release as draft after qualification; prevent it displacing product latest without modifying tag protection."
+  }
 }

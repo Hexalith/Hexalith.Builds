@@ -1,0 +1,28 @@
+{
+  "sourceMerge": "e588605ccf2c6577a2490e1a3fc512f8ffdc3960",
+  "sourceTreeUnchangedByStory": true,
+  "command": [
+    "dotnet",
+    "test",
+    "--project",
+    "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+    "--no-build",
+    "--no-restore",
+    "--filter-class",
+    "*SelectedRoutingCatalogSnapshotTests"
+  ],
+  "exitCode": 2,
+  "total": 34,
+  "passed": 30,
+  "failed": 4,
+  "failedScenarios": [
+    "cancelled",
+    "near-limit-valid",
+    "valid",
+    "schema-properties"
+  ],
+  "cause": "Incoming validator requires ownerRunId/runId/role; unchanged descriptor fixture supplies environmentId only.",
+  "log": "upstream-routing-test-failure.txt",
+  "logSha256": "a7133b170d9f841add58c337acd9286c6d8802ae322bbc9328290874fd5c78e7",
+  "disposition": "Deferred upstream repair in canonical story; publisher work preserves these unrelated C# files."
+}

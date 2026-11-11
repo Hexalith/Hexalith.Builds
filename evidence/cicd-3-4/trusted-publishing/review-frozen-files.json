@@ -1,0 +1,15 @@
+{
+  "baselineRevision": "891886ddc60a9924d053bb74bf6bcc73e101b2ce",
+  "checkedRevision": "3699c6d6c72ca2a02940cdf73656ae7ebf53a6a8",
+  "baselineFilesCompared": 135,
+  "changedFiles": [
+    "Github/lib/release_draft.py",
+    "Github/lib/tests/actions_expressions.py"
+  ],
+  "allowedFactoring": [
+    "Github/lib/release_draft.py",
+    "Github/lib/tests/actions_expressions.py"
+  ],
+  "allOtherExistingGithubWorkflowAndPinBytesPreserved": true,
+  "temporaryProbeControlsRemoved": true
+}

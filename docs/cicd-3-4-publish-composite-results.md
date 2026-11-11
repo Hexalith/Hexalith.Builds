@@ -181,7 +181,7 @@ Repository by Microsoft, certificate SHA-256
 [Public package evidence](../evidence/cicd-3-4/trusted-publishing/nuget-public-package.json)
 retains the per-entry hashes, HTTP observations and signature-verification log.
 
-Resumed verification passes all 20 groups on both Python 3.12.13 and runner
+Initial resumed verification passed all 20 groups on both Python 3.12.13 and runner
 Python 3.14.4, the 11 publisher and 3 OCI focused cases on Python 3.12, pinned
 authenticated workflow lint with zero new findings, and the committed-source
 API check with 2554 entries and no removals. The original five draft trailers
@@ -189,6 +189,39 @@ and body, both downloaded outcome schemas/digests, final live tag and all frozen
 bytes are independently checked. Commands, full log locations/hashes and matrix
 case names are in
 [verification.json](../evidence/cicd-3-4/trusted-publishing/verification.json).
+
+## Review repair and retained verification
+
+Review found that missing or truncated private state could prevent the always-run
+finalizer from emitting its outcome. Repair `3699c6d6c72ca2a02940cdf73656ae7ebf53a6a8`
+writes state atomically and recovers a schema-valid failed dispatch outcome when
+state is unavailable or invalid, with payload cleanup. All 12 focused publisher
+and 3 OCI tests pass; actual composite faults cover missing, truncated and invalid
+state, and interrupted-write coverage preserves the previous complete state.
+Hosted publication evidence above intentionally retains the earlier exact source.
+
+After the repair, both complete suites passed 19/20 groups and failed only the
+online policy group because the parent omitted its required token. Rerunning
+that entire group with privately supplied authentication passed all 46 tests on
+each interpreter; no code changed between runs. Thus all 20 groups were verified
+after repair. Workflow lint passes with zero new findings. The public API is
+also compared against genuine product `v4.47.0`, avoiding the retained probe tag:
+2488 baseline entries, 2554 current entries, 66 additions and zero removals.
+Commands, hashes and durable output excerpts are in
+[verification.json](../evidence/cicd-3-4/trusted-publishing/verification.json),
+[review-verification.txt](../evidence/cicd-3-4/trusted-publishing/review-verification.txt)
+and [review-public-api.json](../evidence/cicd-3-4/trusted-publishing/review-public-api.json).
+
+The preserved incoming upstream merge
+`e588605ccf2c6577a2490e1a3fc512f8ffdc3960` separately contains a .NET routing
+fixture regression: 34 tests ran, 4 failed because its descriptor omits newly
+required owner fields. These C# files were not changed by publisher work.
+The canonical story records this and five other upstream follow-ups; exact
+command/failures remain in
+[upstream-routing-test-failure.json](../evidence/cicd-3-4/trusted-publishing/upstream-routing-test-failure.json).
+The .NET regression remains deferred. Follow-up review is recommended
+for the finalizer repair because fault recovery has local composite coverage,
+while the hosted evidence pins the pre-repair controller.
 
 ## Cleanup, retained checks and remaining work
 
@@ -224,7 +257,10 @@ pins, `builds-release.yml` and all production callers retain their bytes.
 The resumed qualification made no protection-policy changes. Active tag ruleset
 `26812219` forbids deletion of every `v*` tag and has no bypass actor. The
 identified probe release `441591623` and `v4.47.1` are retained together, avoiding
-an orphan tag. Its package and registry version also remain as isolated evidence;
+an orphan tag. After capturing successful publication readbacks, the disposable
+release was returned to draft so genuine product `v4.47.0` is latest again.
+Its original body and source remain intact. Its package and registry version
+also remain as isolated evidence;
 they are qualification payloads, not a Builds product release. Temporary controls
 are removed and normal 90-day Actions artifact retention remains. The retained
 probe tag is now a reachable stable version and can affect future version-base

@@ -1,0 +1,80 @@
+Running tests from /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+failed Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.CapturedRoutingProofRequiresTheValidatedOwnedInstanceAsync(scenario: "cancelled") (14ms)
+  from /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : Task `SelectedRoutingCatalogSnapshot.ReadAsync(plan, descriptor, cancellationToken, required: true, knownCredentials: knownCredentials)`
+      should throw
+  System.OperationCanceledException
+      but threw
+  System.IO.InvalidDataException
+    at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+    at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+    at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    at System.Runtime.CompilerServices.ConfiguredTaskAwaitable`1.ConfiguredTaskAwaiter.GetResult()
+    at Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.AssertSnapshotOutcomeAsync(CompositionRunPlan plan, Byte[] descriptor, String directory, String root, String scenario, String opaque, CancellationToken cancellationToken) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/SelectedRoutingCatalogSnapshotTests.cs:311
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    at Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.CapturedRoutingProofRequiresTheValidatedOwnedInstanceAsync(String scenario) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/SelectedRoutingCatalogSnapshotTests.cs:103
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.CapturedRoutingProofRequiresTheValidatedOwnedInstanceAsync(scenario: "near-limit-valid") (12ms)
+  from /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+  Xunit.MicrosoftTestingPlatform.XunitException: System.IO.InvalidDataException : Routing observations have missing or incorrectly typed fields.
+  ---- System.Collections.Generic.KeyNotFoundException : The given key was not present in the dictionary.
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, CancellationToken cancellationToken, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:37
+    at Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.AssertSnapshotOutcomeAsync(CompositionRunPlan plan, Byte[] descriptor, String directory, String root, String scenario, String opaque, CancellationToken cancellationToken) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/SelectedRoutingCatalogSnapshotTests.cs:306
+    at Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.CapturedRoutingProofRequiresTheValidatedOwnedInstanceAsync(String scenario) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/SelectedRoutingCatalogSnapshotTests.cs:103
+    --- End of stack trace from previous location ---
+    ----- Inner Stack Trace -----
+    at System.Text.Json.JsonElement.GetProperty(String propertyName)
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ValidateDescriptor(CompositionRunPlan plan, Byte[] descriptorSnapshot, String directory, String instance, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:83
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadCoreAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached, CancellationToken cancellationToken) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:59
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, CancellationToken cancellationToken, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:33
+failed Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.CapturedRoutingProofRequiresTheValidatedOwnedInstanceAsync(scenario: "valid") (2ms)
+  from /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+  Xunit.MicrosoftTestingPlatform.XunitException: System.IO.InvalidDataException : Routing observations have missing or incorrectly typed fields.
+  ---- System.Collections.Generic.KeyNotFoundException : The given key was not present in the dictionary.
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, CancellationToken cancellationToken, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:37
+    at Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.AssertSnapshotOutcomeAsync(CompositionRunPlan plan, Byte[] descriptor, String directory, String root, String scenario, String opaque, CancellationToken cancellationToken) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/SelectedRoutingCatalogSnapshotTests.cs:306
+    at Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.CapturedRoutingProofRequiresTheValidatedOwnedInstanceAsync(String scenario) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/SelectedRoutingCatalogSnapshotTests.cs:103
+    --- End of stack trace from previous location ---
+    ----- Inner Stack Trace -----
+    at System.Text.Json.JsonElement.GetProperty(String propertyName)
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ValidateDescriptor(CompositionRunPlan plan, Byte[] descriptorSnapshot, String directory, String instance, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:83
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadCoreAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached, CancellationToken cancellationToken) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:59
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, CancellationToken cancellationToken, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:33
+failed Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.CapturedRoutingProofRequiresTheValidatedOwnedInstanceAsync(scenario: "schema-properties") (2ms)
+  from /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+  Xunit.MicrosoftTestingPlatform.XunitException: System.IO.InvalidDataException : Routing observations have missing or incorrectly typed fields.
+  ---- System.Collections.Generic.KeyNotFoundException : The given key was not present in the dictionary.
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, CancellationToken cancellationToken, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:37
+    at Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.AssertSnapshotOutcomeAsync(CompositionRunPlan plan, Byte[] descriptor, String directory, String root, String scenario, String opaque, CancellationToken cancellationToken) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/SelectedRoutingCatalogSnapshotTests.cs:306
+    at Hexalith.Builds.ModuleTool.Tests.SelectedRoutingCatalogSnapshotTests.CapturedRoutingProofRequiresTheValidatedOwnedInstanceAsync(String scenario) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/SelectedRoutingCatalogSnapshotTests.cs:103
+    --- End of stack trace from previous location ---
+    ----- Inner Stack Trace -----
+    at System.Text.Json.JsonElement.GetProperty(String propertyName)
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ValidateDescriptor(CompositionRunPlan plan, Byte[] descriptorSnapshot, String directory, String instance, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:83
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadCoreAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached, CancellationToken cancellationToken) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:59
+    at Hexalith.Builds.Tooling.Runtime.SelectedRoutingCatalogSnapshot.ReadAsync(CompositionRunPlan plan, Byte[] descriptorSnapshot, CancellationToken cancellationToken, Boolean required, IReadOnlyList`1 knownCredentials, AttachedSuiteIdentity attached) in /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedRoutingCatalogSnapshot.cs:33
+/home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64) failed with 4 error(s) (934ms)
+Exit code: 2
+
+Test run summary: Failed!
+  total: 34
+  failed: 4
+  succeeded: 30
+  skipped: 0
+  duration: 1s 064ms
+Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)

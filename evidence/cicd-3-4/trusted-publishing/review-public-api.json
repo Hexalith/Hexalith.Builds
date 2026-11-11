@@ -1,0 +1,11 @@
+{
+  "baselineTag": "v4.47.0",
+  "baselineRevision": "5ec1779040606be89306129a7d2b245258c9acd2",
+  "checkedRevision": "3699c6d6c72ca2a02940cdf73656ae7ebf53a6a8",
+  "baselineEntries": 2488,
+  "currentEntries": 2554,
+  "removed": [],
+  "added": 66,
+  "normalCheckExitCode": 0,
+  "normalCheckOutput": "Public API baseline: v4.47.1 (75e1d4a3809b30684e67c7e9b2c8043720b49c53); checked revision: 3699c6d6c72ca2a02940cdf73656ae7ebf53a6a8\nPublic API compatible: 2554 entries; no removals\n"
+}

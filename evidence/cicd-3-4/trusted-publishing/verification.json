@@ -167,5 +167,148 @@
     "repositorySignatureVerificationExitCode": 0
   },
   "protectionPolicyWrites": 0,
-  "publicNuGetReadbackVerifiedAt": "2026-11-11T11:34:03.717521+00:00"
+  "publicNuGetReadbackVerifiedAt": "2026-11-11T11:34:03.717521+00:00",
+  "postReview": {
+    "verifiedAt": "2026-11-11T11:59:55.676667+00:00",
+    "reviewRepairRevision": "3699c6d6c72ca2a02940cdf73656ae7ebf53a6a8",
+    "all20GroupsVerifiedAfterAuthenticatedRetry": true,
+    "fullSuiteExitCodes": {
+      "python312": 1,
+      "runnerPython": 1
+    },
+    "fullSuiteResult": "19/20 groups passed each; only the online policy group lacked required GitHub authentication.",
+    "authenticatedCiGroupExitCodes": {
+      "python312": 0,
+      "runnerPython": 0
+    },
+    "authenticatedCiGroupResults": "46 tests passed on each interpreter; no code changed between complete invocation and targeted authenticated retry.",
+    "authentication": "ZIZMOR_GITHUB_TOKEN supplied privately from effective CiCd-agent gh profile; no credential value retained.",
+    "fullSuiteCommands": [
+      [
+        "uv",
+        "run",
+        "--no-cache",
+        "--locked",
+        "--script",
+        "--python",
+        "3.12",
+        "Tools/ci/run_python_tests.py"
+      ],
+      [
+        "uv",
+        "run",
+        "--no-cache",
+        "--locked",
+        "--script",
+        "--python",
+        "/usr/bin/python3",
+        "Tools/ci/run_python_tests.py"
+      ]
+    ],
+    "authenticatedCiGroupCommands": [
+      [
+        "uv",
+        "run",
+        "--no-cache",
+        "--with",
+        "PyYAML==6.0.3",
+        "--with",
+        "jsonschema==4.26.0",
+        "--python",
+        "3.12",
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "Tools/ci/tests",
+        "-v"
+      ],
+      [
+        "uv",
+        "run",
+        "--no-cache",
+        "--with",
+        "PyYAML==6.0.3",
+        "--with",
+        "jsonschema==4.26.0",
+        "--python",
+        "/usr/bin/python3",
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "Tools/ci/tests",
+        "-v"
+      ]
+    ],
+    "focusedPublisherTests": 12,
+    "focusedOciTests": 3,
+    "workflowLint": "12 exact frozen findings; zero new findings",
+    "publicApi": {
+      "record": "review-public-api.json",
+      "genuineBaseline": "5ec1779040606be89306129a7d2b245258c9acd2",
+      "baselineEntries": 2488,
+      "currentEntries": 2554,
+      "removed": []
+    },
+    "durableExcerpts": "review-verification.txt",
+    "durableExcerptsSha256": "adde062476df333623d45d0de89d5099940fdd01062b1e9492023f2f138aec51",
+    "logs": {
+      "python312": {
+        "sourceLog": "/tmp/cicd-3-4-review-python312.log",
+        "sourceLogSha256": "ede773d12b94a488db522612cf960f5ff17b71f37f0f87fb51fc66f351a59cc5"
+      },
+      "runnerPython": {
+        "sourceLog": "/tmp/cicd-3-4-review-runner-python.log",
+        "sourceLogSha256": "ef2c5ae72a46cb996efc121d8f7a284df76b7c661ebc8c10a18b058c6f64a47e"
+      },
+      "python312AuthenticatedCiGroup": {
+        "sourceLog": "/tmp/cicd-3-4-review-python312-ci-tests.log",
+        "sourceLogSha256": "da2bc965c0dc0f1112a5675141c379d2dbcd622cdfa3cac27d99af392315a47e"
+      },
+      "runnerAuthenticatedCiGroup": {
+        "sourceLog": "/tmp/cicd-3-4-review-runner-python-ci-tests.log",
+        "sourceLogSha256": "8573d73a8fe4f4d24b2feee83682892f159f828caa9fb7f61117b93170e9630f"
+      },
+      "focusedPublisher": {
+        "sourceLog": "/tmp/cicd-3-4-review-focused-publisher.log",
+        "sourceLogSha256": "160da8815ae2c8925580f2ad467dc0a78db05cd0770989b46a9a1498ae67afce"
+      },
+      "focusedOCI": {
+        "sourceLog": "/tmp/cicd-3-4-review-focused-oci.log",
+        "sourceLogSha256": "47ad5d29a96ee1adb75cb2e17b56a6e25236cd28dbaffde6391d5d320e5ced1e"
+      },
+      "workflowLint": {
+        "sourceLog": "/tmp/cicd-3-4-review-lint.log",
+        "sourceLogSha256": "b62acd9c363859a03ccd682e9828e77fe5d199bafc9df78389edb0b04f6ac483"
+      },
+      "commitlint": {
+        "sourceLog": "/tmp/cicd-3-4-review-commitlint.log",
+        "sourceLogSha256": "94aaf4dee78157e9f3dffbffee195379b142f04021c2ad93cfd6e1dd5d36d62c"
+      }
+    },
+    "stateFailureCases": [
+      "state-missing",
+      "state-truncated",
+      "state-invalid",
+      "interrupted-write preserves prior complete state"
+    ],
+    "upstreamDotnetRegression": {
+      "record": "upstream-routing-test-failure.json",
+      "log": "upstream-routing-test-failure.txt",
+      "sourceMerge": "e588605ccf2c6577a2490e1a3fc512f8ffdc3960",
+      "total": 34,
+      "failed": 4,
+      "disposition": "Deferred incoming upstream regression; no C# source/test changes in publisher commits."
+    },
+    "patchEntryCounts": {
+      "high": 1,
+      "medium": 1,
+      "low": 1
+    },
+    "followupReviewRecommended": true,
+    "unverifiedRisk": "Finalizer recovery is covered by actual local composite faults; hosted publication probes pin the pre-repair controller e9741b56ac6f6512734b368492dbab892e109877 rather than a real interrupted hosted run of repair 3699c6d6c72ca2a02940cdf73656ae7ebf53a6a8"
+  }
 }
