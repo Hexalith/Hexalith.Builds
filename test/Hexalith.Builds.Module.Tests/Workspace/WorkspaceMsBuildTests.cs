@@ -983,7 +983,11 @@ public sealed class WorkspaceMsBuildTests
                 "-p:NuGetAudit=false").ConfigureAwait(true);
             build.ExitCode.ShouldNotBe(0);
             build.Output.ShouldContain("HXW006");
-            build.Output.ShouldContain("_HXWPreLateConfiguration");
+            // SDK 11 forwards Configuration as a global property during build, so the first
+            // mutable late override is the source flag or dependency root instead.
+            build.Output.ShouldContain(mode == WorkspaceMode.Source
+                ? "_HXWPreLateUseHexalithProjectReferences"
+                : "_HXWPreLateHexalithDepRoot");
             result.Output.ShouldContain("\"HexalithDepFromSource\": \"" + sourceExpected + "\"");
             using JsonDocument output = JsonDocument.Parse(result.Output);
             output.RootElement.GetProperty("Properties").GetProperty("HexalithDepRoot").GetString().ShouldBe(Path.Combine(active, "references", "Hexalith.Dep"));

@@ -71,7 +71,7 @@ public sealed class ExecutingToolIdentityTests
     public void CaptureUsesActualVersionAndTwoNamedExecutingBinaries()
     {
         ExecutingToolIdentity identity = ExecutingToolIdentity.Capture();
-        identity.Version.ShouldBe(PlatformIdentityResolver.ToolVersion);
+        identity.Version.ShouldBe(PlatformIdentityResolver.VersionFor(typeof(Hexalith.Builds.ModuleTool.Cli.ModuleCommandApplication).Assembly));
         identity.ContentIdentity.ShouldBe("sha256:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(identity.Manifest))));
         using JsonDocument manifest = JsonDocument.Parse(identity.Manifest);
         manifest.RootElement.GetProperty("algorithm").GetString().ShouldBe("sha256");

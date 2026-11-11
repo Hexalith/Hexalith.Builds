@@ -109,14 +109,14 @@ public sealed class DirectCatalogDeclarationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ReleasedParties310UsesVerifiedDirectCatalogAndExactSourceFixtureAsync(bool platformRoot)
+    public async Task ReleasedParties311UsesVerifiedDirectCatalogAndExactSourceFixtureAsync(bool platformRoot)
     {
         using WorkspaceGitFixture fixture = await CreateReleasedWorkspaceAsync(false).ConfigureAwait(true);
         string manifest = platformRoot ? Path.Combine(fixture.Directory, "platform", "hexalith-platform.json") : fixture.Manifest;
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
         mapping.IdentityFindings.ShouldBeEmpty();
         mapping.PlatformIdentity.ShouldNotBeNull().IsPlatformRepository.ShouldBe(platformRoot);
-        string source = Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "parties-3.1.0.json");
+        string source = Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "parties-3.1.1.json");
         byte[] bytes = await File.ReadAllBytesAsync(source, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string releasedRoot = Path.Combine(fixture.Directory, "released-parties");
         _ = Directory.CreateDirectory(releasedRoot);
@@ -133,8 +133,8 @@ public sealed class DirectCatalogDeclarationTests
         hash.ShouldBe("d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348");
         CompositionDeclarationOptions options = new(mapping, [snapshot]) { ActiveModule = "parties" };
         string version = options.CatalogVersion("parties", snapshot);
-        version.ShouldBe("3.1.0");
-        options.ReleaseCommits["parties/" + version].ShouldBe("50904cc4ba53c9b0b2c082d5872a0d276be8f5c3");
+        version.ShouldBe("3.1.1");
+        options.ReleaseCommits["parties/" + version].ShouldBe("84e3df796ac977041a21ec7bd8e5789bdc44241a");
         options.ReleaseSnapshotHashes["parties/" + version].ShouldBe(hash);
         options.ReleaseCommits.ContainsKey("parties/3.0.0").ShouldBeFalse();
         options.ReleaseSnapshotHashes.ContainsKey("parties/3.0.0").ShouldBeFalse();
@@ -190,7 +190,7 @@ public sealed class DirectCatalogDeclarationTests
         string declarations = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "Declarations");
         _ = Directory.CreateDirectory(declarations);
         JsonObject provenance = [];
-        foreach ((string owner, string version) in new[] { ("eventstore", sdkVersion), ("tenants", "7.0.5"), ("memories", "3.0.25") })
+        foreach ((string owner, string version) in new[] { ("eventstore", sdkVersion), ("tenants", "7.0.6"), ("memories", "3.0.26") })
         {
             byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", owner + "-" + version + ".json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             string key = owner + "/" + version;
@@ -199,7 +199,7 @@ public sealed class DirectCatalogDeclarationTests
             if (owner == "memories")
             {
                 hash.ShouldBe("56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840");
-                CompositionDeclarationOptions.DefaultReleaseCommits[key].ShouldBe("246157a7ff8e2dcd8d356c833a77a02514490d2f");
+                CompositionDeclarationOptions.DefaultReleaseCommits[key].ShouldBe("f807701e45297064f3968bcc8052e8002eac6d34");
             }
 
             await File.WriteAllBytesAsync(Path.Combine(declarations, owner + ".json"), bytes, TestContext.Current.CancellationToken).ConfigureAwait(true);

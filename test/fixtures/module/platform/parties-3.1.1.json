@@ -1,0 +1,461 @@
+{
+  "schema": "hexalith.module-manifest.v2",
+  "modules": [
+    {
+      "identity": {
+        "moduleId": "parties",
+        "servers": [
+          {
+            "id": "domain",
+            "appId": "parties",
+            "resourceId": "parties",
+            "enabled": true,
+            "required": true
+          }
+        ],
+        "dependencies": [
+          "eventstore",
+          "tenants",
+          "memories"
+        ]
+      },
+      "runtime": {
+        "dapr": [
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "Parties:Security:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:CommandStatus:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:DataProtection:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:Projections:ReadModelStateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:Projections:CheckpointStateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "Parties:MemoriesSearch:MappingStore:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "Tenants:PubSubName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "EventStore:ProjectionChanges:PubSubName",
+            "servers": [
+              "domain"
+            ]
+          }
+        ],
+        "extensions": [
+          {
+            "packageId": "Hexalith.Parties",
+            "configurationInputs": [
+              {
+                "key": "EventStore:DomainService:AppId",
+                "source": "configuration",
+                "reference": "eventstore-domainservice-appid"
+              },
+              {
+                "key": "Authentication:JwtBearer:Authority",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-authority"
+              },
+              {
+                "key": "Authentication:JwtBearer:Issuer",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-issuer"
+              },
+              {
+                "key": "Authentication:JwtBearer:Audience",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-audience"
+              },
+              {
+                "key": "Authentication:JwtBearer:ValidAudiences",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-validaudiences"
+              },
+              {
+                "key": "Authentication:JwtBearer:AllowedAlgorithms",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-allowedalgorithms"
+              },
+              {
+                "key": "Authentication:JwtBearer:RequireHttpsMetadata",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-requirehttpsmetadata"
+              },
+              {
+                "key": "Authentication:JwtBearer:AllowInsecureSymmetricKey",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-allowinsecuresymmetrickey"
+              },
+              {
+                "key": "Authentication:JwtBearer:SigningKey",
+                "source": "secret",
+                "reference": "domain-jwt-signing-key"
+              },
+              {
+                "key": "Authentication:Workload:Audience",
+                "source": "configuration",
+                "reference": "authentication-workload-audience"
+              },
+              {
+                "key": "Authentication:Workload:AllowedCallers",
+                "source": "configuration",
+                "reference": "authentication-workload-allowedcallers"
+              },
+              {
+                "key": "Authentication:Workload:MaximumLifetimeSeconds",
+                "source": "configuration",
+                "reference": "authentication-workload-maximumlifetimeseconds"
+              },
+              {
+                "key": "EventStore:AppChannelToken",
+                "source": "secret",
+                "reference": "app-channel-token"
+              },
+              {
+                "key": "EventStore:DataProtection:PersistToStateStore",
+                "source": "configuration",
+                "reference": "eventstore-dataprotection-persisttostatestore"
+              },
+              {
+                "key": "Tenants:Enabled",
+                "source": "configuration",
+                "reference": "tenants-enabled"
+              },
+              {
+                "key": "Tenants:ServiceName",
+                "source": "configuration",
+                "reference": "tenants-servicename"
+              },
+              {
+                "key": "Tenants:CommandApiAppId",
+                "source": "configuration",
+                "reference": "tenants-commandapiappid"
+              },
+              {
+                "key": "Tenants:TopicName",
+                "source": "configuration",
+                "reference": "tenants-topicname"
+              },
+              {
+                "key": "Parties:MemoriesSearch:Enabled",
+                "source": "configuration",
+                "reference": "parties-memoriessearch-enabled"
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "server": "domain",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          }
+        ]
+      },
+      "surfaces": {
+        "interfaces": [
+          {
+            "name": "party-domain",
+            "server": "domain",
+            "protocol": "http",
+            "routePrefix": "/",
+            "exposure": "internal-only",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [
+              "eventstore"
+            ],
+            "operations": [
+              {
+                "name": "process",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "query",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "project",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "replay-state",
+                "kind": "administration",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "admin-operational-index-metadata",
+                "kind": "administration",
+                "authorizationPolicy": "authenticated"
+              }
+            ],
+            "invocationRules": [
+              {
+                "caller": "eventstore",
+                "path": "/process",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/query",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/admin/operational-index-metadata",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/v2",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/v2/reconcile",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/replay-state",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/shared/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/stage/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/commit/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/abort/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/verify/v1",
+                "verbs": [
+                  "POST"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "integration": {
+        "topics": [
+          {
+            "name": "tenants-events",
+            "role": "events",
+            "deadLetter": {
+              "strategy": "none"
+            },
+            "subscription": {
+              "server": "domain",
+              "route": "/tenants/events",
+              "topic": "system.tenants.events"
+            }
+          }
+        ],
+        "secrets": [
+          {
+            "name": "domain-jwt-signing-key",
+            "configurationKey": "Authentication:JwtBearer:SigningKey"
+          },
+          {
+            "name": "app-channel-token",
+            "configurationKey": "EventStore:AppChannelToken"
+          }
+        ],
+        "dynamicSecretNamespaces": [],
+        "identityNeeds": [],
+        "egress": [
+          {
+            "name": "domain-oidc-metadata",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority/.well-known/openid-configuration"
+          },
+          {
+            "name": "domain-oidc-jwks",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority -> metadata.jwks_uri"
+          }
+        ],
+        "providers": [],
+        "workers": []
+      },
+      "tests": [
+        {
+          "name": "platform-source",
+          "executor": "mtp",
+          "entry": "tests/Hexalith.Parties.Platform.IntegrationTests/Hexalith.Parties.Platform.IntegrationTests.csproj",
+          "reportFormat": "trx",
+          "executionTimeoutSeconds": 300,
+          "stopTimeoutSeconds": 90,
+          "mode": "source"
+        },
+        {
+          "name": "platform-package",
+          "executor": "mtp",
+          "entry": "tests/Hexalith.Parties.Platform.IntegrationTests/Hexalith.Parties.Platform.IntegrationTests.csproj",
+          "reportFormat": "trx",
+          "executionTimeoutSeconds": 300,
+          "stopTimeoutSeconds": 90,
+          "mode": "package"
+        },
+        {
+          "name": "platform-current-package",
+          "executor": "mtp",
+          "entry": "tests/Hexalith.Parties.Platform.IntegrationTests/Hexalith.Parties.Platform.IntegrationTests.csproj",
+          "reportFormat": "trx",
+          "executionTimeoutSeconds": 300,
+          "stopTimeoutSeconds": 90,
+          "mode": "package"
+        },
+        {
+          "name": "lifecycle-package",
+          "executor": "mtp",
+          "entry": "tests/Hexalith.Parties.Platform.LifecycleTests/Hexalith.Parties.Platform.LifecycleTests.csproj",
+          "reportFormat": "trx",
+          "executionTimeoutSeconds": 300,
+          "stopTimeoutSeconds": 90,
+          "mode": "package"
+        }
+      ],
+      "lifecycle": {
+        "readiness": [
+          {
+            "server": "domain",
+            "kind": "http",
+            "endpoint": "/ready"
+          }
+        ],
+        "tasks": [],
+        "recoveryHooks": [],
+        "fenceHooks": [],
+        "replay": {
+          "reopenBeforeReplay": false
+        },
+        "startup": {},
+        "criticalFlows": [
+          {
+            "name": "party-management",
+            "surface": "party-domain",
+            "operations": [
+              "process",
+              "query"
+            ]
+          }
+        ],
+        "smokeSurfaces": [],
+        "classification": {
+          "changeClass": "additive",
+          "reason": "Enroll the existing Parties domain server; retain legacy hosts outside Platform and keep optional rich search disabled."
+        },
+        "recoveryInventory": []
+      }
+    }
+  ]
+}
