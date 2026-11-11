@@ -1,0 +1,15 @@
+<Project>
+  <!-- Telemetry replaces the framework LoggerMessage generator. Logging.Abstractions
+       can override the provider's same-named removal target before framework analyzers
+       arrive. Honor the provider's opt-out after reference resolution. -->
+  <Target Name="HexalithRemoveReplacedLoggingSourceGenerator"
+          AfterTargets="ResolveReferences"
+          Condition="'$(DisableMicrosoftExtensionsLoggingSourceGenerator)' == 'true'">
+    <ItemGroup>
+      <_HexalithTelemetryLoggingGenerator Include="@(Analyzer)"
+          Condition="'%(Analyzer.Filename)' == 'Microsoft.Gen.Logging'" />
+      <Analyzer Remove="@(Analyzer)"
+          Condition="'@(_HexalithTelemetryLoggingGenerator)' != '' and '%(Analyzer.Filename)' == 'Microsoft.Extensions.Logging.Generators'" />
+    </ItemGroup>
+  </Target>
+</Project>

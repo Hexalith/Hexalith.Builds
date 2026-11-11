@@ -111,6 +111,9 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1
 
+      - name: Test logging generator selection
+        run: python3 Tools/test-logging-generator-selection.py
+
       - name: Test central package version validator
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1
