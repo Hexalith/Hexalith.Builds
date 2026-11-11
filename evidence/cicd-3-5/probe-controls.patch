@@ -1,0 +1,86 @@
+diff --git a/.github/workflows/release-publish-probe.yml b/.github/workflows/release-publish-probe.yml
+new file mode 100644
+index 00000000..89aea163
+--- /dev/null
++++ b/.github/workflows/release-publish-probe.yml
+@@ -0,0 +1,46 @@
++name: Story 3-5 complete handoff probe
++on:
++  workflow_dispatch:
++permissions: {}
++cache-mode: none
++concurrency:
++  group: release
++  cancel-in-progress: false
++jobs:
++  release:
++    uses: Hexalith/Hexalith.Builds/.github/workflows/release.yml@1713722053b0c1944ee2f9dad5c09c56a08951a6
++    permissions:
++      contents: write
++      actions: read
++      security-events: write
++    with:
++      ci-workflow: builds-ci.yml
++      release-rules: builds
++    secrets:
++      registry-pull-username: ${{ secrets.HEXALITH_REGISTRY_PULL_USERNAME }}
++      registry-pull-password: ${{ secrets.HEXALITH_REGISTRY_PULL_PASSWORD }}
++  inspect:
++    needs: release
++    if: always()
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++    permissions:
++      contents: read
++    steps:
++      - name: Checkout probe observer
++        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
++        with:
++          persist-credentials: false
++          submodules: false
++      - name: Observe handoff without publication
++        env:
++          RELEASE_HANDOFF: ${{ toJSON(needs.release.outputs) }}
++          RELEASE_RESULT: ${{ needs.release.result }}
++        run: python3 -I Tools/ci/probe_release_complete.py
++      - name: Retain handoff observations
++        if: always()
++        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
++        with:
++          name: cicd-3-5-complete-handoff
++          path: ${{ runner.temp }}/complete-handoff.json
++          if-no-files-found: error
+diff --git a/Tools/ci/probe_release_complete.py b/Tools/ci/probe_release_complete.py
+new file mode 100644
+index 00000000..d5c31981
+--- /dev/null
++++ b/Tools/ci/probe_release_complete.py
+@@ -0,0 +1,28 @@
++#!/usr/bin/env python3
++"""Observe a complete-mode reusable handoff without invoking any publisher."""
++import json
++import os
++from pathlib import Path
++
++EXPECTED = {
++    'sha': '75e1d4a3809b30684e67c7e9b2c8043720b49c53',
++    'mode': 'complete',
++    'publish': 'true',
++    'version': '4.47.1',
++    'last-tag': 'v4.47.0',
++    'draft-id': '441591623',
++    'artifact-id': '13850760915',
++    'artifact-digest': 'sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30',
++    'artifact-run': '43010609603',
++}
++actual = json.loads(os.environ['RELEASE_HANDOFF'])
++observed = {key: actual.get(key, '') for key in EXPECTED}
++record = {'expected': EXPECTED, 'actual': observed,
++          'release_result': os.environ['RELEASE_RESULT'],
++          'dispatch_revision': os.environ['GITHUB_SHA'],
++          'run_id': os.environ['GITHUB_RUN_ID'], 'publisher_present': False}
++path = Path(os.environ['RUNNER_TEMP']) / 'complete-handoff.json'
++path.write_text(json.dumps(record, indent=2) + '\n')
++if record['release_result'] != 'success' or observed != EXPECTED:
++    raise SystemExit('complete-mode original handoff did not match the retained identities')
++print('Authenticated original handoff matched; probe has no publisher job.')

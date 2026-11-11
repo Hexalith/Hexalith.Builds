@@ -1,0 +1,46 @@
+name: Story 3-5 complete handoff probe
+on:
+  workflow_dispatch:
+permissions: {}
+cache-mode: none
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    uses: Hexalith/Hexalith.Builds/.github/workflows/release.yml@1713722053b0c1944ee2f9dad5c09c56a08951a6
+    permissions:
+      contents: write
+      actions: read
+      security-events: write
+    with:
+      ci-workflow: builds-ci.yml
+      release-rules: builds
+    secrets:
+      registry-pull-username: ${{ secrets.HEXALITH_REGISTRY_PULL_USERNAME }}
+      registry-pull-password: ${{ secrets.HEXALITH_REGISTRY_PULL_PASSWORD }}
+  inspect:
+    needs: release
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout probe observer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Observe handoff without publication
+        env:
+          RELEASE_HANDOFF: ${{ toJSON(needs.release.outputs) }}
+          RELEASE_RESULT: ${{ needs.release.result }}
+        run: python3 -I Tools/ci/probe_release_complete.py
+      - name: Retain handoff observations
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cicd-3-5-complete-handoff
+          path: ${{ runner.temp }}/complete-handoff.json
+          if-no-files-found: error
