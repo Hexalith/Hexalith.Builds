@@ -1,0 +1,28 @@
+{
+  "expected": {
+    "sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+    "mode": "complete",
+    "publish": "true",
+    "version": "4.47.1",
+    "last-tag": "v4.47.0",
+    "draft-id": "441591623",
+    "artifact-id": "13850760915",
+    "artifact-digest": "sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30",
+    "artifact-run": "43010609603"
+  },
+  "actual": {
+    "sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+    "mode": "complete",
+    "publish": "false",
+    "version": "",
+    "last-tag": "",
+    "draft-id": "",
+    "artifact-id": "",
+    "artifact-digest": "",
+    "artifact-run": ""
+  },
+  "release_result": "failure",
+  "dispatch_revision": "962440af99c1f12d91eec192715210c83a728344",
+  "run_id": "43035532396",
+  "publisher_present": false
+}

@@ -1,0 +1,25 @@
+{
+  "summary": "cleanup-api.log",
+  "summary_sha256": "a16f00a982472d749edabecf6b8970313802df5caad623e5fb2ed08d823c88e3",
+  "tested_source": {
+    "head": "962440af99c1f12d91eec192715210c83a728344",
+    "manifest": "tested-source-7bc8dabcd72aa9e22168fba27cc635ffe593e33deee6779a2f3a226f6aa28ed7.json",
+    "sha256": "7bc8dabcd72aa9e22168fba27cc635ffe593e33deee6779a2f3a226f6aa28ed7"
+  },
+  "source_unchanged_during_check": true,
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "3.12",
+    "Tools/ci/check_public_api.py"
+  ],
+  "started_at": "2026-11-11T14:18:05.524110+00:00",
+  "finished_at": "2026-11-11T14:18:06.244913+00:00",
+  "returncode": 0,
+  "raw_log": "/tmp/cicd-3-5-cleanup-api.raw.log",
+  "raw_sha256": "2c95dd423c9a695ade0db11777b3ce1b8ef02a2e743218ba23804d81bb5589fe"
+}

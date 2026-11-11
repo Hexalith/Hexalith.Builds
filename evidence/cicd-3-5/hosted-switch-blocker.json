@@ -1,0 +1,12 @@
+{
+  "run_id": 43035532396,
+  "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43035532396",
+  "runtime_revision": "1713722053b0c1944ee2f9dad5c09c56a08951a6",
+  "caller_revision": "962440af99c1f12d91eec192715210c83a728344",
+  "diagnostic": "HEXALITH_RELEASE_PUBLISH_ENABLED must be exactly true or false",
+  "diagnostic_sha256": "91852c86db8f72ad12ade295a0fce3dc198476a5d63fa7e2866f2f3de0ac643d",
+  "positive_handoff_verified": false,
+  "settings_changed": false,
+  "publisher_present": false,
+  "interpretation": "The effective value fails the strict runtime switch contract. The external scoped session cannot read the setting (HTTP 403); this does not establish whether the repository variable exists."
+}

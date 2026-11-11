@@ -1,0 +1,16 @@
+{
+  "id": 43035532396,
+  "head_sha": "962440af99c1f12d91eec192715210c83a728344",
+  "head_branch": "main",
+  "event": "workflow_dispatch",
+  "path": ".github/workflows/release-publish-probe.yml",
+  "status": "completed",
+  "conclusion": "failure",
+  "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43035532396",
+  "referenced_workflows": [
+    {
+      "path": "Hexalith/Hexalith.Builds/.github/workflows/release.yml@1713722053b0c1944ee2f9dad5c09c56a08951a6",
+      "sha": "1713722053b0c1944ee2f9dad5c09c56a08951a6"
+    }
+  ]
+}

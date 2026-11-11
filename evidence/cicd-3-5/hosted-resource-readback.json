@@ -1,0 +1,15 @@
+{
+  "draft_id": 441591623,
+  "draft_unchanged": true,
+  "draft": true,
+  "source_revision": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+  "body_sha256": "0c7f21ef60b4148d5c3a0341a39eb7c3ed1dd6b55d92dcc169f527518e532fef",
+  "tag_chain": [
+    {
+      "sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+      "type": "commit",
+      "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/git/commits/75e1d4a3809b30684e67c7e9b2c8043720b49c53"
+    }
+  ],
+  "published_or_deleted_by_probe": false
+}

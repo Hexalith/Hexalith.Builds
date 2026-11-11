@@ -116,3 +116,49 @@ online lint has zero new findings. Committed-object candidate
 2,560 entries and no removals; the additional entries are preserved upstream
 CI setup inputs. Final source-bound records use the `final-` prefix in the
 evidence directory and attest unchanged runtime/test bytes throughout each run.
+
+The reviewed runtime was committed/pushed as
+`1713722053b0c1944ee2f9dad5c09c56a08951a6`; the
+[source binding](../evidence/cicd-3-5/runtime-source-binding.json) proves all
+33 tested runtime/test files match that pushed commit. Temporary caller/helper
+revision `962440af99c1f12d91eec192715210c83a728344` pins that runtime literally
+and was dispatched through the original producer's exact workflow path.
+[Hosted run 43035532396](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43035532396)
+reached complete mode with original source
+`75e1d4a3809b30684e67c7e9b2c8043720b49c53`, but resolve failed with
+`HEXALITH_RELEASE_PUBLISH_ENABLED must be exactly true or false`.
+This is the exact enabled-positive verification blocker; the effective value
+fails the strict switch contract. The external variable-read HTTP 403 does not
+establish whether the setting exists. No setting or credential was changed,
+and no temporary true-switch injection or bypass was used.
+
+CodeQL succeeded at dispatch revision
+`962440af99c1f12d91eec192715210c83a728344` despite resolve failure; the disabled
+nightly hook and version/build/draft jobs skipped. The reporter uploaded exactly
+one schema-valid `failed` outcome at the original SHA/version. The observer's
+positive expectation intentionally failed and retained the actual
+`publish=false` handoff with empty draft/artifact fields. There is no publisher
+job. [Run](../evidence/cicd-3-5/hosted-run.json),
+[jobs](../evidence/cicd-3-5/hosted-jobs.json),
+[artifacts](../evidence/cicd-3-5/hosted-artifacts.json),
+[observed handoff](../evidence/cicd-3-5/hosted-handoff/complete-handoff.json),
+[outcome](../evidence/cicd-3-5/hosted-outcome/outcome.json), and
+[exact blocker](../evidence/cicd-3-5/hosted-switch-blocker.json) are retained.
+The [resource readback](../evidence/cicd-3-5/hosted-resource-readback.json)
+confirms unchanged draft/body/source and tag. Positive hosted original-artifact
+handoff is **not verified**; the passing local controls establish that branch.
+No release/package/image was published or deleted by this probe.
+
+Temporary controls are removed after preserving their exact pinned
+[patch](../evidence/cicd-3-5/probe-controls.patch). Normal retention and production
+callers remain unchanged. Review patched two runtime boundaries, added an OCI
+regression and source-bound evidence, and rejected synthetic/out-of-contract
+claims individually in the canonical story. One external concurrency question
+is deferred: mutation by an out-of-band editor/publisher after the final GET and
+before DELETE was not destructively qualified. Immediate revalidation and
+standard release concurrency remain the implemented safeguards; an authorized
+disposable two-actor experiment and supported serialization/atomicity decision
+would settle that residual question. The [GitHub release API](https://docs.github.com/en/rest/releases/releases#delete-a-release)
+defines the release-ID deletion/204 contract; no additional atomic guarantee
+is claimed here. Follow-up review is recommended for that unverified boundary
+and for enabled positive hosted qualification once the switch contract is met.

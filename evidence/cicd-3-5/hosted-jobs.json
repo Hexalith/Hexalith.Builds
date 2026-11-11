@@ -1,0 +1,254 @@
+[
+  {
+    "id": 130573235783,
+    "name": "release / Resolve release identity",
+    "status": "completed",
+    "conclusion": "failure",
+    "started_at": "2026-11-11T14:08:05Z",
+    "completed_at": "2026-11-11T14:08:17Z",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1,
+        "started_at": "2026-11-11T14:08:05Z",
+        "completed_at": "2026-11-11T14:08:08Z"
+      },
+      {
+        "name": "Read dispatch settings and freeze release source",
+        "status": "completed",
+        "conclusion": "failure",
+        "number": 2,
+        "started_at": "2026-11-11T14:08:08Z",
+        "completed_at": "2026-11-11T14:08:15Z"
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 3,
+        "started_at": "2026-11-11T14:08:15Z",
+        "completed_at": "2026-11-11T14:08:15Z"
+      }
+    ]
+  },
+  {
+    "id": 130573369588,
+    "name": "release / Release CodeQL (csharp)",
+    "status": "completed",
+    "conclusion": "success",
+    "started_at": "2026-11-11T14:08:20Z",
+    "completed_at": "2026-11-11T14:12:38Z",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1,
+        "started_at": "2026-11-11T14:08:20Z",
+        "completed_at": "2026-11-11T14:08:23Z"
+      },
+      {
+        "name": "Checkout dispatch source",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 2,
+        "started_at": "2026-11-11T14:08:24Z",
+        "completed_at": "2026-11-11T14:08:26Z"
+      },
+      {
+        "name": "Initialize release analysis",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 3,
+        "started_at": "2026-11-11T14:08:26Z",
+        "completed_at": "2026-11-11T14:08:39Z"
+      },
+      {
+        "name": "Analyze and wait for processing",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 4,
+        "started_at": "2026-11-11T14:08:39Z",
+        "completed_at": "2026-11-11T14:12:34Z"
+      },
+      {
+        "name": "Check processed release security findings",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 5,
+        "started_at": "2026-11-11T14:12:34Z",
+        "completed_at": "2026-11-11T14:12:35Z"
+      },
+      {
+        "name": "Post Analyze and wait for processing",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 8,
+        "started_at": "2026-11-11T14:12:35Z",
+        "completed_at": "2026-11-11T14:12:35Z"
+      },
+      {
+        "name": "Post Initialize release analysis",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 9,
+        "started_at": "2026-11-11T14:12:35Z",
+        "completed_at": "2026-11-11T14:12:36Z"
+      },
+      {
+        "name": "Post Checkout dispatch source",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 10,
+        "started_at": "2026-11-11T14:12:36Z",
+        "completed_at": "2026-11-11T14:12:36Z"
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 11,
+        "started_at": "2026-11-11T14:12:36Z",
+        "completed_at": "2026-11-11T14:12:36Z"
+      }
+    ]
+  },
+  {
+    "id": 130573371387,
+    "name": "release / Prepare and run nightly hook",
+    "status": "completed",
+    "conclusion": "skipped",
+    "started_at": "2026-11-11T14:08:17Z",
+    "completed_at": "2026-11-11T14:08:17Z",
+    "steps": []
+  },
+  {
+    "id": 130575785534,
+    "name": "release / Compute release version",
+    "status": "completed",
+    "conclusion": "skipped",
+    "started_at": "2026-11-11T14:12:38Z",
+    "completed_at": "2026-11-11T14:12:38Z",
+    "steps": []
+  },
+  {
+    "id": 130575785771,
+    "name": "release / Build audited release payload",
+    "status": "completed",
+    "conclusion": "skipped",
+    "started_at": "2026-11-11T14:12:38Z",
+    "completed_at": "2026-11-11T14:12:38Z",
+    "steps": []
+  },
+  {
+    "id": 130575786103,
+    "name": "release / Report release outcome",
+    "status": "completed",
+    "conclusion": "failure",
+    "started_at": "2026-11-11T14:12:41Z",
+    "completed_at": "2026-11-11T14:12:47Z",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1,
+        "started_at": "2026-11-11T14:12:42Z",
+        "completed_at": "2026-11-11T14:12:45Z"
+      },
+      {
+        "name": "Decide outcome with failure precedence",
+        "status": "completed",
+        "conclusion": "failure",
+        "number": 2,
+        "started_at": "2026-11-11T14:12:45Z",
+        "completed_at": "2026-11-11T14:12:45Z"
+      },
+      {
+        "name": "Upload the sole reusable outcome",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 3,
+        "started_at": "2026-11-11T14:12:45Z",
+        "completed_at": "2026-11-11T14:12:46Z"
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 4,
+        "started_at": "2026-11-11T14:12:46Z",
+        "completed_at": "2026-11-11T14:12:46Z"
+      }
+    ]
+  },
+  {
+    "id": 130575786336,
+    "name": "release / Authenticate original artifact and process marked draft",
+    "status": "completed",
+    "conclusion": "skipped",
+    "started_at": "2026-11-11T14:12:39Z",
+    "completed_at": "2026-11-11T14:12:38Z",
+    "steps": []
+  },
+  {
+    "id": 130575868620,
+    "name": "inspect",
+    "status": "completed",
+    "conclusion": "failure",
+    "started_at": "2026-11-11T14:12:50Z",
+    "completed_at": "2026-11-11T14:12:59Z",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1,
+        "started_at": "2026-11-11T14:12:51Z",
+        "completed_at": "2026-11-11T14:12:52Z"
+      },
+      {
+        "name": "Checkout probe observer",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 2,
+        "started_at": "2026-11-11T14:12:52Z",
+        "completed_at": "2026-11-11T14:12:55Z"
+      },
+      {
+        "name": "Observe handoff without publication",
+        "status": "completed",
+        "conclusion": "failure",
+        "number": 3,
+        "started_at": "2026-11-11T14:12:55Z",
+        "completed_at": "2026-11-11T14:12:55Z"
+      },
+      {
+        "name": "Retain handoff observations",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 4,
+        "started_at": "2026-11-11T14:12:55Z",
+        "completed_at": "2026-11-11T14:12:56Z"
+      },
+      {
+        "name": "Post Checkout probe observer",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 8,
+        "started_at": "2026-11-11T14:12:56Z",
+        "completed_at": "2026-11-11T14:12:57Z"
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 9,
+        "started_at": "2026-11-11T14:12:57Z",
+        "completed_at": "2026-11-11T14:12:57Z"
+      }
+    ]
+  }
+]

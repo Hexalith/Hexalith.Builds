@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-11",
+  "finding_count": 16,
+  "verdict_counts": {
+    "high": 0,
+    "medium": 4,
+    "low": 4,
+    "false": 7,
+    "maybe-false": 1
+  },
+  "rows": [
+    {
+      "verdict": "false",
+      "route": "reject",
+      "summary": "Edge-case layer: planning-only claims conflict with implementation",
+      "evidence": "The Spec Change Log explicitly scopes planning-only wording and the prior ready-for-dev result to the completed earlier invocation; this user dispatch resumes runtime implementation. A requested fix to this build's spec is also rejected by the review rules."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "summary": "Intent auditor: local graph controls do not establish hosted runner behavior",
+      "evidence": "Local and hosted evidence are explicitly separated. Executed composite/graph/reporter controls prove local orchestration; the separately planned pinned hosted probe supplies the hosted observation or exact execution blocker before finalization."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "summary": "Intent auditor: publisher controls replace destination/login actions",
+      "evidence": "The results identify these as local simulations and retain separate story 3-4 hosted package/image qualification. No new hosted publication is claimed or authorized by the recovery probe."
+    },
+    {
+      "verdict": "medium",
+      "route": "patch",
+      "group": "hosted-evidence",
+      "summary": "Intent auditor: actual hosted complete-mode evidence is still pending",
+      "evidence": "Pinned hosted run 43035532396 executed the actual reusable graph at runtime 1713722053b0c1944ee2f9dad5c09c56a08951a6. The effective switch was invalid; exact diagnostics, actual publish=false, successful current-dispatch CodeQL and the sole failed outcome are retained. Positive handoff is explicitly unverified; temporary controls are removed."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "summary": "Intent auditor: literal prior planning-only reading diverges from runtime",
+      "evidence": "The ready-for-dev dispatch and explicit implementation-continuation change log resolve this temporal reading; original planning history is preserved as history."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "group": "delivery",
+      "summary": "Intent auditor: textual diff does not demonstrate commit/push",
+      "evidence": "The exact messages passed pinned commitlint. Runtime 1713722053b0c1944ee2f9dad5c09c56a08951a6 and probe 962440af99c1f12d91eec192715210c83a728344 were committed/pushed and their full remote revisions read back. Final cleanup delivery and its full revision are recorded in the canonical story; CiCd only stages the story and pushed gitlink."
+    },
+    {
+      "verdict": "medium",
+      "route": "patch",
+      "group": "gate-guard",
+      "summary": "Blind hunter: enabled-but-skipped security gates can permit stale mutation before reporter failure",
+      "evidence": "Parent reproduced both configured CodeQL and nightly skips executing draft before failed reporting. The draft guard now accepts skipped gates only when resolve explicitly disables them; both graph regressions assert zero draft mutation."
+    },
+    {
+      "verdict": "medium",
+      "route": "patch",
+      "group": "handoff-race",
+      "summary": "Blind hunter: draft changes during artifact download can escape into publish=true",
+      "evidence": "Parent reproduced a published draft with publish=true after one release GET. Recovery now revalidates the unchanged live selected draft after artifact authentication; body-change and publication regressions assert no handoff or writes."
+    },
+    {
+      "verdict": "maybe-false",
+      "route": "defer",
+      "summary": "Blind hunter: external mutation after the final GET could race unconditional DELETE",
+      "evidence": "The implementation performs the required immediate live revalidation and standard callers serialize release runs. Real GitHub behavior for an out-of-band editor/publisher in this final interval was not destructively qualified; the retained resources must remain untouched. Settle with an authorized disposable two-actor qualification and a supported serialization/atomicity decision. If true, medium impact; unverified."
+    },
+    {
+      "verdict": "low",
+      "route": "reject",
+      "summary": "Blind hunter: per-destination deadlines can exhaust the overall job budget",
+      "evidence": "Every network operation and the job are bounded; timeout leaves the draft intact and the reporter still emits failed. The remaining harm is a late/generic diagnostic for many unusually slow destinations. A propagated global budget adds branches and parameters for a rare low-impact case, beyond a direct correction."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "summary": "Blind hunter: stale reporting accepts omitted artifact/draft output fields",
+      "evidence": "The reproduction deletes fields from synthetic needs after a successful draft. The trusted adapter emits all validated eight identity fields only after confirmed DELETE; a genuine successful stale invocation with those fields missing is not reachable. Stale ownership is correctly bound to complete mode, successful draft, publish=false, source/version and matching own no-op output; no publisher authorization is granted."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "summary": "Blind hunter: mixed inventory needs one more compound HTTP adapter test",
+      "evidence": "Actual adapter/graph tests verify pull-secret and identity mappings, mixed inventory orchestration checks every production decision seam, and real HTTP NuGet/registry tests verify exact HEAD/status/auth behavior. Every matrix row ran and passed. No additional unguarded behavior or missing contract coverage was demonstrated by requiring all seams in one fixture."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "group": "oci-regression",
+      "summary": "Blind hunter: available recovery lacked a composed original OCI payload regression",
+      "evidence": "Added an original multi-platform OCI artifact through recovery's real inventory validator and handoff, plus container-trailer disagreement refusal. Existing publisher OCI HTTP/copy controls continue to verify the complete graph and retry."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "group": "source-binding",
+      "summary": "Blind hunter: verification records were not bound to tested runtime source",
+      "evidence": "Final records bind full HEAD and SHA-256 hashes for 33 runtime/test files through one content-addressed manifest, and assert that source stayed unchanged during every final check. Raw and compact log hashes are preserved separately."
+    },
+    {
+      "verdict": "medium",
+      "route": "patch",
+      "group": "hosted-evidence",
+      "summary": "Blind hunter: preflight/403 alone is not hosted complete-mode evidence",
+      "evidence": "Completed pinned hosted run 43035532396 under the unchanged switch. Resolve failed exactly HEXALITH_RELEASE_PUBLISH_ENABLED must be exactly true or false; CodeQL passed, version/build/draft skipped, publish=false and exactly one schema-valid failed outcome were observed. This is the retained positive-verification blocker, with unchanged draft/body/source/tag and removed temporary controls."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "summary": "Blind hunter: prior planning result appears to be current terminal status",
+      "evidence": "The previous result is preserved as explicit planning history; the workflow writes the current implementation result and terminal status during normal finalization. The read-only intent contract remains unchanged; editing the spec as a review fix is rejected."
+    }
+  ],
+  "patch_entries_by_verdict": {
+    "medium": 3,
+    "low": 3,
+    "high": 0
+  },
+  "deferred_entries": 1,
+  "followup_review_recommended": true,
+  "followup_risk": "Out-of-band mutation between final draft GET and DELETE is not qualified; enabled hosted handoff remains blocked by the effective invalid switch."
+}
