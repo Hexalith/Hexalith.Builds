@@ -1,0 +1,37 @@
+{
+  "command": [
+    "/usr/bin/python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "Github/lib/tests",
+    "-p",
+    "test_release_complete.py",
+    "-v"
+  ],
+  "started_at": "2026-11-11T23:25:11.685262+00:00",
+  "finished_at": "2026-11-11T23:25:43.336557+00:00",
+  "returncode": 0,
+  "selected_interpreter": "3.14.4",
+  "tested_source": {
+    "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "a09ee8290e4d83c5a7338702ce8f2b09e5e1dec214d08c2645f15b3c49e2563f"
+    }
+  },
+  "source_unchanged_during_check": true,
+  "adversarial_inherited_proxy_environment": {
+    "http_proxy": "http://127.0.0.1:9",
+    "https_proxy": "http://127.0.0.1:9",
+    "all_proxy": "http://127.0.0.1:9",
+    "HtTpS_PrOxY": "http://127.0.0.1:9",
+    "no_proxy": "127.0.0.1,localhost",
+    "FTP_PROXY": "http://127.0.0.1:9"
+  },
+  "durable_output": "package-retention-review-recovery.txt",
+  "durable_output_sha256": "49846034770bce9b33cd856ff1caeb5cd2226ba049ce7c691e396dd838746763",
+  "raw_log": "/tmp/cicd-3-5-package-retention-review-recovery.raw.log",
+  "raw_sha256": "49846034770bce9b33cd856ff1caeb5cd2226ba049ce7c691e396dd838746763"
+}

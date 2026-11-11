@@ -1,0 +1,30 @@
+{
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "3.12",
+    "Tools/ci/run_python_tests.py"
+  ],
+  "started_at": "2026-11-11T22:37:19.354461+00:00",
+  "finished_at": "2026-11-11T22:50:13.674461+00:00",
+  "returncode": 1,
+  "tested_source": {
+    "head": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+    }
+  },
+  "source_unchanged_during_check": true,
+  "summary": "package-retention-full-python312.txt",
+  "summary_sha256": "bc856b9de3cb80a7324b3657bc2ad8cf35ec115c7049768f19d6e81207bdef90",
+  "raw_log": "/tmp/cicd-3-5-package-retention-full-python312.raw.log",
+  "raw_sha256": "f377467a4f1d8b6e057c5fe6a9b1c675522a4a9eb63b293924b0189dcbbe30bd",
+  "selected_interpreter": "3.12.13",
+  "total_groups": 20,
+  "groups_passed": 18
+}

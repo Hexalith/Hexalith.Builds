@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import copy
-from contextlib import contextmanager
+import base64
+from contextlib import contextmanager, redirect_stderr
 from datetime import datetime, timedelta, timezone
 import http.server
 import io
@@ -14,9 +15,7 @@ import ssl
 import subprocess
 import sys
 import threading
-import time
 import unittest
-import urllib.error
 import urllib.request
 from unittest.mock import patch
 
@@ -190,7 +189,9 @@ class CompleteTests(History):
         for index, mutate in enumerate(mutations):
             control = self.control()
             mutate(control)
-            with self.subTest(index=index), self.assertRaises(ReleaseError):
+            with (self.subTest(index=index),
+                  patch.object(complete, "destinations_absent", side_effect=AssertionError("verification error became absence")),
+                  self.assertRaises(ReleaseError)):
                 self.invoke(control)
             self.assertEqual(control.deletes + control.writes, [])
             self.assertEqual(self.emitted, [])
@@ -202,7 +203,8 @@ class CompleteTests(History):
             control.payload = payload
             control.metadata["digest"] = digest(payload)
             control.release["body"] = control.release["body"].replace(digest(self.payload), digest(payload))
-            with self.assertRaises(ReleaseError):
+            with (patch.object(complete, "destinations_absent", side_effect=AssertionError("corruption became absence")),
+                  self.assertRaises(ReleaseError)):
                 self.invoke(control)
             self.assertEqual(control.deletes, [])
         control = self.control()
@@ -221,8 +223,7 @@ class CompleteTests(History):
             else:
                 control.run.update(change)
             with self.subTest(change=change):
-                result = self.invoke(control, nuget=lambda: self.fail("empty NuGet inventory requested"),
-                                     registry=lambda *args: self.fail("empty OCI inventory requested"))
+                result = self.invoke(control, registry=lambda *args: self.fail("empty OCI inventory requested"))
             self.assertEqual(control.deletes, [789])
             self.assertEqual(list(control.pages("/releases")), [])
             self.assertEqual(result["publish"], "false")
@@ -279,19 +280,45 @@ class CompleteTests(History):
             self.invoke(control)
         self.assertEqual(control.deletes, [])
 
-    def test_all_destinations_checked_and_any_present_unknown_or_missing_credentials_retains(self):
-        for state in ("all-absent", "package-present", "package-error", "image-present", "image-error", "credentials"):
-            control = self.control()
+    def test_packages_always_retain_when_original_bytes_are_unavailable_without_destination_reads(self):
+        for reason in ("run404", "producer-mismatch", "metadata404", "archive410", "expired", "old-expiry"):
+            for inventory in ("Fixture.Package", "Indexing.Package,Unlisted.Package", "mixed"):
+                control = self.control()
+                if reason == "run404":
+                    self.gone(control)
+                elif reason == "producer-mismatch":
+                    control.run["path"] = ".github/workflows/other.yml"
+                elif reason == "metadata404":
+                    control.errors[f"/repos/{REPOSITORY}/actions/artifacts/{ARTIFACT}"] = 404
+                elif reason == "archive410":
+                    control.artifact_bytes = lambda _identity: (_ for _ in ()).throw(draft.GitHubHttpError("/zip", 410))
+                else:
+                    control.metadata["expired"] = reason == "expired"
+                    if reason == "old-expiry":
+                        control.metadata["expires_at"] = "2000-01-01T00:00:00Z"
+                if inventory == "mixed":
+                    control.release["body"] = control.release["body"].replace(
+                        "hexalith-release-containers: \n", "hexalith-release-containers: product/image\n")
+                else:
+                    control.release["body"] = control.release["body"].replace("Fixture.Package\n", inventory + "\n")
+                saved = copy.deepcopy(control.release)
+                with (self.subTest(reason=reason, inventory=inventory),
+                      patch.object(urllib.request.OpenerDirector, "open", side_effect=AssertionError("destination lookup ran")),
+                      self.assertRaisesRegex(ReleaseError, "^draft v2.3.5 cannot be completed: its build artifact is gone$")):
+                    self.invoke(control, registry=lambda *_args: self.fail("package-bearing draft queried an image"))
+                self.assertEqual(control.deletes + control.writes, [])
+                self.assertEqual(control.release, saved)
+                self.assertEqual(self.emitted, [])
+                self.assertEqual(control.release_reads, 1)
+                self.assertEqual(git_command(self.root, "tag", "--list", "v" + VERSION), "")
+
+    def test_container_only_checks_every_image_and_retains_any_present_unknown_or_missing_credentials(self):
+        for state in ("all-absent", "image-present", "image-error", "credentials", "non-boolean"):
+            control = self.control(artifact(self.sha, packages=False))
             self.gone(control)
-            control.release["body"] = control.release["body"].replace("Fixture.Package\n", "Fixture.Package,Other.Package\n").replace(
+            control.release["body"] = control.release["body"].replace(
                 "hexalith-release-containers: \n", "hexalith-release-containers: product/image,product/other\n")
             calls = []
-            class NuGet:
-                def version_absent(_self, package, version):
-                    calls.append(("package", package, version))
-                    if state == "package-error" and package == "Other.Package":
-                        raise ReleaseError("timeout")
-                    return not (state == "package-present" and package == "Other.Package")
             class Registry:
                 def __init__(_self, name, username, password):
                     calls.append(("image", name, username, password))
@@ -299,20 +326,24 @@ class CompleteTests(History):
                         raise ReleaseError("missing pull credentials")
                     _self.name = name
                 def version_absent(_self, version):
+                    self.assertEqual(version, VERSION)
                     if state == "image-error" and _self.name == "product/other":
                         raise ReleaseError("401")
+                    if state == "non-boolean":
+                        return "true"
                     return not (state == "image-present" and _self.name == "product/other")
             with self.subTest(state=state):
                 if state == "all-absent":
-                    result = self.invoke(control, nuget=NuGet, registry=Registry, username="pull", password="secret")
+                    result = self.invoke(control, registry=Registry, username="pull", password="secret")
                     self.assertEqual(result["publish"], "false")
                     self.assertEqual(control.deletes, [789])
                 else:
                     with self.assertRaisesRegex(ReleaseError, "^draft v2.3.5 cannot be completed: its build artifact is gone$"):
-                        self.invoke(control, nuget=NuGet, registry=Registry, username="pull", password="secret")
+                        self.invoke(control, registry=Registry, username="pull", password="secret")
                     self.assertEqual(control.deletes, [])
                     self.assertEqual(self.emitted, [])
-            self.assertEqual([item[1] for item in calls], ["Fixture.Package", "Other.Package", "product/image", "product/other"])
+            self.assertEqual(calls, [("image", "product/image", "pull", "secret"),
+                                     ("image", "product/other", "pull", "secret")])
 
     def test_delete_race_and_non204_never_emit_success(self):
         for mutation in ({"body": "changed"}, {"draft": False}, {"target_commitish": "a" * 40},
@@ -351,7 +382,8 @@ def recovery_http(control, *, tls=None):
         def do_GET(self):
             control.requests.append(("GET", self.path, self.headers.get("Authorization")))
             if self.path in control.errors:
-                self.send_data(control.errors[self.path], b"{}")
+                self.send_data(control.errors[self.path], json.dumps(
+                    getattr(control, "error_documents", {}).get(self.path, {})).encode())
             elif control.deleted and self.path == f"/repos/{REPOSITORY}/releases/789":
                 self.send_data(404, b"{}")
             elif self.path.endswith("/zip"):
@@ -389,15 +421,13 @@ def recovery_http(control, *, tls=None):
 @contextmanager
 def destination_http():
     requests, statuses = [], {}
-    index = {"resources": [{"@id": "https://api.nuget.org/v3-flatcontainer/", "@type": "PackageBaseAddress/3.0.0"}]}
     class Handler(http.server.BaseHTTPRequestHandler):
         def log_message(self, *_args):
             pass
         def respond(self):
             requests.append((self.command, self.path, dict(self.headers)))
-            status = statuses.get(self.path, 200 if self.path == "/v3/index.json" else 404)
-            data = ((index["_raw"] if "_raw" in index else json.dumps(index).encode())
-                    if self.path == "/v3/index.json" else b"")
+            status = statuses.get(self.path, 404)
+            data = b""
             self.send_response(status)
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Location", f"http://127.0.0.1:{self.server.server_port}/stolen")
@@ -409,16 +439,17 @@ def destination_http():
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    transport = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     class LocalOpener:
         def open(self, request, **kwargs):
             request = urllib.request.Request(request) if isinstance(request, str) else request
-            if not request.full_url.startswith(("https://api.nuget.org/", "https://registry.hexalith.com/v2/product/image/")):
+            if not request.full_url.startswith("https://registry.hexalith.com/v2/product/image/"):
                 raise AssertionError("credential boundary escaped")
             replacement = urllib.request.Request(f"http://127.0.0.1:{server.server_port}" + request.selector,
                 method=request.get_method(), headers=dict(request.headers))
-            return urllib.request.build_opener(NoRedirect()).open(replacement, **kwargs)
+            return transport.open(replacement, **kwargs)
     try:
-        yield LocalOpener(), requests, statuses, index
+        yield LocalOpener(), requests, statuses
     finally:
         server.shutdown()
         server.server_close()
@@ -426,69 +457,17 @@ def destination_http():
 
 
 class DestinationHttpTests(unittest.TestCase):
-    def test_nuget_content_head_includes_unlisted_and_never_sends_credentials(self):
-        with destination_http() as (opener, requests, statuses, _index):
-            public = complete.NuGet()
-            public.opener = opener
-            path = "/v3-flatcontainer/fixture.package/2.3.5/fixture.package.2.3.5.nupkg"
-            self.assertTrue(public.version_absent("Fixture.Package", VERSION))
-            statuses[path] = 200  # Content exists even when absent from every registration/search index.
-            self.assertFalse(public.version_absent("Fixture.Package", VERSION))
-            for status in (201, 204, 301, 302, 401, 403, 429, 500):
-                statuses[path] = status
-                with self.subTest(status=status), self.assertRaises(ReleaseError):
-                    public.version_absent("Fixture.Package", VERSION)
-            self.assertEqual(sum(path == "/v3/index.json" for _, path, _ in requests), 1)
-            self.assertTrue(all(method == ("GET" if path == "/v3/index.json" else "HEAD") for method, path, _ in requests))
-            self.assertTrue(all("Authorization" not in headers for _, _, headers in requests))
-            self.assertFalse(any(path == "/stolen" for _, path, _ in requests))
-
-    def test_malformed_index_and_untrusted_discovery_resources_never_head(self):
-        cases = [None, [], {}, {"resources": {}}, {"resources": [None]}, {"resources": []}]
-        for resource in ("http://api.nuget.org/base/", "https://evil.invalid/base/", "https://api.nuget.org:444/base/",
-                         "https://user:secret@api.nuget.org/base/", "https://api.nuget.org/base/?x=1",
-                         "https://api.nuget.org/base/#fragment", "https://api.nuget.org/base/../",
-                         "https://api.nuget.org/base/%2e%2e/", None):
-            cases.append({"resources": [{"@type": "PackageBaseAddress/3.0.0", "@id": resource}]})
-        for document in cases:
-            with self.subTest(document=document), destination_http() as (opener, requests, _statuses, index):
-                public = complete.NuGet()
-                public.opener = opener
-                index.clear()
-                index.update(document if isinstance(document, dict) else {"_raw": json.dumps(document).encode()})
-                with self.assertRaises(ReleaseError):
-                    public.version_absent("Fixture.Package", VERSION)
-                self.assertEqual(len(requests), 1)
-
-    def test_index_failure_invalid_json_and_transport_are_never_absence(self):
-        with destination_http() as (opener, requests, statuses, index):
-            for status in (302, 404, 403, 429, 500):
-                public = complete.NuGet()
-                public.opener = opener
-                statuses["/v3/index.json"] = status
-                with self.subTest(status=status), self.assertRaises(ReleaseError):
-                    public.version_absent("Fixture.Package", VERSION)
-            statuses.clear()
-            for data in (b"broken-json", b'{"resources":[],"resources":[]}'):
-                public = complete.NuGet()
-                public.opener = opener
-                index["_raw"] = data
-                with self.assertRaises(ReleaseError):
-                    public.version_absent("Fixture.Package", VERSION)
-            self.assertTrue(all(path == "/v3/index.json" for _, path, _ in requests))
-        for check in (complete.NuGet(), oci_publish.Registry("product/image", "u", "p")):
-            class Timeout:
-                def open(self, *_args, **_kwargs):
-                    raise TimeoutError("timeout")
-            check.opener = Timeout()
-            with self.assertRaises(ReleaseError):
-                if isinstance(check, complete.NuGet):
-                    check.version_absent("Fixture.Package", VERSION)
-                else:
-                    check.version_absent(VERSION)
+    def test_registry_timeout_never_proves_absence(self):
+        registry = oci_publish.Registry("product/image", "u", "p")
+        class Timeout:
+            def open(self, *_args, **_kwargs):
+                raise TimeoutError("timeout")
+        registry.opener = Timeout()
+        with self.assertRaises(ReleaseError):
+            registry.version_absent(VERSION)
 
     def test_registry_broad_head_404_only_and_credentials_bound_to_registry(self):
-        with destination_http() as (opener, requests, statuses, _index):
+        with destination_http() as (opener, requests, statuses):
             registry = oci_publish.Registry("product/image", "pull-user", "pull-password")
             registry.opener = opener
             path = "/v2/product/image/manifests/" + VERSION
@@ -512,6 +491,69 @@ class RecoveryHttpTests(History):
     control = CompleteTests.control
     invoke = CompleteTests.invoke
     gone = CompleteTests.gone
+
+    def test_package_and_mixed_inventory_refuse_even_with_absent_destinations_and_old_expiry(self):
+        for mixed in (False, True):
+            control = self.control()
+            control.metadata.update(expired=False, expires_at="2000-01-01T00:00:00Z")
+            if mixed:
+                control.release["body"] = control.release["body"].replace(
+                    "hexalith-release-containers: \n", "hexalith-release-containers: product/image\n")
+            with (self.subTest(mixed=mixed), recovery_http(control) as base,
+                  destination_http() as (opener, destination_requests, _statuses)):
+                api = draft.DraftApi(REPOSITORY, "github-private", base)
+                with (patch.object(urllib.request, "build_opener", return_value=opener),
+                      self.assertRaisesRegex(ReleaseError, "^draft v2.3.5 cannot be completed: its build artifact is gone$")):
+                    self.invoke(api, username="pull-user", password="pull-password")
+                self.assertEqual(destination_requests, [])
+                self.assertEqual(api.get(f"/repos/{REPOSITORY}/releases/789"), control.release)
+            self.assertEqual(control.deletes + control.writes, [])
+            self.assertEqual(self.emitted, [])
+            self.assertFalse(any(method == "DELETE" for method, _path, _auth in control.requests))
+
+    def test_main_container_only_uses_pull_pair_and_only_404_permits_deletion(self):
+        for status in (404, 200, 202, 204, 301, 302, 401, 403, 410, 429, 500, "missing-user", "missing-password"):
+            control = self.control(artifact(self.sha, packages=False))
+            self.gone(control)
+            control.release["body"] = control.release["body"].replace(
+                "hexalith-release-containers: \n", "hexalith-release-containers: product/image\n")
+            output = self.root / "main-output"
+            output.write_text("")
+            environment = {"GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REF": "refs/heads/main",
+                "GITHUB_REPOSITORY": REPOSITORY, "GITHUB_TOKEN": "github-private", "GITHUB_WORKFLOW_REF": WORKFLOW_REF,
+                "RELEASE_SHA": self.sha, "RELEASE_VERSION": VERSION, "RELEASE_DRAFT_ID": "789", "RELEASE_LAST_TAG": "v2.3.4",
+                "REGISTRY_PULL_USERNAME": "pull-user", "REGISTRY_PULL_PASSWORD": "pull-password", "GITHUB_OUTPUT": str(output)}
+            if status == "missing-user":
+                environment.pop("REGISTRY_PULL_USERNAME")
+            elif status == "missing-password":
+                environment.pop("REGISTRY_PULL_PASSWORD")
+            errors = io.StringIO()
+            with (self.subTest(status=status), destination_http() as (opener, requests, statuses),
+                  patch.dict(os.environ, environment, clear=True), patch.object(sys, "argv", [complete.__file__]),
+                  patch.object(complete, "DraftApi", return_value=control),
+                  patch.object(complete.Git, "fetch", return_value=self.git),
+                  patch.object(urllib.request, "build_opener", return_value=opener), redirect_stderr(errors)):
+                if isinstance(status, int):
+                    statuses["/v2/product/image/manifests/" + VERSION] = status
+                self.assertEqual(complete.main(), 0 if status == 404 else 1)
+                if isinstance(status, str):
+                    self.assertEqual(requests, [])
+                else:
+                    self.assertEqual(len(requests), 1)
+                    method, path, headers = requests[0]
+                    self.assertEqual((method, path), ("HEAD", "/v2/product/image/manifests/" + VERSION))
+                    self.assertEqual(headers["Authorization"], "Basic " + base64.b64encode(b"pull-user:pull-password").decode())
+                    self.assertIn("application/vnd.docker.distribution.manifest.list.v2+json", headers["Accept"])
+            if status == 404:
+                self.assertEqual(control.deletes, [789])
+                self.assertIn("publish=false\n", output.read_text())
+                self.assertIn("noop-reason=stale-draft-deleted\n", output.read_text())
+                self.assertEqual(errors.getvalue(), "")
+            else:
+                self.assertEqual(control.deletes + control.writes, [])
+                self.assertEqual(output.read_text(), "")
+                self.assertEqual(errors.getvalue().strip(), "draft v2.3.5 cannot be completed: its build artifact is gone")
+
     def test_executed_http_disappearance_and_delete_require_exact_status(self):
         for reason in ("run404", "artifact404", "archive410", "expired"):
             control = self.control(artifact(self.sha, packages=False))
@@ -577,11 +619,14 @@ raise SystemExit(subprocess.call([{shutil.which('git')!r}, *args]))
             (self.binaries / name).write_text("#!/bin/sh\necho forbidden-tool >&2\nexit 99\n")
         for path in self.binaries.iterdir():
             path.chmod(0o755)
-        self.environment = {**os.environ, "PATH": str(self.binaries) + os.pathsep + os.environ["PATH"],
+        inherited = {name: value for name, value in os.environ.items() if not name.lower().endswith("_proxy")}
+        self.environment = {**inherited, "PATH": str(self.binaries) + os.pathsep + os.environ["PATH"],
             "GITHUB_TOKEN": "private-github-marker", "GITHUB_SHA": self.sha, "GITHUB_EVENT_NAME": "workflow_dispatch",
             "GITHUB_REF": "refs/heads/main", "GITHUB_REPOSITORY": REPOSITORY, "GITHUB_WORKFLOW_REF": WORKFLOW_REF,
             "GITHUB_RUN_ID": "99999", "GITHUB_WORKSPACE": str(self.work), "GITHUB_OUTPUT": str(self.work / "github-output"),
             "TEST_REMOTE": str(self.root),
+            "HTTPS_PROXY": "http://127.0.0.1:9", "HTTP_PROXY": "http://127.0.0.1:9", "ALL_PROXY": "http://127.0.0.1:9",
+            "NO_PROXY": "127.0.0.1,localhost",
             "SSL_CERT_FILE": str(certificate), "REGISTRY_PULL_USERNAME": "pull-reader", "REGISTRY_PULL_PASSWORD": "pull-secret"}
         for name in list(self.environment):
             if name.startswith("RELEASE_") or name in {"REGISTRY_USERNAME", "REGISTRY_PASSWORD", "NUGET_API_KEY"}:
@@ -607,21 +652,31 @@ raise SystemExit(subprocess.call([{shutil.which('git')!r}, *args]))
         (self.root / ".github/workflows/new-dispatch.yml").write_text("advanced caller workflows\n")
         (self.root / ".github/hexalith-ci.json").write_text("poison config must never be loaded by recovery\n")
         self.environment["GITHUB_SHA"] = self.commit("ci: advance dispatch source")
-        for scenario in ("available", "gone", "corrupt", "signed-gone", "signed-partial", "metadata-accepted"):
+        for scenario in ("available", "gone", "package-gone", "mixed-gone", "package-old-expiry",
+                         "corrupt", "signed-gone", "signed-partial", "metadata-accepted", "run-accepted"):
             graph_runner = ReleaseWorkflowGraphTests(methodName="runTest")
             graph_runner.setUp()
             self.addCleanup(graph_runner.doCleanups)
-            control = self.control(artifact(self.sha, packages=False) if scenario == "gone" else None)
-            if scenario == "gone":
+            control = self.control(None if scenario in ("available", "package-gone", "mixed-gone", "package-old-expiry")
+                                   else artifact(self.sha, packages=False))
+            if scenario in ("gone", "package-gone", "mixed-gone"):
                 self.gone(control)
+                if scenario == "mixed-gone":
+                    control.release["body"] = control.release["body"].replace(
+                        "hexalith-release-containers: \n", "hexalith-release-containers: product/image\n")
+            elif scenario == "package-old-expiry":
+                control.metadata.update(expired=False, expires_at="2000-01-01T00:00:00Z")
             elif scenario == "corrupt":
                 control.metadata["digest"] = "sha256:" + "0" * 64
             elif scenario == "signed-gone":
                 control.signed_status = 404
             elif scenario == "signed-partial":
                 control.signed_status = 206
-            elif scenario == "metadata-accepted":
-                control.errors[f"/repos/{REPOSITORY}/actions/artifacts/{ARTIFACT}"] = 202
+            elif scenario in ("metadata-accepted", "run-accepted"):
+                path = f"/repos/{REPOSITORY}/actions/" + (
+                    f"artifacts/{ARTIFACT}" if scenario == "metadata-accepted" else f"runs/{RUN}")
+                control.errors[path] = 202
+                control.error_documents = {path: control.metadata if scenario == "metadata-accepted" else control.run}
             def stage(inputs):
                 result, processes = self.execute(control, inputs)
                 return ("success", result) if result is not None else ("failure", {})
@@ -643,6 +698,21 @@ raise SystemExit(subprocess.call([{shutil.which('git')!r}, *args]))
                     self.assertEqual(graph_runner.document()["outcome"], "nothing" if scenario == "gone" else "failed")
                     self.assertEqual(graph["outputs"]["publish"], "false")
                     self.assertEqual(control.deletes, [789] if scenario == "gone" else [])
+
+    def test_actual_adapter_rejects_non_dispatch_non_main_and_invalid_mode_before_any_api_read(self):
+        for event, ref, mode in (("push", "refs/heads/main", "complete"),
+                                 ("workflow_dispatch", "refs/heads/topic", "complete"),
+                                 ("workflow_dispatch", "refs/heads/main", "other")):
+            self.environment.update(GITHUB_EVENT_NAME=event, GITHUB_REF=ref)
+            control = self.control(artifact(self.sha, packages=False))
+            self.gone(control)
+            with self.subTest(event=event, ref=ref, mode=mode):
+                result, processes = self.execute(control, {"mode": mode})
+                self.assertIsNone(result)
+                self.assertTrue(any(process.returncode for process in processes))
+                self.assertEqual(control.requests, [])
+                self.assertEqual(control.deletes + control.writes, [])
+                self.assertEqual((self.work / "github-output").read_text(), "")
 
     def test_original_recovery_handoff_retries_actual_publisher_with_identical_package_bytes(self):
         control = self.control()

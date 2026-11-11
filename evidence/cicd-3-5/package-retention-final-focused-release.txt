@@ -1,0 +1,330 @@
+test_complete_draft_uses_dispatch_config_without_historical_ci_or_checkout (test_release_adapters.ResolveAdapterTests.test_complete_draft_uses_dispatch_config_without_historical_ci_or_checkout) ... ok
+test_disabled_adapter_keeps_dispatch_settings_and_uses_only_git_and_stdlib (test_release_adapters.ResolveAdapterTests.test_disabled_adapter_keeps_dispatch_settings_and_uses_only_git_and_stdlib) ... ok
+test_enabled_adapter_checks_latest_exact_source_and_retains_sha_after_red (test_release_adapters.ResolveAdapterTests.test_enabled_adapter_checks_latest_exact_source_and_retains_sha_after_red) ... ok
+test_invalid_config_cannot_fabricate_settings_and_fixture_roots_are_guarded (test_release_adapters.ResolveAdapterTests.test_invalid_config_cannot_fabricate_settings_and_fixture_roots_are_guarded) ... ok
+test_invalid_switch_and_wrong_ref_retain_valid_current_settings (test_release_adapters.ResolveAdapterTests.test_invalid_switch_and_wrong_ref_retain_valid_current_settings) ... ok
+test_malformed_draft_fails_by_identity_and_unmarked_draft_is_ignored (test_release_adapters.ResolveAdapterTests.test_malformed_draft_fails_by_identity_and_unmarked_draft_is_ignored) ... ok
+test_audit_failure_suppresses_payload_manifest (test_release_build.BuildTests.test_audit_failure_suppresses_payload_manifest) ...   Determining projects to restore...
+  Restored /tmp/release-sdk-cq_s9apu/source with spaces/Package/Release.Package.csproj (in 97 ms).
+  Release.Package -> /tmp/release-sdk-cq_s9apu/source with spaces/Package/bin/Release/net9.0/Release.Package.dll
+  Release.Package -> /tmp/release-sdk-cq_s9apu/source with spaces/Package/bin/Release/net10.0/Release.Package.dll
+/tmp/release-sdk-cq_s9apu/source with spaces/Directory.Build.targets(3,5): error NU1903: Deterministic SDK audit warning control. [/tmp/release-sdk-cq_s9apu/source with spaces/Package/Release.Package.csproj]
+
+Build FAILED.
+
+/tmp/release-sdk-cq_s9apu/source with spaces/Directory.Build.targets(3,5): error NU1903: Deterministic SDK audit warning control. [/tmp/release-sdk-cq_s9apu/source with spaces/Package/Release.Package.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.62
+ok
+test_container_opt_in_rids_and_test_exclusion (test_release_build.BuildTests.test_container_opt_in_rids_and_test_exclusion) ... ok
+test_container_specific_rid_assets_and_colliding_repository_names_publish (test_release_build.BuildTests.test_container_specific_rid_assets_and_colliding_repository_names_publish) ...   Determining projects to restore...
+  Restored /tmp/release-sdk-pajgpzzy/collision/Other/Other.Container.csproj (in 157 ms).
+  Restored /tmp/release-sdk-pajgpzzy/collision/Container/Release.Container.csproj (in 157 ms).
+  Other.Container -> /tmp/release-sdk-pajgpzzy/collision/Other/bin/Release/net10.0/Other.Container.dll
+  Release.Container -> /tmp/release-sdk-pajgpzzy/collision/Container/bin/Release/net10.0/Release.Container.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.45
+  Release.Container -> /tmp/release-sdk-pajgpzzy/collision/Container/bin/Release/net10.0/linux-x64/Release.Container.dll
+  Release.Container -> /tmp/release-sdk-pajgpzzy/collision/Container/bin/Release/net10.0/linux-x64/publish/
+  Building image 'a/b_c' with tags '2.4.0' on top of base image 'mcr.microsoft.com/dotnet/runtime:10.0-alpine'.
+  Pushed image 'a/b_c:2.4.0' to local archive at '/tmp/hexalith-release-publish-kydmhi1y/container-0-linux-x64.tar.gz'.
+  Other.Container -> /tmp/release-sdk-pajgpzzy/collision/Other/bin/Release/net10.0/linux-x64/Other.Container.dll
+  Other.Container -> /tmp/release-sdk-pajgpzzy/collision/Other/bin/Release/net10.0/linux-x64/publish/
+  Building image 'a_b/c' with tags '2.4.0' on top of base image 'mcr.microsoft.com/dotnet/runtime:10.0-alpine'.
+  Pushed image 'a_b/c:2.4.0' to local archive at '/tmp/hexalith-release-publish-kydmhi1y/container-1-linux-x64.tar.gz'.
+ok
+test_duplicate_and_conditional_framework_identity_rejected (test_release_build.BuildTests.test_duplicate_and_conditional_framework_identity_rejected) ... ok
+test_effective_sdk_rid_precedence_for_singular_and_plural_properties (test_release_build.BuildTests.test_effective_sdk_rid_precedence_for_singular_and_plural_properties) ... ok
+test_executed_build_adapter_frozen_identity_and_digest_handoff (test_release_build.BuildTests.test_executed_build_adapter_frozen_identity_and_digest_handoff) ... ok
+test_no_publishable_project_still_writes_empty_manifest (test_release_build.BuildTests.test_no_publishable_project_still_writes_empty_manifest) ...   Determining projects to restore...
+  Restored /tmp/release-sdk-8kc8rif_/source with spaces/Package/Release.Package.csproj (in 93 ms).
+  Release.Package -> /tmp/release-sdk-8kc8rif_/source with spaces/Package/bin/Release/net10.0/Release.Package.dll
+  Release.Package -> /tmp/release-sdk-8kc8rif_/source with spaces/Package/bin/Release/net9.0/Release.Package.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.43
+ok
+test_non_audit_failure_keeps_status_without_vulnerability_diagnostic (test_release_build.BuildTests.test_non_audit_failure_keeps_status_without_vulnerability_diagnostic) ... compiler failure
+ok
+test_none_payload_does_not_execute_sdk_or_submodules (test_release_build.BuildTests.test_none_payload_does_not_execute_sdk_or_submodules) ... ok
+test_real_default_rid_and_sdk_normalized_repository_publish_without_extra_restore (test_release_build.BuildTests.test_real_default_rid_and_sdk_normalized_repository_publish_without_extra_restore) ...   Determining projects to restore...
+  Restored /tmp/release-sdk-tpg_k3l6/default-rid/Container/Release.Container.csproj (in 158 ms).
+  Restored /tmp/release-sdk-tpg_k3l6/default-rid/Package/Release.Package.csproj (in 158 ms).
+  Release.Package -> /tmp/release-sdk-tpg_k3l6/default-rid/Package/bin/Release/net9.0/Release.Package.dll
+  Release.Container -> /tmp/release-sdk-tpg_k3l6/default-rid/Container/bin/Release/net10.0/Release.Container.dll
+  Release.Package -> /tmp/release-sdk-tpg_k3l6/default-rid/Package/bin/Release/net10.0/Release.Package.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.65
+  Release.Container -> /tmp/release-sdk-tpg_k3l6/default-rid/Container/bin/Release/net10.0/linux-x64/Release.Container.dll
+  Release.Container -> /tmp/release-sdk-tpg_k3l6/default-rid/Container/bin/Release/net10.0/linux-x64/publish/
+  Building image 'release-container' with tags '2.4.0' on top of base image 'mcr.microsoft.com/dotnet/runtime:10.0-alpine'.
+  Pushed image 'release-container:2.4.0' to local archive at '/tmp/hexalith-release-publish-oqxj52d8/container-0-linux-x64.tar.gz'.
+  The package Hexalith.Release.CreateMode.Disposable.2.4.0 is missing a readme. Go to https://aka.ms/nuget/authoring-best-practices/readme to learn why package readmes are important.
+  Successfully created package '/tmp/hexalith-release-publish-oqxj52d8/package-1/Hexalith.Release.CreateMode.Disposable.2.4.0.nupkg'.
+ok
+test_real_multitarget_import_discovery_and_pack_stamp (test_release_build.BuildTests.test_real_multitarget_import_discovery_and_pack_stamp) ...   Determining projects to restore...
+  Restored /tmp/release-sdk-39ywqrrs/source with spaces/Package/Release.Package.csproj (in 88 ms).
+  Release.Package -> /tmp/release-sdk-39ywqrrs/source with spaces/Package/bin/Release/net10.0/Release.Package.dll
+  Release.Package -> /tmp/release-sdk-39ywqrrs/source with spaces/Package/bin/Release/net9.0/Release.Package.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.43
+  The package Hexalith.Release.CreateMode.Disposable.2.4.0 is missing a readme. Go to https://aka.ms/nuget/authoring-best-practices/readme to learn why package readmes are important.
+  Successfully created package '/tmp/hexalith-release-publish-wbnmip5x/package-0/Hexalith.Release.CreateMode.Disposable.2.4.0.nupkg'.
+ok
+test_real_nuget_vulnerability_blocks_inherited_exemptions (test_release_build.BuildTests.test_real_nuget_vulnerability_blocks_inherited_exemptions) ...   Determining projects to restore...
+/tmp/release-sdk-e2jbny73/source with spaces/Package/Release.Package.csproj : error NU1903: Warning As Error: Package 'Newtonsoft.Json' 9.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/release-sdk-e2jbny73/source with spaces/PackageOnly.slnx]
+  Failed to restore /tmp/release-sdk-e2jbny73/source with spaces/Package/Release.Package.csproj (in 121 ms).
+  Determining projects to restore...
+/tmp/release-sdk-e2jbny73/source with spaces/Package/Release.Package.csproj : error NU1903: Warning As Error: Package 'Newtonsoft.Json' 9.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/release-sdk-e2jbny73/source with spaces/PackageOnly.slnx]
+  Failed to restore /tmp/release-sdk-e2jbny73/source with spaces/Package/Release.Package.csproj (in 142 ms).
+  Determining projects to restore...
+/tmp/release-sdk-e2jbny73/source with spaces/Package/Release.Package.csproj : error NU1903: Warning As Error: Package 'Newtonsoft.Json' 9.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr [/tmp/release-sdk-e2jbny73/source with spaces/PackageOnly.slnx]
+  Failed to restore /tmp/release-sdk-e2jbny73/source with spaces/Package/Release.Package.csproj (in 139 ms).
+ok
+test_real_sdk_audit_codes_and_inherited_exemptions (test_release_build.BuildTests.test_real_sdk_audit_codes_and_inherited_exemptions) ...   Determining projects to restore...
+/tmp/release-sdk-w745wkk_/source with spaces/Directory.Build.targets(3,5): error NU1900: Deterministic SDK audit warning control. [/tmp/release-sdk-w745wkk_/source with spaces/Package/Release.Package.csproj]
+  Restored /tmp/release-sdk-w745wkk_/source with spaces/Package/Release.Package.csproj (in 90 ms).
+  Determining projects to restore...
+/tmp/release-sdk-w745wkk_/source with spaces/Directory.Build.targets(3,5): error NU1903: Deterministic SDK audit warning control. [/tmp/release-sdk-w745wkk_/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+/tmp/release-sdk-w745wkk_/source with spaces/Directory.Build.targets(3,5): error NU1904: Deterministic SDK audit warning control. [/tmp/release-sdk-w745wkk_/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+/tmp/release-sdk-w745wkk_/source with spaces/Directory.Build.targets(3,5): error NU1905: Deterministic SDK audit warning control. [/tmp/release-sdk-w745wkk_/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+/tmp/release-sdk-w745wkk_/source with spaces/Directory.Build.targets(3,5): warning NU1901: Deterministic SDK audit warning control. [/tmp/release-sdk-w745wkk_/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+/tmp/release-sdk-w745wkk_/source with spaces/Directory.Build.targets(3,5): warning NU1902: Deterministic SDK audit warning control. [/tmp/release-sdk-w745wkk_/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+ok
+test_real_sdk_complete_container_graph (test_release_build.BuildTests.test_real_sdk_complete_container_graph) ...   Determining projects to restore...
+  Restored /tmp/release-sdk-ga90omd3/container-real/Package/Release.Package.csproj (in 157 ms).
+  Restored /tmp/release-sdk-ga90omd3/container-real/Container/Release.Container.csproj (in 157 ms).
+  Release.Package -> /tmp/release-sdk-ga90omd3/container-real/Package/bin/Release/net9.0/Release.Package.dll
+  Release.Package -> /tmp/release-sdk-ga90omd3/container-real/Package/bin/Release/net10.0/Release.Package.dll
+  Release.Container -> /tmp/release-sdk-ga90omd3/container-real/Container/bin/Release/net10.0/Release.Container.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.85
+  Release.Container -> /tmp/release-sdk-ga90omd3/container-real/Container/bin/Release/net10.0/linux-x64/Release.Container.dll
+  Release.Container -> /tmp/release-sdk-ga90omd3/container-real/Container/bin/Release/net10.0/linux-x64/publish/
+  Building image 'hexalith-release-create-disposable' with tags '2.4.0' on top of base image 'mcr.microsoft.com/dotnet/runtime:10.0-alpine'.
+  Pushed image 'hexalith-release-create-disposable:2.4.0' to local archive at '/tmp/hexalith-release-publish-zzqzwc9k/container-0-linux-x64.tar.gz'.
+  Release.Container -> /tmp/release-sdk-ga90omd3/container-real/Container/bin/Release/net10.0/linux-arm64/Release.Container.dll
+  Release.Container -> /tmp/release-sdk-ga90omd3/container-real/Container/bin/Release/net10.0/linux-arm64/publish/
+  Building image 'hexalith-release-create-disposable' with tags '2.4.0' on top of base image 'mcr.microsoft.com/dotnet/runtime:10.0-alpine'.
+  Pushed image 'hexalith-release-create-disposable:2.4.0' to local archive at '/tmp/hexalith-release-publish-zzqzwc9k/container-0-linux-arm64.tar.gz'.
+  The package Hexalith.Release.CreateMode.Disposable.2.4.0 is missing a readme. Go to https://aka.ms/nuget/authoring-best-practices/readme to learn why package readmes are important.
+  Successfully created package '/tmp/hexalith-release-publish-zzqzwc9k/package-1/Hexalith.Release.CreateMode.Disposable.2.4.0.nupkg'.
+ok
+test_warning_filters_preserve_ordinary_and_low_moderate_policy_for_both_separators (test_release_build.BuildTests.test_warning_filters_preserve_ordinary_and_low_moderate_policy_for_both_separators) ...   Determining projects to restore...
+/tmp/release-sdk-_9uqsxe5/source with spaces/Directory.Build.targets(3,5): warning NU1901: Deterministic SDK audit warning control. [/tmp/release-sdk-_9uqsxe5/source with spaces/Package/Release.Package.csproj]
+  Restored /tmp/release-sdk-_9uqsxe5/source with spaces/Package/Release.Package.csproj (in 196 ms).
+  Determining projects to restore...
+/tmp/release-sdk-_9uqsxe5/source with spaces/Directory.Build.targets(3,5): warning NU1902: Deterministic SDK audit warning control. [/tmp/release-sdk-_9uqsxe5/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+/tmp/release-sdk-_9uqsxe5/source with spaces/Directory.Build.targets(3,5): warning NU1901: Deterministic SDK audit warning control. [/tmp/release-sdk-_9uqsxe5/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+/tmp/release-sdk-_9uqsxe5/source with spaces/Directory.Build.targets(3,5): warning NU1902: Deterministic SDK audit warning control. [/tmp/release-sdk-_9uqsxe5/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+/tmp/release-sdk-_9uqsxe5/source with spaces/Directory.Build.targets(3,5): warning NU1901: Deterministic SDK audit warning control. [/tmp/release-sdk-_9uqsxe5/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+  Determining projects to restore...
+/tmp/release-sdk-_9uqsxe5/source with spaces/Directory.Build.targets(3,5): warning NU1902: Deterministic SDK audit warning control. [/tmp/release-sdk-_9uqsxe5/source with spaces/Package/Release.Package.csproj]
+  All projects are up-to-date for restore.
+ok
+test_actual_adapter_rejects_non_dispatch_non_main_and_invalid_mode_before_any_api_read (test_release_complete.CompleteCompositeTests.test_actual_adapter_rejects_non_dispatch_non_main_and_invalid_mode_before_any_api_read) ... ok
+test_actual_complete_adapter_flows_through_actual_graph_and_reporter (test_release_complete.CompleteCompositeTests.test_actual_complete_adapter_flows_through_actual_graph_and_reporter) ... ok
+test_original_recovery_handoff_retries_actual_publisher_with_identical_package_bytes (test_release_complete.CompleteCompositeTests.test_original_recovery_handoff_retries_actual_publisher_with_identical_package_bytes) ... ok
+test_container_only_checks_every_image_and_retains_any_present_unknown_or_missing_credentials (test_release_complete.CompleteTests.test_container_only_checks_every_image_and_retains_any_present_unknown_or_missing_credentials) ... ok
+test_definitive_metadata_archive_disappearance_or_valid_expiry_allows_stale (test_release_complete.CompleteTests.test_definitive_metadata_archive_disappearance_or_valid_expiry_allows_stale) ... ok
+test_delete_race_and_non204_never_emit_success (test_release_complete.CompleteTests.test_delete_race_and_non204_never_emit_success) ... ok
+test_draft_changed_during_download_never_emits_a_publication_handoff (test_release_complete.CompleteTests.test_draft_changed_during_download_never_emits_a_publication_handoff) ... ok
+test_each_well_formed_producer_mismatch_and_404_allow_only_conservative_stale (test_release_complete.CompleteTests.test_each_well_formed_producer_mismatch_and_404_allow_only_conservative_stale) ... ok
+test_every_marker_missing_duplicated_or_malformed_fails_without_any_write (test_release_complete.CompleteTests.test_every_marker_missing_duplicated_or_malformed_fails_without_any_write) ... ok
+test_existing_non_successor_version_and_captured_base_are_preserved (test_release_complete.CompleteTests.test_existing_non_successor_version_and_captured_base_are_preserved) ... ok
+test_http_transport_auth_redirect_and_malformed_producer_fail_without_stale (test_release_complete.CompleteTests.test_http_transport_auth_redirect_and_malformed_producer_fail_without_stale) ... ok
+test_original_handoff_survives_dispatch_workflow_config_and_current_run_changes (test_release_complete.CompleteTests.test_original_handoff_survives_dispatch_workflow_config_and_current_run_changes) ... ok
+test_original_oci_artifact_handoff_and_container_trailer_disagreement (test_release_complete.CompleteTests.test_original_oci_artifact_handoff_and_container_trailer_disagreement) ... ok
+test_packages_always_retain_when_original_bytes_are_unavailable_without_destination_reads (test_release_complete.CompleteTests.test_packages_always_retain_when_original_bytes_are_unavailable_without_destination_reads) ... ok
+test_source_release_artifact_and_inventory_disagreement_never_deletes (test_release_complete.CompleteTests.test_source_release_artifact_and_inventory_disagreement_never_deletes) ... ok
+test_unmarked_release_preserved_and_ambiguous_drafts_rejected (test_release_complete.CompleteTests.test_unmarked_release_preserved_and_ambiguous_drafts_rejected) ... ok
+test_unsafe_corrupt_payload_and_invalid_expiry_are_never_absence (test_release_complete.CompleteTests.test_unsafe_corrupt_payload_and_invalid_expiry_are_never_absence) ... ok
+test_registry_broad_head_404_only_and_credentials_bound_to_registry (test_release_complete.DestinationHttpTests.test_registry_broad_head_404_only_and_credentials_bound_to_registry) ... ok
+test_registry_timeout_never_proves_absence (test_release_complete.DestinationHttpTests.test_registry_timeout_never_proves_absence) ... ok
+test_executed_http_disappearance_and_delete_require_exact_status (test_release_complete.RecoveryHttpTests.test_executed_http_disappearance_and_delete_require_exact_status) ... ok
+test_main_container_only_uses_pull_pair_and_only_404_permits_deletion (test_release_complete.RecoveryHttpTests.test_main_container_only_uses_pull_pair_and_only_404_permits_deletion) ... ok
+test_package_and_mixed_inventory_refuse_even_with_absent_destinations_and_old_expiry (test_release_complete.RecoveryHttpTests.test_package_and_mixed_inventory_refuse_even_with_absent_destinations_and_old_expiry) ... ok
+test_subprocess_action_uses_only_trusted_python_git_api_and_never_checks_out (test_release_draft.DraftCompositeTests.test_subprocess_action_uses_only_trusted_python_git_api_and_never_checks_out)
+Execute the action's real run command with anonymous real Git and TLS data. ... ok
+test_artifact_identity_failures_never_write (test_release_draft.DraftCreationTests.test_artifact_identity_failures_never_write) ... ok
+test_competing_and_conflicting_same_run_drafts_never_write_again (test_release_draft.DraftCreationTests.test_competing_and_conflicting_same_run_drafts_never_write_again) ... ok
+test_complete_workflow_tree_race_blocks_api_write (test_release_draft.DraftCreationTests.test_complete_workflow_tree_race_blocks_api_write) ... ok
+test_create_has_five_trailers_and_exact_eight_outputs_then_retry_reuses (test_release_draft.DraftCreationTests.test_create_has_five_trailers_and_exact_eight_outputs_then_retry_reuses) ... ok
+test_empty_inventory_persists_empty_list_trailers (test_release_draft.DraftCreationTests.test_empty_inventory_persists_empty_list_trailers) ... ok
+test_fresh_fetch_force_rewrite_with_identical_workflows_blocks_post_and_handoff (test_release_draft.DraftCreationTests.test_fresh_fetch_force_rewrite_with_identical_workflows_blocks_post_and_handoff) ... ok
+test_invalid_bot_marker_and_multiple_marked_drafts_block_creation (test_release_draft.DraftCreationTests.test_invalid_bot_marker_and_multiple_marked_drafts_block_creation) ... ok
+test_invalid_versions_notes_or_payload_never_write (test_release_draft.DraftCreationTests.test_invalid_versions_notes_or_payload_never_write) ... ok
+test_main_product_change_preserves_frozen_source_and_allows_creation (test_release_draft.DraftCreationTests.test_main_product_change_preserves_frozen_source_and_allows_creation) ... ok
+test_returned_draft_must_validate_before_outputs (test_release_draft.DraftCreationTests.test_returned_draft_must_validate_before_outputs) ... ok
+test_api_json_reads_and_writes_are_capped_and_redirects_are_not_followed (test_release_draft.HttpDraftTests.test_api_json_reads_and_writes_are_capped_and_redirects_are_not_followed) ... ok
+test_executed_metadata_signed_download_and_post_are_credential_separated (test_release_draft.HttpDraftTests.test_executed_metadata_signed_download_and_post_are_credential_separated) ... ok
+test_insecure_artifact_redirect_and_http_errors_fail_closed (test_release_draft.HttpDraftTests.test_insecure_artifact_redirect_and_http_errors_fail_closed) ... ok
+test_network_deadline_bounds_dribbling_and_size_controls (test_release_draft.HttpDraftTests.test_network_deadline_bounds_dribbling_and_size_controls) ... ok
+test_authenticated_container_inventory_runs_production_oci_graph_validation (test_release_draft.InventoryTests.test_authenticated_container_inventory_runs_production_oci_graph_validation) ... ok
+test_duplicate_package_ids_and_paths_are_rejected (test_release_draft.InventoryTests.test_duplicate_package_ids_and_paths_are_rejected) ... ok
+test_manifest_closed_identity_and_duplicate_json_rules (test_release_draft.InventoryTests.test_manifest_closed_identity_and_duplicate_json_rules) ... ok
+test_nested_nuspec_content_is_payload_but_root_nuspec_stays_unique (test_release_draft.InventoryTests.test_nested_nuspec_content_is_payload_but_root_nuspec_stays_unique) ... ok
+test_nuspec_dtd_entities_rejected_for_utf8_and_utf16_encodings (test_release_draft.InventoryTests.test_nuspec_dtd_entities_rejected_for_utf8_and_utf16_encodings) ... ok
+test_real_package_metadata_and_empty_payload (test_release_draft.InventoryTests.test_real_package_metadata_and_empty_payload) ... ok
+test_size_caps_are_enforced_before_reading_members (test_release_draft.InventoryTests.test_size_caps_are_enforced_before_reading_members) ... ok
+test_tampered_digest_and_package_metadata (test_release_draft.InventoryTests.test_tampered_digest_and_package_metadata) ... ok
+test_unsafe_duplicate_and_unlisted_members (test_release_draft.InventoryTests.test_unsafe_duplicate_and_unlisted_members) ... ok
+test_exact_successors_and_every_rejected_shape (test_release_draft.VersionCreationTests.test_exact_successors_and_every_rejected_shape) ... ok
+test_reachable_annotated_tag_wins_over_prerelease_and_unreachable (test_release_draft.VersionCreationTests.test_reachable_annotated_tag_wins_over_prerelease_and_unreachable) ... ok
+test_tagless_accepts_only_one_zero_zero (test_release_draft.VersionCreationTests.test_tagless_accepts_only_one_zero_zero) ... ok
+test_assembled_children_still_require_complete_nonnull_platforms (test_release_oci.OciTests.test_assembled_children_still_require_complete_nonnull_platforms) ... ok
+test_assembly_preserves_descriptor_platform_metadata_and_all_child_bytes (test_release_oci.OciTests.test_assembly_preserves_descriptor_platform_metadata_and_all_child_bytes) ... ok
+test_complete_graph_preserves_all_image_bytes_and_colon_labels (test_release_oci.OciTests.test_complete_graph_preserves_all_image_bytes_and_colon_labels) ... ok
+test_conflicting_or_malformed_platform_metadata_rejected (test_release_oci.OciTests.test_conflicting_or_malformed_platform_metadata_rejected) ... ok
+test_correctly_rehashed_graph_requires_supported_config_and_layer_media_types (test_release_oci.OciTests.test_correctly_rehashed_graph_requires_supported_config_and_layer_media_types) ... ok
+test_duplicate_platform_wrong_platform_and_foreign_version_rejected (test_release_oci.OciTests.test_duplicate_platform_wrong_platform_and_foreign_version_rejected) ... ok
+test_extended_metadata_accumulates_across_members_with_small_controls (test_release_oci.OciTests.test_extended_metadata_accumulates_across_members_with_small_controls) ... ok
+test_extended_payload_is_bounded_before_tarfile_reads_it (test_release_oci.OciTests.test_extended_payload_is_bounded_before_tarfile_reads_it) ... ok
+test_graph_rejects_missing_tampered_unreferenced_and_wrong_identity (test_release_oci.OciTests.test_graph_rejects_missing_tampered_unreferenced_and_wrong_identity) ... ok
+test_normal_sdk_pax_and_gnu_metadata_archives_remain_readable (test_release_oci.OciTests.test_normal_sdk_pax_and_gnu_metadata_archives_remain_readable) ... ok
+test_sdk_docker_base_layer_descriptors_preserve_original_child_bytes (test_release_oci.OciTests.test_sdk_docker_base_layer_descriptors_preserve_original_child_bytes) ... ok
+test_sdk_single_descriptor_can_defer_null_or_partial_platform_to_config (test_release_oci.OciTests.test_sdk_single_descriptor_can_defer_null_or_partial_platform_to_config) ... ok
+test_unsafe_link_and_duplicate_json_rejected (test_release_oci.OciTests.test_unsafe_link_and_duplicate_json_rejected) ... ok
+test_absent_resolve_outputs_still_report_the_failed_prerequisite (test_release_outcome.OutcomeAdapterTests.test_absent_resolve_outputs_still_report_the_failed_prerequisite) ... ok
+test_actual_adapter_does_no_file_or_upload_work_for_publisher_handoff (test_release_outcome.OutcomeAdapterTests.test_actual_adapter_does_no_file_or_upload_work_for_publisher_handoff) ... ok
+test_actual_adapter_falls_back_to_dispatch_on_early_or_malformed_metadata (test_release_outcome.OutcomeAdapterTests.test_actual_adapter_falls_back_to_dispatch_on_early_or_malformed_metadata) ... ok
+test_actual_adapter_never_imports_module_owned_python (test_release_outcome.OutcomeAdapterTests.test_actual_adapter_never_imports_module_owned_python) ... ok
+test_actual_adapter_preserves_selected_identity_and_escapes_external_diagnostics (test_release_outcome.OutcomeAdapterTests.test_actual_adapter_preserves_selected_identity_and_escapes_external_diagnostics) ... ok
+test_actual_adapter_unknown_results_cannot_authorize_disabled_or_handoff (test_release_outcome.OutcomeAdapterTests.test_actual_adapter_unknown_results_cannot_authorize_disabled_or_handoff) ... ok
+test_actual_adapter_writes_one_valid_disabled_outcome (test_release_outcome.OutcomeAdapterTests.test_actual_adapter_writes_one_valid_disabled_outcome) ... ok
+test_failed_decision_still_exposes_upload_path_and_retains_failure (test_release_outcome.OutcomeAdapterTests.test_failed_decision_still_exposes_upload_path_and_retains_failure) ... ok
+test_reexecution_replaces_the_one_document_without_leaving_temporary_files (test_release_outcome.OutcomeAdapterTests.test_reexecution_replaces_the_one_document_without_leaving_temporary_files) ... ok
+test_json_schema_and_stdlib_agree_on_the_shared_corpus (test_release_outcome.OutcomeContractTests.test_json_schema_and_stdlib_agree_on_the_shared_corpus) ... ok
+test_schema_patterns_also_reject_trailing_newlines_in_ecmascript (test_release_outcome.OutcomeContractTests.test_schema_patterns_also_reject_trailing_newlines_in_ecmascript) ... ok
+test_enabled_gates_without_publication_stages_fail_explicitly (test_release_outcome.OutcomeReductionTests.test_enabled_gates_without_publication_stages_fail_explicitly) ... ok
+test_failure_and_cancellation_win_over_all_other_decisions (test_release_outcome.OutcomeReductionTests.test_failure_and_cancellation_win_over_all_other_decisions) ... ok
+test_incomplete_or_mismatched_artifact_handoffs_retain_reporter_ownership (test_release_outcome.OutcomeReductionTests.test_incomplete_or_mismatched_artifact_handoffs_retain_reporter_ownership) ... ok
+test_intentionally_disabled_gates_can_skip (test_release_outcome.OutcomeReductionTests.test_intentionally_disabled_gates_can_skip) ... ok
+test_known_release_identity_is_preserved_after_failure (test_release_outcome.OutcomeReductionTests.test_known_release_identity_is_preserved_after_failure) ... ok
+test_missing_unknown_and_unexpected_skips_cannot_be_success (test_release_outcome.OutcomeReductionTests.test_missing_unknown_and_unexpected_skips_cannot_be_success) ... ok
+test_no_version_skips_build_and_draft_but_failure_or_cancellation_wins (test_release_outcome.OutcomeReductionTests.test_no_version_skips_build_and_draft_but_failure_or_cancellation_wins) ... ok
+test_only_explicit_successful_downstream_noops_are_nothing (test_release_outcome.OutcomeReductionTests.test_only_explicit_successful_downstream_noops_are_nothing) ... ok
+test_only_validated_successful_drafts_can_transfer_outcome_ownership (test_release_outcome.OutcomeReductionTests.test_only_validated_successful_drafts_can_transfer_outcome_ownership) ... ok
+test_reducer_shares_the_ci_configuration_language_vocabulary (test_release_outcome.OutcomeReductionTests.test_reducer_shares_the_ci_configuration_language_vocabulary) ... ok
+test_stale_deletion_requires_the_matching_successful_complete_draft (test_release_outcome.OutcomeReductionTests.test_stale_deletion_requires_the_matching_successful_complete_draft) ... ok
+test_successful_gates_under_the_false_switch_are_disabled (test_release_outcome.OutcomeReductionTests.test_successful_gates_under_the_false_switch_are_disabled) ... ok
+test_unexpected_complete_draft_skip_fails_closed (test_release_outcome.OutcomeReductionTests.test_unexpected_complete_draft_skip_fails_closed) ... ok
+test_unknown_switch_or_configuration_fails_closed (test_release_outcome.OutcomeReductionTests.test_unknown_switch_or_configuration_fails_closed) ... ok
+test_build_failure_retains_the_version_and_never_authorizes_the_publisher (test_release_outcome.ReleaseWorkflowGraphTests.test_build_failure_retains_the_version_and_never_authorizes_the_publisher) ... ok
+test_complete_draft_failures_and_incomplete_handoffs_report_failed (test_release_outcome.ReleaseWorkflowGraphTests.test_complete_draft_failures_and_incomplete_handoffs_report_failed) ... ok
+test_complete_handoff_uses_saved_identity_and_skips_version_and_build (test_release_outcome.ReleaseWorkflowGraphTests.test_complete_handoff_uses_saved_identity_and_skips_version_and_build) ... ok
+test_complete_stale_deletion_reports_one_nothing_outcome (test_release_outcome.ReleaseWorkflowGraphTests.test_complete_stale_deletion_reports_one_nothing_outcome) ... ok
+test_default_rules_and_every_handoff_reach_the_publisher_only_after_the_draft (test_release_outcome.ReleaseWorkflowGraphTests.test_default_rules_and_every_handoff_reach_the_publisher_only_after_the_draft) ... ok
+test_disabled_complete_and_gate_failures_skip_all_create_and_recovery_stages (test_release_outcome.ReleaseWorkflowGraphTests.test_disabled_complete_and_gate_failures_skip_all_create_and_recovery_stages) ... ok
+test_enabled_skipped_security_gate_blocks_draft_before_any_mutation (test_release_outcome.ReleaseWorkflowGraphTests.test_enabled_skipped_security_gate_blocks_draft_before_any_mutation) ... ok
+test_no_version_skips_build_and_draft_and_reports_nothing (test_release_outcome.ReleaseWorkflowGraphTests.test_no_version_skips_build_and_draft_and_reports_nothing) ... ok
+test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff (test_release_publish.PublishCompositeTests.test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff) ... ok
+test_absent_and_correct_lightweight_and_annotated_tags_publish_tag_last (test_release_publish.PublisherTests.test_absent_and_correct_lightweight_and_annotated_tags_publish_tag_last) ... ok
+test_all_images_precede_first_package_and_late_conflict_stops_copy (test_release_publish.PublisherTests.test_all_images_precede_first_package_and_late_conflict_stops_copy) ... NuGet package push completed
+ok
+test_both_tag_forms_conflict_and_noncommit_ref_fail_before_materialization (test_release_publish.PublisherTests.test_both_tag_forms_conflict_and_noncommit_ref_fail_before_materialization) ... ok
+test_draft_and_tag_revalidated_before_patch_and_returned_identity_verified (test_release_publish.PublisherTests.test_draft_and_tag_revalidated_before_patch_and_returned_identity_verified) ... ok
+test_empty_payload_no_package_command_and_partial_package_retry_same_bytes (test_release_publish.PublisherTests.test_empty_payload_no_package_command_and_partial_package_retry_same_bytes) ... NuGet package push completed
+ok
+test_interrupted_state_rewrite_preserves_previous_complete_document (test_release_publish.PublisherTests.test_interrupted_state_rewrite_preserves_previous_complete_document) ... ok
+test_main_advancement_workflow_difference_and_postpatch_race (test_release_publish.PublisherTests.test_main_advancement_workflow_difference_and_postpatch_race) ... ok
+test_nuget_status_reports_duplicate_without_exposing_tool_output (test_release_publish.PublisherTests.test_nuget_status_reports_duplicate_without_exposing_tool_output) ... ok
+test_producer_draft_artifact_errors_have_no_writes (test_release_publish.PublisherTests.test_producer_draft_artifact_errors_have_no_writes) ... ok
+test_source_uses_captured_base_without_recomputing_newer_reachable_tag (test_release_publish.PublisherTests.test_source_uses_captured_base_without_recomputing_newer_reachable_tag) ... ok
+test_unsafe_archive_fails_without_any_materialized_payload (test_release_publish.PublisherTests.test_unsafe_archive_fails_without_any_materialized_payload) ... ok
+test_alert_request_explicitly_selects_main_instead_of_the_default_branch (test_release_security.ReleaseSecurityTests.test_alert_request_explicitly_selects_main_instead_of_the_default_branch) ... ok
+test_alerts_require_completed_processing_of_this_runs_upload (test_release_security.ReleaseSecurityTests.test_alerts_require_completed_processing_of_this_runs_upload) ... ok
+test_every_page_must_be_available_and_well_formed (test_release_security.ReleaseSecurityTests.test_every_page_must_be_available_and_well_formed) ... ok
+test_executed_adapter_never_reads_alerts_before_processing_completes (test_release_security.ReleaseSecurityTests.test_executed_adapter_never_reads_alerts_before_processing_completes) ... ok
+test_executed_adapter_reports_clean_blocked_and_transport_failures (test_release_security.ReleaseSecurityTests.test_executed_adapter_reports_clean_blocked_and_transport_failures) ... ok
+test_historical_release_instances_and_plain_severity_do_not_block (test_release_security.ReleaseSecurityTests.test_historical_release_instances_and_plain_severity_do_not_block) ... ok
+test_http_errors_name_only_the_sanitized_repository_relative_endpoint (test_release_security.ReleaseSecurityTests.test_http_errors_name_only_the_sanitized_repository_relative_endpoint) ... ok
+test_malformed_alert_data_is_a_failure (test_release_security.ReleaseSecurityTests.test_malformed_alert_data_is_a_failure) ... ok
+test_numeric_links_preserve_configured_api_base_path_and_deadline (test_release_security.ReleaseSecurityTests.test_numeric_links_preserve_configured_api_base_path_and_deadline) ... ok
+test_numeric_links_require_matching_valid_repository_metadata (test_release_security.ReleaseSecurityTests.test_numeric_links_require_matching_valid_repository_metadata) ... ok
+test_numeric_repository_links_are_verified_and_rewritten_before_collection_reads (test_release_security.ReleaseSecurityTests.test_numeric_repository_links_are_verified_and_rewritten_before_collection_reads) ... ok
+test_only_current_open_high_and_critical_release_categories_block (test_release_security.ReleaseSecurityTests.test_only_current_open_high_and_critical_release_categories_block) ... ok
+test_other_numeric_repository_ids_never_receive_authenticated_requests (test_release_security.ReleaseSecurityTests.test_other_numeric_repository_ids_never_receive_authenticated_requests) ... ok
+test_pagination_cannot_leave_repository_or_api_origin (test_release_security.ReleaseSecurityTests.test_pagination_cannot_leave_repository_or_api_origin) ... ok
+test_pagination_cycles_and_ambiguous_next_links_fail_without_extra_reads (test_release_security.ReleaseSecurityTests.test_pagination_cycles_and_ambiguous_next_links_fail_without_extra_reads) ... ok
+test_real_pagination_finds_later_blockers_and_names_each_number (test_release_security.ReleaseSecurityTests.test_real_pagination_finds_later_blockers_and_names_each_number) ... ok
+test_redirects_never_forward_authenticated_requests (test_release_security.ReleaseSecurityTests.test_redirects_never_forward_authenticated_requests) ... ok
+test_absolute_deadline_bounds_a_steadily_streaming_json_body (test_release_state.ApiDeadlineTests.test_absolute_deadline_bounds_a_steadily_streaming_json_body) ... ok
+test_absolute_deadline_bounds_steadily_streaming_response_headers (test_release_state.ApiDeadlineTests.test_absolute_deadline_bounds_steadily_streaming_response_headers) ... ok
+test_absolute_deadline_does_not_join_slow_response_acquisition (test_release_state.ApiDeadlineTests.test_absolute_deadline_does_not_join_slow_response_acquisition) ... ok
+test_api_deadline_during_ci_polling_reports_the_red_ci_bound (test_release_state.RealApiCiGateTests.test_api_deadline_during_ci_polling_reports_the_red_ci_bound) ... ok
+test_deadline_bound_ci_reads_keep_sanitized_http_diagnostics (test_release_state.RealApiCiGateTests.test_deadline_bound_ci_reads_keep_sanitized_http_diagnostics) ... ok
+test_truncated_responses_are_sanitized_transport_failures (test_release_state.RealApiCiGateTests.test_truncated_responses_are_sanitized_transport_failures) ... ok
+test_api_time_counts_toward_fixed_deadline_even_when_the_run_is_green (test_release_state.ReleaseStateTests.test_api_time_counts_toward_fixed_deadline_even_when_the_run_is_green) ... ok
+test_ci_api_errors_unknown_status_and_invalid_identity_fail_visibly (test_release_state.ReleaseStateTests.test_ci_api_errors_unknown_status_and_invalid_identity_fail_visibly) ... ok
+test_complete_draft_excludes_its_own_existing_tag (test_release_state.ReleaseStateTests.test_complete_draft_excludes_its_own_existing_tag) ... ok
+test_complete_uses_dispatch_configuration_and_never_checks_old_sha_ci (test_release_state.ReleaseStateTests.test_complete_uses_dispatch_configuration_and_never_checks_old_sha_ci) ... ok
+test_disabled_and_invalid_switches_retain_settings_and_selected_identity (test_release_state.ReleaseStateTests.test_disabled_and_invalid_switches_retain_settings_and_selected_identity) ... ok
+test_fixture_and_workflow_overrides_are_restricted (test_release_state.ReleaseStateTests.test_fixture_and_workflow_overrides_are_restricted) ... ok
+test_git_object_reads_ignore_worktree_filters_hooks_and_submodules (test_release_state.ReleaseStateTests.test_git_object_reads_ignore_worktree_filters_hooks_and_submodules) ... ok
+test_highest_stable_tag_uses_numeric_order_ancestry_annotations_and_exclusion (test_release_state.ReleaseStateTests.test_highest_stable_tag_uses_numeric_order_ancestry_annotations_and_exclusion) ... ok
+test_invalid_dispatch_configuration_emits_no_fabricated_gate_settings (test_release_state.ReleaseStateTests.test_invalid_dispatch_configuration_emits_no_fabricated_gate_settings) ... ok
+test_latest_exact_sha_push_or_manual_ci_governs (test_release_state.ReleaseStateTests.test_latest_exact_sha_push_or_manual_ci_governs) ... ok
+test_malformed_bot_drafts_are_named_and_all_remain_unchanged (test_release_state.ReleaseStateTests.test_malformed_bot_drafts_are_named_and_all_remain_unchanged) ... ok
+test_multiple_valid_drafts_fail_naming_both_identities (test_release_state.ReleaseStateTests.test_multiple_valid_drafts_fail_naming_both_identities) ... ok
+test_no_ci_and_each_non_success_conclusion_fail_without_waiting (test_release_state.ReleaseStateTests.test_no_ci_and_each_non_success_conclusion_fail_without_waiting) ... ok
+test_no_reachable_tag_accepts_only_bootstrap_one_zero_zero (test_release_state.ReleaseStateTests.test_no_reachable_tag_accepts_only_bootstrap_one_zero_zero) ... ok
+test_resolve_rejects_workflow_overrides_before_disabled_or_complete_returns (test_release_state.ReleaseStateTests.test_resolve_rejects_workflow_overrides_before_disabled_or_complete_returns) ... ok
+test_resolve_requires_full_dispatch_and_delivered_commit_identities (test_release_state.ReleaseStateTests.test_resolve_requires_full_dispatch_and_delivered_commit_identities) ... ok
+test_selected_sha_and_settings_survive_red_ci (test_release_state.ReleaseStateTests.test_selected_sha_and_settings_survive_red_ci) ... ok
+test_unfinished_ci_waits_once_per_minute_until_success_or_fixed_deadline (test_release_state.ReleaseStateTests.test_unfinished_ci_waits_once_per_minute_until_success_or_fixed_deadline) ... ok
+test_unmarked_and_nonbot_drafts_cannot_select_or_mutate_releases (test_release_state.ReleaseStateTests.test_unmarked_and_nonbot_drafts_cannot_select_or_mutate_releases) ... ok
+test_wrong_ref_and_ambiguous_drafts_leave_current_settings_available (test_release_state.ReleaseStateTests.test_wrong_ref_and_ambiguous_drafts_leave_current_settings_available) ... ok
+test_actual_builds_plugin_rules_exclude_exact_nonrelease_types (test_release_version.ReleaseVersionTests.test_actual_builds_plugin_rules_exclude_exact_nonrelease_types) ... ok
+test_actual_composite_uses_frozen_objects_and_isolated_npm (test_release_version.ReleaseVersionTests.test_actual_composite_uses_frozen_objects_and_isolated_npm) ... ok
+test_actual_module_plugin_rules_and_breaking_precedence (test_release_version.ReleaseVersionTests.test_actual_module_plugin_rules_and_breaking_precedence) ... ok
+test_annotated_highest_reachable_tag_and_frozen_range (test_release_version.ReleaseVersionTests.test_annotated_highest_reachable_tag_and_frozen_range) ... ok
+test_builds_rules_and_sample_context_cannot_be_selected_by_modules (test_release_version.ReleaseVersionTests.test_builds_rules_and_sample_context_cannot_be_selected_by_modules) ... ok
+test_first_release_analyzes_full_history_and_is_exactly_one (test_release_version.ReleaseVersionTests.test_first_release_analyzes_full_history_and_is_exactly_one) ... ok
+test_multiline_notes_cannot_inject_an_actions_output (test_release_version.ReleaseVersionTests.test_multiline_notes_cannot_inject_an_actions_output) ... ok
+test_no_version_tagless_or_at_base_has_explicit_noop (test_release_version.ReleaseVersionTests.test_no_version_tagless_or_at_base_has_explicit_noop) ... ok
+test_non_utf8_legacy_commit_message_is_analyzed_instead_of_aborting (test_release_version.ReleaseVersionTests.test_non_utf8_legacy_commit_message_is_analyzed_instead_of_aborting) ... ok
+test_plugins_are_isolated_without_core_or_product_configuration (test_release_version.ReleaseVersionTests.test_plugins_are_isolated_without_core_or_product_configuration) ... ok
+test_stable_increment_resets_and_rejects_unexpected_plugin_results (test_release_version.ReleaseVersionTests.test_stable_increment_resets_and_rejects_unexpected_plugin_results) ... ok
+
+----------------------------------------------------------------------
+Ran 182 tests in 152.330s
+
+OK

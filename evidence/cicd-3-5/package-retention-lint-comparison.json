@@ -1,0 +1,29 @@
+{
+  "baseline_revision": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+  "baseline_method": "Extract git archive BASE .github Github Tools/ci to a disposable directory; execute its tracked lint_workflows.py with identical pinned tools and intended read-only credentials.",
+  "same_four_findings_on_baseline_and_working_tree": true,
+  "workflow_lint_gate": "failed",
+  "frozen_workflows_and_audit_configuration_preserved": true,
+  "results": {
+    "workflow-lint": {
+      "findings": [
+        ".github/workflows/domain-ci.yml:1129:100: ref-version-mismatch: action's hash pin has mismatched or missing version comment",
+        ".github/workflows/domain-ci.yml:1254:9: artipacked: credential persistence through GitHub Actions artifacts",
+        ".github/workflows/domain-ci.yml:1267:107: ref-version-mismatch: action's hash pin has mismatched or missing version comment",
+        ".github/workflows/domain-ci.yml:1319:100: ref-version-mismatch: action's hash pin has mismatched or missing version comment"
+      ],
+      "raw_sha256": "4be19e22a2029fb30c9cd9ede974c7516f452e2b9cc7360d060944d9632eeabd",
+      "record": "package-retention-workflow-lint.json"
+    },
+    "workflow-lint-baseline": {
+      "findings": [
+        ".github/workflows/domain-ci.yml:1129:100: ref-version-mismatch: action's hash pin has mismatched or missing version comment",
+        ".github/workflows/domain-ci.yml:1254:9: artipacked: credential persistence through GitHub Actions artifacts",
+        ".github/workflows/domain-ci.yml:1267:107: ref-version-mismatch: action's hash pin has mismatched or missing version comment",
+        ".github/workflows/domain-ci.yml:1319:100: ref-version-mismatch: action's hash pin has mismatched or missing version comment"
+      ],
+      "raw_sha256": "e18504a72c1a7eeced144bc0bdb03da98f9a6422849da9e6196b14d08713aa70",
+      "record": "package-retention-workflow-lint-baseline.json"
+    }
+  }
+}

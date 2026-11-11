@@ -1,0 +1,30 @@
+    raise ProvenanceError(
+    ...<2 lines>...
+    )
+governed_provenance.ProvenanceError: .github/workflows/domain-ci.yml:1070: a governed uses: reference must be pinned to a literal lowercase 40-hex commit: '$/Github/initialize-apt'
+
+======================================================================
+ERROR: test_v2_rejects_the_legacy_workflow_authorization_digest (test_governed_provenance.EndToEndTests.test_v2_rejects_the_legacy_workflow_authorization_digest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/cicd-3-5-provenance-baseline-e42jvj9y/Github/governed-provenance/tests/test_governed_provenance.py", line 550, in test_v2_rejects_the_legacy_workflow_authorization_digest
+    legacy = evaluator.build_provenance(self.arguments("ci", WORKFLOW_PATH))
+  File "/tmp/cicd-3-5-provenance-baseline-e42jvj9y/Github/governed-provenance/governed_provenance.py", line 620, in build_provenance
+    collector.visit_workflow(arguments.workflow_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cicd-3-5-provenance-baseline-e42jvj9y/Github/governed-provenance/governed_provenance.py", line 438, in visit_workflow
+    self._visit(literal, depth + 1, f"{workflow_path}:{line_number}")
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/cicd-3-5-provenance-baseline-e42jvj9y/Github/governed-provenance/governed_provenance.py", line 385, in _visit
+    kind, target = self._resolve_literal(literal, context)
+                   ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/tmp/cicd-3-5-provenance-baseline-e42jvj9y/Github/governed-provenance/governed_provenance.py", line 349, in _resolve_literal
+    raise ProvenanceError(
+    ...<2 lines>...
+    )
+governed_provenance.ProvenanceError: .github/workflows/domain-ci.yml:1070: a governed uses: reference must be pinned to a literal lowercase 40-hex commit: '$/Github/initialize-apt'
+
+----------------------------------------------------------------------
+Ran 47 tests in 0.218s
+
+FAILED (errors=8)

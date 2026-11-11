@@ -1,0 +1,30 @@
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+ok
+test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter (test_python_runner.PythonRunnerTests.test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter) ... test_behavior (test_nested.ExecutedTest.test_behavior) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+test_behavior (test_qualification.ExecutedTest.test_behavior) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+test_behavior (test_quality.ExecutedTest.test_behavior) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+ok
+test_missing_required_group_refuses_partial_suite (test_python_runner.PythonRunnerTests.test_missing_required_group_refuses_partial_suite) ... ok
+
+----------------------------------------------------------------------
+Ran 46 tests in 8.553s
+
+OK

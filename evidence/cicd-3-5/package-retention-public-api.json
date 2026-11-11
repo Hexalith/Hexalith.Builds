@@ -1,0 +1,21 @@
+{
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "3.12",
+    "Tools/ci/check_public_api.py",
+    "--ref",
+    "706182174e4e85872a34693cc3c3c4045bceeeca"
+  ],
+  "candidate_revision": "706182174e4e85872a34693cc3c3c4045bceeeca",
+  "returncode": 0,
+  "output": "Public API baseline: v4.48.0 (dd68a5efbfaec13ef22ec06ad151b212eb16ea4f); checked revision: 706182174e4e85872a34693cc3c3c4045bceeeca\nPublic API compatible: 2561 entries; no removals\nInstalled 1 package in 2ms\n",
+  "runtime_sha256": {
+    "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+    "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "baseline_revision": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+  "runtime_files_unchanged_through_all_checks": true,
+  "focused": {
+    "release_tests": 182,
+    "oci_publisher_tests": 3,
+    "python": "3.14.4",
+    "result": "passed"
+  },
+  "complete_suites": {
+    "Python 3.12.13": {
+      "record": "package-retention-full-python312.json",
+      "result": "18/20 groups passed; two failures"
+    },
+    "uv-selected Python 3.13.13": {
+      "record": "package-retention-full-runner.json",
+      "result": "18/20 groups passed; two failures"
+    }
+  },
+  "corrected_environment": {
+    "problem": "The original full commands lacked the read-only token required by the real Tools/ci online-policy test.",
+    "correction": "Rerun all 46 Tools/ci tests under each selected interpreter with the existing scoped token supplied privately and the same committed dependency lock.",
+    "records": [
+      "package-retention-quality-python312.json",
+      "package-retention-quality-python313.json"
+    ],
+    "both_passed": true
+  },
+  "scope_record": "package-retention-scope.json",
+  "new_hosted_effects": false,
+  "workflow_status": "done",
+  "review_step": "complete",
+  "matrix_audit": "package-retention-matrix-audit.json",
+  "commitlint": "package-retention-commitlint.json",
+  "delivery": "Requested forward fix delivery; final commit and remote readback are recorded in the canonical superproject story.",
+  "original_failed_required_gates": {
+    "governed_provenance": {
+      "same_eight_errors_on_baseline_and_both_interpreters": true,
+      "comparison": "package-retention-provenance-comparison.json"
+    },
+    "workflow_lint": {
+      "same_four_findings_on_baseline_and_working_tree": true,
+      "comparison": "package-retention-lint-comparison.json"
+    }
+  },
+  "original_blockers_resolved_by_upstream": true,
+  "integrated_complete_suites": {
+    "package-retention-integrated-full-python312": {
+      "command": [
+        "uv",
+        "run",
+        "--no-cache",
+        "--locked",
+        "--script",
+        "--python",
+        "3.12",
+        "Tools/ci/run_python_tests.py"
+      ],
+      "started_at": "2026-11-11T23:00:53.566743+00:00",
+      "finished_at": "2026-11-11T23:11:52.294057+00:00",
+      "returncode": 0,
+      "tested_source": {
+        "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+        "files": {
+          "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+          "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+        }
+      },
+      "source_unchanged_during_check": true,
+      "selected_interpreter": "3.12.13",
+      "total_groups": 22,
+      "groups_passed": 22,
+      "private_read_only_token_supplied": true,
+      "authentication_profile": "/home/administrator/.config/gh-cicd-agent",
+      "summary": "package-retention-integrated-full-python312.txt",
+      "summary_sha256": "232401ea9044dfa3bc392e56abc5adb5d80ebc4f376b54ea65071d0a276b97ae",
+      "raw_log": "/tmp/cicd-3-5-package-retention-integrated-full-python312.raw.log",
+      "raw_sha256": "9a856d8ff296346013ad5d6a138441ffd22a681f1ca5c63393cfff7874cd1976",
+      "summary_kind": "All 22 enclosing group results plus verbatim runner negative-fixture context and final result.",
+      "raw_log_hash_preserved": true
+    },
+    "package-retention-integrated-full-runner": {
+      "command": [
+        "uv",
+        "run",
+        "--no-cache",
+        "--locked",
+        "--script",
+        "--python",
+        "python3",
+        "Tools/ci/run_python_tests.py"
+      ],
+      "started_at": "2026-11-11T23:00:59.033169+00:00",
+      "finished_at": "2026-11-11T23:11:59.533246+00:00",
+      "returncode": 0,
+      "tested_source": {
+        "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+        "files": {
+          "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+          "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+        }
+      },
+      "source_unchanged_during_check": true,
+      "selected_interpreter": "3.13.13",
+      "total_groups": 22,
+      "groups_passed": 22,
+      "private_read_only_token_supplied": true,
+      "authentication_profile": "/home/administrator/.config/gh-cicd-agent",
+      "summary": "package-retention-integrated-full-runner.txt",
+      "summary_sha256": "c271bf0317c2b486045db92b919463250d87610c3251873ed73261e7cde06937",
+      "raw_log": "/tmp/cicd-3-5-package-retention-integrated-full-runner.raw.log",
+      "raw_sha256": "8e9ac04e113b2d63d0751b2eaaf15e18dcc4e986c93ef4da27b845459fabea6c",
+      "summary_kind": "All 22 enclosing group results plus verbatim runner negative-fixture context and final result.",
+      "raw_log_hash_preserved": true
+    }
+  },
+  "integrated_workflow_lint": "package-retention-integrated-workflow-lint.json",
+  "integrated_provenance": "package-retention-integrated-provenance.json",
+  "integrated_public_api": "package-retention-integrated-public-api.json",
+  "final_verification": {
+    "final-full-python312": {
+      "record": "package-retention-final-full-python312.json",
+      "exit_code": 0,
+      "tested_source": {
+        "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+        "files": {
+          "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+          "Github/lib/tests/test_release_complete.py": "a09ee8290e4d83c5a7338702ce8f2b09e5e1dec214d08c2645f15b3c49e2563f"
+        }
+      },
+      "durable_output": "package-retention-final-full-python312.txt"
+    },
+    "final-full-runner": {
+      "record": "package-retention-final-full-runner.json",
+      "exit_code": 0,
+      "tested_source": {
+        "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+        "files": {
+          "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+          "Github/lib/tests/test_release_complete.py": "a09ee8290e4d83c5a7338702ce8f2b09e5e1dec214d08c2645f15b3c49e2563f"
+        }
+      },
+      "durable_output": "package-retention-final-full-runner.txt"
+    },
+    "final-focused-release": {
+      "record": "package-retention-final-focused-release.json",
+      "exit_code": 0,
+      "tested_source": {
+        "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+        "files": {
+          "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+          "Github/lib/tests/test_release_complete.py": "a09ee8290e4d83c5a7338702ce8f2b09e5e1dec214d08c2645f15b3c49e2563f"
+        }
+      },
+      "durable_output": "package-retention-final-focused-release.txt"
+    },
+    "final-focused-oci": {
+      "record": "package-retention-final-focused-oci.json",
+      "exit_code": 0,
+      "tested_source": {
+        "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+        "files": {
+          "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+          "Github/lib/tests/test_release_complete.py": "a09ee8290e4d83c5a7338702ce8f2b09e5e1dec214d08c2645f15b3c49e2563f"
+        }
+      },
+      "durable_output": "package-retention-final-focused-oci.txt"
+    },
+    "final-workflow-lint": {
+      "record": "package-retention-final-workflow-lint.json",
+      "exit_code": 0,
+      "tested_source": {
+        "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+        "files": {
+          "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+          "Github/lib/tests/test_release_complete.py": "a09ee8290e4d83c5a7338702ce8f2b09e5e1dec214d08c2645f15b3c49e2563f"
+        }
+      },
+      "durable_output": "package-retention-final-workflow-lint.txt"
+    }
+  },
+  "final_public_api": "package-retention-final-public-api.json",
+  "current_required_gates": "all passed",
+  "followup_review_recommended": false
+}

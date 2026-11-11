@@ -1,0 +1,32 @@
+{
+  "focused_release_record": "package-retention-focused-release.json",
+  "tests_passed": 182,
+  "all_listed_controls_passed": true,
+  "coverage": {
+    "package-bearing artifact loss, producer mismatch, explicit indexing/unlisted identities, mixed inventory and elapsed time": [
+      "CompleteTests.test_packages_always_retain_when_original_bytes_are_unavailable_without_destination_reads"
+    ],
+    "package/mixed HTTP refusal without destination requests despite old expiry": [
+      "RecoveryHttpTests.test_package_and_mixed_inventory_refuse_even_with_absent_destinations_and_old_expiry"
+    ],
+    "all images absent, present/uncertain image and exact scoped pull credentials": [
+      "CompleteTests.test_container_only_checks_every_image_and_retains_any_present_unknown_or_missing_credentials",
+      "RecoveryHttpTests.test_main_container_only_uses_pull_pair_and_only_404_permits_deletion"
+    ],
+    "actual adapter, workflow outputs and sole schema-valid failed outcome": [
+      "CompleteCompositeTests.test_actual_complete_adapter_flows_through_actual_graph_and_reporter"
+    ],
+    "usable original bytes and identical package retry remain allowed": [
+      "CompleteCompositeTests.test_original_recovery_handoff_retries_actual_publisher_with_identical_package_bytes",
+      "CompleteTests.test_original_oci_artifact_handoff_and_container_trailer_disagreement"
+    ],
+    "verification errors never become absence": [
+      "CompleteTests.test_source_release_artifact_and_inventory_disagreement_never_deletes",
+      "CompleteTests.test_unsafe_corrupt_payload_and_invalid_expiry_are_never_absence"
+    ],
+    "current event/ref guard and adapter mode dispatch": [
+      "CompleteCompositeTests.test_actual_adapter_rejects_non_dispatch_non_main_and_invalid_mode_before_any_api_read"
+    ]
+  },
+  "effects": "Local disposable histories, HTTP servers, actual adapter/graph/reporter and publisher command controls; no live release/package/image mutation."
+}

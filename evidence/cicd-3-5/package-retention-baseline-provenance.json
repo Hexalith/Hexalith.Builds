@@ -1,0 +1,59 @@
+{
+  "command": [
+    "python3",
+    "/tmp/cicd-3-5-package-retention-baseline-provenance.py"
+  ],
+  "started_at": "2026-11-11T22:52:04.518393+00:00",
+  "finished_at": "2026-11-11T22:52:05.013574+00:00",
+  "returncode": 1,
+  "summary": "package-retention-baseline-provenance.txt",
+  "summary_sha256": "6758b86ffa16d9baefcd4fa6f0eff89d9a32b44c5c8820e31f92471134c4e550",
+  "raw_log": "/tmp/cicd-3-5-package-retention-baseline-provenance.raw.log",
+  "raw_sha256": "29ee2c8eadca141a143e6e3785dfc9494adabcb1a16c96ca61f22fcf68072510",
+  "observed_working_tree": {
+    "head": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+    }
+  },
+  "observed_working_tree_unchanged_during_check": true,
+  "tested_source": {
+    "revision": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "git_object_format": "sha1",
+    "root_tree_git_object": "413d9ca91b86af516f5464371b0375e215e6ce34",
+    "archive_pathspecs": [
+      ".github",
+      "Github",
+      "Tools"
+    ],
+    "archive_tree_git_objects": {
+      ".github": "65f2d724a05784fab74da783e9e85c17261c73a7",
+      "Github": "45eb90b43d2a4eafd8aeaa611d060d8f71a0e01a",
+      "Tools": "909539b6821dc4353a5ebdc95a9826635df57576"
+    },
+    "executed_entrypoint_and_input_git_blobs": {
+      "Github/governed-provenance/tests/test_governed_provenance.py": "bca6dd0e56f8c9670e8f87618425bf3b088f119a",
+      "Github/governed-provenance/governed_provenance.py": "c60f7c3849581d09f216d82810e47c5c2f946da8",
+      ".github/workflows/domain-ci.yml": "2f668e185a47e99f169d55b69b65f2c8c44b8467",
+      ".github/workflows/domain-ci-v2.yml": "1d702ae432d52a61bc1561e11db71d855032a55c",
+      ".github/workflows/domain-release.yml": "93d1546f8c5a1e08e7bb174748c924aea38dd5c1"
+    },
+    "binding": "The archive tree objects bind every extracted input transitively; the listed blob objects identify the executed entrypoints and their primary inputs. No modified working-tree bytes enter the archive."
+  },
+  "wrapper": {
+    "original_path": "/tmp/cicd-3-5-package-retention-baseline-provenance.py",
+    "contents": "import io, pathlib, subprocess, sys, tarfile, tempfile\nrevision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()\nwith tempfile.TemporaryDirectory(prefix='cicd-3-5-provenance-baseline-') as directory:\n    baseline = pathlib.Path(directory)\n    archive = subprocess.check_output(['git', 'archive', revision, '.github', 'Github', 'Tools'])\n    with tarfile.open(fileobj=io.BytesIO(archive)) as files:\n        files.extractall(baseline, filter='data')\n    print('Baseline revision: ' + revision, flush=True)\n    raise SystemExit(subprocess.call([sys.executable, '-m', 'unittest', 'discover', '-s', str(baseline / 'Github/governed-provenance/tests'), '-p', 'test_governed_provenance.py', '-v'], cwd=baseline))\n",
+    "sha256": "e6f6fdbc648c97bfe5a228e8d47efda9992d928a2c37c225fa655dd09b82c377"
+  },
+  "replay": {
+    "required_repository_head": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "interpreter_used": "Python 3.14.4",
+    "instructions": [
+      "Prepare a separate checkout of this repository whose HEAD is exactly a9f443f0bd482359731dcd54711e44fbd23d58fe; keep the original checkout unchanged.",
+      "Write wrapper.contents verbatim to a temporary Python file. The original wrapper resolves HEAD, so verify the checkout revision before invoking it.",
+      "Run python3 <saved-wrapper.py> with cwd set to that checkout. The wrapper archives only tested_source.archive_pathspecs into its own disposable directory and executes those extracted files."
+    ],
+    "private_online_authentication": false
+  }
+}

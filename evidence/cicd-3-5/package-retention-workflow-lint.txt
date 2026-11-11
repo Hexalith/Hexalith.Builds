@@ -1,0 +1,30 @@
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/ci-unit-tests/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/create-release/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/dapr-init/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/governed-provenance/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/initialize-apt/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/initialize-build/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/initialize-dotnet/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/package-release/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/prepare-domain-release/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/prepare-module-build/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/prepare/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/publish-azure-container-app/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/publish-container-to-registry/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/publish-containers/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/publish/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/release-build/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/release-draft/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/release-outcome/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/release-resolve/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/release-security/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/release-version/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/split-publication/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/unit-tests/action.yml
+ INFO audit: zizmor: 🌈 completed /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/verify/action.yml
+.github/workflows/domain-ci.yml:1254:9: artipacked: credential persistence through GitHub Actions artifacts
+.github/workflows/domain-ci.yml:1129:100: ref-version-mismatch: action's hash pin has mismatched or missing version comment
+.github/workflows/domain-ci.yml:1267:107: ref-version-mismatch: action's hash pin has mismatched or missing version comment
+.github/workflows/domain-ci.yml:1319:100: ref-version-mismatch: action's hash pin has mismatched or missing version comment
+Workflow quality check failed: New zizmor findings must be fixed before merging
+zizmor: 12 exact frozen composite findings; 4 new findings

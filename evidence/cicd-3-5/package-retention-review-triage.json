@@ -1,0 +1,117 @@
+{
+  "date": "2026-11-12",
+  "layers": {
+    "blind-hunter": 10,
+    "edge-case-hunter": 0,
+    "verification-gap": 0,
+    "intent-alignment": 5
+  },
+  "counts": {
+    "high": 0,
+    "medium": 0,
+    "low": 11,
+    "false": 3,
+    "maybe-false": 1
+  },
+  "findings": [
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: inherited lowercase proxies can defeat test network isolation",
+      "evidence": "Filtered all inherited proxy variants before installing controlled subprocess values; the local fixture transport now disables proxies. All 22 recovery tests passed with adversarial inherited proxy variants."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: timestamp-only package expiry is not independently covered",
+      "evidence": "Changed the old-expiry package-only, mixed HTTP and actual-adapter cases to expired=False with a past expires_at, retaining separate flag-expired controls."
+    },
+    {
+      "verdict": "low",
+      "route": "reject",
+      "finding": "Blind hunter: container-only cleanup lacks one fully composed adapter/graph case",
+      "evidence": "The real Registry/main() control checks exact pull credentials and 404-only deletion; the actual workflow evaluator asserts the secret environment mapping, and reporter controls assert the sole nothing outcome. Composing another remote-registry transport into the isolated adapter fixture adds substantial test machinery for this rare path without exposing an unguarded runtime state."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: baseline records bind modified working-tree files",
+      "evidence": "Separated observed working-tree hashes from the archive actually executed; recorded canonical archive tree/blob objects and the primary extracted inputs."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: initial 47-input comparison looks current after integration",
+      "evidence": "Moved the assertion under an explicit initial comparison at a9f443f0bd482359731dcd54711e44fbd23d58fe, and linked the distinct integrated scope."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: integrated scope omits evidence additions",
+      "evidence": "Separated the five implementation/document paths from an explicit evidence prefix and enumerated evidence paths before asserting the remaining tracked bytes equal upstream."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: covering-test detail is available only in temporary logs",
+      "evidence": "Retained complete sanitized focused-release output with every covering test name and preserved its original raw hash. Grouped with the next row as the evidence-compression correction."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: compact full-suite output loses negative-fixture and group context",
+      "evidence": "Expanded both integrated summaries with all 22 group results and the enclosing intentional failure/zero-test fixture context; synchronized summary hashes while preserving raw hashes. Same correction group as the preceding row."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: baseline reproduction wrappers are not retained",
+      "evidence": "Stored exact wrapper contents and hashes plus instructions to replay them from the full recorded original revision with private scoped online authentication."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Blind hunter: integrated lint count remains 12 although the log says 10",
+      "evidence": "Corrected the integrated result to 10 exact frozen findings and zero new findings; historical pre-integration counts remain in their original context."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "finding": "Intent auditor: planning-only wording conflicts with runtime changes",
+      "evidence": "carried: the prior planning-only rows already establish that these instructions describe the completed earlier invocation. The intent explicitly requests a forward re-drive, and the existing Spec Change Log preserves that temporal scope."
+    },
+    {
+      "verdict": "low",
+      "route": "patch",
+      "finding": "Intent auditor: the review diff cannot establish commit/push or staged delivery",
+      "evidence": "carried: the prior textual-delivery row is resolved through normal finalization, not another code patch. The canonical Auto Run Result records the actual full delivered revision and remote readback; CiCd only stages its story and pushed gitlink."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "finding": "Intent auditor: the incremental library diff does not newly implement every orchestration boundary",
+      "evidence": "The intent explicitly preserves the delivered recovery and calls for a forward correction. Existing reusable/action behavior remains present, with executed adapter, workflow-expression/reporter and publisher controls; it need not be newly rewritten in this delta."
+    },
+    {
+      "verdict": "false",
+      "route": "reject",
+      "finding": "Intent auditor: local execution does not demonstrate a positive hosted reusable release",
+      "evidence": "carried: the prior hosted-surface rows already establish this boundary. The completed earlier hosted probe retains the exact invalid-switch blocker, and the task explicitly accepts recording that blocker. No new hosted success or publication is claimed."
+    },
+    {
+      "verdict": "maybe-false",
+      "route": "defer",
+      "finding": "Intent auditor: the external final-GET/DELETE interval remains unqualified",
+      "evidence": "carried: this is the same previously logged race, already preserved in the single deferred list. An authorized disposable two-actor experiment and serialization/atomicity decision would settle it; no second deferred entry is added."
+    }
+  ],
+  "new_patch_groups": {
+    "high": 0,
+    "medium": 0,
+    "low": 8
+  },
+  "new_patched_findings": 9,
+  "new_deferred": 0,
+  "carried_deferred": 1,
+  "followup_review_recommended": false
+}

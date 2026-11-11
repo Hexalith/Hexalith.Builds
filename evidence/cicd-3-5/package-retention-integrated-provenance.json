@@ -1,0 +1,15 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "Github/governed-provenance/tests",
+    "-v"
+  ],
+  "revision": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+  "returncode": 0,
+  "log": "package-retention-integrated-provenance.txt",
+  "log_sha256": "495722509bb5295ab09ba9d44f92a02a9fca7c377df641145209eb1b00cb1ed5"
+}

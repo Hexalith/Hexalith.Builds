@@ -1,0 +1,30 @@
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/ci-unit-tests/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/create-release/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/dapr-init/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/governed-provenance/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/initialize-apt/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/initialize-build/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/initialize-dotnet/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/package-release/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/prepare-domain-release/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/prepare-module-build/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/prepare/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/publish-azure-container-app/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/publish-container-to-registry/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/publish-containers/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/publish/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/release-build/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/release-draft/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/release-outcome/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/release-resolve/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/release-security/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/release-version/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/split-publication/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/unit-tests/action.yml
+ INFO audit: zizmor: 🌈 completed /tmp/cicd-3-5-lint-baseline-t6rrnrp3/Github/verify/action.yml
+.github/workflows/domain-ci.yml:1254:9: artipacked: credential persistence through GitHub Actions artifacts
+.github/workflows/domain-ci.yml:1129:100: ref-version-mismatch: action's hash pin has mismatched or missing version comment
+.github/workflows/domain-ci.yml:1267:107: ref-version-mismatch: action's hash pin has mismatched or missing version comment
+.github/workflows/domain-ci.yml:1319:100: ref-version-mismatch: action's hash pin has mismatched or missing version comment
+Workflow quality check failed: New zizmor findings must be fixed before merging
+zizmor: 12 exact frozen composite findings; 4 new findings

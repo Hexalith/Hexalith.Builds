@@ -1,0 +1,33 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "Github/lib/tests",
+    "-p",
+    "test_release_*.py",
+    "-v"
+  ],
+  "started_at": "2026-11-11T22:37:28.376388+00:00",
+  "finished_at": "2026-11-11T22:40:21.153896+00:00",
+  "returncode": 0,
+  "tested_source": {
+    "head": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+    }
+  },
+  "source_unchanged_during_check": true,
+  "summary": "package-retention-focused-release.txt",
+  "summary_sha256": "d6f9f34a778e4fddff1720bf4541b28dddddf6f51b9ef19edc62c26bc5db4906",
+  "raw_log": "/tmp/cicd-3-5-package-retention-focused-release.raw.log",
+  "raw_sha256": "d6f9f34a778e4fddff1720bf4541b28dddddf6f51b9ef19edc62c26bc5db4906",
+  "selected_interpreter": "3.14.4",
+  "summary_kind": "Complete sanitized historical focused-release output, including every test name and all diagnostic context.",
+  "durable_output": "package-retention-focused-release.txt",
+  "durable_output_sha256": "d6f9f34a778e4fddff1720bf4541b28dddddf6f51b9ef19edc62c26bc5db4906",
+  "raw_log_hash_preserved": true
+}

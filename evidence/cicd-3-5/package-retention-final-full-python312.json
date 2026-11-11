@@ -1,0 +1,58 @@
+{
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "3.12",
+    "Tools/ci/run_python_tests.py"
+  ],
+  "started_at": "2026-11-11T23:28:23.929116+00:00",
+  "finished_at": "2026-11-11T23:39:55.296546+00:00",
+  "returncode": 0,
+  "tested_source": {
+    "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "a09ee8290e4d83c5a7338702ce8f2b09e5e1dec214d08c2645f15b3c49e2563f"
+    }
+  },
+  "source_unchanged_during_check": true,
+  "private_scoped_token_supplied": true,
+  "durable_output": "package-retention-final-full-python312.txt",
+  "durable_output_sha256": "5b7142fc845f44cb30cb292b1c18279a969cd480c1fb6c7b245d978d724bf90a",
+  "raw_log": "/tmp/cicd-3-5-package-retention-final-full-python312.raw.log",
+  "raw_sha256": "5b7142fc845f44cb30cb292b1c18279a969cd480c1fb6c7b245d978d724bf90a",
+  "groups": [
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-archive-g4-qualification-evidence.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-g6-cli-paths.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-logging-generator-selection.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-domain-release.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-g4-synthetic-acceptance.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-disposition.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-evidence-validator.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_g6_current.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_package_readme.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_runtime_toolchain_v2.py in .",
+    "Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_works_package_versions.py in .",
+    "Running -v in Github/commitlint/tests",
+    "Running -v in Github/create-release/tests",
+    "Running -v in Github/governed-provenance/tests",
+    "Running -v in Github/initialize-apt/tests",
+    "Running -v in Github/lib/tests",
+    "Running -v in Github/prepare-module-build/tests",
+    "Running -v in Github/publish-containers/tests",
+    "Running -v in Github/run-module-integration/tests",
+    "Running -v in Github/split-publication/tests",
+    "Running -v in test/qualification",
+    "Running -v in Tools/ci/tests"
+  ],
+  "total_groups": 22,
+  "all_groups_passed": true,
+  "suite_summaries": [
+    "Python suite: /tmp/.tmpDDc3yC/environments-v2/run-python-tests-46c8ad21b249e504/bin/python (3.12.13), 22 groups",
+    "Python suite: 22/22 groups passed"
+  ]
+}

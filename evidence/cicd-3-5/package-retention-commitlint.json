@@ -1,0 +1,14 @@
+{
+  "command": [
+    "node",
+    "node_modules/@commitlint/cli/cli.js",
+    "--config",
+    "commitlint.config.mjs",
+    "--edit",
+    "/tmp/cicd-3-5-commit-message"
+  ],
+  "version": "21.2.4",
+  "message": "fix(release): retain package drafts when original artifacts are gone\n",
+  "returncode": 0,
+  "output": ""
+}

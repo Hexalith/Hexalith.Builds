@@ -1,0 +1,166 @@
+Retained integrated full-suite group results; nested fixture failures below are intentional runner negative controls.
+Python suite: /tmp/.tmp70KV3d/environments-v2/run-python-tests-46c8ad21b249e504/bin/python (3.12.13), 22 groups
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-archive-g4-qualification-evidence.py in .
+Ran 12 tests in 0.028s
+OK
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-g6-cli-paths.py in .
+Ran 4 tests in 0.005s
+OK
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-logging-generator-selection.py in .
+Ran 3 tests in 1.236s
+OK
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-domain-release.py in .
+Ran 10 tests in 0.648s
+OK
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-prepare-g4-synthetic-acceptance.py in .
+Ran 7 tests in 0.044s
+OK
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-disposition.py in .
+Ran 5 tests in 0.159s
+OK
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test-runtime-toolchain-evidence-validator.py in .
+runtime-toolchain-baseline.json: 30 packet scenarios, 16 baseline controls and 55 authority controls passed
+runtime-toolchain-baseline-2026-09-27.json: 30 packet scenarios, 16 baseline controls and 55 authority controls passed
+runtime-toolchain-baseline-2026-09-29.json: 30 packet scenarios, 16 baseline controls and 55 authority controls passed
+G6-CURRENT-MUTATIONS-PASSED: 103 logical controls, shared packet mutations in both modes, plus accepted metadata-commit positive control; historical captures used only as hermetic fixtures
+SDK-IMPORT-CONTROLS-PASSED: 3
+EVALUATED-CATALOG-CONTROLS-PASSED: 47
+G6-EVIDENCE-MUTATIONS-PASSED: 30 scenarios for each of 3 baselines; 48 baseline-drift controls; 165 authority controls; 2 historical baseline SHA-256 pins
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_g6_current.py in .
+Ran 8 tests in 54.195s
+OK
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_package_readme.py in .
+Ran 8 tests in 127.162s
+OK
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_runtime_toolchain_v2.py in .
+G6-CURRENT-MUTATIONS-PASSED: 103 logical controls, shared packet mutations in both modes, plus accepted metadata-commit positive control; historical captures used only as hermetic fixtures
+EVALUATED-CATALOG-CONTROLS-PASSED: 47
+SDK-IMPORT-CONTROLS-PASSED: 3
+
+Running /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/test_works_package_versions.py in .
+Ran 1 test in 2.192s
+OK
+
+Running -v in Github/commitlint/tests
+Ran 3 tests in 1.519s
+OK
+
+Running -v in Github/create-release/tests
+Ran 8 tests in 1.053s
+OK
+
+Running -v in Github/governed-provenance/tests
+Ran 90 tests in 0.725s
+OK
+
+Running -v in Github/initialize-apt/tests
+Ran 8 tests in 1.182s
+OK
+
+Running -v in Github/lib/tests
+Ran 294 tests in 265.349s
+OK
+
+Running -v in Github/prepare-module-build/tests
+Ran 12 tests in 1.817s
+OK
+
+Running -v in Github/publish-containers/tests
+Ran 135 tests in 12.611s
+OK
+
+Running -v in Github/run-module-integration/tests
+Ran 75 tests in 33.561s
+OK
+
+Running -v in Github/split-publication/tests
+Ran 17 tests in 0.071s
+OK
+
+Running -v in test/qualification
+Ran 7 tests in 0.003s
+OK
+
+Running -v in Tools/ci/tests
+Ran 46 tests in 9.044s
+OK
+
+Enclosing negative-fixture tests and final Tools/ci result (verbatim):
+test_failure_in_assertion_script_fails_suite_and_other_groups_still_run (test_python_runner.PythonRunnerTests.test_failure_in_assertion_script_fails_suite_and_other_groups_still_run) ... test_behavior (test_success.ExecutedTest.test_behavior) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+ok
+test_failure_in_discovered_group_fails_suite (test_python_runner.PythonRunnerTests.test_failure_in_discovered_group_fails_suite) ... test_behavior (test_failure.ExecutedTest.test_behavior) ... FAIL
+
+======================================================================
+FAIL: test_behavior (test_failure.ExecutedTest.test_behavior)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/builds-suite-bgsw7a8o/Github/fixture/tests/test_failure.py", line 6, in test_behavior
+    self.assertEqual(0, 1)
+AssertionError: 0 != 1
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (failures=1)
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s
+
+NO TESTS RAN
+ok
+test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter (test_python_runner.PythonRunnerTests.test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter) ... test_behavior (test_nested.ExecutedTest.test_behavior) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+test_behavior (test_qualification.ExecutedTest.test_behavior) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+test_behavior (test_quality.ExecutedTest.test_behavior) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+ok
+test_missing_required_group_refuses_partial_suite (test_python_runner.PythonRunnerTests.test_missing_required_group_refuses_partial_suite) ... ok
+
+----------------------------------------------------------------------
+Ran 46 tests in 9.044s
+
+OK
+Python suite: 22/22 groups passed

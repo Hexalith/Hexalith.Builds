@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python3",
+    "Tools/ci/lint_workflows.py"
+  ],
+  "revision": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+  "returncode": 0,
+  "log": "package-retention-integrated-workflow-lint.txt",
+  "log_sha256": "ccd37e82faf9f7d3a8fb6c26e74209d732ef633cf87b20ee409570cd734ed190"
+}

@@ -1,0 +1,102 @@
+{
+  "command": [
+    "python3",
+    "/tmp/cicd-3-5-package-retention-baseline-lint.py"
+  ],
+  "started_at": "2026-11-11T22:38:35.932524+00:00",
+  "finished_at": "2026-11-11T22:38:42.999554+00:00",
+  "returncode": 1,
+  "summary": "package-retention-workflow-lint-baseline.txt",
+  "summary_sha256": "765f3588be469f35f0db5b4e38c9ff261b0339818f25f50639b9cf1462d08300",
+  "raw_log": "/tmp/cicd-3-5-package-retention-workflow-lint-baseline.raw.log",
+  "raw_sha256": "e18504a72c1a7eeced144bc0bdb03da98f9a6422849da9e6196b14d08713aa70",
+  "observed_working_tree": {
+    "head": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+    }
+  },
+  "observed_working_tree_unchanged_during_check": true,
+  "tested_source": {
+    "revision": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "git_object_format": "sha1",
+    "root_tree_git_object": "413d9ca91b86af516f5464371b0375e215e6ce34",
+    "archive_pathspecs": [
+      ".github",
+      "Github",
+      "Tools/ci"
+    ],
+    "archive_tree_git_objects": {
+      ".github": "65f2d724a05784fab74da783e9e85c17261c73a7",
+      "Github": "45eb90b43d2a4eafd8aeaa611d060d8f71a0e01a",
+      "Tools/ci": "b1ce12179b77ae3d98012540210673afcdbf483f"
+    },
+    "executed_entrypoint_and_input_git_blobs": {
+      ".github/actionlint.yaml": "127f52697dca8f0f3ac0401c353664f1e0e757e3",
+      ".github/actions/after-unit-tests/action.yml": "2028caac268c17615ce1a50f0b3bba71df8073d2",
+      ".github/actions/sample-windows/action.yml": "2f694c10e83c442520b8900eeb5cd9a240073651",
+      ".github/workflows/builds-ci.yml": "6be250fcda99f838d5561beb6f4fa225dcb3beef",
+      ".github/workflows/builds-release.yml": "b76ad5e3128edd4474d71c4574389bca6bf85f69",
+      ".github/workflows/candidate-policy.yml": "d3b82bfa5cadd105078b04abdeab9e0a60709fe8",
+      ".github/workflows/ci.yml": "d028a31efb2e8b88b4f39c7789e267de54c3e9df",
+      ".github/workflows/codeql.yml": "26a0dc64c1963710e69fd66ff4e74a74a586c96b",
+      ".github/workflows/commitlint-caller.yml": "e51fbd76f137fd8aea6c2648713825891bdd4c55",
+      ".github/workflows/commitlint.yml": "5964d8e3a9c19c2bb8b75f1dad327c0364f09d43",
+      ".github/workflows/dependency-review.yml": "a48412e2f16858dc2fecde19ff1a201b5f5a03cf",
+      ".github/workflows/domain-ci-v2.yml": "1d702ae432d52a61bc1561e11db71d855032a55c",
+      ".github/workflows/domain-ci.yml": "2f668e185a47e99f169d55b69b65f2c8c44b8467",
+      ".github/workflows/domain-release.yml": "93d1546f8c5a1e08e7bb174748c924aea38dd5c1",
+      ".github/workflows/release.yml": "b107e61d7b4cc741e724f650b390ba205a6d50ab",
+      ".github/zizmor.yml": "c8baea6af6df0474dc360d7f76e16197e631e812",
+      "Github/ci-build/action.yml": "3f77ae18273d32c33787942078f5823db68bdd0c",
+      "Github/ci-environment/action.yml": "0ba631b1c137fbed7a9c51c8f9c1c8625e435af2",
+      "Github/ci-integration-tests/action.yml": "80f854ff3d4b6029665ed9ec3f334f9949887282",
+      "Github/ci-prepare/action.yml": "7a61548d3ef7f4c08f4588593d377e6b497e58a4",
+      "Github/ci-unit-tests/action.yml": "c847da7756cd5c0fb9ca89dad885a908e636aec4",
+      "Github/create-release/action.yml": "5d33326f8326143b2c7e82650079a6fbca41e53f",
+      "Github/dapr-init/action.yml": "011da5cf9badaf337a48a4040a8782dce0c15b78",
+      "Github/governed-provenance/action.yml": "bd1f1b5af6a9c307bc35647721b1866512086656",
+      "Github/initialize-apt/action.yml": "cf81e160751e147dcdae3c5ecc76d4c8fffdb52b",
+      "Github/initialize-build/action.yml": "417525ebd3c6fe805747d61ec03e95f034dcf9b1",
+      "Github/initialize-dotnet/action.yml": "2bf630772438dde3c2a667a5e857bdd64ab1f8d7",
+      "Github/package-release/action.yml": "339067a4af021a4195a244fbd940ea07bef61173",
+      "Github/prepare-domain-release/action.yml": "3e43e0f8ab883b968b555bc11912082602a80555",
+      "Github/prepare-module-build/action.yml": "3bd6023b6d043780f5ccd2707604cdc720a7b4fd",
+      "Github/prepare/action.yml": "4eb995c3d05ed1af59a6905e7a5020f7344fe6a7",
+      "Github/publish-azure-container-app/action.yml": "750d7559985bf0036e96675185164f8fc1230796",
+      "Github/publish-container-to-registry/action.yml": "9f8727b9c1f7cb2cacd6304f69e05f504ed37a47",
+      "Github/publish-containers/action.yml": "13cdbb94ea8626980cf0aaa9f24886695408f55c",
+      "Github/publish/action.yml": "2409e483d50373c08889c5b1d4c9898c192cc8ea",
+      "Github/release-build/action.yml": "511a92f95c5ea457ed3bf52d8d3823b7c8205091",
+      "Github/release-draft/action.yml": "74e3ed8c7a9d9d94a60011d3505d6a7daf39e456",
+      "Github/release-outcome/action.yml": "11fa84f6be985810e71cb15648505fcbd7dddbb9",
+      "Github/release-resolve/action.yml": "012543393568c3aab3b10940b2606b2018baeace",
+      "Github/release-security/action.yml": "174eacdc830dd41b6f9bc42f69ff155abdedb17a",
+      "Github/release-version/action.yml": "b9fcf87440bff18801ee24dd793362d407ec76c8",
+      "Github/split-publication/action.yml": "4e79fec81f492e343b3b7069a2f1ea957227907e",
+      "Github/unit-tests/action.yml": "bb117441e9793a8654d35ae42b13ef7363384e6f",
+      "Github/verify/action.yml": "92946c5244fc309af37f53514fa3bdfb170b5b16",
+      "Tools/ci/frozen-composite-findings.json": "08a84ffe1c18657c4f62887c856ccd8c052946f1",
+      "Tools/ci/lint_workflows.py": "2f812a24ae0fde8b52e0d95d518c6d35bc017730",
+      "Tools/ci/tools.json": "fb8ab1f88d0b0b36458b2045573cd1fdaa2691d9"
+    },
+    "binding": "The archive tree objects bind every extracted input transitively; the listed blob objects identify the executed entrypoints and their primary inputs. No modified working-tree bytes enter the archive."
+  },
+  "wrapper": {
+    "original_path": "/tmp/cicd-3-5-package-retention-baseline-lint.py",
+    "contents": "import importlib.util, io, pathlib, subprocess, sys, tarfile, tempfile\nroot = pathlib.Path.cwd()\nrevision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()\nwith tempfile.TemporaryDirectory(prefix='cicd-3-5-lint-baseline-') as directory:\n    baseline = pathlib.Path(directory)\n    archive = subprocess.check_output(['git', 'archive', revision, '.github', 'Github', 'Tools/ci'])\n    with tarfile.open(fileobj=io.BytesIO(archive)) as files:\n        files.extractall(baseline, filter='data')\n    spec = importlib.util.spec_from_file_location('baseline_lint', baseline / 'Tools/ci/lint_workflows.py')\n    lint = importlib.util.module_from_spec(spec)\n    spec.loader.exec_module(lint)\n    print('Baseline revision: ' + revision, flush=True)\n    sys.argv = [str(baseline / 'Tools/ci/lint_workflows.py')]\n    raise SystemExit(lint.main())\n",
+    "sha256": "5107e790f4d654cf63debdac11766b70f57691ddeeb289a412a8c8aa87361525"
+  },
+  "replay": {
+    "required_repository_head": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "interpreter_used": "Python 3.14.4",
+    "instructions": [
+      "Prepare a separate checkout of this repository whose HEAD is exactly a9f443f0bd482359731dcd54711e44fbd23d58fe; keep the original checkout unchanged.",
+      "Write wrapper.contents verbatim to a temporary Python file. The original wrapper resolves HEAD, so verify the checkout revision before invoking it.",
+      "Run python3 <saved-wrapper.py> with cwd set to that checkout. The wrapper archives only tested_source.archive_pathspecs into its own disposable directory and executes those extracted files.",
+      "Supply GH_TOKEN privately from the existing scoped CiCd-agent profile for the online audit; the tracked baseline script installs and integrity-checks the pinned tools. Never print the token."
+    ],
+    "private_online_authentication": true
+  }
+}

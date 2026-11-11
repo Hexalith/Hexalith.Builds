@@ -63,11 +63,24 @@ independently authenticating the selected draft's original artifact. This
 composite repeats its own checks and duplicate-safe publication from those
 same bytes. Recovery receives only pull credentials; publisher push credentials
 and OIDC stay in this caller job. If the original artifact is gone, recovery
-can delete only an unchanged marked draft whose entire saved destination
-inventory is definitely absent; an existing or uncertain destination fails
-and retains the draft. That branch yields one reusable `nothing` outcome,
-without invoking this publisher. Rendered callers and nightly/App publication
-remain downstream work; production callers and switches are unchanged.
+retains and fails any draft listing a NuGet package, including unlisted,
+indexing and mixed package/image inventories. Anonymous NuGet 404 and elapsed
+time cannot authorize deletion; no NuGet lookup or quiet period is used.
+Manual disposition requires a separate human decision that preserves the
+prohibition on reusing a version with different content.
+
+Recovery can delete only an unchanged marked draft with an explicitly empty
+package inventory and definite HTTP 404 for every exact listed container
+version. Registry checks accept OCI and Docker manifests/indexes and use only
+the endpoint-bound pull pair. Existing images, missing credentials, redirects,
+throttling, authorization errors, malformed responses and timeouts retain the
+draft and fail with `draft vX.Y.Z cannot be completed: its build artifact is gone`.
+Explicitly empty inventories need no destination request. Confirmed release-ID
+DELETE (HTTP 204) yields one reusable `nothing` outcome, without invoking this
+publisher. A usable original artifact still permits the normal identical-byte
+handoff, including interrupted publication retries. Rendered callers and
+nightly/App publication remain downstream work; production callers and
+switches are unchanged.
 
 [Story 3-4 qualification](../../docs/cicd-3-4-publish-composite-results.md)
 records an isolated hosted package/image publication that ended `ready`, then

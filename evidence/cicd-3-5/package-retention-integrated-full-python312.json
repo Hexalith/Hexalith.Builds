@@ -1,0 +1,34 @@
+{
+  "command": [
+    "uv",
+    "run",
+    "--no-cache",
+    "--locked",
+    "--script",
+    "--python",
+    "3.12",
+    "Tools/ci/run_python_tests.py"
+  ],
+  "started_at": "2026-11-11T23:00:53.566743+00:00",
+  "finished_at": "2026-11-11T23:11:52.294057+00:00",
+  "returncode": 0,
+  "tested_source": {
+    "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+    }
+  },
+  "source_unchanged_during_check": true,
+  "selected_interpreter": "3.12.13",
+  "total_groups": 22,
+  "groups_passed": 22,
+  "private_read_only_token_supplied": true,
+  "authentication_profile": "/home/administrator/.config/gh-cicd-agent",
+  "summary": "package-retention-integrated-full-python312.txt",
+  "summary_sha256": "232401ea9044dfa3bc392e56abc5adb5d80ebc4f376b54ea65071d0a276b97ae",
+  "raw_log": "/tmp/cicd-3-5-package-retention-integrated-full-python312.raw.log",
+  "raw_sha256": "9a856d8ff296346013ad5d6a138441ffd22a681f1ca5c63393cfff7874cd1976",
+  "summary_kind": "All 22 enclosing group results plus verbatim runner negative-fixture context and final result.",
+  "raw_log_hash_preserved": true
+}

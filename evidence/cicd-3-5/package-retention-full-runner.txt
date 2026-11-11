@@ -1,0 +1,30 @@
+Ran 1 test in 0.000s
+
+OK
+test_behavior (test_quality.ExecutedTest.test_behavior) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+ok
+test_missing_required_group_refuses_partial_suite (test_python_runner.PythonRunnerTests.test_missing_required_group_refuses_partial_suite) ... ok
+
+======================================================================
+FAIL: test_real_zizmor_enforces_committed_third_party_pinning_policy_online (test_lint_workflows.RealPolicyTests.test_real_zizmor_enforces_committed_third_party_pinning_policy_online)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/ci/tests/test_lint_workflows.py", line 266, in test_real_zizmor_enforces_committed_third_party_pinning_policy_online
+    self.assertTrue(any(os.environ.get(key) for key in ("GH_TOKEN", "GITHUB_TOKEN", "ZIZMOR_GITHUB_TOKEN")),
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    "Real online policy tests require a read-only GitHub token")
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : Real online policy tests require a read-only GitHub token
+
+----------------------------------------------------------------------
+Ran 46 tests in 8.177s
+
+FAILED (failures=1)
+FAILED (1): /tmp/.tmprTGz6y/environments-v2/run-python-tests-46c8ad21b249e504/bin/python -m unittest discover -s /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Github/governed-provenance/tests -v
+FAILED (1): /tmp/.tmprTGz6y/environments-v2/run-python-tests-46c8ad21b249e504/bin/python -m unittest discover -s /home/administrator/projects/hexalith/cicd/references/Hexalith.Builds/Tools/ci/tests -v
+Python suite: 18/20 groups passed

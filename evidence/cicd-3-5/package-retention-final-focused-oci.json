@@ -1,0 +1,29 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "Github/lib/tests",
+    "-p",
+    "test_oci_publish.py",
+    "-v"
+  ],
+  "started_at": "2026-11-11T23:28:23.636076+00:00",
+  "finished_at": "2026-11-11T23:28:25.014795+00:00",
+  "returncode": 0,
+  "tested_source": {
+    "head": "163f3d0deac6b0db5ec4bdfcc0934b12e6adb46a",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "a09ee8290e4d83c5a7338702ce8f2b09e5e1dec214d08c2645f15b3c49e2563f"
+    }
+  },
+  "source_unchanged_during_check": true,
+  "private_scoped_token_supplied": true,
+  "durable_output": "package-retention-final-focused-oci.txt",
+  "durable_output_sha256": "08e09d1b17a6f8e0984abe2d25847d1c42e84d78f7a53c6a002f653e3b1d9cfc",
+  "raw_log": "/tmp/cicd-3-5-package-retention-final-focused-oci.raw.log",
+  "raw_sha256": "08e09d1b17a6f8e0984abe2d25847d1c42e84d78f7a53c6a002f653e3b1d9cfc"
+}

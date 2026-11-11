@@ -8,81 +8,12 @@ import os
 from pathlib import Path
 import sys
 import tempfile
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from release_draft import (DraftApi, GitHubHttpError, MAX_JSON, artifact_inventory, artifact_metadata,
-                           bounded, limited_read, release_trailers, strict_json)
+from release_draft import DraftApi, GitHubHttpError, artifact_inventory, artifact_metadata, release_trailers
 from release_publish import caller_workflow_path, positive, producer_identity, validate_release, validate_source
-from release_state import Git, NoRedirect, ReleaseError, SHA, STABLE, TRAILER, outputs
+from release_state import Git, ReleaseError, SHA, STABLE, TRAILER, outputs
 from oci_publish import Registry
-
-
-class NuGet:
-    """Credential-free, redirect-free exact-version NuGet content existence checks."""
-
-    def __init__(self):
-        self.opener = urllib.request.build_opener(NoRedirect())
-        self.base = None
-
-    @staticmethod
-    def resource_url(value):
-        if not isinstance(value, str):
-            raise ReleaseError("NuGet package content resource must be a URL")
-        parsed = urllib.parse.urlsplit(value)
-        try:
-            port = parsed.port
-        except ValueError as error:
-            raise ReleaseError("invalid NuGet package content resource") from error
-        if (parsed.scheme != "https" or parsed.hostname != "api.nuget.org" or port not in (None, 443)
-                or parsed.username or parsed.password or parsed.query or parsed.fragment
-                or not parsed.path.endswith("/") or "\\" in value
-                or any(part in (".", "..") for part in urllib.parse.unquote(parsed.path).split("/"))):
-            raise ReleaseError("NuGet package content resource escaped the public endpoint")
-        return value
-
-    def version_absent(self, package, version):
-        from release_draft import PACKAGE_ID
-        if (not isinstance(package, str) or PACKAGE_ID.fullmatch(package) is None
-                or not isinstance(version, str) or STABLE.fullmatch("v" + version) is None):
-            raise ReleaseError("invalid NuGet package/version identity")
-        deadline = time.monotonic() + 120
-        def request():
-            try:
-                if self.base is None:
-                    with self.opener.open("https://api.nuget.org/v3/index.json", timeout=60) as response:
-                        if response.status != 200:
-                            raise ReleaseError("NuGet service index did not return HTTP 200")
-                        document = strict_json(limited_read(response, MAX_JSON))
-                    if (not isinstance(document, dict) or not isinstance(document.get("resources"), list)
-                            or any(not isinstance(item, dict) for item in document["resources"])):
-                        raise ReleaseError("malformed NuGet service index")
-                    resources = [item for item in document["resources"]
-                                 if item.get("@type") == "PackageBaseAddress/3.0.0"]
-                    if len(resources) != 1:
-                        raise ReleaseError("NuGet package content resource is missing or ambiguous")
-                    self.base = self.resource_url(resources[0].get("@id"))
-                identity = package.lower()
-                url = self.base + f"{identity}/{version}/{identity}.{version}.nupkg"
-                try:
-                    with self.opener.open(urllib.request.Request(url, method="HEAD"), timeout=60) as response:
-                        if response.status != 200:
-                            raise ReleaseError("NuGet package HEAD did not return HTTP 200")
-                        return False
-                except urllib.error.HTTPError as error:
-                    with error:
-                        if error.code == 404:
-                            return True
-                        raise ReleaseError(f"NuGet package HEAD failed: HTTP {error.code}") from error
-            except urllib.error.HTTPError as error:
-                with error:
-                    raise ReleaseError(f"NuGet service index failed: HTTP {error.code}") from error
-            except (OSError, http.client.HTTPException) as error:
-                raise ReleaseError("NuGet existence transport failed") from error
-        return bounded(request, deadline=deadline)
 
 
 def selected_draft(git, api, values, *, body=None):
@@ -150,16 +81,14 @@ def original_inventory(api, values, workflow_ref):
                               digest=values["artifact-digest"], repository=api.repository)
 
 
-def destinations_absent(values, *, username="", password="", nuget=NuGet, registry=Registry):
-    """Check every listed identity; errors and uncertainty retain the draft."""
+def destinations_absent(values, *, username="", password="", registry=Registry):
+    """Only a package-empty inventory and definite image absence permit deletion."""
+    # NuGet's content API can report 404 during validation/indexing, including
+    # after a successful push. Neither anonymous reads nor elapsed time prove
+    # that these original package bytes were never published.
+    if values["inventory"]["packages"]:
+        return False
     checks = []
-    packages = values["inventory"]["packages"]
-    public = nuget() if packages else None
-    for package in packages:
-        try:
-            checks.append(public.version_absent(package, values["version"]) is True)
-        except (ReleaseError, OSError, ValueError, http.client.HTTPException):
-            checks.append(False)
     for name in values["inventory"]["containers"]:
         try:
             checks.append(registry(name, username, password).version_absent(values["version"]) is True)
@@ -169,7 +98,7 @@ def destinations_absent(values, *, username="", password="", nuget=NuGet, regist
 
 
 def complete_draft(git, api, *, sha, version, draft_id, last_tag, workflow_ref,
-                   username="", password="", nuget=NuGet, registry=Registry, emit=outputs):
+                   username="", password="", registry=Registry, emit=outputs):
     if (not isinstance(sha, str) or not SHA.fullmatch(sha) or not isinstance(version, str)
             or not STABLE.fullmatch("v" + version) or (last_tag and not STABLE.fullmatch(last_tag))):
         raise ReleaseError("invalid selected complete-mode identity")
@@ -186,7 +115,7 @@ def complete_draft(git, api, *, sha, version, draft_id, last_tag, workflow_ref,
                    ("version", "sha", "last-tag", "draft-id", "artifact-id", "artifact-digest", "artifact-run")}
         handoff.update(publish="true", **{"noop-reason": ""})
     else:
-        if not destinations_absent(values, username=username, password=password, nuget=nuget, registry=registry):
+        if not destinations_absent(values, username=username, password=password, registry=registry):
             raise ReleaseError(f"draft v{version} cannot be completed: its build artifact is gone")
         selected_draft(git, api, values, body=live["body"])
         api.delete_draft(positive(draft_id))

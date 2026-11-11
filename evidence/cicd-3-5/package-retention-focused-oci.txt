@@ -1,0 +1,8 @@
+test_absence_conflict_auth_and_redirect_are_distinct (test_oci_publish.OciPublishTests.test_absence_conflict_auth_and_redirect_are_distinct) ... ok
+test_complete_remote_bytes_and_correct_retry (test_oci_publish.OciPublishTests.test_complete_remote_bytes_and_correct_retry) ... ok
+test_private_auth_lifetime_exact_tool_and_original_archive (test_oci_publish.OciPublishTests.test_private_auth_lifetime_exact_tool_and_original_archive) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.113s
+
+OK

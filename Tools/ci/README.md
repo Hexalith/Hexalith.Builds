@@ -385,8 +385,8 @@ has contents write/actions read. Resolve executes trusted stdlib Python and
 anonymous Git object reads only. Both workflow and caller use `cache-mode:
 none`, and concurrency belongs to the top-level caller. The only optional
 secrets are `registry-pull-username` and `registry-pull-password`, passed to
-prepare in the hook job as `REGISTRY_PULL_USERNAME` and
-`REGISTRY_PULL_PASSWORD`.
+prepare in the hook job and to recovery in the draft job as
+`REGISTRY_PULL_USERNAME` and `REGISTRY_PULL_PASSWORD`.
 
 Resolve reads dispatch-commit configuration through `ci_config`, then freezes
 the release SHA once. A valid marked draft selects complete mode; otherwise
@@ -487,17 +487,27 @@ never executes it, and never reloads its historical configuration, CI or audit.
 Current-dispatch CodeQL and nightly hooks keep their existing contract.
 
 When the original producer is missing or mismatched, or its artifact is
-verifiably absent or expired, recovery checks every persisted destination.
-NuGet service-index discovery and exact-version content HEAD include unlisted
-packages; registry HEAD accepts OCI and Docker manifest/index media types.
-Only authoritative 404 establishes absence. Credentials are endpoint-bound:
-NuGet receives none, recovery receives only the existing named pull-only pair,
-and missing credentials, redirects or uncertain reads retain the draft.
-Digest/identity disagreement, corrupt bytes and service failures never authorize
-stale deletion. Explicit empty inventories make no destination requests.
+verifiably absent or expired, any listed NuGet package retains the draft and
+fails with `draft vX.Y.Z cannot be completed: its build artifact is gone`.
+NuGet content HEAD 404 can occur during validation/indexing, including after a
+successful push; anonymous lookup results and elapsed time cannot establish
+that a package was never published. Recovery makes no NuGet request and uses no
+quiet period. This also applies to unlisted packages and mixed package/image
+inventories. Manual disposition requires a separate human decision that
+preserves the rule against reusing a version with different content. A usable
+authenticated original artifact still permits normal completion from its bytes.
 
-Only after every destination is absent does recovery revalidate the unchanged
-bot draft and DELETE that release ID, requiring HTTP 204. It emits internal
+Automatic deletion requires an explicitly empty package trailer and definite
+absence of every listed container version. Registry HEAD accepts OCI and Docker
+manifest/index media types; only its endpoint's HTTP 404 establishes absence.
+Recovery uses only the existing endpoint-bound pull pair. Missing credentials,
+redirects, throttling, authorization errors, malformed responses and timeouts
+retain the draft. Digest/identity disagreement, corrupt bytes and GitHub service
+failures never authorize stale deletion. Explicit empty package and container
+inventories make no destination requests.
+
+After these conditions hold, recovery revalidates the unchanged bot draft and
+DELETEs that release ID, requiring HTTP 204. It emits internal
 `stale-draft-deleted` and `publish=false`; the reusable reporter uploads the
 single `nothing` outcome. No tag, replacement draft or build is created. Any
 existing or uncertain destination fails with

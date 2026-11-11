@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "Tools/ci/lint_workflows.py"
+  ],
+  "started_at": "2026-11-11T22:37:28.656407+00:00",
+  "finished_at": "2026-11-11T22:37:35.479471+00:00",
+  "returncode": 1,
+  "tested_source": {
+    "head": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+    "files": {
+      "Github/lib/release_complete.py": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "Github/lib/tests/test_release_complete.py": "be4fd7fa0885a94180a5a242cb30842c62e535732e7b181cd6f8db1db473e49c"
+    }
+  },
+  "source_unchanged_during_check": true,
+  "summary": "package-retention-workflow-lint.txt",
+  "summary_sha256": "92636ad3902e7506e585141428babb8c3efd177425d68beeda726a0fc9909e14",
+  "raw_log": "/tmp/cicd-3-5-package-retention-workflow-lint.raw.log",
+  "raw_sha256": "4be19e22a2029fb30c9cd9ede974c7516f452e2b9cc7360d060944d9632eeabd"
+}

@@ -1,0 +1,24 @@
+{
+  "baseline_revision": "a9f443f0bd482359731dcd54711e44fbd23d58fe",
+  "baseline_method": "Extract git archive BASE .github Github Tools; run the unmodified test_governed_provenance.py group against the extracted repository.",
+  "same_eight_errors_on_baseline_and_working_tree": true,
+  "errors": [
+    "test_all_shipped_governed_workflows_evaluate_to_a_complete_closure (test_governed_provenance.EndToEndTests.test_all_shipped_governed_workflows_evaluate_to_a_complete_closure) (stage='ci')",
+    "test_github_output_values_must_fit_the_actions_limit (test_governed_provenance.EndToEndTests.test_github_output_values_must_fit_the_actions_limit)",
+    "test_one_canonical_serialization_backs_the_file_the_output_and_the_digest (test_governed_provenance.EndToEndTests.test_one_canonical_serialization_backs_the_file_the_output_and_the_digest)",
+    "test_the_document_is_deterministic_apart_from_its_timestamp (test_governed_provenance.EndToEndTests.test_the_document_is_deterministic_apart_from_its_timestamp)",
+    "test_the_emitted_outputs_describe_the_written_document (test_governed_provenance.EndToEndTests.test_the_emitted_outputs_describe_the_written_document)",
+    "test_the_expected_evaluator_digest_is_enforced_for_both_stages (test_governed_provenance.EndToEndTests.test_the_expected_evaluator_digest_is_enforced_for_both_stages) (stage='ci')",
+    "test_the_output_path_must_stay_inside_the_workspace (test_governed_provenance.EndToEndTests.test_the_output_path_must_stay_inside_the_workspace)",
+    "test_v2_rejects_the_legacy_workflow_authorization_digest (test_governed_provenance.EndToEndTests.test_v2_rejects_the_legacy_workflow_authorization_digest)"
+  ],
+  "cause": ".github/workflows/domain-ci.yml:1070: a governed uses: reference must be pinned to a literal lowercase 40-hex commit: '$/Github/initialize-apt'",
+  "input_files_identical_to_baseline": {
+    ".github/workflows/domain-ci.yml": "464bf1a6f1c979d610006b69ec57906c4c9c61e024f67f57dd8e759579685af5",
+    "Github/governed-provenance/governed_provenance.py": "9ea23bccc2c0464c5a4685eb85a4fcc8d33d7b18db8d6aeb5f89fba6f2b6492f",
+    "Github/governed-provenance/tests/test_governed_provenance.py": "98b0be8ce33d79e4cfcf7c157693124fa78c53f0e912b12c616d37a597cef2fd"
+  },
+  "baseline_record": "package-retention-baseline-provenance.json",
+  "current_record": "package-retention-full-python312.json",
+  "frozen_paths_preserved": true
+}
