@@ -1,4 +1,4 @@
-name: Isolated original release publication probe with workflow advance
+name: Isolated original release publication probe
 on:
   workflow_dispatch:
     inputs:
