@@ -1395,3 +1395,19 @@ environment. Merging or pushing does not start a release.
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for
 details.
+
+### Explicit endpoints and attached routing snapshots
+
+Fresh `run`, `debug` and `test` owners accept `--eventstore-port 18080`.
+The integer must be 1–65535. The runner claims that actual EventStore HTTP
+endpoint before binding it. A managed conflict fails as `HXR031`, naming the
+blocking owner; it never chooses another requested port. Other endpoints retain
+independent allocation. Attachments cannot request owner ports.
+
+A declared attached suite may consume validated immutable public routing
+snapshots from its exact owner and environment. It receives its own descriptor,
+credentials, process identity, output and first result. Owner candidate gates and
+live access observations remain refused. The original hold expiry bounds access
+and is unchanged by reconnection. This prerequisite requires a compatible tool
+release before downstream package callers can qualify it; it changes no tool pin
+or qualification claim.

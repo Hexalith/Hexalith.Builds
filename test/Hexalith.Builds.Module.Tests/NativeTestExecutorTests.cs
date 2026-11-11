@@ -754,6 +754,36 @@ public sealed class NativeTestExecutorTests
         Directory.Exists(ownedRoot).ShouldBeFalse("Malformed proof reads must release every owned file before cleanup.");
     }
 
+    /// <summary>An attached run captures immutable owner routing proofs with exact owner, environment and attached identities.</summary>
+    /// <param name="foreign">Whether to substitute another owner in the descriptor.</param>
+    /// <returns>The immutable capture or explicit mismatch refusal.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AttachedRoutingSnapshotsRequireExactOwnerAsync(bool foreign)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunPlan plan, ModuleTestSelection _, string _) = await PrepareSelectedRunAsync(workspace, string.Empty).ConfigureAwait(true);
+        IReadOnlyDictionary<string, byte[]> originals = await WriteRequiredRoutingEvidenceAsync(plan).ConfigureAwait(true);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        string attachedRun = CompositionRunPlanFactory.NewRunId();
+        AttachedSuiteIdentity attached = new(new(CompositionRunPlanFactory.NewRunId(), plan.EnvironmentId, plan.RunId, attachedRun, 60, now, 60, now.AddSeconds(60)), CompositionRunPlanFactory.NewRunId(), AttachedSuiteIdentity.WorkspaceFor(plan.Workspace, attachedRun), Path.Combine(workspace.Root, "attached-diagnostics"));
+        byte[] descriptor = JsonSerializer.SerializeToUtf8Bytes(new { bindings = new { run = new { runId = attachedRun, ownerRunId = foreign ? CompositionRunPlanFactory.NewRunId() : plan.RunId, environmentId = plan.EnvironmentId, role = "attached" }, environment = new { catalog = new { instanceId = plan.EnvironmentId + "-catalog", commit = plan.SourceMapping!.PlatformIdentity!.CatalogCommit } } } });
+        if (foreign)
+        {
+            _ = await Should.ThrowAsync<InvalidDataException>(() => SelectedRoutingCatalogSnapshot.ReadAsync(plan, descriptor, TestContext.Current.CancellationToken, true, [], attached)).ConfigureAwait(true);
+        }
+        else
+        {
+            IReadOnlyDictionary<string, byte[]> held = await SelectedRoutingCatalogSnapshot.ReadAsync(plan, descriptor, TestContext.Current.CancellationToken, true, [], attached).ConfigureAwait(true);
+            held.Count.ShouldBe(originals.Count);
+            foreach (KeyValuePair<string, byte[]> value in originals)
+            {
+                held[value.Key].ShouldBe(value.Value);
+            }
+        }
+    }
+
     /// <summary>The selected executor archives its own original capture after the real child mutates and removes all input proofs.</summary>
     /// <returns>The passing execution and exact bytes in every archive destination.</returns>
     [Fact]

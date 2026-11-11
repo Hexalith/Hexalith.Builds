@@ -21,6 +21,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets a value indicating whether the independent CI finalizer observed actual job cancellation.</summary>
     public bool CiJobCancelled { get; init; }
 
+    /// <summary>Gets an optional explicit EventStore HTTP endpoint port; other endpoints remain independently allocated.</summary>
+    public int? EventStorePort { get; init; }
+
     /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
     public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }
 

@@ -370,6 +370,7 @@ internal static class ModuleCommandApplication
             Arity = ArgumentArity.OneOrMore,
             AllowMultipleArgumentsPerToken = false,
         };
+        Option<string> eventStorePortOption = new("--eventstore-port") { Description = "Explicit EventStore HTTP port (1-65535) for a fresh owner; conflicts name the blocking owner." };
         Option<string> filterOption = new("--filter");
         Option<string> evidenceOption = new("--evidence");
         Option<string> candidateOption = new("--candidate-request") { Description = "Signed GitHub gate issuance; requires independently enrolled host authority." };
@@ -409,6 +410,7 @@ internal static class ModuleCommandApplication
         if (command != ModuleInvocationCommand.Down)
         {
             commandDefinition.Options.Add(modeOption);
+            commandDefinition.Options.Add(eventStorePortOption);
         }
 
         commandDefinition.SetAction((parseResult, cancellationToken) =>
@@ -442,6 +444,17 @@ internal static class ModuleCommandApplication
                 ? null
                 : new AttachedSuiteRequest { HoldSeconds = holdSeconds, PresentedRequestId = presentedRequestId, AttacherContext = attacherContext };
             CompositionEngineOptions? executionOptions = compositionOptions;
+            if (command != ModuleInvocationCommand.Down && parseResult.GetResult(eventStorePortOption) is not null)
+            {
+                string? requestedPort = parseResult.GetValue(eventStorePortOption);
+                if (attachTo is not null || !int.TryParse(requestedPort, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int port) || port is < 1 or > 65535)
+                {
+                    return ToolCommandHost.WriteParseFailureAsync(standardOutput, ParseOutputFormat(parseResult.GetValue(outputOption)));
+                }
+
+                executionOptions = (executionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath!)) with { EventStorePort = port };
+            }
+
             if (command == ModuleInvocationCommand.Test && parseResult.GetValue(ciReceiptOption) is { } receiptPath)
             {
                 executionOptions = (executionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath!)) with { CiOwnerReceiptPath = receiptPath };

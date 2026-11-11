@@ -116,6 +116,11 @@ public static class ModuleCommandExecutionService
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
+                if (compositionOptions?.EventStorePort is { } requestedPort && (requestedPort is < 1 or > 65535 || command == ModuleInvocationCommand.Down || runId is not null))
+                {
+                    throw new InvalidDataException("An explicit EventStore port must be 1-65535 and requires a fresh owner.");
+                }
+
                 IReadOnlyList<string> owners = CompositionQualificationOwners.Normalize(compositionOptions?.QualificationOwners);
                 if (owners.Count > 0)
                 {

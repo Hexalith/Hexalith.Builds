@@ -154,20 +154,51 @@ public static class CompositionPortAllocator
     /// <param name="runId">The owning run.</param>
     /// <param name="stateDirectory">The runner claim store.</param>
     /// <param name="includeSecondEventStore">Whether the legacy graph needs a second EventStore allocation.</param>
+    /// <param name="eventStorePort">An explicit EventStore endpoint, claimed without retrying its conflicts.</param>
     /// <returns>The claimed proposed ports; allocation probes themselves are not reservations.</returns>
     /// <exception cref="InvalidOperationException">No independent finite allocation is available.</exception>
-    internal static CompositionRunPorts AllocateOwned(int moduleCount, string runId, string stateDirectory, bool includeSecondEventStore)
+    /// <exception cref="ArgumentOutOfRangeException">The explicit port is outside 1-65535.</exception>
+    internal static CompositionRunPorts AllocateOwned(int moduleCount, string runId, string stateDirectory, bool includeSecondEventStore, int? eventStorePort = null)
     {
+        if (eventStorePort is < 1 or > 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(eventStorePort));
+        }
+
         CompositionResourceClaimStore claims = new(stateDirectory);
         for (int attempt = 0; attempt < 64; attempt++)
         {
-            CompositionRunPorts ports = Allocate(moduleCount, includeSecondEventStore, claims.ClaimedPorts());
+            HashSet<int> excluded = [.. claims.ClaimedPorts()];
+            if (eventStorePort is { } requested)
+            {
+                _ = excluded.Add(requested);
+            }
+
+            CompositionRunPorts ports = Allocate(moduleCount, includeSecondEventStore, excluded);
+            if (eventStorePort is { } explicitPort)
+            {
+                ports = ports with { EventStoreHttp = explicitPort };
+            }
+
             try
             {
                 claims.Acquire(runId, ports.ToList().Select(port => "tcp:127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture)));
+                if (eventStorePort is { } port)
+                {
+                    // Claim first so a live managed owner is named even when its socket is already bound.
+                    using TcpListener probe = new(IPAddress.Loopback, port);
+                    probe.Start();
+                    probe.Stop();
+                }
+
                 return ports;
             }
-            catch (CompositionResourceClaimConflictException) when (attempt < 63)
+            catch (SocketException)
+            {
+                claims.ReleaseOwned(runId);
+                throw;
+            }
+            catch (CompositionResourceClaimConflictException conflict) when (attempt < 63 && (eventStorePort is null || conflict.ResourceId != "tcp:127.0.0.1:" + eventStorePort.Value.ToString(CultureInfo.InvariantCulture)))
             {
                 // Another process claimed a proposed port since the exclusion snapshot; allocate afresh.
             }

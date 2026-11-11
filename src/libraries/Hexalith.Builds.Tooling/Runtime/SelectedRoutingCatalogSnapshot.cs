@@ -23,13 +23,14 @@ internal static class SelectedRoutingCatalogSnapshot
     /// <param name="cancellationToken">The existing execution cancellation.</param>
     /// <param name="required">Whether successful owner preparation requires these public proofs.</param>
     /// <param name="knownCredentials">Every already-collected private handoff value, excluded from decoded retained keys and strings.</param>
+    /// <param name="attached">The issued attached identity, when validating an attached descriptor over the owner snapshot.</param>
     /// <returns>Credential-free held bytes; empty when the owner does not require routing observations.</returns>
     /// <exception cref="InvalidDataException">The identity, ownership, bounds or retained content cannot be verified.</exception>
-    internal static async Task<IReadOnlyDictionary<string, byte[]>> ReadAsync(CompositionRunPlan plan, byte[] descriptorSnapshot, CancellationToken cancellationToken, bool required = false, IReadOnlyList<string>? knownCredentials = null)
+    internal static async Task<IReadOnlyDictionary<string, byte[]>> ReadAsync(CompositionRunPlan plan, byte[] descriptorSnapshot, CancellationToken cancellationToken, bool required = false, IReadOnlyList<string>? knownCredentials = null, AttachedSuiteIdentity? attached = null)
     {
         try
         {
-            return await ReadCoreAsync(plan, descriptorSnapshot, required, knownCredentials ?? [], cancellationToken).ConfigureAwait(false);
+            return await ReadCoreAsync(plan, descriptorSnapshot, required, knownCredentials ?? [], attached, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is KeyNotFoundException or InvalidOperationException or FormatException)
         {
@@ -42,10 +43,11 @@ internal static class SelectedRoutingCatalogSnapshot
     /// <param name="descriptorSnapshot">The validated descriptor bytes.</param>
     /// <param name="required">Whether owner preparation requires routing proofs.</param>
     /// <param name="knownCredentials">The complete private handoff values.</param>
+    /// <param name="attached">The optional attached identity bound to the original owner.</param>
     /// <param name="cancellationToken">The existing execution cancellation.</param>
     /// <returns>The held credential-free observations.</returns>
     /// <exception cref="InvalidDataException">The proof identity, bounds or contents are invalid.</exception>
-    private static async Task<IReadOnlyDictionary<string, byte[]>> ReadCoreAsync(CompositionRunPlan plan, byte[] descriptorSnapshot, bool required, IReadOnlyList<string> knownCredentials, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyDictionary<string, byte[]>> ReadCoreAsync(CompositionRunPlan plan, byte[] descriptorSnapshot, bool required, IReadOnlyList<string> knownCredentials, AttachedSuiteIdentity? attached, CancellationToken cancellationToken)
     {
         if (!required)
         {
@@ -54,7 +56,7 @@ internal static class SelectedRoutingCatalogSnapshot
 
         string instance = plan.EnvironmentId + "-catalog";
         string directory = Path.Combine(plan.Workspace, "platform-components", instance);
-        string catalogCommit = ValidateDescriptor(plan, descriptorSnapshot, directory, instance);
+        string catalogCommit = ValidateDescriptor(plan, descriptorSnapshot, directory, instance, attached);
         List<(string Source, string Name)> inputs = CollectInputs(plan.Workspace, directory, out int readbackCount);
         Dictionary<string, byte[]> result = await ReadInputsAsync(plan.Workspace, inputs, catalogCommit, knownCredentials, cancellationToken).ConfigureAwait(false);
         ValidateHostInventory(plan, result, readbackCount);
@@ -62,7 +64,7 @@ internal static class SelectedRoutingCatalogSnapshot
         return result.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
-    private static string ValidateDescriptor(CompositionRunPlan plan, byte[] descriptorSnapshot, string directory, string instance)
+    private static string ValidateDescriptor(CompositionRunPlan plan, byte[] descriptorSnapshot, string directory, string instance, AttachedSuiteIdentity? attached)
     {
         if (!Directory.Exists(directory))
         {
@@ -77,7 +79,12 @@ internal static class SelectedRoutingCatalogSnapshot
         using JsonDocument descriptor = JsonDocument.Parse(descriptorSnapshot);
         JsonElement bindings = descriptor.RootElement.GetProperty("bindings");
         JsonElement catalog = bindings.GetProperty("environment").GetProperty("catalog");
-        bool different = bindings.GetProperty("run").GetProperty("environmentId").GetString() != plan.EnvironmentId
+        JsonElement run = bindings.GetProperty("run");
+        bool different = run.GetProperty("ownerRunId").GetString() != plan.RunId
+            || run.GetProperty("runId").GetString() != (attached?.RunId ?? plan.RunId)
+            || run.GetProperty("role").GetString() != (attached is null ? "owner" : "attached")
+            || (attached is not null && (attached.Hold.OwnerRunId != plan.RunId || attached.Hold.EnvironmentId != plan.EnvironmentId))
+            || run.GetProperty("environmentId").GetString() != plan.EnvironmentId
             || catalog.GetProperty("instanceId").GetString() != instance || !CompositionRunPlanFactory.IsRunId(plan.EnvironmentId);
         return different
             ? throw new InvalidDataException("Routing observations differ from the validated descriptor instance.")

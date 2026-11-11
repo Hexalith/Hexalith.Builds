@@ -338,7 +338,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 runId,
                 workspace,
                 prerequisites.DaprHome!,
-                CompositionPortAllocator.AllocateOwned(Math.Max(1, modules.Count), runId, _options.StateDirectory, !platformComposition && _options.EnableSecondEventStoreInstance),
+                CompositionPortAllocator.AllocateOwned(Math.Max(1, modules.Count), runId, _options.StateDirectory, !platformComposition && _options.EnableSecondEventStoreInstance, _options.EventStorePort),
                 modules,
                 markers,
                 _options.SourceMapping,

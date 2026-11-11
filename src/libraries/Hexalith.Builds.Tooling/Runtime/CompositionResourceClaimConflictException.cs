@@ -12,6 +12,9 @@ namespace Hexalith.Builds.Tooling.Runtime;
 public sealed class CompositionResourceClaimConflictException(string resourceId, string ownerRunId)
     : IOException($"Exclusive resource '{resourceId}' is held by run '{ownerRunId}'.")
 {
+    /// <summary>Gets the exact blocked resource.</summary>
+    public string ResourceId { get; } = resourceId;
+
     /// <summary>Gets the blocking owner.</summary>
     public string OwnerRunId { get; } = ownerRunId;
 }

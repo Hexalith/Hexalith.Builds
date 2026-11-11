@@ -76,18 +76,21 @@ public sealed class AttachedSuiteExecutionTests
 
     /// <summary>A passing attached suite publishes a valid attached result with terminated work and access, locally and in CI.</summary>
     /// <param name="ci">Whether the owner runs in a CI job.</param>
+    /// <param name="routing">Whether the live owner requires immutable public routing snapshots.</param>
     /// <returns>The pass assertions.</returns>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task PassingAttachedSuiteEndsWorkAndAccessAsync(bool ci)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task PassingAttachedSuiteEndsWorkAndAccessAsync(bool ci, bool routing)
     {
         using PlatformManifestTestWorkspace workspace = new();
         Dictionary<string, string?>? previous = ci ? EnterCiContext() : null;
         try
         {
             Release(workspace, "all");
-            Owner owner = await Owner.StartAsync(workspace, TestContext.Current.CancellationToken, ci: ci).ConfigureAwait(true);
+            Owner owner = await Owner.StartAsync(workspace, TestContext.Current.CancellationToken, ci: ci, routing: routing).ConfigureAwait(true);
             await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownerLifetime = owner.ConfigureAwait(true);
             (int exit, JsonElement output) = await owner.AttachAsync([], TestContext.Current.CancellationToken).ConfigureAwait(true);
             exit.ShouldBe(0, output.GetRawText());
@@ -99,6 +102,13 @@ public sealed class AttachedSuiteExecutionTests
             output.GetProperty("testResultPath").GetString().ShouldBe(Path.Combine(owner.Options.StateDirectory, "diagnostics", attachedRunId, "test-result.json"));
             CompositionAttachment recorded = await owner.RecordAsync(attachedRunId).ConfigureAwait(true);
             AssertIsolation(owner, workspace, recorded);
+            if (routing)
+            {
+                string capture = Path.Combine(owner.Options.StateDirectory, "diagnostics", attachedRunId, "routing-catalog", "catalog.json");
+                File.Exists(capture).ShouldBeTrue("The attached run archives its validated immutable owner snapshot in its own diagnostics.");
+                File.Exists(Path.Combine(owner.Session!.Plan.Workspace, "platform-components", owner.Session.Plan.EnvironmentId + "-catalog", "catalog.json")).ShouldBeTrue();
+            }
+
             string terminationDetail = await File.ReadAllTextAsync(Path.Combine(owner.Options.StateDirectory, "diagnostics", attachedRunId, Reference(result, "termination")), TestContext.Current.CancellationToken).ConfigureAwait(true);
             terminationDetail.ShouldContain("bearer valid until ");
             terminationDetail.ShouldContain("; no holder");
@@ -1110,7 +1120,7 @@ public sealed class AttachedSuiteExecutionTests
 
         public string DiagnosticsDirectory => Path.Combine(Options.StateDirectory, "diagnostics", Session!.RunId);
 
-        public static async Task<Owner> StartAsync(PlatformManifestTestWorkspace workspace, CancellationToken ownerToken, bool ci = false, bool liveAppHost = false, bool survivor = false, bool credentials = false, bool gateSuite = false)
+        public static async Task<Owner> StartAsync(PlatformManifestTestWorkspace workspace, CancellationToken ownerToken, bool ci = false, bool liveAppHost = false, bool survivor = false, bool credentials = false, bool gateSuite = false, bool routing = false)
         {
             Owner owner = new() { _context = ci ? _ci : _local, AppHostStoppedPath = Path.Combine(workspace.Root, "apphost-stopped") };
             string manifest = await DeclareSuitesAsync(workspace, gateSuite).ConfigureAwait(false);
@@ -1133,6 +1143,12 @@ public sealed class AttachedSuiteExecutionTests
                     if (credentials)
                     {
                         ready = await WithCredentialsAsync(plan, ready, token).ConfigureAwait(false);
+                    }
+
+                    if (routing)
+                    {
+                        await WithRoutingAsync(plan, token).ConfigureAwait(false);
+                        ready = ready with { RoutingCatalogObservationsRequired = true };
                     }
 
                     int? appHostId = null;
@@ -1299,6 +1315,23 @@ public sealed class AttachedSuiteExecutionTests
 
             _appHost.Dispose();
             await Output.DisposeAsync().ConfigureAwait(false);
+        }
+
+        private static async Task WithRoutingAsync(CompositionRunPlan plan, CancellationToken token)
+        {
+            string directory = Path.Combine(plan.Workspace, "platform-components", plan.EnvironmentId + "-catalog");
+            CompositionWorkspace.CreatePrivateDirectory(directory);
+            foreach (string filename in new[] { "catalog.json", "receipt.json", "activation.json", "owner.committed.json" })
+            {
+                await File.WriteAllTextAsync(Path.Combine(directory, filename), "{}", token).ConfigureAwait(false);
+            }
+
+            await File.WriteAllTextAsync(Path.Combine(directory, "selected-closure.json"), JsonSerializer.Serialize(new { plan.RunId, hosts = new[] { new { ResourceId = "owner" } } }), token).ConfigureAwait(false);
+            await File.WriteAllTextAsync(Path.Combine(directory, "preparation.json"), JsonSerializer.Serialize(new { plan.RunId, routingCatalogMetadataObserved = true }), token).ConfigureAwait(false);
+            await File.WriteAllTextAsync(Path.Combine(directory, "metadata-http.json"), "{\"method\":\"GET\",\"path\":\"/api/v1/routing/catalog\",\"status\":200}", token).ConfigureAwait(false);
+            string assets = Path.Combine(plan.Workspace, "platform-components", "catalog-reader", "obj");
+            CompositionWorkspace.CreatePrivateDirectory(assets);
+            await File.WriteAllTextAsync(Path.Combine(assets, "project.assets.json"), "{}", token).ConfigureAwait(false);
         }
 
         private static async Task<CompositionReadiness> WithCredentialsAsync(CompositionRunPlan plan, CompositionReadiness ready, CancellationToken token)

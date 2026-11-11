@@ -17,6 +17,82 @@ using Xunit;
 /// <summary>Verifies atomic cross-instance exclusive claims and ownership-limited release.</summary>
 public sealed class CompositionResourceClaimStoreTests
 {
+    /// <summary>A requested live endpoint names the actual owner without changing it or the unrelated peer.</summary>
+    [Fact]
+    public void ExplicitEndpointConflictPreservesOwnerAndPeer()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionResourceClaimStore claims = new(root);
+            string owner = CompositionRunPlanFactory.NewRunId();
+            string peer = CompositionRunPlanFactory.NewRunId();
+            CompositionRunPorts owned = CompositionPortAllocator.AllocateOwned(1, owner, root);
+            CompositionRunPorts unrelated = CompositionPortAllocator.AllocateOwned(1, peer, root);
+            using System.Net.Sockets.TcpListener live = new(System.Net.IPAddress.Loopback, owned.EventStoreHttp);
+            live.Start();
+            string challenger = CompositionRunPlanFactory.NewRunId();
+            CompositionResourceClaimConflictException conflict = Should.Throw<CompositionResourceClaimConflictException>(() => CompositionPortAllocator.AllocateOwned(1, challenger, root, false, owned.EventStoreHttp));
+            conflict.OwnerRunId.ShouldBe(owner);
+            conflict.ResourceId.ShouldBe("tcp:127.0.0.1:" + owned.EventStoreHttp);
+            claims.FindOwned(challenger).ShouldBeEmpty();
+            claims.FindOwned(owner).Count.ShouldBe(owned.ToList().Count);
+            claims.FindOwned(peer).Count.ShouldBe(unrelated.ToList().Count);
+            live.Stop();
+            claims.ReleaseOwned(owner);
+            CompositionRunPorts requested = CompositionPortAllocator.AllocateOwned(1, challenger, root, false, owned.EventStoreHttp);
+            requested.EventStoreHttp.ShouldBe(owned.EventStoreHttp);
+            requested.ToList().Distinct().Count().ShouldBe(requested.ToList().Count);
+            requested.ToList().ShouldNotContain(port => unrelated.ToList().Contains(port));
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>An unmanaged occupied socket fails and releases every newly acquired claim.</summary>
+    [Fact]
+    public void ExplicitOccupiedSocketRollsBackClaims()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            using System.Net.Sockets.TcpListener occupied = new(System.Net.IPAddress.Loopback, 0);
+            occupied.Start();
+            int port = ((System.Net.IPEndPoint)occupied.LocalEndpoint).Port;
+            string run = CompositionRunPlanFactory.NewRunId();
+            _ = Should.Throw<System.Net.Sockets.SocketException>(() => CompositionPortAllocator.AllocateOwned(1, run, root, false, port));
+            new CompositionResourceClaimStore(root).FindOwned(run).ShouldBeEmpty();
+            occupied.Stop();
+            CompositionPortAllocator.AllocateOwned(1, run, root, false, port).EventStoreHttp.ShouldBe(port);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Unsupported explicit ports allocate no claims.</summary>
+    /// <param name="port">The invalid explicit port.</param>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(65536)]
+    public void InvalidExplicitEndpointIssuesNothing(int port)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            _ = Should.Throw<ArgumentOutOfRangeException>(() => CompositionPortAllocator.AllocateOwned(1, CompositionRunPlanFactory.NewRunId(), root, false, port));
+            Directory.Exists(Path.Combine(root, "claims")).ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     /// <summary>Child model conflicts retain the real blocking identity for the parent refusal.</summary>
     /// <returns>The metadata-only child refusal assertions.</returns>
     [Fact]

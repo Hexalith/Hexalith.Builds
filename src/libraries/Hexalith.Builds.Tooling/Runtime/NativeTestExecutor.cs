@@ -397,10 +397,10 @@ internal static class NativeTestExecutor
     {
         // An attached run writes only inside its own workspace; the owner's workspace stays the shared read-only source mapping.
         string privateWorkspace = attached?.Workspace ?? session.Plan.Workspace;
-        if (attached is not null && (session.Readiness.TestObservation is not null || session.Readiness.RoutingCatalogObservationsRequired
+        if (attached is not null && (session.Readiness.TestObservation is not null || session.Plan.CandidatePolicy is not null
             || attached.Hold.OwnerRunId != session.Plan.RunId || attached.Hold.EnvironmentId != session.Plan.EnvironmentId))
         {
-            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest, "Attached suites cannot use the owner's gate, access or routing observations, or another environment.");
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest, "Attached suites cannot use the owner's gate or live access observations, or another environment.");
         }
 
         if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
@@ -504,7 +504,7 @@ internal static class NativeTestExecutor
 
         try
         {
-            routingCatalogSnapshot = await SelectedRoutingCatalogSnapshot.ReadAsync(session.Plan, descriptorSnapshot, cancellationToken, session.Readiness.RoutingCatalogObservationsRequired, handoffSecrets).ConfigureAwait(false);
+            routingCatalogSnapshot = await SelectedRoutingCatalogSnapshot.ReadAsync(session.Plan, descriptorSnapshot, cancellationToken, session.Readiness.RoutingCatalogObservationsRequired, handoffSecrets, attached).ConfigureAwait(false);
         }
         catch (InvalidDataException exception)
         {

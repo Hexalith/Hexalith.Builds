@@ -24,6 +24,79 @@ using Xunit;
 /// </summary>
 public sealed class StartupReadinessTests
 {
+    /// <summary>Malformed explicit endpoint requests refuse before starting or resolving a manifest.</summary>
+    /// <param name="port">The unsupported request spelling.</param>
+    /// <returns>The usage refusal.</returns>
+    [Theory]
+    [InlineData("0")]
+    [InlineData("65536")]
+    [InlineData("-1")]
+    [InlineData("12.5")]
+    [InlineData("1e4")]
+    [InlineData("")]
+    public async Task ExplicitPortParsingRefusesInvalidRequestsAsync(string port)
+    {
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
+        StringWriter error = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable errorLifetime = error.ConfigureAwait(true);
+        int exit = await ModuleCommandApplication.InvokeAsync(["test", "--manifest", "unused", "--profile", "verify", "--eventstore-port", port, "--output", "json"], output, error, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
+    }
+
+    /// <summary>The public command binds its exact requested endpoint and names a live managed blocker.</summary>
+    /// <returns>The command, plan and conflict assertions.</returns>
+    [Fact]
+    public async Task ExplicitPortCommandForwardsAndNamesManagedOwnerAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost toolchain uses POSIX scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        string? ownerRunId = null;
+        CompositionEngine? engine = null;
+        try
+        {
+            string manifest = CompositionTestFiles.CopyExecutableManifest(ExecutableManifest(), root);
+            string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionEngineOptions options = Options(root, appHost);
+            engine = new CompositionEngine(options);
+            using System.Net.Sockets.TcpListener available = new(System.Net.IPAddress.Loopback, 0);
+            available.Start();
+            int port = ((System.Net.IPEndPoint)available.LocalEndpoint).Port;
+            available.Stop();
+            string request = port.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            StringWriter output = new();
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
+            int exit = await ModuleCommandApplication.InvokeAsync(["debug", "--manifest", manifest, "--eventstore-port", request, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+            exit.ShouldBe((int)ToolExitCode.Success, output.ToString());
+            using JsonDocument document = JsonDocument.Parse(output.ToString());
+            ownerRunId = document.RootElement.GetProperty("runId").GetString().ShouldNotBeNull();
+            CompositionRunState state = (await engine.StateStore.TryReadAsync(ownerRunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            CompositionRunPlan plan = (await CompositionDocumentStore.TryReadAsync<CompositionRunPlan>(Path.Combine(state.Workspace, "plan.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            plan.Ports.EventStoreHttp.ShouldBe(port);
+            StringWriter challenger = new();
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable challengerLifetime = challenger.ConfigureAwait(true);
+            int refused = await ModuleCommandApplication.InvokeAsync(["debug", "--manifest", manifest, "--eventstore-port", request, "--output", "json"], challenger, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+            refused.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, challenger.ToString());
+            using JsonDocument conflict = JsonDocument.Parse(challenger.ToString());
+            conflict.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(value => value.GetProperty("ruleId").GetString() == "HXR031" && value.GetProperty("message").GetString()!.Contains(ownerRunId, StringComparison.Ordinal));
+            (await engine.StateStore.TryReadAsync(ownerRunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull().Status.ShouldBe(CompositionRunStatus.Ready);
+            engine.StateStore.Claims.ClaimedPorts().ShouldContain(port);
+        }
+        finally
+        {
+            if (ownerRunId is not null)
+            {
+                _ = await engine!.DownAsync(ownerRunId, CancellationToken.None).ConfigureAwait(true);
+            }
+
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     /// <summary>Interruption observation precedes delayed identity/issuance bookkeeping.</summary>
     /// <param name="cancelled">Whether setup was cancelled rather than timed out.</param>
     /// <returns>The first result, state and summary timestamp assertions.</returns>
