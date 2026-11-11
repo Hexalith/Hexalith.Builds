@@ -983,6 +983,7 @@ public sealed class WorkspaceMsBuildTests
                 "-p:NuGetAudit=false").ConfigureAwait(true);
             build.ExitCode.ShouldNotBe(0);
             build.Output.ShouldContain("HXW006");
+
             // SDK 11 forwards Configuration as a global property during build, so the first
             // mutable late override is the source flag or dependency root instead.
             build.Output.ShouldContain(mode == WorkspaceMode.Source
