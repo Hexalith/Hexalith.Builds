@@ -9,15 +9,17 @@ declared by a `global.json` file, or install an explicit SDK version when no
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
 | `global-json-file` | Path to a `global.json` file that pins the SDK version. Takes precedence over `dotnet-version` when set. | No | `''` |
-| `dotnet-version` | SDK version passed to `actions/setup-dotnet` when `global-json-file` is empty. | No | `10.0.403` |
+| `dotnet-version` | SDK version passed to `actions/setup-dotnet` when `global-json-file` is empty. | No | `11.0.100` |
 | `aspire` | Install the Aspire workload when set to any non-empty value. | No | `''` |
 
 ## Steps
 
-1. If `global-json-file` is set, run `actions/setup-dotnet@main` with that
+1. If `global-json-file` is set, run `actions/setup-dotnet@v6.1.0` with that
    file.
-2. Otherwise, run `actions/setup-dotnet@main` with `dotnet-version`.
-3. If `aspire` is non-empty, run `dotnet workload install aspire`.
+2. Otherwise, run `actions/setup-dotnet@v6.1.0` with `dotnet-version`.
+3. Both SDK setup paths also install the latest .NET 10 SDK to retain its
+   .NET and ASP.NET Core runtimes for net10.0 tools and test hosts.
+4. If `aspire` is non-empty, run `dotnet workload install aspire`.
 
 ## Usage
 
