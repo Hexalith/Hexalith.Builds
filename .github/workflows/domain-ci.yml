@@ -1065,6 +1065,9 @@ jobs:
         if: ${{ inputs.aspire-browser-project != '' }}
         with:
           node-version: '24'
+      - name: Initialize Ubuntu APT mirrors
+        if: ${{ inputs.aspire-test-project != '' || inputs.aspire-browser-project != '' }}
+        uses: $/Github/initialize-apt
       - name: Trust HTTPS development certificates for live sockets
         if: ${{ inputs.aspire-test-project != '' || inputs.aspire-browser-project != '' }}
         run: |
