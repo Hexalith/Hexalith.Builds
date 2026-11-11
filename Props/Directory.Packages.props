@@ -21,7 +21,7 @@
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">2.0.1</HexalithMcpCliVersion>
     <!-- Keep the released v2 declaration and source provenance aligned with this catalog pin. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">3.0.26</HexalithMemoriesVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">7.0.6</HexalithTenantsVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">7.0.7</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">3.1.1</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.1.1</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.3</HexalithProjectsVersion>
