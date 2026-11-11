@@ -68,6 +68,15 @@ does not retarget consumers. Retain Microsoft.OpenApi 2.x for ASP.NET Core 10,
 and the Dapr hosting integration required by the published EventStore package.
 The package audit records newer candidates and unresolved feed entries.
 
+Keep `Microsoft.AspNetCore.Authorization` on the compatible ASP.NET Core 10
+family (currently `10.0.15`). Version `11.0.0` permits restore and compilation,
+but the retained ASP.NET Core 10 `AuthorizationMiddleware` calls
+`IAuthorizationPolicyProvider.AllowsCachingPolicies`; application startup then
+fails with `MissingMethodException` for that getter. SDK 11 and compatible
+Extensions/System 11 packages do not remove this runtime ABI requirement.
+Revisit this hold only when the host's ASP.NET Core middleware and Authorization
+package advance together and application/browser startup passes.
+
 ## Commit Messages and Releases
 
 All commits must follow Angular Conventional Commits so semantic-release can
