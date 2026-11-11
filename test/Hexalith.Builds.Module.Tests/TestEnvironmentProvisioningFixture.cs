@@ -64,7 +64,7 @@ internal static class TestEnvironmentProvisioningFixture
         string hash = Convert.ToHexStringLower(SHA256.HashData(await File.ReadAllBytesAsync(catalogFile, TestContext.Current.CancellationToken).ConfigureAwait(false)));
         Dictionary<string, string> files = new(StringComparer.Ordinal) { ["Props/Directory.Packages.props"] = hash };
         Dictionary<string, string> versions = new(StringComparer.Ordinal) { ["fixture"] = "1.0.0" };
-        Dictionary<string, IReadOnlyDictionary<string, string>> projects = new(StringComparer.Ordinal);
+        Dictionary<string, IReadOnlyDictionary<string, string>> projects = [with(StringComparer.Ordinal)];
         CatalogVersionSnapshot snapshot = new(mapping.ContentHash, mapping.PlatformIdentity.CatalogCommit!, hash, files, versions, projects, CatalogVersionSnapshot.ComputeHash(mapping.ContentHash, mapping.PlatformIdentity.CatalogCommit!, hash, files, versions, projects));
         await File.WriteAllTextAsync(Path.Combine(directory, "catalog-versions.json"), JsonSerializer.Serialize(snapshot), TestContext.Current.CancellationToken).ConfigureAwait(false);
         string mappingFile = Path.Combine(directory, "mapping.json");

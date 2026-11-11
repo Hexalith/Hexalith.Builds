@@ -21,8 +21,8 @@ public sealed class RecordTrustPolicy
     public RecordTrustPolicy(IEnumerable<RecordWriterKey> anchors)
     {
         ArgumentNullException.ThrowIfNull(anchors);
-        Dictionary<string, bool> identities = new(StringComparer.Ordinal);
-        Dictionary<string, bool> fingerprints = new(StringComparer.Ordinal);
+        Dictionary<string, bool> identities = [with(StringComparer.Ordinal)];
+        Dictionary<string, bool> fingerprints = [with(StringComparer.Ordinal)];
         foreach (RecordWriterKey supplied in anchors)
         {
             if (supplied is null || string.IsNullOrWhiteSpace(supplied.WriterId) || string.IsNullOrWhiteSpace(supplied.KeyId) ||

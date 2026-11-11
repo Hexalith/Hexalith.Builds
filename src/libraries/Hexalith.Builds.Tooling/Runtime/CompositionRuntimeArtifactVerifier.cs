@@ -30,7 +30,7 @@ public static class CompositionRuntimeArtifactVerifier
                 return false;
             }
 
-            Dictionary<string, byte[]> blobs = new(StringComparer.Ordinal);
+            Dictionary<string, byte[]> blobs = [with(StringComparer.Ordinal)];
             long total = 0;
             using FileStream transport = File.OpenRead(archive);
             using TarReader tar = new(transport);

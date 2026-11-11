@@ -261,7 +261,7 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
                 key["e"] = Encode([0]);
             }
 
-            JsonArray keys = new(key);
+            JsonArray keys = [with(key)];
             if (KeyMode == "duplicate")
             {
                 keys.Add(key.DeepClone());

@@ -37,10 +37,10 @@ public static class PlatformAdoptionValidator
         string root = Path.GetFullPath(workingDirectory ?? ".");
         string[] tracked = [];
         IReadOnlyList<string> references = [];
-        HashSet<string> requiredReferences = new(StringComparer.Ordinal);
+        HashSet<string> requiredReferences = [with(StringComparer.Ordinal)];
         PlatformManifestValidationResult? declaration = null;
-        HashSet<string> daprConfigurationKeys = new(StringComparer.OrdinalIgnoreCase);
-        HashSet<string> modules = new(StringComparer.Ordinal);
+        HashSet<string> daprConfigurationKeys = [with(StringComparer.OrdinalIgnoreCase)];
+        HashSet<string> modules = [with(StringComparer.Ordinal)];
         List<(string Module, string PackageId, string? ProviderException)> eventStoreExtensions = [];
         await CheckAsync("workspace", ".git", async () =>
         {
@@ -94,8 +94,8 @@ public static class PlatformAdoptionValidator
         await CheckAsync("references", ".gitmodules", async () =>
         {
             references = await WorkspaceRootResolver.ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false);
-            HashSet<string> required = new(StringComparer.OrdinalIgnoreCase) { "Platform", "Builds", "McpCli", "EventStore", "Tenants", "Memories" };
-            HashSet<string> self = new(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> required = [with(StringComparer.OrdinalIgnoreCase), "Platform", "Builds", "McpCli", "EventStore", "Tenants", "Memories"];
+            HashSet<string> self = [with(StringComparer.OrdinalIgnoreCase)];
             if (declaration?.Declarations is not null)
             {
                 foreach (PlatformModuleDeclaration module in declaration.Declarations)
@@ -144,7 +144,7 @@ public static class PlatformAdoptionValidator
             using JsonDocument committed = JsonDocument.Parse(record.Output);
             Require(localPin == Pin(committed.RootElement), "The direct Platform tool manifest differs from its committed identity.");
         }).ConfigureAwait(false);
-        HashSet<string> frozen = new(StringComparer.Ordinal);
+        HashSet<string> frozen = [with(StringComparer.Ordinal)];
         await CheckAsync("hosting-inventory", "module/hosting-inventory.json", () =>
         {
             frozen = PlatformHostingInventory.Validate(root, tracked);

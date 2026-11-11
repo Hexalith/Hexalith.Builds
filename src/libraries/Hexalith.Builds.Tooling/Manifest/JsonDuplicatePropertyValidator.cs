@@ -46,7 +46,7 @@ public static class JsonDuplicatePropertyValidator
 
     private static string? FindDuplicatePropertyInObject(JsonElement element)
     {
-        HashSet<string> names = new(StringComparer.Ordinal);
+        HashSet<string> names = [with(StringComparer.Ordinal)];
 
         foreach (JsonProperty property in element.EnumerateObject())
         {

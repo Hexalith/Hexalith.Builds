@@ -76,8 +76,8 @@ public static class CompositionDeclarationClosure
         }
 
         List<string> paths = [];
-        Dictionary<string, string> authenticatedReleaseHashes = new(StringComparer.Ordinal);
-        Dictionary<string, (string Path, JsonElement Declaration)> snapshots = new(StringComparer.Ordinal);
+        Dictionary<string, string> authenticatedReleaseHashes = [with(StringComparer.Ordinal)];
+        Dictionary<string, (string Path, JsonElement Declaration)> snapshots = [with(StringComparer.Ordinal)];
         foreach (string owner in new[] { "eventstore", "tenants", "memories" })
         {
             string repository = Repository(owner);
@@ -191,8 +191,8 @@ public static class CompositionDeclarationClosure
         }
 
         Dictionary<string, PlatformModuleDeclaration> byId = result.Declarations!.ToDictionary(d => Id(d.Declaration), StringComparer.Ordinal);
-        HashSet<string> selected = new(StringComparer.Ordinal);
-        HashSet<string> visiting = new(StringComparer.Ordinal);
+        HashSet<string> selected = [with(StringComparer.Ordinal)];
+        HashSet<string> visiting = [with(StringComparer.Ordinal)];
         void Select(string identity)
         {
             if (!byId.TryGetValue(identity, out PlatformModuleDeclaration? declaration))

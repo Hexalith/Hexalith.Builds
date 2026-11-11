@@ -25,8 +25,8 @@ internal static class PlatformHostingInventory
         PlatformAdoptionValidator.Require(inventory.ValueKind == JsonValueKind.Object && inventory.TryGetProperty("schemaVersion", out JsonElement version) && version.ValueKind == JsonValueKind.Number && version.TryGetInt32(out int major) && major == 1, "Use hosting inventory schemaVersion 1.");
         PlatformAdoptionValidator.Require(inventory.TryGetProperty("projects", out JsonElement projects) && projects.ValueKind == JsonValueKind.Array, "Supply the hosting projects array.");
         RequireProperties(inventory, ["schemaVersion", "projects"]);
-        HashSet<string> recorded = new(StringComparer.Ordinal);
-        HashSet<string> frozen = new(StringComparer.Ordinal);
+        HashSet<string> recorded = [with(StringComparer.Ordinal)];
+        HashSet<string> frozen = [with(StringComparer.Ordinal)];
         foreach (JsonElement project in projects.EnumerateArray())
         {
             RequireProperties(project, ["path", "kind", "owner", "consumers", "state", "replacementPlan", "retirementPlan", "gates"]);

@@ -351,7 +351,7 @@ public static class TestEnvironmentContractReader
     {
         JsonElement bindings = root.GetProperty("bindings");
         JsonElement environment = bindings.GetProperty("environment");
-        HashSet<string> resources = new(StringComparer.Ordinal);
+        HashSet<string> resources = [with(StringComparer.Ordinal)];
         JsonElement resourceBinding = environment.GetProperty("resources");
         foreach (JsonElement resource in resourceBinding.ValueKind == JsonValueKind.Array ? resourceBinding.EnumerateArray() : Enumerable.Empty<JsonElement>())
         {
@@ -360,7 +360,7 @@ public static class TestEnvironmentContractReader
                 return false;
             }
 
-            HashSet<string> endpoints = new(StringComparer.Ordinal);
+            HashSet<string> endpoints = [with(StringComparer.Ordinal)];
             if (resource.GetProperty("endpoints").EnumerateArray().Any(endpoint => !endpoints.Add(endpoint.GetProperty("name").GetString()!)
                 || !Uri.TryCreate(endpoint.GetProperty("uri").GetString(), UriKind.Absolute, out _)))
             {
@@ -390,7 +390,7 @@ public static class TestEnvironmentContractReader
 
         if (root.TryGetProperty("termination", out JsonElement termination) && StringValue(termination, "state") == "populated")
         {
-            HashSet<string> items = new(StringComparer.Ordinal);
+            HashSet<string> items = [with(StringComparer.Ordinal)];
             if (termination.GetProperty("ownedWork").EnumerateArray().Concat(termination.GetProperty("environmentAccess").EnumerateArray())
                 .Any(item => !items.Add(StringValue(item, "id")!))
                 || termination.GetProperty("failures").EnumerateArray().Any(id => !items.Contains(id.GetString()!)))
@@ -408,14 +408,14 @@ public static class TestEnvironmentContractReader
             }
         }
 
-        HashSet<string> diagnostics = new(StringComparer.Ordinal);
+        HashSet<string> diagnostics = [with(StringComparer.Ordinal)];
         return root.GetProperty("diagnostics").EnumerateArray().All(diagnostic => diagnostics.Add(diagnostic.GetProperty("id").GetString()!))
             && HasResolvedDiagnosticIds(root, diagnostics);
     }
 
     private static bool HasUniqueIds(JsonElement items, string property)
     {
-        HashSet<string> identities = new(StringComparer.Ordinal);
+        HashSet<string> identities = [with(StringComparer.Ordinal)];
         return items.EnumerateArray().All(item => identities.Add(StringValue(item, property)!));
     }
 

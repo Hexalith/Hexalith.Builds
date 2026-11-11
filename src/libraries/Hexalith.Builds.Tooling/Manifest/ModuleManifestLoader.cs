@@ -209,7 +209,7 @@ public static partial class ModuleManifestLoader
                 continue;
             }
 
-            HashSet<string> dependencies = new(StringComparer.Ordinal);
+            HashSet<string> dependencies = [with(StringComparer.Ordinal)];
             if (module.Dependencies.Any(dependency =>
                 string.IsNullOrWhiteSpace(dependency) ||
                 string.Equals(dependency, module.Id, StringComparison.Ordinal) ||
@@ -286,10 +286,10 @@ public static partial class ModuleManifestLoader
         }
 
         string repositoryRoot = ManifestPathValidator.FindRepositoryRoot(fullManifestPath);
-        HashSet<string> moduleIds = new(StringComparer.Ordinal);
-        HashSet<string> domains = new(StringComparer.Ordinal);
-        HashSet<string> applicationIds = new(StringComparer.Ordinal);
-        HashSet<string> resourceIds = new(StringComparer.Ordinal);
+        HashSet<string> moduleIds = [with(StringComparer.Ordinal)];
+        HashSet<string> domains = [with(StringComparer.Ordinal)];
+        HashSet<string> applicationIds = [with(StringComparer.Ordinal)];
+        HashSet<string> resourceIds = [with(StringComparer.Ordinal)];
 
         for (int moduleIndex = 0; moduleIndex < manifest.Modules.Count; moduleIndex++)
         {
@@ -392,7 +392,7 @@ public static partial class ModuleManifestLoader
                 continue;
             }
 
-            HashSet<string> classes = new(StringComparer.Ordinal);
+            HashSet<string> classes = [with(StringComparer.Ordinal)];
             foreach (string profileClass in profile.Classes)
             {
                 if (!classes.Add(profileClass))

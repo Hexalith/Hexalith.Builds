@@ -20,18 +20,9 @@
     <ProjectReference Include="$(HexalithPlatformRoot)/src/Hexalith.Platform.Composition/Hexalith.Platform.Composition.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Build">
-      <HintPath>$(MSBuildBinPath)/Microsoft.Build.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="Microsoft.Build.Framework">
-      <HintPath>$(MSBuildBinPath)/Microsoft.Build.Framework.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="Microsoft.Build.Utilities.Core">
-      <HintPath>$(MSBuildBinPath)/Microsoft.Build.Utilities.Core.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
+    <PackageReference Include="Microsoft.Build" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Framework" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" />
   </ItemGroup>
   <!-- Build-order only: public command and engine readiness tests load the built executable fixture descriptors. -->
   <ItemGroup>

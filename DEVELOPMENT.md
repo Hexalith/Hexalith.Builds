@@ -55,6 +55,19 @@ and supply no hosted lifecycle or accepted-tool qualification.
 - Microsoft Fluent UI Blazor for user-interface components
 - xUnit with Shouldly for unit tests
 
+The repository and sample pin .NET SDK 11.0.100. Published tools continue to
+target .NET 10. Compile the MSBuild tasks against the catalog's .NET 10
+packages, with runtime assets excluded; the executing SDK supplies its own
+MSBuild assemblies. Unit tests use the same package versions with runtime
+assets included. Referencing SDK 11 assemblies directly from these .NET 10
+projects fails with CS1705.
+
+Keep framework-dependent packages on the latest compatible .NET 10 line.
+MSBuild 18.12.2 and ASP.NET Core 11 require .NET 11; upgrading the SDK alone
+does not retarget consumers. Retain Microsoft.OpenApi 2.x for ASP.NET Core 10,
+and the Dapr hosting integration required by the published EventStore package.
+The package audit records newer candidates and unresolved feed entries.
+
 ## Commit Messages and Releases
 
 All commits must follow Angular Conventional Commits so semantic-release can

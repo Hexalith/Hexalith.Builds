@@ -64,7 +64,7 @@ public sealed class G4P0AcceptanceValidatorTests
         HashSet<string> rules =
         [
             .. Directory.EnumerateFiles(EvidenceFixturePath.Get("acceptance/negative"), "*.expected.json")
-                .Select(path => JsonDocument.Parse(File.ReadAllText(path)).RootElement.GetProperty("outcomeRuleId").GetString()!),
+                .Select(path => JsonElement.Parse(File.ReadAllText(path)).GetProperty("outcomeRuleId").GetString()!),
         ];
 
         rules.ShouldBe(["HXE200", "HXE201", "HXE202", "HXE203", "HXE204", "HXE205", "HXE206", "HXE207", "HXE208"], ignoreOrder: true);

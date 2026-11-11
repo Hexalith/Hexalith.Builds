@@ -122,7 +122,7 @@ internal static class G4P0AcceptanceValidator
             return Fail("HXE205", "runs");
         }
 
-        HashSet<string> runKeys = new(StringComparer.Ordinal);
+        HashSet<string> runKeys = [with(StringComparer.Ordinal)];
         List<(string Key, string RunId, DateTimeOffset CompletedUtc)> identities = [];
         foreach (JsonElement run in runs.EnumerateArray())
         {
@@ -384,7 +384,7 @@ internal static class G4P0AcceptanceValidator
             return false;
         }
 
-        HashSet<string> ids = new(StringComparer.Ordinal);
+        HashSet<string> ids = [with(StringComparer.Ordinal)];
         foreach (JsonElement package in packages.EnumerateArray())
         {
             if (!ExactFields(package, "id", "version", "feed", "nupkgPath", "nupkgSha256", "snupkgPath", "snupkgSha256")
@@ -416,7 +416,7 @@ internal static class G4P0AcceptanceValidator
             return false;
         }
 
-        HashSet<string> roles = new(StringComparer.Ordinal);
+        HashSet<string> roles = [with(StringComparer.Ordinal)];
         foreach (JsonElement approval in approvals.EnumerateArray())
         {
             if (!ExactFields(approval, "role", "name", "acceptedAtUtc", "sourceRevision")
@@ -495,7 +495,7 @@ internal static class G4P0AcceptanceValidator
     {
         if (element.ValueKind == JsonValueKind.Object)
         {
-            HashSet<string> names = new(StringComparer.Ordinal);
+            HashSet<string> names = [with(StringComparer.Ordinal)];
             return element.EnumerateObject().All(property => names.Add(property.Name) && NoDuplicateProperties(property.Value));
         }
 

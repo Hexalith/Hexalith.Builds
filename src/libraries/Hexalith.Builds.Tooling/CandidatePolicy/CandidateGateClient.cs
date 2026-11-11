@@ -341,7 +341,7 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
     {
         if (value.ValueKind == JsonValueKind.Object)
         {
-            HashSet<string> keys = new(StringComparer.Ordinal);
+            HashSet<string> keys = [with(StringComparer.Ordinal)];
             foreach (JsonProperty property in value.EnumerateObject())
             {
                 if (!keys.Add(property.Name))

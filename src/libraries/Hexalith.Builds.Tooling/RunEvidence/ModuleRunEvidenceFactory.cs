@@ -83,7 +83,7 @@ public static partial class ModuleRunEvidenceFactory
         string? fixtureHash = resolvedFixturePath is null ? null : HashFile(resolvedFixturePath);
         string? filterHash = string.IsNullOrWhiteSpace(filter) ? null : HashString(filter);
         SortedDictionary<string, string> retainedArtifactHashes = new(
-            artifactHashes?.ToDictionary(StringComparer.Ordinal) ?? new Dictionary<string, string>(StringComparer.Ordinal),
+            artifactHashes?.ToDictionary(StringComparer.Ordinal) ?? [with(StringComparer.Ordinal)],
             StringComparer.Ordinal);
 
         // Retained native reports carry run GUIDs and timings, so their hashes differ on every run.

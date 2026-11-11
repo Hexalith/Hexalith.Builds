@@ -164,7 +164,7 @@ public sealed class PersistedProfileNativeTestsTests
                 ["schema"] = document.RootElement.GetProperty("schema").GetString(),
                 ["id"] = "seeded",
                 ["modules"] = document.RootElement.GetProperty("modules"),
-                ["nativeTests"] = JsonDocument.Parse(nativeTests).RootElement,
+                ["nativeTests"] = JsonElement.Parse(nativeTests),
             };
             File.WriteAllText(Path.Combine(repository, "profile.json"), JsonSerializer.Serialize(seeded));
             string seededManifestPath = Path.Combine(repository, "hexalith.module-manifest.v1.json");

@@ -148,7 +148,7 @@ public sealed class WorkspaceAppHostTests
             {
                 ProjectResource project = builder.Resources.OfType<ProjectResource>().Single(resource => resource.Name == module.ModuleId);
                 project.TryGetEnvironmentVariables(out IEnumerable<EnvironmentCallbackAnnotation>? annotations).ShouldBeTrue();
-                Dictionary<string, object> environment = new(StringComparer.Ordinal);
+                Dictionary<string, object> environment = [with(StringComparer.Ordinal)];
                 EnvironmentCallbackContext context = new(builder.ExecutionContext, project, environment, TestContext.Current.CancellationToken);
                 foreach (EnvironmentCallbackAnnotation annotation in annotations.TakeLast(SourceMappingMaterializer.Environment(mapping, plan.Workspace).Count))
                 {

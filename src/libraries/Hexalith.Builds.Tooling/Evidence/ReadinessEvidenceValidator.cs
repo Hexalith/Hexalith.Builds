@@ -25,8 +25,9 @@ internal static class ReadinessEvidenceValidator
     private const string _schema = "hexalith.readiness-evidence.v1";
     private const string _moduleRunEvidenceSchema = "hexalith.module-run-evidence.v1";
 
-    private static readonly HashSet<string> _rootFields = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _rootFields =
+    [
+        with(StringComparer.Ordinal),
         "schema",
         "project",
         "generated",
@@ -39,44 +40,49 @@ internal static class ReadinessEvidenceValidator
         "containment",
         "defaults",
         "rows",
-    };
+    ];
 
-    private static readonly HashSet<string> _defaultFields = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _defaultFields =
+    [
+        with(StringComparer.Ordinal),
         "repository",
         "owner",
         "environment",
         "pinned_revision",
         "status",
         "release_disposition",
-    };
+    ];
 
-    private static readonly HashSet<string> _validationFields = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _validationFields =
+    [
+        with(StringComparer.Ordinal),
         "command",
         "tool_status",
         "rejects",
         "required_coverage",
-    };
+    ];
 
-    private static readonly HashSet<string> _coverageFields = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _coverageFields =
+    [
+        with(StringComparer.Ordinal),
         "fr",
         "nfr",
         "finding",
         "release",
-    };
+    ];
 
-    private static readonly HashSet<string> _containmentFields = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _containmentFields =
+    [
+        with(StringComparer.Ordinal),
         "overall_readiness",
         "freeze",
         "release_block",
         "open_triggers",
-    };
+    ];
 
-    private static readonly HashSet<string> _rowFields = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _rowFields =
+    [
+        with(StringComparer.Ordinal),
         "key",
         "category",
         "ids",
@@ -106,10 +112,11 @@ internal static class ReadinessEvidenceValidator
         "outcome",
         "skip_reason",
         "critical",
-    };
+    ];
 
-    private static readonly HashSet<string> _supportedStatuses = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _supportedStatuses =
+    [
+        with(StringComparer.Ordinal),
         "pending",
         "blocked",
         "blocked-external",
@@ -117,15 +124,16 @@ internal static class ReadinessEvidenceValidator
         "failed",
         "passed",
         "skipped",
-    };
+    ];
 
-    private static readonly HashSet<string> _supportedCategories = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _supportedCategories =
+    [
+        with(StringComparer.Ordinal),
         "fr",
         "nfr",
         "finding",
         "release",
-    };
+    ];
 
     private static readonly string[] _requiredEffectiveScalars =
     [
@@ -665,7 +673,7 @@ internal static class ReadinessEvidenceValidator
         List<ToolDiagnostic> diagnostics)
     {
         IReadOnlyList<string> identifiers = ReadSequence(row, "ids");
-        HashSet<string> uniqueIdentifiers = new(StringComparer.Ordinal);
+        HashSet<string> uniqueIdentifiers = [with(StringComparer.Ordinal)];
         if (identifiers.Any(identifier => !uniqueIdentifiers.Add(identifier) || ContainsPlaceholder(identifier)))
         {
             AddDiagnostic(diagnostics, document, "HXE103", ToolFailureCategory.EvidencePolicy, "ids", row, rowKey);
@@ -821,7 +829,7 @@ internal static class ReadinessEvidenceValidator
             }
         }
 
-        HashSet<string> seenRowKeys = new(StringComparer.Ordinal);
+        HashSet<string> seenRowKeys = [with(StringComparer.Ordinal)];
         List<YamlMappingNode> rowMappings = [];
         foreach (YamlNode rowNode in rows.Children)
         {
@@ -892,7 +900,7 @@ internal static class ReadinessEvidenceValidator
             .Where(key => key is not null)
             .Select(key => key!)
             .ToHashSet(StringComparer.Ordinal);
-        HashSet<string> markdownKeys = new(StringComparer.Ordinal);
+        HashSet<string> markdownKeys = [with(StringComparer.Ordinal)];
         foreach (string line in lines)
         {
             string trimmed = line.Trim();

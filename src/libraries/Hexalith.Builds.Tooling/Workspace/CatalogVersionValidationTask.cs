@@ -135,7 +135,7 @@ public sealed class CatalogVersionValidationTask : ITask
                 JsonElement libraries = targets.EnumerateObject()
                     .First(target => string.Equals(target.Name, targetName, StringComparison.OrdinalIgnoreCase)).Value;
                 HashSet<string> referenced = Packages.Select(package => package.ItemSpec).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                HashSet<string> found = new(StringComparer.OrdinalIgnoreCase);
+                HashSet<string> found = [with(StringComparer.OrdinalIgnoreCase)];
                 foreach (JsonProperty library in libraries.EnumerateObject())
                 {
                     int separator = library.Name.LastIndexOf('/');

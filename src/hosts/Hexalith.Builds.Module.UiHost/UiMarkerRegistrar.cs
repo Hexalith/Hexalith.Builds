@@ -20,7 +20,7 @@ internal static class UiMarkerRegistrar
     /// </summary>
     public const string SectionName = "Hexalith:G4:UiMarkers";
 
-    private static readonly HashSet<string> _resolvedAssemblies = new(StringComparer.Ordinal);
+    private static readonly HashSet<string> _resolvedAssemblies = new([], StringComparer.Ordinal);
 
     private static readonly MethodInfo _addDomain = typeof(ServiceCollectionExtensions)
         .GetMethod(nameof(ServiceCollectionExtensions.AddHexalithDomain), BindingFlags.Public | BindingFlags.Static)

@@ -77,8 +77,8 @@ public static partial class PlatformManifestValidator
         ArgumentNullException.ThrowIfNull(authenticatedReleaseHashes);
         List<ToolDiagnostic> diagnostics = [];
         List<PlatformModuleDeclaration> declarations = [];
-        Dictionary<string, List<(string Source, string Field)>> identities = new(StringComparer.Ordinal);
-        Dictionary<string, List<(string Module, string Value, string Source, string Field)>> extensions = new(StringComparer.Ordinal);
+        Dictionary<string, List<(string Source, string Field)>> identities = [with(StringComparer.Ordinal)];
+        Dictionary<string, List<(string Module, string Value, string Source, string Field)>> extensions = [with(StringComparer.Ordinal)];
         int fileCount = 0;
         foreach (string path in manifestPaths)
         {
@@ -275,7 +275,7 @@ public static partial class PlatformManifestValidator
         bool validUnicode = true;
         if (value.ValueKind == JsonValueKind.Object)
         {
-            HashSet<string> names = new(StringComparer.Ordinal);
+            HashSet<string> names = [with(StringComparer.Ordinal)];
             int propertyIndex = 0;
             foreach (JsonProperty property in value.EnumerateObject())
             {
@@ -573,7 +573,7 @@ public static partial class PlatformManifestValidator
         RegisterIdentity(StringValue(identity, "moduleId"), "module", source, $"{prefix}.identity.moduleId", identities);
         JsonElement lifecycle = ObjectValue(module, "lifecycle");
         JsonElement[] readiness = [.. ArrayValue(lifecycle, "readiness")];
-        HashSet<string> serverIds = new(StringComparer.Ordinal);
+        HashSet<string> serverIds = [with(StringComparer.Ordinal)];
         int serverIndex = 0;
         foreach (JsonElement server in ArrayValue(identity, "servers"))
         {
@@ -625,7 +625,7 @@ public static partial class PlatformManifestValidator
         }
 
         ValidateExecutablePaths(lifecycle, prefix, source, fullPath, diagnostics);
-        HashSet<string> testNames = new(StringComparer.Ordinal);
+        HashSet<string> testNames = [with(StringComparer.Ordinal)];
         int testIndex = 0;
         foreach (JsonElement test in ArrayValue(module, "tests"))
         {
@@ -656,8 +656,8 @@ public static partial class PlatformManifestValidator
     private static void ValidateDaprBindings(JsonElement module, string prefix, string source, HashSet<string> servers, List<ToolDiagnostic> diagnostics)
     {
         JsonElement[] capabilities = ArrayValue(ObjectValue(module, "runtime"), "dapr");
-        Dictionary<string, (string Kind, string Recovery)> roles = new(StringComparer.Ordinal);
-        Dictionary<string, Dictionary<string, string>> keys = new(StringComparer.Ordinal);
+        Dictionary<string, (string Kind, string Recovery)> roles = [with(StringComparer.Ordinal)];
+        Dictionary<string, Dictionary<string, string>> keys = [with(StringComparer.Ordinal)];
         for (int index = 0; index < capabilities.Length; index++)
         {
             JsonElement capability = capabilities[index];
@@ -692,7 +692,7 @@ public static partial class PlatformManifestValidator
 
                 if (!keys.TryGetValue(server, out Dictionary<string, string>? serverKeys))
                 {
-                    serverKeys = new(StringComparer.OrdinalIgnoreCase);
+                    serverKeys = [with(StringComparer.OrdinalIgnoreCase)];
                     keys.Add(server, serverKeys);
                 }
 
@@ -713,7 +713,7 @@ public static partial class PlatformManifestValidator
                 .Select(server => StringValue(server, "id"))
                 .OfType<string>(),
         ];
-        HashSet<string> subscriptions = new(StringComparer.Ordinal);
+        HashSet<string> subscriptions = [with(StringComparer.Ordinal)];
         JsonElement[] topics = ArrayValue(ObjectValue(module, "integration"), "topics");
         static string? PhysicalTopic(JsonElement topic) => StringValue(ObjectValue(topic, "subscription"), "topic") ?? StringValue(topic, "name");
         for (int index = 0; index < topics.Length; index++)

@@ -15,7 +15,7 @@ using Shouldly;
 /// <summary>Supplies real ephemeral keys and immutable record fixtures.</summary>
 internal sealed class RecordTestContext : IDisposable
 {
-    private readonly Dictionary<string, ECDsa> _keys = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ECDsa> _keys = [with(StringComparer.Ordinal)];
 
     /// <summary>Initializes a new instance of the <see cref="RecordTestContext"/> class.</summary>
     internal RecordTestContext()

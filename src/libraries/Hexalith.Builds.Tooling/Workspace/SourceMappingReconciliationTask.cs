@@ -67,7 +67,7 @@ public sealed class SourceMappingReconciliationTask : ITask
         {
             SourceMapping mapping = SourceMapping.LoadVerified(MappingFile, MappingHash);
             string root = mapping.Root;
-            Dictionary<string, string> sourceProjects = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> sourceProjects = [with(StringComparer.OrdinalIgnoreCase)];
             List<(string Identity, string Path)> packageRoots = [];
             foreach (SourceMappingEntry entry in mapping.Entries)
             {
@@ -340,7 +340,7 @@ public sealed class SourceMappingReconciliationTask : ITask
             return true;
         }
 
-        Dictionary<string, (string Value, bool IsRoot)> permitted = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, (string Value, bool IsRoot)> permitted = [with(StringComparer.OrdinalIgnoreCase)];
         if (mapping.Mode == WorkspaceMode.Source && mapping.ContainsProject(path))
         {
             foreach (SourceMappingEntry entry in mapping.Entries)
@@ -353,7 +353,7 @@ public sealed class SourceMappingReconciliationTask : ITask
 
         string retainedId = Path.GetFileNameWithoutExtension(path);
         string? version = PackageVersions.FirstOrDefault(item => item.ItemSpec.Equals(retainedId, StringComparison.OrdinalIgnoreCase))?.GetMetadata("Version");
-        HashSet<string> assigned = new(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> assigned = [with(StringComparer.OrdinalIgnoreCase)];
         List<string> assignments = [];
         string[] supplied = canonical.Split(';', StringSplitOptions.TrimEntries);
         string[] nonempty = [.. supplied.Where(assignment => assignment.Length > 0)];

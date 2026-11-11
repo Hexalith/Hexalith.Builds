@@ -281,7 +281,7 @@ public sealed class ModuleTestSelectionTests
                 represented["name"] = "unrepresented-entry";
                 selected["selections"] = mutation == "batch"
                     ? new JsonArray(selected["selection"]!.DeepClone(), represented)
-                    : new JsonArray(represented);
+                    : [with(represented)];
                 ModuleRunEvidenceArtifactValidator.TryValidate(System.Text.Encoding.UTF8.GetBytes(imported.ToJsonString() + "\n"), out _).ShouldBeFalse();
             }
         }

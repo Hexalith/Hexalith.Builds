@@ -1050,7 +1050,7 @@ public sealed class PlatformAdoptionValidationTests
                 break;
         }
 
-        JsonArray projects = new(record);
+        JsonArray projects = [with(record)];
         if (mutation == "duplicate-record")
         {
             projects.Add(record.DeepClone());

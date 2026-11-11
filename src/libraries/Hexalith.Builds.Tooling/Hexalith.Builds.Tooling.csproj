@@ -12,18 +12,10 @@
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Build">
-      <HintPath>$(MSBuildBinPath)/Microsoft.Build.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Microsoft.Build.Framework">
-      <HintPath>$(MSBuildBinPath)/Microsoft.Build.Framework.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Microsoft.Build.Utilities.Core">
-      <HintPath>$(MSBuildBinPath)/Microsoft.Build.Utilities.Core.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+    <!-- Compile tasks against the supported .NET 10 API; the executing SDK supplies runtime assemblies. -->
+    <PackageReference Include="Microsoft.Build" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Framework" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../../schemas/hexalith.check-suite.v1.json" LogicalName="Hexalith.Builds.Tooling.CheckSuites.hexalith.check-suite.v1.json" />

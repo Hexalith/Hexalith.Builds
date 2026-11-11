@@ -22,7 +22,7 @@ public static class CompositionRunListing
         ArgumentNullException.ThrowIfNull(store);
         try
         {
-            HashSet<string> unverifiableOwners = new(StringComparer.Ordinal);
+            HashSet<string> unverifiableOwners = [with(StringComparer.Ordinal)];
             IReadOnlyList<CompositionRunState> states = await store.EnumerateAsync(runId => unverifiableOwners.Add(runId), cancellationToken).ConfigureAwait(false);
             List<CompositionRunListingEntry> entries = [];
             foreach (CompositionRunState tracked in states)

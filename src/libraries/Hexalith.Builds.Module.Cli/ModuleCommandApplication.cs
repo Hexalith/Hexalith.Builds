@@ -71,7 +71,7 @@ internal static class ModuleCommandApplication
         Action<Task<int>> operationStarted,
         JsonElement? attacherContext)
     {
-        RootCommand rootCommand = new("Runs supported Hexalith module qualifications.");
+        RootCommand rootCommand = [with("Runs supported Hexalith module qualifications.")];
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Run, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Debug, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));

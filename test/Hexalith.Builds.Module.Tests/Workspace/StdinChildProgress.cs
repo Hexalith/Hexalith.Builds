@@ -14,15 +14,16 @@ internal static class StdinChildProgress
 {
     private static readonly Lock _gate = new();
 
-    private static readonly HashSet<string> _stages = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _stages =
+    [
+        with(StringComparer.Ordinal),
         "unobserved", "child-fact", "workspace-create", "workspace-created", "input-open", "input-opened",
         "listener-create", "listener-created", "await-read", "read-requested", "signal-dispose", "signal-disposed",
         "wrapper-dispose", "wrapper-disposed", "raw-dispose", "raw-disposed", "next-listener-create",
         "next-listener-created", "readiness-write", "readiness-written", "await-stop-command", "stop-command-received",
         "next-listener-dispose", "next-listener-disposed", "workspace-cleanup", "child-complete",
         "read-call", "read-pending", "read-completed", "input-dispose", "input-disposed",
-    };
+    ];
 
     private static string _driverStage = "unobserved";
 

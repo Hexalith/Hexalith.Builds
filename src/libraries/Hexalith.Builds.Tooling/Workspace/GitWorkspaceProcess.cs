@@ -30,7 +30,7 @@ internal static class GitWorkspaceProcess
     internal static Task<CompositionProcessResult> RunAsync(string directory, int maximumOutputCharacters, CancellationToken cancellationToken, params string[] arguments)
     {
         string[] command = ["-c", "submodule.recurse=false", "-C", directory, .. arguments];
-        Dictionary<string, string> environment = new(StringComparer.Ordinal);
+        Dictionary<string, string> environment = [with(StringComparer.Ordinal)];
         string[] transportVariables =
         [
             "GIT_ALLOW_PROTOCOL",

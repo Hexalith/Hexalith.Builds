@@ -19,17 +19,19 @@ internal static class ModuleRunEvidenceArtifactValidator
     private static readonly JsonSerializerOptions _selectedTestJsonOptions = new() { PropertyNameCaseInsensitive = true };
     private static readonly Json.Schema.JsonSchema _selectedTestSchema = ReadSelectedTestSchema();
 
-    private static readonly HashSet<string> _environmentProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _environmentProperties =
+    [
+        with(StringComparer.Ordinal),
         "repositoryRevision",
         "repositoryDirtyMarker",
         "sdkVersion",
         "operatingSystem",
         "toolVersion",
-    };
+    ];
 
-    private static readonly HashSet<string> _invocationProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _invocationProperties =
+    [
+        with(StringComparer.Ordinal),
         "command",
         "manifestPath",
         "manifestHash",
@@ -37,42 +39,47 @@ internal static class ModuleRunEvidenceArtifactValidator
         "fixturePath",
         "fixtureHash",
         "filterHash",
-    };
+    ];
 
-    private static readonly HashSet<string> _moduleProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _moduleProperties =
+    [
+        with(StringComparer.Ordinal),
         "id",
         "domain",
         "applicationId",
         "resourceId",
         "descriptorAssembly",
-    };
+    ];
 
-    private static readonly HashSet<string> _outcomeProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _outcomeProperties =
+    [
+        with(StringComparer.Ordinal),
         "exitCode",
         "phase",
         "category",
         "ruleId",
-    };
+    ];
 
-    private static readonly HashSet<string> _phaseOutcomeProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _phaseOutcomeProperties =
+    [
+        with(StringComparer.Ordinal),
         "phase",
         "category",
         "ruleId",
-    };
+    ];
 
-    private static readonly HashSet<string> _platformProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _platformProperties =
+    [
+        with(StringComparer.Ordinal),
         "eventStoreVersion",
         "daprRuntimeVersion",
         "daprSdkVersion",
         "frontComposerVersion",
-    };
+    ];
 
-    private static readonly HashSet<string> _rootProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _rootProperties =
+    [
+        with(StringComparer.Ordinal),
         "schema",
         "runId",
         "timestamps",
@@ -85,40 +92,44 @@ internal static class ModuleRunEvidenceArtifactValidator
         "finalStatus",
         "outcome",
         "volatileFields",
-    };
+    ];
 
     /// <summary>
     /// Additive v1 fields accepted when present so the schema can carry persisted assertions
     /// and expected sequences without a breaking version bump, but not required, so existing
     /// artifacts remain valid.
     /// </summary>
-    private static readonly HashSet<string> _optionalRootProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _optionalRootProperties =
+    [
+        with(StringComparer.Ordinal),
         "persistedAssertions",
         "expectedSequences",
         "selectedTestRun",
-    };
+    ];
 
-    private static readonly HashSet<string> _testCountProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _testCountProperties =
+    [
+        with(StringComparer.Ordinal),
         "reported",
         "total",
         "passed",
         "failed",
         "skipped",
-    };
+    ];
 
-    private static readonly HashSet<string> _timestampProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _timestampProperties =
+    [
+        with(StringComparer.Ordinal),
         "startedUtc",
         "completedUtc",
-    };
+    ];
 
-    private static readonly HashSet<string> _topologyProperties = new(StringComparer.Ordinal)
-    {
+    private static readonly HashSet<string> _topologyProperties =
+    [
+        with(StringComparer.Ordinal),
         "modules",
         "platform",
-    };
+    ];
 
     /// <summary>
     /// Validates a complete canonical run-evidence artifact and exposes only its non-secret completion summary.

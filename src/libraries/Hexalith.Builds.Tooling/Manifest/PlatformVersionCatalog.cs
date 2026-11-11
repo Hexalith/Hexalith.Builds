@@ -57,7 +57,7 @@ public sealed partial record PlatformVersionCatalog(
             throw new InvalidDataException("Platform version catalog root must be an object.");
         }
 
-        Dictionary<string, string> selections = new(StringComparer.Ordinal);
+        Dictionary<string, string> selections = [with(StringComparer.Ordinal)];
         string[] required = ["schemaVersion", "eventStoreVersion", "frontComposerVersion", "daprSdkVersion", "aspireHostingVersion", "aspireHostingDaprVersion", "aspireAppHostSdkVersion", "daprRuntimeVersion", "daprCliVersion", "redisImage", "redisImageTag", "redisImageDigest", "eventStoreHostingDaprRange"];
         foreach (JsonProperty property in document.RootElement.EnumerateObject())
         {

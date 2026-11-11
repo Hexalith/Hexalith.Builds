@@ -289,8 +289,8 @@ public sealed class DeclarationClosureTests
         string directory = Path.Combine(root, "src", "Hexalith.Platform.Composition", "Declarations");
         _ = Directory.CreateDirectory(directory);
         JsonObject provenance = [];
-        Dictionary<string, string> commits = new(StringComparer.Ordinal);
-        Dictionary<string, string> hashes = new(StringComparer.Ordinal);
+        Dictionary<string, string> commits = [with(StringComparer.Ordinal)];
+        Dictionary<string, string> hashes = [with(StringComparer.Ordinal)];
         foreach (string owner in new[] { "eventstore", "tenants", "memories" })
         {
             string repository = CompositionDeclarationClosure.Repository(owner);

@@ -1011,7 +1011,7 @@ public static class ModuleCommandExecutionService
                 ModuleRunEvidenceWriteResult detailResult = await ModuleRunEvidenceWriter.WriteArtifactAsync(detailPath, manifestPath, observationBytes, cancellationToken).ConfigureAwait(false);
                 if (detailResult.Succeeded)
                 {
-                    artifactHashes ??= new Dictionary<string, string>(StringComparer.Ordinal);
+                    artifactHashes ??= [with(StringComparer.Ordinal)];
                     artifactHashes[detailPath] = Convert.ToHexString(SHA256.HashData(observationBytes));
                 }
                 else

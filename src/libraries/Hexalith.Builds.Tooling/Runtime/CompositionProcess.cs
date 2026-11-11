@@ -70,7 +70,7 @@ public static class CompositionProcess
             CreateNoWindow = true,
             WorkingDirectory = workingDirectory ?? string.Empty,
         };
-        Dictionary<string, string?> inherited = new(StringComparer.Ordinal);
+        Dictionary<string, string?> inherited = [with(StringComparer.Ordinal)];
         foreach (string name in _inheritedVariables)
         {
             string? value = Environment.GetEnvironmentVariable(name);

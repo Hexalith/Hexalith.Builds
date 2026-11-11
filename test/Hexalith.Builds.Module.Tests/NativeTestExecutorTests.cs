@@ -987,7 +987,7 @@ public sealed class NativeTestExecutorTests
     {
         string directory = Path.Combine(plan.Workspace, "platform-components", plan.EnvironmentId + "-catalog");
         _ = Directory.CreateDirectory(directory);
-        Dictionary<string, byte[]> originals = new(StringComparer.Ordinal);
+        Dictionary<string, byte[]> originals = [with(StringComparer.Ordinal)];
         foreach (string name in new[] { "catalog.json", "receipt.json", "activation.json", "owner.committed.json" })
         {
             byte[] bytes = Encoding.UTF8.GetBytes("{ \"heldOriginal\" : \"" + name + "\" }\n");

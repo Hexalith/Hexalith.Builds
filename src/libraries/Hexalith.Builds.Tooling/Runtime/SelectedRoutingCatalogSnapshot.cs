@@ -127,7 +127,7 @@ internal static class SelectedRoutingCatalogSnapshot
 
     private static async Task<Dictionary<string, byte[]>> ReadInputsAsync(string workspace, List<(string Source, string Name)> inputs, string catalogCommit, IReadOnlyList<string> knownCredentials, CancellationToken cancellationToken)
     {
-        Dictionary<string, byte[]> result = new(StringComparer.Ordinal);
+        Dictionary<string, byte[]> result = [with(StringComparer.Ordinal)];
         int total = 0;
         foreach ((string source, string name) in inputs)
         {

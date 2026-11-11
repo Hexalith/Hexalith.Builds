@@ -5,7 +5,7 @@
   "platformPins": {
     "eventStoreVersion": "4.2.0",
     "daprRuntimeVersion": "1.19.1",
-    "daprSdkVersion": "1.19.0",
+    "daprSdkVersion": "1.19.1",
     "frontComposerVersion": "4.7.6"
   },
   "fixture": {
@@ -39,7 +39,7 @@
       "exitCode": 0,
       "finalStatus": "completed",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-failed-report.json",
-      "evidenceSha256": "9025547F3E34D442B2B18CC9FE7A5EB43484A5EA285D9239FA62536CC5DF2FC6",
+      "evidenceSha256": "D84CB0A42C9381AE43755CF8E75D3F668EA36AF54220030D30D635929D05AE32",
       "reportPath": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-failed-report.vstest.trx",
       "reportSha256": "DCEAEA2F1B7324D55D1D798714BA76881A65DB74F1CD2B75B34CDD89ED83F85C",
       "reportPlatform": "vstest"
@@ -50,7 +50,7 @@
       "exitCode": 0,
       "finalStatus": "completed",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.json",
-      "evidenceSha256": "AEF5689B480DC7D1FA7EA0CD207D3EEB0D6F8258FA9D1A51E5EF2D0776606087",
+      "evidenceSha256": "237665A5350D1413FD5F81CB1202D28532273E84EAF2F7A39893B827FDCF58DF",
       "reportPath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.mtp.trx",
       "reportSha256": "7A81E16B31D9D46B875DD225F4783F671E956EA0F7E694EF1E539917111760AE",
       "reportPlatform": "mtp"
@@ -61,7 +61,7 @@
       "exitCode": 2,
       "finalStatus": "unavailable",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-prerequisite-unavailable.json",
-      "evidenceSha256": "FA52D873310202ADB7EE9F8406D5618B0AA787F767A8337FDC29FC2DEACB0EC5",
+      "evidenceSha256": "81C8A429FDAAC2CC858A7571EBACF2D75CDCDC3FECC2170E8D15B0A94BA9E617",
       "reportPath": null,
       "reportSha256": null,
       "reportPlatform": null
@@ -72,7 +72,7 @@
       "exitCode": 130,
       "finalStatus": "cancelled",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-cancelled.json",
-      "evidenceSha256": "3B6A9335A5A78CCA03AE8A8A2B518E013CE73CF956AD9FA3D06D7A6917BFA7B7",
+      "evidenceSha256": "E874BC00CB9441F389B381098D47A6BB17CDBF628C57D6AAB3F061B8C6000B95",
       "reportPath": null,
       "reportSha256": null,
       "reportPlatform": null
@@ -82,7 +82,7 @@
     "status": "passed",
     "command": "dotnet tool run hexalith-module down --manifest test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json --run-id 0123456789abcdef0123456789abcd01",
     "artifactPath": "test/fixtures/evidence/acceptance/bound/cleanup-down.json",
-    "artifactSha256": "F45C9776AA3583B1F0ABDFA2D19279D8DA908E375F2A10F6C4E2FA399245E4CA"
+    "artifactSha256": "52C2171453F925F5E15E87AFE667E03A9B146FE59A58FFC8C25A8911F2DF5E13"
   },
   "rollback": {
     "status": "passed",

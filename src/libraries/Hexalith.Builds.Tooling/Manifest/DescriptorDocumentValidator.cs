@@ -110,7 +110,7 @@ internal static class DescriptorDocumentValidator
         string? uiProject = ReadPath(root, "uiProject", ".csproj", repositoryRoot, field, diagnostics);
         Dictionary<string, ExecutableModuleDescriptor> modulesById = modules.ToDictionary(module => module.ModuleId, StringComparer.Ordinal);
         List<ExecutableUiMarker> markers = [];
-        HashSet<string> seen = new(StringComparer.Ordinal);
+        HashSet<string> seen = [with(StringComparer.Ordinal)];
         foreach (JsonElement marker in root.GetProperty("moduleUiMarkers").EnumerateArray())
         {
             if (!HasExactShape(marker, _markerFields, _markerFields, field, diagnostics))

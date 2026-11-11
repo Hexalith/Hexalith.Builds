@@ -174,7 +174,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
             return [];
         }
 
-        HashSet<string> owned = new(StringComparer.Ordinal);
+        HashSet<string> owned = [with(StringComparer.Ordinal)];
         string[] recorded = ReadReceipt(runId, out bool verifiedReceipt);
         HashSet<string> expected = new(recorded, StringComparer.Ordinal);
         IEnumerable<string> paths = Directory.EnumerateFileSystemEntries(_directory, "*.json")

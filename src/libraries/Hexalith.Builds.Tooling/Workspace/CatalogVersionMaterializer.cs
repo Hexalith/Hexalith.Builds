@@ -161,14 +161,14 @@ internal static partial class CatalogVersionMaterializer
         string directory = Path.Combine(workspace, "source-mapping");
         EnsureDirectory(directory);
         string treeDirectory = Path.Combine(directory, "pinned-tree");
-        Dictionary<string, string> pinnedFiles = new(StringComparer.Ordinal);
+        Dictionary<string, string> pinnedFiles = [with(StringComparer.Ordinal)];
         _ = await MaterializeFileAsync(builds, pin, treeDirectory, "Props/Directory.Packages.props", pinnedFiles, cancellationToken).ConfigureAwait(false);
         string catalogPath = Path.Combine(treeDirectory, "Props", "Directory.Packages.props");
         IReadOnlyList<string> projectNames = ConditionalProjectNames(pinnedFiles.Keys.Select(path => (
             Path: Path.Combine(treeDirectory, path),
             Text: ReadPinnedText(Path.Combine(treeDirectory, path)))));
         Dictionary<string, string> versions = await EvaluateAsync(directory, catalogPath, "__HXW_DefaultCatalog__", pin, cancellationToken).ConfigureAwait(false);
-        Dictionary<string, IReadOnlyDictionary<string, string>> projectVersions = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, IReadOnlyDictionary<string, string>> projectVersions = [with(StringComparer.OrdinalIgnoreCase)];
         foreach (string projectName in projectNames)
         {
             projectVersions.Add(projectName, await EvaluateAsync(directory, catalogPath, projectName, pin, cancellationToken).ConfigureAwait(false));
@@ -274,7 +274,7 @@ internal static partial class CatalogVersionMaterializer
 
     private static IReadOnlyList<string> ConditionalProjectNames(IEnumerable<(string Path, string Text)> files)
     {
-        HashSet<string> names = new(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> names = [with(StringComparer.OrdinalIgnoreCase)];
         foreach ((string path, string catalog) in files)
         {
             try
@@ -335,7 +335,7 @@ internal static partial class CatalogVersionMaterializer
         {
             using JsonDocument result = JsonDocument.Parse(evaluated.Output);
             JsonElement packages = result.RootElement.GetProperty("Items").GetProperty("PackageVersion");
-            Dictionary<string, string> versions = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> versions = [with(StringComparer.OrdinalIgnoreCase)];
             foreach (JsonElement package in packages.EnumerateArray())
             {
                 string name = package.GetProperty("Identity").GetString() ?? throw new JsonException("Empty package ID.");
