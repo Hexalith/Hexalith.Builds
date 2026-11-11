@@ -292,7 +292,13 @@ public sealed class SelectedRoutingCatalogSnapshotTests
         {
             bindings = new
             {
-                run = new { environmentId = scenario == "wrong-environment" ? new string('f', 32) : plan.EnvironmentId },
+                run = new
+                {
+                    ownerRunId = plan.RunId,
+                    runId = plan.RunId,
+                    role = "owner",
+                    environmentId = scenario == "wrong-environment" ? new string('f', 32) : plan.EnvironmentId,
+                },
                 environment = new { catalog = new { instanceId = scenario == "wrong-instance" ? "another-catalog" : plan.EnvironmentId + "-catalog", commit = new string('a', 40) } },
             },
         });
