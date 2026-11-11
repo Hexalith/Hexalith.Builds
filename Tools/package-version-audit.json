@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+  "generatedFromRevision": "4e0cda04889c8129ca7a58c299fe618415a8b828",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "fc6c50d1785475c935c2b8f699877349ffba17a9ce418dec65c555771134c7fa",
-  "catalogRawSha256": "bfaf0dac97c61dedbb58d4e1e81328eefbbeb2cae48ebdb62aef5ed284132312",
+  "catalogSha256": "21d5aa94c50805c6df431008562903266b667f45335ed240f2ac77db8fd37742",
+  "catalogRawSha256": "c02f7967e0689d4bc6b72340f356008384e5f47398ae042c3f1770764ac26ac8",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+    "auditedAtUtc": "2026-11-11T22:11:08.2983872+00:00",
     "refreshedFamilies": [
       "dotnet-10"
     ],
@@ -183,7 +183,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+    "repositoryRevision": "4e0cda04889c8129ca7a58c299fe618415a8b828",
     "sha256": "2280be99c685c27bf52daf88e5e220dd3d43a893bb64c5a45b17a3ef9fc95f37",
     "entries": [
       {
@@ -3403,17 +3403,17 @@
         "System.Text.Json"
       ],
       "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
-      "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+      "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence. FrontComposer Quality run 43106141453, epic9-live-acceptance job 130810032408, returned HTTP 200 and negotiated successfully before the circuit closed. A local standalone Counter Debug browser reproduced the missing method. After restoring Client/Common 10.0.15, the serialized Debug build passed with zero warnings/errors and Chromium observed data-fc-interactive=true without that exception. This is focused circuit-startup evidence, not full family or composed acceptance. Hosted run: https://github.com/Hexalith/Hexalith.FrontComposer/actions/runs/43106141453",
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [
         "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
-        "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
-        "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+        "auditedAtUtc": "2026-11-11T22:11:08.2983872+00:00",
+        "generatedFromRevision": "4e0cda04889c8129ca7a58c299fe618415a8b828",
+        "familySelectionSha256": "58a3aa1918488993ed6f7f6a0a3de57e90f84295f7d4eadc65b67fc6c1882a6a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+        "packageMetadataSha256": "48cd38ea7d7f9128fe9c491ac07140f6246188e79ecdf8d3d594837dfb3659cf",
         "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
       },
       "historicalContext": [
@@ -5372,6 +5372,78 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "packageIds": [
+            "Microsoft.AspNetCore.Authentication.Facebook",
+            "Microsoft.AspNetCore.Authentication.Google",
+            "Microsoft.AspNetCore.Authentication.JwtBearer",
+            "Microsoft.AspNetCore.Authentication.MicrosoftAccount",
+            "Microsoft.AspNetCore.Authentication.OpenIdConnect",
+            "Microsoft.AspNetCore.Authorization",
+            "Microsoft.AspNetCore.Components.Authorization",
+            "Microsoft.AspNetCore.Components.CustomElements",
+            "Microsoft.AspNetCore.Components.Web",
+            "Microsoft.AspNetCore.Components.WebAssembly",
+            "Microsoft.AspNetCore.Components.WebAssembly.Authentication",
+            "Microsoft.AspNetCore.Components.WebAssembly.DevServer",
+            "Microsoft.AspNetCore.Components.WebAssembly.Server",
+            "Microsoft.AspNetCore.DataProtection",
+            "Microsoft.AspNetCore.DataProtection.Abstractions",
+            "Microsoft.AspNetCore.Identity",
+            "Microsoft.AspNetCore.Mvc.Testing",
+            "Microsoft.AspNetCore.OpenApi",
+            "Microsoft.AspNetCore.SignalR.Client",
+            "Microsoft.AspNetCore.SignalR.Common",
+            "Microsoft.AspNetCore.SignalR.StackExchangeRedis",
+            "Microsoft.AspNetCore.TestHost",
+            "Microsoft.Extensions.Configuration",
+            "Microsoft.Extensions.Configuration.Abstractions",
+            "Microsoft.Extensions.Configuration.Binder",
+            "Microsoft.Extensions.Configuration.FileExtensions",
+            "Microsoft.Extensions.Configuration.UserSecrets",
+            "Microsoft.Extensions.DependencyInjection",
+            "Microsoft.Extensions.DependencyInjection.Abstractions",
+            "Microsoft.Extensions.Diagnostics.Abstractions",
+            "Microsoft.Extensions.Hosting",
+            "Microsoft.Extensions.Hosting.Abstractions",
+            "Microsoft.Extensions.Http",
+            "Microsoft.Extensions.Http.Resilience",
+            "Microsoft.Extensions.Identity.Http",
+            "Microsoft.Extensions.Identity.Stores",
+            "Microsoft.Extensions.Localization",
+            "Microsoft.Extensions.Localization.Abstractions",
+            "Microsoft.Extensions.Logging.Abstractions",
+            "Microsoft.Extensions.Options",
+            "Microsoft.Extensions.Options.ConfigurationExtensions",
+            "Microsoft.Extensions.Options.DataAnnotations",
+            "Microsoft.Extensions.ServiceDiscovery",
+            "Microsoft.Extensions.TimeProvider.Testing",
+            "System.Collections.Immutable",
+            "System.Text.Json"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [
+            "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj"
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -195409,6 +195481,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Authentication.Facebook",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -196311,6 +196419,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Authentication.Google",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -197219,6 +197363,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -198121,6 +198301,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Authentication.MicrosoftAccount",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -199029,6 +199245,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Authentication.OpenIdConnect",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -199931,6 +200183,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Authorization",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -200839,6 +201127,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Components.Authorization",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -201741,6 +202065,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Components.CustomElements",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -202649,6 +203009,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Components.Web",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -203551,6 +203947,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Components.WebAssembly",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -204459,6 +204891,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Components.WebAssembly.Authentication",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -205361,6 +205829,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Components.WebAssembly.DevServer",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -206269,6 +206773,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Components.WebAssembly.Server",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -207171,6 +207711,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.DataProtection",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -208079,6 +208655,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.DataProtection.Abstractions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -208981,6 +209593,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Identity",
+          "auditedVersion": "2.3.14",
+          "selectedVersion": "2.3.14",
+          "latestStable": "2.3.14",
+          "latestPrerelease": "2.2.0-preview3-35497",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.3.14, prerelease=2.2.0-preview3-35497",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "2.3.14",
+              "latestPrerelease": "2.2.0-preview3-35497",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -209889,6 +210537,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.Mvc.Testing",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -210794,22 +211478,58 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.OpenApi",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Microsoft.AspNetCore.SignalR.Client",
-      "auditedVersion": "11.0.0",
-      "selectedVersion": "11.0.0",
+      "auditedVersion": "10.0.15",
+      "selectedVersion": "10.0.15",
       "latestStable": "11.0.0",
       "latestPrerelease": "11.0.0-rc.3.26522.148",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
-      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+      "rationale": "Retain 10.0.15 for ASP.NET Core 10 Blazor hosts. SignalR 11 resolves its netstandard2.0 Common asset for net10.0; that asset lacks IInvocationBinder.GetTarget(ReadOnlySpan<byte>), so the retained server MessagePack worker throws MissingMethodException after the WebSocket handshake.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148; FrontComposer Quality run 43106141453, epic9-live-acceptance job 130810032408, returned HTTP 200 and negotiated successfully before the circuit closed. A local standalone Counter Debug browser reproduced the missing method. After restoring Client/Common 10.0.15, the serialized Debug build passed with zero warnings/errors and Chromium observed data-fc-interactive=true without that exception. This is focused circuit-startup evidence, not full family or composed acceptance. Hosted run: https://github.com/Hexalith/Hexalith.FrontComposer/actions/runs/43106141453",
+      "removalTrigger": "Advance the ASP.NET Core server and SignalR assets together, then verify the selected Common asset preserves the server binder ABI and real browser interactivity passes. SDK-only upgrades and restore/build success are insufficient.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
@@ -211699,22 +212419,58 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.SignalR.Client",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Microsoft.AspNetCore.SignalR.Common",
-      "auditedVersion": "11.0.0",
-      "selectedVersion": "11.0.0",
+      "auditedVersion": "10.0.15",
+      "selectedVersion": "10.0.15",
       "latestStable": "11.0.0",
       "latestPrerelease": "11.0.0-rc.3.26522.148",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
-      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+      "rationale": "Retain 10.0.15 for ASP.NET Core 10 Blazor hosts. SignalR 11 resolves its netstandard2.0 Common asset for net10.0; that asset lacks IInvocationBinder.GetTarget(ReadOnlySpan<byte>), so the retained server MessagePack worker throws MissingMethodException after the WebSocket handshake.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148; FrontComposer Quality run 43106141453, epic9-live-acceptance job 130810032408, returned HTTP 200 and negotiated successfully before the circuit closed. A local standalone Counter Debug browser reproduced the missing method. After restoring Client/Common 10.0.15, the serialized Debug build passed with zero warnings/errors and Chromium observed data-fc-interactive=true without that exception. This is focused circuit-startup evidence, not full family or composed acceptance. Hosted run: https://github.com/Hexalith/Hexalith.FrontComposer/actions/runs/43106141453",
+      "removalTrigger": "Advance the ASP.NET Core server and SignalR assets together, then verify the selected Common asset preserves the server binder ABI and real browser interactivity passes. SDK-only upgrades and restore/build success are insufficient.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
@@ -211973,6 +212729,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.SignalR.Common",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -212881,6 +213673,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.SignalR.StackExchangeRedis",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -213783,6 +214611,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.AspNetCore.TestHost",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -217944,6 +218808,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Configuration",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -218846,6 +219746,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Configuration.Abstractions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -219754,6 +220690,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Configuration.Binder",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -220656,6 +221628,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Configuration.FileExtensions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -221564,6 +222572,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Configuration.UserSecrets",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -222466,6 +223510,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.DependencyInjection",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -223374,6 +224454,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -224276,6 +225392,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Diagnostics.Abstractions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -225184,6 +226336,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Hosting",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -226086,6 +227274,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Hosting.Abstractions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -226994,6 +228218,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Http",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -227896,6 +229156,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Http.Resilience",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "9.0.0-preview.9.24507.7",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=9.0.0-preview.9.24507.7",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "9.0.0-preview.9.24507.7",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -228804,6 +230100,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Identity.Http",
+          "auditedVersion": "10.0.9",
+          "selectedVersion": "10.0.9",
+          "latestStable": null,
+          "latestPrerelease": null,
+          "listingState": "unresolved",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.9 because its configured-source state is unresolved; incomplete source results must not cause a downgrade.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=unresolved, stable=, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "unresolved",
+              "latestStable": null,
+              "latestPrerelease": null,
+              "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.identity.http/index.json failed after 3 attempts. Response status code does not indicate success: 404 (The specified blob does not exist.)."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -229706,6 +231038,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Identity.Stores",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -230614,6 +231982,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Localization",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -231516,6 +232920,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Localization.Abstractions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -232424,6 +233864,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Logging.Abstractions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -233326,6 +234802,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Options",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -234234,6 +235746,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Options.ConfigurationExtensions",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -235136,6 +236684,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.Options.DataAnnotations",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -236044,6 +237628,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.ServiceDiscovery",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -236946,6 +238566,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "Microsoft.Extensions.TimeProvider.Testing",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "9.0.0-preview.9.24507.7",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=9.0.0-preview.9.24507.7",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "9.0.0-preview.9.24507.7",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -277907,6 +279563,42 @@
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "System.Collections.Immutable",
+          "auditedVersion": "10.0.15",
+          "selectedVersion": "10.0.15",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Retain 10.0.15 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -281323,6 +283015,42 @@
             "familySelectionSha256": "05b094795acb87a5dff7cd9f638f7ce905612bb704f55ff66589552b3ceb7494",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ae8b8bd4dbe842f1a806f4d4a03fbc5c8eb062793fc19f288ad5c37813d74879",
+            "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+          "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+          "id": "System.Text.Json",
+          "auditedVersion": "11.0.0",
+          "selectedVersion": "11.0.0",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "11.0.0-rc.3.26522.148",
+          "listingState": "listed",
+          "family": "dotnet-10",
+          "disposition": "retained",
+          "rollbackGroup": "dotnet-10",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=11.0.0-rc.3.26522.148",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "11.0.0-rc.3.26522.148",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T21:44:54.5113414+00:00",
+            "generatedFromRevision": "ab69fa1fb16cac05bd84adfedd5ab69a9059edd8",
+            "familySelectionSha256": "0d912c909f8451415bb77b274f8a19400bb5721e2e8d72a0b6bd4857d7873cc1",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a300857d1b304454b19f2bceab64994d09efcb30cca6c53725b2765ee5da7668",
             "consumerEvidenceSha256": "c06bf09b72165010b032556489975812cd52fe4d8bda4c11c818379a08b9ce34"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
