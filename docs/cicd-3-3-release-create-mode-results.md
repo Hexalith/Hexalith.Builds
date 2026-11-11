@@ -12,7 +12,8 @@ Complete-mode recovery and the publisher remain downstream work.
 ## Executed local controls
 
 `python3 -m unittest discover -s Github/lib/tests -p 'test_release_*.py' -v`
-passes **122 tests** on runner Python 3.14.4. The following mapping audits every
+passed **122 tests** on runner Python 3.14.4 before review hardening; the
+post-review count is recorded below. The following mapping audits every
 intent-matrix row against executed tests. SDK controls use real restore/build/pack
 and container publication; API controls use disposable Git histories and local
 HTTP/HTTPS servers. They are deterministic controls, not hosted observations.
@@ -75,8 +76,9 @@ sources retain their original bytes.
 
 Local logs for this workspace are under `/tmp/cicd-3-3/`: `focused.log`,
 `python312.log`, `runner.log`, `runtime-lint.log`, `runtime-api.log`,
-`frozen-files.json` and exact-message `*-commitlint.log` evidence. Broad-suite and
-hosted observations are recorded below after those checks finish.
+`frozen-files.json` and exact-message `*-commitlint.log` evidence. These local
+logs are not retained in the repository. Broad-suite and hosted observations are
+recorded below.
 
 ## Hosted probe scope
 
@@ -244,3 +246,40 @@ A follow-up independent review is recommended because this pass repaired a
 high audit bypass and added archive/parser and SDK metadata handling. All known
 findings have executed regression controls and post-fix hosted coverage; the
 new repair code itself has not yet had a separate independent review pass.
+
+## Follow-up review (2026-11-11)
+
+A separate four-lens review covered the story-scoped range
+`4dbf9b80ea6875c8f66a9f6cb5861f4fbba2d0a1..9b34565cb746d6a9c978d8dcf436830a31ceaefc`,
+excluding the merged lifecycle work. It found no in-scope high defect.
+Nine patches add executed controls and direct corrections:
+
+- `Github/lib/tests/actions_expressions.py` is a test-only GitHub expression
+  evaluator. It runs the real `release.yml` gates, `with:` handoffs, job
+  outputs, reporter `env:`, upload condition and workflow outputs for
+  no-version, publisher handoff, build failure, disabled, complete-mode and
+  CodeQL-failure states, then runs the real reporter. Mutating the
+  release-rules, version, no-op or notes mapping fails these controls.
+- The version, build and draft composites now run through their declared
+  inputs, step `env:`, `if:`, external-action `with:` and output expressions.
+  No test presets `RELEASE_*` variables.
+- Real SDK package and dual-platform container payloads are zipped as the
+  upload stores them and read through the draft's `artifact_inventory`.
+  A multi-target container project is rejected.
+- Draft package inspection selects only the root nuspec, as build does.
+  Oversized `Content-Length` values are reported as size violations.
+  Raw non-UTF-8 legacy commit messages are analyzed instead of aborting
+  version computation.
+
+Verification after these patches:
+
+- The focused release suite passes 143 tests.
+- Both locked full Python commands pass 20/20 groups, including 252 library
+  tests each, on Python 3.12.13 and runner Python 3.13.13.
+- Pinned online lint reports 12 exact frozen findings and zero new findings.
+
+Deferred, not this story's control: module-file audit waivers
+(`Directory.Build.targets` `NoWarn` and `PackageReference` `NoWarn` metadata)
+still pass the release build. SPEC and AD-8 assign their rejection to the
+story 5-2 guard audit lint. `NuGetAuditSuppress` in Builds `Props/` remains
+the sanctioned waiver.

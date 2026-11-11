@@ -15,6 +15,9 @@ import unittest
 from jsonschema import Draft202012Validator
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from actions_expressions import Evaluator, parse_outputs, run_composite
+
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "Github/lib/release_outcome.py"
@@ -346,6 +349,139 @@ class OutcomeAdapterTests(unittest.TestCase):
         self.assertEqual("disabled", self.document()["outcome"])
         self.assertEqual(1, self.adapter(RELEASE_ENABLED="true").returncode)
         self.assertEqual("failed", self.document()["outcome"])
+
+
+class ReleaseWorkflowGraphTests(unittest.TestCase):
+    """Evaluate the real reusable graph's gates and handoffs, then run the real reporter.
+
+    Job results come from controlled stage doubles; the `if:`, `with:`, job
+    output, reporter `env:` and upload expressions are the workflow's own.
+    """
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="release-graph-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        (self.root / "runner-temp").mkdir()
+        self.workflow = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
+
+    def run_graph(self, *, resolve=None, stages=None, inputs=None, codeql="skipped", hook="skipped"):
+        stages = stages or {}
+        trigger = self.workflow.get("on", self.workflow.get(True))["workflow_call"]
+        values = {name: str(entry.get("default", "")) for name, entry in trigger["inputs"].items()}
+        values.update(inputs or {})
+        needs = {"resolve": {"result": "success", "outputs": {
+                     "sha": SELECTED_SHA, "mode": "create", "enabled": "true", "codeql": "[]",
+                     "nightly-hook": "false", "config-valid": "true", **(resolve or {})}},
+                 "codeql": {"result": codeql, "outputs": {}},
+                 "nightly-hook": {"result": hook, "outputs": {}}}
+        base = {"inputs": values, "github": {"sha": DISPATCH_SHA, "token": "token-marker"},
+                "runner": {"temp": str(self.root / "runner-temp")}}
+        executed = {}
+        for name in ("version", "build", "draft"):
+            job = self.workflow["jobs"][name]
+            evaluator = Evaluator(dict(base, needs={key: needs[key] for key in job["needs"]}),
+                                  status={"success": all(needs[key]["result"] == "success" for key in job["needs"])})
+            if not evaluator.condition(job["if"]):
+                needs[name] = {"result": "skipped", "outputs": {}}
+                continue
+            step, = job["steps"]
+            executed[name] = {key: evaluator.template(value) for key, value in step.get("with", {}).items()}
+            if name not in stages:
+                self.fail(f"{name} must not run in this scenario")
+            result, step_outputs = stages[name](executed[name])
+            produced = Evaluator({"steps": {step["id"]: {"outputs": step_outputs}}})
+            needs[name] = {"result": result, "outputs": {key: produced.template(value)
+                                                         for key, value in job.get("outputs", {}).items()}}
+        job = self.workflow["jobs"]["outcome"]
+        evaluator = Evaluator(dict(base, needs={key: needs[key] for key in job["needs"]}))
+        self.assertTrue(evaluator.condition(job["if"]))
+        decision, upload = job["steps"]
+        environment = {key: evaluator.template(value) for key, value in decision["env"].items()}
+        output = self.root / "github-output"
+        output.write_text("")
+        process_environment = dict(os.environ, **environment, GITHUB_OUTPUT=str(output))
+        process_environment["PATH"] = str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
+        recorded, processes = run_composite(ROOT / decision["uses"].removeprefix("$/"), {}, process_environment,
+                                            cwd=self.root, runner_temp=self.root / "runner-temp")
+        recorded = recorded or parse_outputs(output.read_text())
+        steps = {decision["id"]: {"outputs": recorded}}
+        uploaded = Evaluator({"steps": steps}).condition(upload["if"])
+        jobs = {name: {"outputs": needs[name]["outputs"]} for name in ("resolve", "draft")}
+        jobs["outcome"] = {"outputs": {key: Evaluator({"steps": steps}).template(value)
+                                       for key, value in job["outputs"].items()}}
+        published = {key: Evaluator({"jobs": jobs}).template(entry["value"])
+                     for key, entry in trigger["outputs"].items()}
+        return {"executed": executed, "environment": environment, "process": processes[-1],
+                "recorded": recorded, "uploaded": uploaded, "outputs": published}
+
+    def document(self):
+        document = json.loads((self.root / "runner-temp/hexalith-release-outcome/outcome.json").read_text())
+        Draft202012Validator(SCHEMA).validate(document)
+        return document
+
+    def test_no_version_skips_build_and_draft_and_reports_nothing(self):
+        graph = self.run_graph(inputs={"release-rules": "builds"}, stages={"version": lambda values: (
+            "success", {"version": "", "notes": "", "last-tag": "v1.9.0", "no-version": "true"})})
+        self.assertEqual({"version": {"sha": SELECTED_SHA, "release-rules": "builds", "module-root": ""}},
+                         graph["executed"])
+        self.assertEqual("no-version", graph["environment"]["RELEASE_NOOP_REASON"])
+        self.assertEqual("false", graph["environment"]["RELEASE_PUBLISH"])
+        self.assertEqual(0, graph["process"].returncode, graph["process"].stdout + graph["process"].stderr)
+        self.assertEqual("nothing", self.document()["outcome"])
+        self.assertTrue(graph["uploaded"])
+        self.assertEqual("false", graph["outputs"]["publish"])
+
+    def test_default_rules_and_every_handoff_reach_the_publisher_only_after_the_draft(self):
+        notes = "## 2.0.0 (2026-11-11)\n\n### Bug Fixes\n\n* **release:** multiline notes"
+        digest = "sha256:" + "c" * 64
+        draft_outputs = handoff("2.0.0")["draft"]["outputs"]
+        def build(values):
+            self.assertEqual({"sha": SELECTED_SHA, "version": "2.0.0", "module-root": ""}, values)
+            return "success", {"artifact-id": "123", "artifact-digest": digest}
+        def draft(values):
+            self.assertEqual({"sha": SELECTED_SHA, "version": "2.0.0", "notes": notes, "artifact-id": "123",
+                              "artifact-digest": digest}, values)
+            return "success", draft_outputs
+        graph = self.run_graph(stages={"version": lambda values: (
+            "success", {"version": "2.0.0", "notes": notes, "last-tag": "v1.9.0", "no-version": "false"}),
+            "build": build, "draft": draft})
+        self.assertEqual("module", graph["executed"]["version"]["release-rules"])
+        self.assertEqual({"RELEASE_PUBLISH": "true", "RELEASE_VERSION": "2.0.0", "RELEASE_NOOP_REASON": ""},
+                         {key: graph["environment"][key] for key in ("RELEASE_PUBLISH", "RELEASE_VERSION",
+                                                                     "RELEASE_NOOP_REASON")})
+        self.assertEqual(0, graph["process"].returncode, graph["process"].stdout + graph["process"].stderr)
+        self.assertEqual("true", graph["recorded"]["publish"])
+        self.assertFalse(graph["uploaded"])
+        expected = {key: draft_outputs[key] for key in ("version", "last-tag", "draft-id", "artifact-id",
+                                                        "artifact-digest", "artifact-run")}
+        self.assertEqual(expected | {"sha": SELECTED_SHA, "mode": "create", "publish": "true"}, graph["outputs"])
+
+    def test_build_failure_retains_the_version_and_never_authorizes_the_publisher(self):
+        graph = self.run_graph(stages={"version": lambda values: (
+            "success", {"version": "2.0.0", "notes": "notes", "last-tag": "v1.9.0", "no-version": "false"}),
+            "build": lambda values: ("failure", {})})
+        self.assertEqual({"version", "build"}, set(graph["executed"]))
+        self.assertEqual("2.0.0", graph["environment"]["RELEASE_VERSION"])
+        self.assertEqual("false", graph["environment"]["RELEASE_PUBLISH"])
+        self.assertEqual(1, graph["process"].returncode)
+        self.assertEqual(("failed", "2.0.0"), (self.document()["outcome"], self.document()["version"]))
+        self.assertEqual("false", graph["outputs"]["publish"])
+        self.assertTrue(graph["uploaded"])
+
+    def test_disabled_complete_mode_and_gate_failures_skip_every_create_stage(self):
+        cases = (({"enabled": "false"}, "skipped", 0, "disabled", ""),
+                 ({"mode": "complete", "version": "2.0.0"}, "skipped", 1, "failed",
+                  "release publication stages are not installed"),
+                 ({"codeql": '["csharp"]'}, "failure", 1, "failed", "codeql"))
+        for resolve, codeql, code, outcome, diagnostic in cases:
+            with self.subTest(resolve=resolve, codeql=codeql):
+                graph = self.run_graph(resolve=resolve, codeql=codeql)
+                self.assertEqual({}, graph["executed"])
+                self.assertEqual(code, graph["process"].returncode, graph["process"].stderr)
+                self.assertIn(diagnostic, graph["process"].stderr)
+                self.assertEqual(outcome, self.document()["outcome"])
+                self.assertEqual("false", graph["outputs"]["publish"])
 
 
 if __name__ == "__main__":

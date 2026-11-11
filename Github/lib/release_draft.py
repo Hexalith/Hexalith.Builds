@@ -95,10 +95,11 @@ def limited_read(response, limit):
     length = response.headers.get("Content-Length")
     if length is not None:
         try:
-            if int(length) < 0 or int(length) > limit:
-                raise ReleaseError("release response exceeds size limit")
+            size = int(length)
         except ValueError as error:
             raise ReleaseError("invalid release response length") from error
+        if size < 0 or size > limit:
+            raise ReleaseError("release response exceeds size limit")
     data = response.read(limit + 1)
     if len(data) > limit:
         raise ReleaseError("release response exceeds size limit")
@@ -214,8 +215,9 @@ def package_identity(data, *, package_id, version, sha):
             names = [entry.filename for entry in archive.infolist()]
             if len(set(names)) != len(names) or any(not safe_member(name.rstrip("/")) for name in names):
                 raise ReleaseError("unsafe or duplicate package member")
-            specs = [entry for entry in archive.infolist() if entry.filename.endswith(".nuspec")]
-            if len(specs) != 1 or "/" in specs[0].filename or specs[0].file_size > MAX_MANIFEST:
+            specs = [entry for entry in archive.infolist()
+                     if entry.filename.endswith(".nuspec") and "/" not in entry.filename]
+            if len(specs) != 1 or specs[0].file_size > MAX_MANIFEST:
                 raise ReleaseError("package must contain one bounded root nuspec")
             xml = archive.read(specs[0])
         root = ET.fromstring(xml, parser=ET.XMLParser(target=NoDeclarations()))

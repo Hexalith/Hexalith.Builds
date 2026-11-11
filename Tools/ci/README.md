@@ -438,11 +438,13 @@ closed manifest format is:
   "sha": "<full frozen SHA>",
   "version": "2.4.0",
   "packages": [{"id": "Package.Id", "path": "packages/Package.Id.2.4.0.nupkg"}],
-  "containers": [{"name": "image-name", "path": "containers/image-name.tar"}]
+  "containers": [{"name": "image-name", "path": "containers/container-1.tar"}]
 }
 ```
 
-Both lists may be empty. `solution: none` uploads only the manifest and runs
+Container archives are named `container-<n>.tar` by the project's position in
+the solution, so distinct image names never collide as filenames; the
+manifest's `name` carries the image identity. Both lists may be empty. `solution: none` uploads only the manifest and runs
 no SDK or submodule command. Draft authenticates artifact ID, name, run, expiry
 and API digest, verifies downloaded bytes, and derives inventory from the
 manifest and actual package/OCI metadata as data without extraction. It
