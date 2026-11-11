@@ -1,0 +1,22 @@
+{
+  "baselineRevision": "891886ddc60a9924d053bb74bf6bcc73e101b2ce",
+  "comparison": "canonical Git blob bytes using tracked attributes, preserving CRLF checkout rules",
+  "scope": "all baseline-tracked Github/, Tools/, .github/workflows/ plus root npm/release/commitlint configuration",
+  "baselineFiles": 215,
+  "changedExistingFiles": [
+    "Github/lib/release_draft.py",
+    "Github/lib/tests/actions_expressions.py",
+    "Tools/ci/README.md"
+  ],
+  "permittedNewPipelineFactoringAndTestDocs": [
+    "Github/lib/release_draft.py",
+    "Github/lib/tests/actions_expressions.py",
+    "Tools/ci/README.md"
+  ],
+  "preservedOtherBaselineFiles": 212,
+  "productionCallersUnchanged": true,
+  "toolPinsUnchanged": true,
+  "legacyRuntimeUnchanged": true,
+  "temporaryWorkflowAbsent": true,
+  "temporaryHelperAbsent": true
+}

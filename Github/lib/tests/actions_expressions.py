@@ -221,7 +221,8 @@ def run_composite(action, inputs, environment, *, cwd, runner_temp, external=Non
     External `uses:` steps are delegated to `external(reference, with_values)`,
     which returns that step's outputs. Run steps append to the caller's
     GITHUB_OUTPUT, and only each step's own records become its outputs.
-    Returns (composite outputs or None after a failed step, processes).
+    Always-run steps still execute after failures. Returns (composite outputs
+    or None when any step failed, processes).
     """
     output_file = environment.get("GITHUB_OUTPUT")
     document = yaml.safe_load((action / "action.yml").read_text())

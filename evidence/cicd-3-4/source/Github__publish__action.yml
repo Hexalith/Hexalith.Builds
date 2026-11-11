@@ -1,0 +1,93 @@
+name: Publish authenticated original release
+description: Publish original packages and complete OCI graphs, then finalize the marked GitHub draft with tag creation last.
+inputs:
+  publish:
+    description: Validated authorization from the reusable release; must be true.
+    required: true
+  version:
+    description: Stable version without v prefix.
+    required: true
+  sha:
+    description: Full original built commit SHA.
+    required: true
+  last-tag:
+    description: Captured last reachable stable tag, or empty.
+    required: true
+  draft-id:
+    description: Bot authored marked draft identity.
+    required: true
+  artifact-id:
+    description: Original release artifact identity.
+    required: true
+  artifact-digest:
+    description: Original artifact SHA-256 with sha256 prefix.
+    required: true
+  artifact-run:
+    description: Original producing workflow run identity.
+    required: true
+  nuget-user:
+    description: nuget.org user with a caller workflow Trusted Publishing policy.
+    required: true
+  registry-username:
+    description: Scoped registry push username for this repository's images.
+    required: true
+  registry-password:
+    description: Scoped registry push password for this repository's images.
+    required: true
+outputs:
+  outcome:
+    description: Published, ready or failed; failures retain the job failure.
+    value: ${{ steps.outcome.outputs.outcome }}
+runs:
+  using: composite
+  steps:
+    - name: Authenticate original artifact and preflight every destination
+      id: prepare
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        RELEASE_PUBLISH: ${{ inputs.publish }}
+        RELEASE_VERSION: ${{ inputs.version }}
+        RELEASE_SHA: ${{ inputs.sha }}
+        RELEASE_LAST_TAG: ${{ inputs.last-tag }}
+        RELEASE_DRAFT_ID: ${{ inputs.draft-id }}
+        RELEASE_ARTIFACT_ID: ${{ inputs.artifact-id }}
+        RELEASE_ARTIFACT_DIGEST: ${{ inputs.artifact-digest }}
+        RELEASE_ARTIFACT_RUN: ${{ inputs.artifact-run }}
+        REGISTRY_USERNAME: ${{ inputs.registry-username }}
+        REGISTRY_PASSWORD: ${{ inputs.registry-password }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" prepare
+    - name: Exchange caller OIDC identity for a temporary NuGet key
+      id: login
+      if: steps.prepare.outputs.packages == 'true'
+      uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+      with:
+        user: ${{ inputs.nuget-user }}
+    - name: Publish original packages and images, then finalize GitHub
+      id: publish
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        RELEASE_STATE: ${{ steps.prepare.outputs.state }}
+        NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        REGISTRY_USERNAME: ${{ inputs.registry-username }}
+        REGISTRY_PASSWORD: ${{ inputs.registry-password }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" publish
+    - name: Write the sole publisher outcome and remove private payload
+      id: outcome
+      if: always()
+      shell: bash
+      env:
+        RELEASE_STATE: ${{ steps.prepare.outputs.state }}
+        RELEASE_PREPARE_RESULT: ${{ steps.prepare.outcome }}
+        RELEASE_LOGIN_RESULT: ${{ steps.login.outcome }}
+        RELEASE_PUBLISH_RESULT: ${{ steps.publish.outcome }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_publish.py" outcome
+    - name: Upload the sole release outcome
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: hexalith-release-outcome
+        path: ${{ steps.outcome.outputs.path }}
+        if-no-files-found: error
+        overwrite: true

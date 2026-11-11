@@ -402,7 +402,7 @@ stdlib and the shared test corpus also uses the independent draft-2020-12
 validator. Failed, cancelled, missing or unexpected job results dominate
 successful disabled/no-op decisions. Explicit successful no-version produces
 `nothing`. A validated successful draft hands publication and outcome ownership
-to the future publisher; the
+to the publisher; the
 reusable reporter then writes and uploads nothing. The publisher remains the
 sole writer for published, ready and publishing-failure outcomes.
 
@@ -475,13 +475,14 @@ inject reserved lines. The reusable workflow exposes validated `publish`,
 required jobs authorizes `publish=true`. Draft creation does not report
 `published` or `ready` and creates no Git ref. Complete mode skips version/build
 and remains fail-closed with `release publication stages are not installed`;
-artifact recovery/deletion and publication remain downstream work.
+artifact selection/recovery/deletion and caller integration remain downstream work.
 
 Production callers remain on their existing workflows. `delivered-sha` is the
 integration slot for story 5-1;
 its presence currently provides no drift protection. The test-only
 `module-root` is guarded to the Builds sample and excluded from the public
-module API. No publisher secret, OIDC or attestation permission is used.
+module API. Reusable build/draft jobs use no publisher secret, OIDC or
+attestation permission; the separate caller publisher uses the permissions above.
 
 CodeQL and nightly-hook run after resolve failures but honor run
 cancellation; only the reporter is unconditionally scheduled. The security

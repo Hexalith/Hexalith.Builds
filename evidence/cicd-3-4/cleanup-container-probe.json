@@ -1,0 +1,57 @@
+{
+  "releaseId": 441513641,
+  "releaseDeleted": true,
+  "tag": "v4.48.0",
+  "tagDeleted": true,
+  "rulesetId": 26812219,
+  "temporaryExclusion": "refs/tags/v4.48.0",
+  "rulesetRestoredExactly": true,
+  "rulesetBefore": {
+    "name": "v tags",
+    "target": "tag",
+    "enforcement": "active",
+    "bypass_actors": [],
+    "conditions": {
+      "ref_name": {
+        "exclude": [],
+        "include": [
+          "refs/tags/v*"
+        ]
+      }
+    },
+    "rules": [
+      {
+        "type": "update"
+      },
+      {
+        "type": "deletion"
+      }
+    ]
+  },
+  "rulesetAfter": {
+    "name": "v tags",
+    "target": "tag",
+    "enforcement": "active",
+    "bypass_actors": [],
+    "conditions": {
+      "ref_name": {
+        "exclude": [],
+        "include": [
+          "refs/tags/v*"
+        ]
+      }
+    },
+    "rules": [
+      {
+        "type": "update"
+      },
+      {
+        "type": "deletion"
+      }
+    ]
+  },
+  "registryDestination": "registry.hexalith.com/cicd-publish-spike-3-1:4.48.0",
+  "registryCleanup": "retained as isolated evidence; existing scoped principal has no delete grant",
+  "profile": "/home/administrator/.config/gh",
+  "tokenOverridePresent": false
+}

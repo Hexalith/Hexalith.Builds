@@ -1,0 +1,48 @@
+{
+  "implementationRevision": "9517bca108b07750e31b1af6df6cfde2bd691bc9",
+  "probeRevision": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+  "files": [
+    {
+      "path": "Github/lib/release_publish.py",
+      "revision": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+      "gitBlob": "109cb3307304479cf4c83c4dc33f2cfca0e55ab5",
+      "sha256": "7db9195b47975a954dac5863a5a0d12f4a63e9735b35b56d107323d0dcc72888",
+      "retained": "evidence/cicd-3-4/source/Github__lib__release_publish.py"
+    },
+    {
+      "path": "Github/lib/oci_publish.py",
+      "revision": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+      "gitBlob": "e82f7d6869c0965b84397050605842b8ae8c4110",
+      "sha256": "af0632e886100b4e79974679cb27e13bfd9347027592285837676ad180d92a99",
+      "retained": "evidence/cicd-3-4/source/Github__lib__oci_publish.py"
+    },
+    {
+      "path": "Github/lib/release_draft.py",
+      "revision": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+      "gitBlob": "c7d0654d95fb76823b0ebe76d77e1846ace1e2ca",
+      "sha256": "e0c0c72081e790f43a2ab11fea2836edc20750a4897af9a4937c7640f10eb358",
+      "retained": "evidence/cicd-3-4/source/Github__lib__release_draft.py"
+    },
+    {
+      "path": "Github/publish/action.yml",
+      "revision": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+      "gitBlob": "2409e483d50373c08889c5b1d4c9898c192cc8ea",
+      "sha256": "0c9a4cc4d166d85b7b43fd0d38f4c1c5eeb10775c9f8d199be74633bf07b5670",
+      "retained": "evidence/cicd-3-4/source/Github__publish__action.yml"
+    },
+    {
+      "path": "Tools/ci/probe_release_publish.py",
+      "revision": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+      "gitBlob": "2b14c2ab66178c5a793045f7745a43fabbb273df",
+      "sha256": "e6be70dad52faac696661524d6a0bc3c0a8106fac5e2fe25247e3e37676016c9",
+      "retained": "evidence/cicd-3-4/source/Tools__ci__probe_release_publish.py"
+    },
+    {
+      "path": ".github/workflows/release-publish-probe.yml",
+      "revision": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+      "gitBlob": "fb7c4c8f82ccfb8f55047382ed6991e9ea6cff05",
+      "sha256": "73fb70967d9b38c58e6293c29ecf9cb215ead89b12270c6e48d66a75159ff992",
+      "retained": "evidence/cicd-3-4/source/.github__workflows__release-publish-probe.yml"
+    }
+  ]
+}

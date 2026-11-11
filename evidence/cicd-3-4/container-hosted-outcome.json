@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "id": 13844679235,
+    "node_id": "MDg6QXJ0aWZhY3QxMzg0NDY3OTIzNQ==",
+    "name": "hexalith-release-outcome",
+    "size_in_bytes": 252,
+    "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13844679235",
+    "archive_download_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13844679235/zip",
+    "expired": false,
+    "digest": "sha256:27604016e783060139f46484d0919c2b8671d49c69425d7deff9ab715e44048d",
+    "created_at": "2026-11-11T10:01:56Z",
+    "updated_at": "2026-11-11T10:01:56Z",
+    "expires_at": "2027-02-09T09:59:54Z",
+    "workflow_run": {
+      "id": 42999841348,
+      "repository_id": 952945989,
+      "head_repository_id": 952945989,
+      "head_branch": "main",
+      "head_sha": "ee30004f574cb0925d665cffa196f6b0afb79db4"
+    }
+  },
+  "outcome": {
+    "outcome": "published",
+    "schema": "hexalith.release-outcome.v1",
+    "sha": "ee30004f574cb0925d665cffa196f6b0afb79db4",
+    "version": "4.48.0"
+  }
+}
