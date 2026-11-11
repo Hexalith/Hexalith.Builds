@@ -190,12 +190,18 @@ public sealed class DirectCatalogDeclarationTests
         string declarations = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "Declarations");
         _ = Directory.CreateDirectory(declarations);
         JsonObject provenance = [];
-        foreach ((string owner, string version) in new[] { ("eventstore", sdkVersion), ("tenants", "7.0.6"), ("memories", "3.0.26") })
+        foreach ((string owner, string version) in new[] { ("eventstore", sdkVersion), ("tenants", "7.0.7"), ("memories", "3.0.26") })
         {
             byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", owner + "-" + version + ".json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             string key = owner + "/" + version;
             string hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
             hash.ShouldBe(CompositionDeclarationOptions.DefaultReleaseSnapshotHashes[key]);
+            if (owner == "tenants")
+            {
+                hash.ShouldBe("1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522");
+                CompositionDeclarationOptions.DefaultReleaseCommits[key].ShouldBe("bcee4b4dbd886b7b718843cfb80419a92d33de15");
+            }
+
             if (owner == "memories")
             {
                 hash.ShouldBe("56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840");
