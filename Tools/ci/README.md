@@ -194,6 +194,10 @@ The solution output is workspace-relative, including a test-only `module-root`.
 `solution: none` validates configuration and invokes no SDK or submodule work.
 
 The SDK is selected by the module's `global.json`, including `rollForward`.
+The reusable workflow's optional `additional-sdk-version` installs another SDK
+alongside that selection. Builds uses .NET SDK 10.0.404 to supply the .NET 10
+reference packs for its isolated offline NuGet tests while `global.json` keeps
+the executing SDK on 11.0.100. No extra SDK is installed when the input is empty.
 Restore runs once; the Release build enables analyzers, treats warnings as
 errors and uses package mode with audit off. Every MSBuild CLI invocation uses
 `-noAutoResponse` and the trusted `NuGet.ci.Config` beside the executing Builds

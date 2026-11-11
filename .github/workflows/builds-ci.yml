@@ -46,6 +46,9 @@ jobs:
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
+    with:
+      # SDK 11 remains selected by global.json; SDK 10 supplies offline net10.0 reference packs.
+      additional-sdk-version: '10.0.404'
     secrets:
       registry-pull-username: ${{ secrets.HEXALITH_REGISTRY_PULL_USERNAME }}
       registry-pull-password: ${{ secrets.HEXALITH_REGISTRY_PULL_PASSWORD }}

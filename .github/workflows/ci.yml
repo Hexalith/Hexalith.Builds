@@ -11,6 +11,10 @@ on:
         description: Test-only expected-state fixture directory in Builds.
         type: string
         default: ''
+      additional-sdk-version:
+        description: Optional SDK supplying targeting packs for offline tests of older frameworks.
+        type: string
+        default: ''
     secrets:
       registry-pull-username:
         description: Dedicated pull-only registry identity, required only with registry enabled.
@@ -69,6 +73,7 @@ jobs:
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: ${{ steps.prepare.outputs.global-json }}
+          dotnet-version: ${{ inputs.additional-sdk-version }}
 
       - name: Stage 2 restore and Release build
         if: steps.prepare.outputs.solution != 'none'
