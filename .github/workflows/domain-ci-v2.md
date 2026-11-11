@@ -109,9 +109,12 @@ second runner signal) and kills the tool after 8.5 s, so its own stop work fits 
 grace. After a cancellation the helper performs no exact down itself; that belongs to
 the `always()` finalizer.
 
-One limit is outside the helper's control: the runner's own process-tree kill after
-its grace can reach composed processes before the tool has recorded withdrawal. In
-that case the `always()` finalizer's exact down still withdraws active attachments
+The tool handles only SIGINT cooperatively. A SIGTERM or kill ends it at once, and a CI
+AppHost then stops on losing its stdin. So a tool that has not recorded withdrawal by
+the helper's SIGTERM (6 s, or a second runner signal), its 8.5-second kill or the
+120-second timeout kill is ended before withdrawal, and composed processes can stop
+first. The runner's own process-tree kill after its grace can do the same. In every
+such case the `always()` finalizer's exact down still withdraws active attachments
 before it stops whatever remains.
 
 The helper derives its timeout when the integration step starts. It uses the step's
@@ -120,9 +123,11 @@ recorded start and `build-timeout-minutes`. It reserves every bounded wait of it
 timeout path: tool verification, the 120-second stop plus the post-kill wait, session
 termination, the finalize-time verification, the exact down and the 4-minute
 finalizer step. If the remaining time cannot hold the minimum timeout, it refuses
-before allocation. A timeout is not a cancellation: the helper stops the tool,
-finalizes exactly with an empty job status and returns 124. The budget constants
-live in the helper, and the workflow validator derives its checks from them.
+before allocation. A timeout is not a job cancellation: the helper interrupts the
+tool, finalizes exactly with an empty job status and returns 124, and `execution.json`
+records `timedOut`. The tool sees that interrupt as an owner cancellation, so it
+records the owner `cancelled` and ends active holds as `ci-job-cancelled`. The budget
+constants live in the helper, and the workflow validator derives its checks from them.
 
 After normal completion or a timeout the helper runs exact `down --run-id` itself,
 and an independent `always()` step retries it after success, failure, cancellation
@@ -258,7 +263,11 @@ runner does. In them:
 - a live orphan cannot hold the provisioning lock;
 - escalation works against a tool that ignores interrupts;
 - a reused or other-boot session is never signalled;
-- a timeout is finalized as a timeout.
+- a timeout is finalized as a timeout;
+- a helper timeout interrupts only the tool, so withdrawal precedes every composed
+  stop, and a tool that ignores the interrupt is killed;
+- a receipt that a muxer-orphaned tool writes while being stopped leads to the exact
+  down;
+- a timed-out down never waits on a descendant that left its process group.
 
-Hosted runner observations
-are still required before Story 2.8 can complete.
+Hosted runner observations are still required before Story 2.8 can complete.
