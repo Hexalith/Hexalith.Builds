@@ -1,6 +1,7 @@
 """Exercise the shared logging generator selection through real MSBuild evaluation."""
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -32,6 +33,7 @@ class LoggingGeneratorSelectionTests(unittest.TestCase):
                 ["dotnet", "msbuild", str(project), "-nologo", "-noAutoResponse",
                  "-t:ResolveReferences", "-getItem:Analyzer"],
                 cwd=catalog.parents[1], capture_output=True, text=True, timeout=60,
+                env={**os.environ, "DOTNET_CLI_USE_MSBUILD_SERVER": "0"},
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             return {entry["Identity"] for entry in json.loads(result.stdout)["Items"]["Analyzer"]}
