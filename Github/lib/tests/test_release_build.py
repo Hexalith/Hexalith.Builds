@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextlib import redirect_stderr
+import hashlib
 import io
 import json
 import os
@@ -13,12 +14,16 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+import zipfile
 
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import release_build as build
 from ci_pipeline import PipelineError, prepare_config, evaluated_properties
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from actions_expressions import run_composite
+import release_draft
 
 ROOT = Path(__file__).resolve().parents[3]
 SHA = "a" * 40
@@ -34,6 +39,18 @@ def fixture(root, solution="PackageOnly.slnx"):
                   hooks=[], jobs={}, submodules=[], dapr=False, browsers=False, registry=False)
     (root / ".github/hexalith-ci.json").write_text(json.dumps(config))
     return prepare_config(root, repository=REPOSITORY)
+
+
+def drafted_inventory(payload):
+    """Zip the real payload as the upload does (stored) and read it with the draft parser."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as archive:
+        for path in sorted(payload.rglob("*")):
+            if path.is_file():
+                archive.write(path, path.relative_to(payload).as_posix())
+    data = buffer.getvalue()
+    return release_draft.artifact_inventory(data, sha=SHA, version=VERSION, repository=REPOSITORY,
+                                            digest="sha256:" + hashlib.sha256(data).hexdigest())
 
 
 class BuildTests(unittest.TestCase):
@@ -53,6 +70,7 @@ class BuildTests(unittest.TestCase):
         build.validate_package(self.root / "payload" / package["path"], identity=package["id"], version=VERSION, sha=SHA)
         self.assertEqual(manifest, json.loads((self.root / "payload/release-manifest.json").read_text()))
         self.assertEqual([], manifest["containers"])
+        self.assertEqual({"packages": [package["id"]], "containers": []}, drafted_inventory(self.root / "payload"))
         with self.assertRaises(PipelineError):
             build.validate_package(self.root / "payload" / package["path"], identity="other", version=VERSION, sha=SHA)
 
@@ -181,6 +199,10 @@ class BuildTests(unittest.TestCase):
         path = self.prepared.root / container.path
         path.write_text(path.read_text().replace("</PropertyGroup>", "<IsTestProject>true</IsTestProject></PropertyGroup>"))
         self.assertFalse(any(project.container for project in build.discover_projects(self.prepared, self.flags)))
+        path.write_text(path.read_text().replace("<IsTestProject>true</IsTestProject>",
+            "<TargetFrameworks>net9.0;net10.0</TargetFrameworks><TargetFramework />"))
+        with self.assertRaisesRegex(PipelineError, "container requires one evaluated target framework"):
+            build.discover_projects(self.prepared, self.flags)
         for rid in ("linux-x64", "linux-musl-arm64", "win-x64", "linux-arm"):
             self.assertIn("architecture", build.platform_for_rid(rid))
         with self.assertRaises(PipelineError):
@@ -256,6 +278,8 @@ class BuildTests(unittest.TestCase):
         graph = build.inspect_archive(self.root / "container-payload" / container["path"], revision=SHA,
             version=VERSION, repository=REPOSITORY, name=container["name"])
         self.assertEqual(["linux/amd64", "linux/arm64"], graph["platforms"])
+        self.assertEqual({"packages": [value["id"] for value in manifest["packages"]], "containers": [container["name"]]},
+                         drafted_inventory(self.root / "container-payload"))
 
     def test_executed_build_adapter_frozen_identity_and_digest_handoff(self):
         prepared = fixture(self.root / "adapter", "none")
@@ -264,31 +288,34 @@ class BuildTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(prepared.root), *arguments], check=True)
         sha = subprocess.check_output(["git", "-C", str(prepared.root), "rev-parse", "HEAD"], text=True).strip()
         action_path = ROOT / "Github/release-build"
-        action = yaml.safe_load((action_path / "action.yml").read_text())
+        runner_temp = self.root / "adapter-temp"
+        runner_temp.mkdir()
         output = self.root / "adapter-output"
+        output.write_text("")
         environment = dict(os.environ, GITHUB_WORKSPACE=str(prepared.root), GITHUB_REPOSITORY=REPOSITORY,
-            GITHUB_ACTION_PATH=str(action_path), GITHUB_OUTPUT=str(output), RELEASE_SHA=sha,
-            RELEASE_VERSION=VERSION, RELEASE_MODULE_ROOT="", RELEASE_OUTPUT=str(self.root / "adapter-payload"))
-        for step in action["runs"]["steps"]:
-            if "run" in step:
-                result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", step["run"]],
-                    cwd=self.root, env=environment, text=True, capture_output=True)
-                self.assertEqual(0, result.returncode, result.stderr)
-        self.assertEqual(sha, json.loads((self.root / "adapter-payload/release-manifest.json").read_text())["sha"])
-        # Evaluate the composite's public outputs against an upload action result.
-        # This executes its expressions; it does not assert source strings.
-        upload = {"artifact-id": "31", "artifact-digest": "b" * 64}
-        def expression(value):
-            import re
-            match = re.fullmatch(r"\$\{\{ steps\.upload\.outputs\.([a-z-]+) \}\}", value)
-            if match:
-                return upload[match[1]]
-            match = re.fullmatch(r"\$\{\{ format\('([^']+)', steps\.upload\.outputs\.([a-z-]+)\) \}\}", value)
-            if match:
-                return match[1].format(upload[match[2]])
-            raise AssertionError("unsupported composite output expression")
-        values = {key: expression(metadata["value"]) for key, metadata in action["outputs"].items()}
+            GITHUB_OUTPUT=str(output))
+        for name in ("RELEASE_SHA", "RELEASE_VERSION", "RELEASE_MODULE_ROOT", "RELEASE_OUTPUT"):
+            environment.pop(name, None)
+        external = []
+        def action(reference, values):
+            external.append((reference.partition("@")[0], values))
+            if reference.startswith("actions/upload-artifact@"):
+                manifest = Path(values["path"]) / "release-manifest.json"
+                self.assertEqual(sha, json.loads(manifest.read_text())["sha"])
+                return {"artifact-id": "31", "artifact-digest": "b" * 64}
+            return {}
+        # The composite's own input/env/if/output mappings run; RELEASE_* is never preset.
+        values, processes = run_composite(action_path, {"sha": sha, "version": VERSION}, environment,
+                                          cwd=self.root, runner_temp=runner_temp, external=action)
+        self.assertIsNotNone(values, processes[-1].stderr)
+        payload = str(runner_temp / "hexalith-release-payload") + "/"
+        # solution none skips the SDK action; checkout is credential-free at the frozen SHA.
+        self.assertEqual([
+            ("actions/checkout", {"ref": sha, "submodules": "false", "persist-credentials": "false"}),
+            ("actions/upload-artifact", {"name": "release", "path": payload, "retention-days": "90",
+                                         "if-no-files-found": "error", "compression-level": "0"})], external)
         self.assertEqual({"artifact-id": "31", "artifact-digest": "sha256:" + "b" * 64}, values)
+        environment.update(GITHUB_ACTION_PATH=str(action_path), RELEASE_MODULE_ROOT="")
         environment["RELEASE_SHA"] = "f" * 40
         result = subprocess.run([sys.executable, "-I", str(ROOT / "Github/lib/release_build.py"), "--phase", "prepare"],
             cwd=self.root, env=environment, text=True, capture_output=True)

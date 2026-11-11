@@ -1,0 +1,114 @@
+{
+  "baselineRevision": "891886ddc60a9924d053bb74bf6bcc73e101b2ce",
+  "implementationRevision": "9517bca108b07750e31b1af6df6cfde2bd691bc9",
+  "checks": [
+    {
+      "name": "focused312",
+      "command": "uv run --no-cache --with PyYAML==6.0.3 --with jsonschema==4.26.0 --python 3.12 python -m unittest discover -s Github/lib/tests -p test_release_publish.py; same with test_oci_publish.py",
+      "exitCode": 0,
+      "result": "10 publisher and 3 OCI tests passed",
+      "localLog": "/tmp/cicd-3-4-focused312.log",
+      "logSha256": "1595c92670488c630fa8e6e5b096c19a7a9a352918366191eaf7af52c87f3008",
+      "logSize": 266
+    },
+    {
+      "name": "python312",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/run_python_tests.py",
+      "exitCode": 0,
+      "result": "Python 3.12.13, 20/20 groups passed",
+      "localLog": "/tmp/cicd-3-4-python312.log",
+      "logSha256": "5c9697df67f68422e2cbafcaf809bc8d6c63a9f6af5be70d863089309109ef2d",
+      "logSize": 155630
+    },
+    {
+      "name": "python314",
+      "command": "uv run --no-cache --locked --script --python \"$(command -v python3)\" Tools/ci/run_python_tests.py",
+      "exitCode": 0,
+      "result": "Python 3.14.4, 20/20 groups passed",
+      "localLog": "/tmp/cicd-3-4-python314.log",
+      "logSha256": "c34704580dfbca1424ead0ec2cc01763b501cde28005c5cf1ec1e3fd13b1f1b9",
+      "logSize": 157210
+    },
+    {
+      "name": "finalLint",
+      "command": "python3 Tools/ci/lint_workflows.py (authenticated online audits)",
+      "exitCode": 0,
+      "result": "12 exact frozen findings, zero new findings",
+      "localLog": "/tmp/cicd-3-4-final-lint.log",
+      "logSha256": "b62acd9c363859a03ccd682e9828e77fe5d199bafc9df78389edb0b04f6ac483",
+      "logSize": 5852
+    },
+    {
+      "name": "implementationApi",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/check_public_api.py",
+      "exitCode": 0,
+      "result": "2554 entries, no removals, checked 9517bca108b07750e31b1af6df6cfde2bd691bc9",
+      "localLog": "/tmp/cicd-3-4-api-implementation.log",
+      "logSha256": "c761c0a17a6a992ec77475cbb4232c97f3d9166f067ab871a84c0cabd3c7c65d",
+      "logSize": 208
+    },
+    {
+      "name": "cleanupApi",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/check_public_api.py",
+      "exitCode": 0,
+      "checkedRevision": "3bd1c7f9022158c3649824da25011a27087db693",
+      "result": "2554 entries, no removals against v4.47.0",
+      "localLog": "/tmp/cicd-3-4-final-api.log",
+      "logSha256": "2f0f7e4beee7b3f660e06228b3c840422cfb8568e461b1ee03495c5b517532c8",
+      "logSize": 208
+    }
+  ],
+  "commitMessages": [
+    {
+      "revision": "9517bca108b07750e31b1af6df6cfde2bd691bc9",
+      "exactMessage": "feat(ci): publish authenticated original release artifacts\n",
+      "validator": "locked @commitlint/cli 21.2.4 with effective repository config",
+      "exitCode": 0,
+      "remoteFullShaVerified": true
+    },
+    {
+      "revision": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+      "exactMessage": "test(ci): exercise original release publication in Actions\n",
+      "validator": "locked @commitlint/cli 21.2.4 with effective repository config",
+      "exitCode": 0,
+      "remoteFullShaVerified": true
+    },
+    {
+      "revision": "ee30004f574cb0925d665cffa196f6b0afb79db4",
+      "exactMessage": "test(ci): qualify OCI publication independently of NuGet policy\n",
+      "validator": "locked @commitlint/cli 21.2.4 with effective repository config",
+      "exitCode": 0,
+      "remoteFullShaVerified": true
+    },
+    {
+      "revision": "3bd1c7f9022158c3649824da25011a27087db693",
+      "exactMessage": "test(ci): retain publication evidence and remove probe controls\n",
+      "validator": "locked @commitlint/cli 21.2.4 with effective repository config",
+      "exitCode": 0,
+      "remoteFullShaVerified": true
+    }
+  ],
+  "hostedNuget": {
+    "status": "blocked",
+    "run": 42999230320,
+    "failure": "HTTP 401: all existing NuGet policies name other workflows, actual release-publish-probe.yml",
+    "required": "nuget.org Trusted Publishing policy for release-publish-probe.yml, environment hexalith-release, creator jpiquot and isolated package ID"
+  },
+  "hostedOciGitHub": {
+    "status": "passed",
+    "run": 42999841348,
+    "originalArtifact": 13844823819,
+    "publishedRelease": 441513641,
+    "tag": "v4.48.0",
+    "outcomeArtifact": 13844679235
+  },
+  "temporaryControlsRemoved": true,
+  "storyStatus": "left unchanged for workflow handling",
+  "cleanupRevision": "3bd1c7f9022158c3649824da25011a27087db693",
+  "frozenComparison": "frozen-files.json: 212 of 215 baseline files unchanged; the three exceptions are specified new-pipeline factoring/test/docs",
+  "whitespaceCheck": {
+    "command": "git diff --check and git diff --cached --check",
+    "exitCode": 0
+  },
+  "cleanupAdministrationDisclosure": "cleanup-container-probe.json and results document disclose the temporary exact-tag ruleset exclusion and its exact restoration; this exceeded resource-only authorization"
+}

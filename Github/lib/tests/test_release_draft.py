@@ -26,6 +26,8 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import release_draft as draft
 from release_state import Git, ReleaseError
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from actions_expressions import run_composite
 
 REPOSITORY = "Example/ReleaseFixture"
 VERSION = "2.3.5"
@@ -171,6 +173,15 @@ class InventoryTests(History):
     def test_real_package_metadata_and_empty_payload(self):
         self.assertEqual(self.inventory(self.payload), {"packages": ["Fixture.Package"], "containers": []})
         self.assertEqual(self.inventory(artifact(self.sha, packages=False)), {"packages": [], "containers": []})
+
+    def test_nested_nuspec_content_is_payload_but_root_nuspec_stays_unique(self):
+        with zipfile.ZipFile(io.BytesIO(package(self.sha))) as archive:
+            files = [(name, archive.read(name)) for name in archive.namelist()]
+        nested = zip_bytes([*files, ("content/templates/template.nuspec", b"<package/>")])
+        self.assertEqual(self.inventory(artifact(self.sha, nuspec=nested))["packages"], ["Fixture.Package"])
+        second = zip_bytes([*files, ("Other.nuspec", files[0][1])])
+        with self.assertRaisesRegex(ReleaseError, "one bounded root nuspec"):
+            self.inventory(artifact(self.sha, nuspec=second))
 
     def test_nuspec_dtd_entities_rejected_for_utf8_and_utf16_encodings(self):
         with zipfile.ZipFile(io.BytesIO(package(self.sha))) as archive:
@@ -523,6 +534,12 @@ class HttpDraftTests(History):
         response.headers = {}
         with self.assertRaisesRegex(ReleaseError, "size limit"):
             draft.limited_read(response, 10)
+        for length, message in (("11", "size limit"), ("-1", "size limit"), ("eleven", "invalid release response length")):
+            with self.subTest(length=length):
+                response = io.BytesIO(b"0123456789")
+                response.headers = {"Content-Length": length}
+                with self.assertRaisesRegex(ReleaseError, message):
+                    draft.limited_read(response, 10)
 
 
 class DraftCompositeTests(History):
@@ -567,24 +584,24 @@ raise SystemExit(subprocess.call([{actual_git!r}, *arguments]))
             executable.write_text("#!/bin/sh\necho forbidden-tool >&2\nexit 99\n")
             executable.chmod(0o755)
         action_path = Path(__file__).resolve().parents[2] / "release-draft"
-        # Read and execute the composite command; assertions inspect effects only.
-        script = next(line.partition("run:")[2].strip() for line in
-                      (action_path / "action.yml").read_text().splitlines() if line.strip().startswith("run:"))
+        # Execute the composite's own input/env/output mappings; RELEASE_* is never preset.
         output = work / "output"
         output.write_text("")
         environment = {**os.environ, "PATH": str(binaries) + os.pathsep + os.environ["PATH"],
             "GITHUB_ACTION_PATH": str(action_path), "GITHUB_TOKEN": "adapter-secret-marker",
             "GITHUB_REPOSITORY": REPOSITORY, "GITHUB_RUN_ID": str(RUN), "GITHUB_OUTPUT": str(output),
-            "RELEASE_SHA": self.sha, "RELEASE_VERSION": VERSION, "RELEASE_NOTES": "Subprocess notes",
-            "RELEASE_ARTIFACT_ID": str(ARTIFACT), "RELEASE_ARTIFACT_DIGEST": digest(self.payload),
             "TEST_REMOTE": str(self.root), "TEST_GIT_LEDGER": str(commands), "SSL_CERT_FILE": str(certificate)}
+        for name in ("RELEASE_SHA", "RELEASE_VERSION", "RELEASE_NOTES", "RELEASE_ARTIFACT_ID", "RELEASE_ARTIFACT_DIGEST"):
+            environment.pop(name, None)
+        notes = "## Subprocess notes\n\n* multiline entry"
+        inputs = {"sha": self.sha, "version": VERSION, "notes": notes, "artifact-id": str(ARTIFACT),
+                  "artifact-digest": digest(self.payload)}
         with http_fixture(control, tls=tls) as signed_base, http_fixture(control) as base:
             control.location = signed_base + "/archive"
             environment["GITHUB_API_URL"] = base
-            result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env=environment,
-                                    cwd=work, text=True, capture_output=True)
+            values, processes = run_composite(action_path, inputs, environment, cwd=work, runner_temp=work)
+        result = processes[-1]
         self.assertEqual(result.returncode, 0, result.stderr)
-        values = dict(line.split("=", 1) for line in output.read_text().splitlines())
         self.assertEqual(values["publish"], "true")
         self.assertEqual(values["sha"], self.sha)
         self.assertEqual(values["artifact-run"], str(RUN))
@@ -596,6 +613,7 @@ raise SystemExit(subprocess.call([{actual_git!r}, *arguments]))
         self.assertEqual(sum("fetch" in arguments for arguments in invocations), 2)
         self.assertFalse(any("checkout" in arguments or "submodule" in arguments for arguments in invocations))
         self.assertEqual(len(control.writes), 1)
+        self.assertTrue(control.writes[0]["body"].startswith(notes + "\n\nhexalith-release: " + self.sha + "\n"))
         self.assertIsNone(next(entry[2] for entry in control.requests if entry[1] == "/archive"))
         self.assertEqual(git_command(self.root, "tag", "--list", "v2.3.5"), "")
 

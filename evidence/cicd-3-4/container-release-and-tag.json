@@ -1,0 +1,56 @@
+{
+  "release": {
+    "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/releases/441513641",
+    "assets_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/releases/441513641/assets",
+    "upload_url": "https://uploads.github.com/repos/Hexalith/Hexalith.Builds/releases/441513641/assets{?name,label}",
+    "html_url": "https://github.com/Hexalith/Hexalith.Builds/releases/tag/v4.48.0",
+    "id": 441513641,
+    "author": {
+      "login": "github-actions[bot]",
+      "id": 41898282,
+      "node_id": "MDM6Qm90NDE4OTgyODI=",
+      "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+      "html_url": "https://github.com/apps/github-actions",
+      "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "node_id": "RE_kwDOOMzNRc4aUPap",
+    "tag_name": "v4.48.0",
+    "target_commitish": "ee30004f574cb0925d665cffa196f6b0afb79db4",
+    "name": "v4.48.0",
+    "draft": false,
+    "immutable": false,
+    "prerelease": false,
+    "created_at": "2026-11-11T09:59:36Z",
+    "updated_at": "2026-11-11T10:01:55Z",
+    "published_at": "2026-11-11T10:01:55Z",
+    "assets": [],
+    "tarball_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/tarball/v4.48.0",
+    "zipball_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/zipball/v4.48.0",
+    "body": "Disposable story 3-4 publication qualification. Only the identified isolated package and registry image are authorized.\n\nhexalith-release: ee30004f574cb0925d665cffa196f6b0afb79db4\nhexalith-release-run: 42999841348\nhexalith-release-artifact: 13844823819 sha256:4e4ad5e9d60aa80679db131536001f453762373264e0184708a5e6346dbaf944\nhexalith-release-packages: \nhexalith-release-containers: cicd-publish-spike-3-1\n"
+  },
+  "liveVersionRefs": [
+    {
+      "ref": "refs/tags/v4.48.0",
+      "node_id": "REF_kwDOOMzNRbFyZWZzL3RhZ3MvdjQuNDguMA",
+      "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/git/refs/tags/v4.48.0",
+      "object": {
+        "sha": "ee30004f574cb0925d665cffa196f6b0afb79db4",
+        "type": "commit",
+        "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/git/commits/ee30004f574cb0925d665cffa196f6b0afb79db4"
+      }
+    }
+  ]
+}

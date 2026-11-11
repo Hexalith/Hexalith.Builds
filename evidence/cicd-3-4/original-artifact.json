@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "id": 13844493691,
+    "node_id": "MDg6QXJ0aWZhY3QxMzg0NDQ5MzY5MQ==",
+    "name": "release",
+    "size_in_bytes": 83256203,
+    "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13844493691",
+    "archive_download_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13844493691/zip",
+    "expired": false,
+    "digest": "sha256:e9fc141a09963df64b52cbc157a6996f4279b8f4162645622b801958cd4fe5f6",
+    "created_at": "2026-11-11T09:55:46Z",
+    "updated_at": "2026-11-11T09:55:46Z",
+    "expires_at": "2027-02-09T09:55:23Z",
+    "workflow_run": {
+      "id": 42999230320,
+      "repository_id": 952945989,
+      "head_repository_id": 952945989,
+      "head_branch": "main",
+      "head_sha": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370"
+    }
+  },
+  "downloadedSha256": "sha256:e9fc141a09963df64b52cbc157a6996f4279b8f4162645622b801958cd4fe5f6",
+  "inventory": {
+    "packages": [
+      "Hexalith.Builds.PublishProbe.20261111"
+    ],
+    "containers": [
+      "cicd-publish-spike-3-1"
+    ]
+  },
+  "files": {
+    "packages/Hexalith.Builds.PublishProbe.20261111.4.47.1.nupkg": {
+      "sha256": "14004f41940ec895fd53b32b6c2b01f4e63d69246b2cbd203b2d69805c4b1732",
+      "size": 4214
+    },
+    "containers/probe.tar": {
+      "sha256": "c3bac5a1b6701974f1d2e2f8af0b83a599797105272b52685a7afd126ea53123",
+      "size": 83251200,
+      "graph": {
+        "root": "sha256:20463c1ec25652203269d29b24f89b0e36eb0851ae6727921d1b8d316bb6e5fa",
+        "children": [
+          "sha256:5fc15ec215b4620d2e7f7f15466258e3fc2175e4b39ec32ecfdeecabdc847d4a",
+          "sha256:6012bcde465cb2c7fe0fee53cd23cf453828d26d8ca253c9a087fd3d2cd01a8d"
+        ],
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64"
+        ],
+        "blobs": {
+          "sha256:20463c1ec25652203269d29b24f89b0e36eb0851ae6727921d1b8d316bb6e5fa": 769,
+          "sha256:5fc15ec215b4620d2e7f7f15466258e3fc2175e4b39ec32ecfdeecabdc847d4a": 1232,
+          "sha256:0ca18afe3da6c78b43ee3a3cd60bbd8fa21a9720071daa04df123656df232ae1": 3471,
+          "sha256:881fc932939efef04ca120ad44bbd2c0917851eb247aa4995428afb1e80ede17": 3853673,
+          "sha256:45d3410d360403450f5b988d820cb5f984537d79c1bef31c920bf3681bc052bb": 1169627,
+          "sha256:cab0214eab46d1873bf6ad683a860558d35067ee3f8ed3e42e1f6fe1ad569b8a": 949,
+          "sha256:5ef336b1638f369236230d30c23a9fece6fdf7cdc1b16d906e56a0c4c97b1f5c": 37569216,
+          "sha256:8caa380cde9a60a515af53182c2cf1dc3d53b89ae584194cd6d6621b36122323": 168,
+          "sha256:2f84933089ff254797062abe36492cd5a59409bc41fb8dbb28016d4405603888": 36939,
+          "sha256:6012bcde465cb2c7fe0fee53cd23cf453828d26d8ca253c9a087fd3d2cd01a8d": 1232,
+          "sha256:e75ea3d6ddbfd60403ac21259cf90499492b31563d29fd34d66629ab478f7e76": 3472,
+          "sha256:b90627b8f4292fd3cb63f0f27f0b11c37f04ba88ef3b78d4948ea0ace18c85e9": 4190595,
+          "sha256:4ba53de9eb1cca8816d8d77cccde53a960fa95a234c3d27f4ba1817b6c813f50": 1094351,
+          "sha256:fd1ce79ae6fb722a4d1550a19c19a0412183c6d16b5d56782bd196d909c0ac34": 950,
+          "sha256:45eea2de616ccd1c179d6a751ce93fe390c2e3c84c8711205d9807aa2f625ad5": 35269233,
+          "sha256:7649b47e685a24cee7763c41b73e731e89f9bde21734c00cb9bd7b45f4a60a30": 171,
+          "sha256:4e9720b1b3f3796207902c7ee0e95c7d3325ad9e85e0ec9d1d48965a762c28cd": 36181
+        }
+      }
+    }
+  },
+  "release": {
+    "id": 441505833,
+    "tag_name": "v4.47.1",
+    "target_commitish": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+    "body": "Disposable story 3-4 publication qualification. Only the identified isolated package and registry image are authorized.\n\nhexalith-release: 76e192ac556ee2a1b6dc59c4cdc32c77e15e4370\nhexalith-release-run: 42999230320\nhexalith-release-artifact: 13844493691 sha256:e9fc141a09963df64b52cbc157a6996f4279b8f4162645622b801958cd4fe5f6\nhexalith-release-packages: Hexalith.Builds.PublishProbe.20261111\nhexalith-release-containers: cicd-publish-spike-3-1\n",
+    "draft": true,
+    "prerelease": false,
+    "author": {
+      "login": "github-actions[bot]",
+      "id": 41898282,
+      "node_id": "MDM6Qm90NDE4OTgyODI=",
+      "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+      "html_url": "https://github.com/apps/github-actions",
+      "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    }
+  }
+}

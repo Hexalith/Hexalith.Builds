@@ -1,0 +1,330 @@
+{
+  "id": 42919132649,
+  "run_attempt": 1,
+  "head_sha": "c244eb55729947d293cfbc8837166086eb83df37",
+  "event": "workflow_dispatch",
+  "path": ".github/workflows/release-create-probe.yml",
+  "status": "completed",
+  "conclusion": "success",
+  "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42919132649",
+  "jobs": [
+    {
+      "name": "release / Resolve release identity",
+      "conclusion": "success",
+      "started_at": "2026-11-10T22:57:04Z",
+      "completed_at": "2026-11-10T22:57:17Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T22:57:05Z",
+          "completed_at": "2026-11-10T22:57:07Z"
+        },
+        {
+          "name": "Read dispatch settings and freeze release source",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T22:57:07Z",
+          "completed_at": "2026-11-10T22:57:15Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T22:57:15Z",
+          "completed_at": "2026-11-10T22:57:15Z"
+        }
+      ]
+    },
+    {
+      "name": "release / Compute release version",
+      "conclusion": "success",
+      "started_at": "2026-11-10T22:57:20Z",
+      "completed_at": "2026-11-10T22:57:47Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T22:57:21Z",
+          "completed_at": "2026-11-10T22:57:23Z"
+        },
+        {
+          "name": "Supply the labelled no-version scheduling control",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 2,
+          "started_at": "2026-11-10T22:57:23Z",
+          "completed_at": "2026-11-10T22:57:23Z"
+        },
+        {
+          "name": "Analyze the frozen release range",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T22:57:23Z",
+          "completed_at": "2026-11-10T22:57:45Z"
+        },
+        {
+          "name": "Post Analyze the frozen release range",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-10T22:57:45Z",
+          "completed_at": "2026-11-10T22:57:45Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-10T22:57:45Z",
+          "completed_at": "2026-11-10T22:57:45Z"
+        }
+      ]
+    },
+    {
+      "name": "release / Prepare and run nightly hook",
+      "conclusion": "skipped",
+      "started_at": "2026-11-10T22:57:18Z",
+      "completed_at": "2026-11-10T22:57:17Z",
+      "steps": []
+    },
+    {
+      "name": "release / Release CodeQL (${{ matrix.language }})",
+      "conclusion": "skipped",
+      "started_at": "2026-11-10T22:57:18Z",
+      "completed_at": "2026-11-10T22:57:17Z",
+      "steps": []
+    },
+    {
+      "name": "release / Build audited release payload",
+      "conclusion": "success",
+      "started_at": "2026-11-10T22:57:50Z",
+      "completed_at": "2026-11-10T22:58:17Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T22:57:50Z",
+          "completed_at": "2026-11-10T22:57:54Z"
+        },
+        {
+          "name": "Build once and retain the original versioned payload",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T22:57:54Z",
+          "completed_at": "2026-11-10T22:58:14Z"
+        },
+        {
+          "name": "Post Build once and retain the original versioned payload",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-10T22:58:14Z",
+          "completed_at": "2026-11-10T22:58:14Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-10T22:58:14Z",
+          "completed_at": "2026-11-10T22:58:14Z"
+        }
+      ]
+    },
+    {
+      "name": "release / Validate artifact and create marked draft",
+      "conclusion": "success",
+      "started_at": "2026-11-10T22:58:20Z",
+      "completed_at": "2026-11-10T22:58:36Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T22:58:21Z",
+          "completed_at": "2026-11-10T22:58:23Z"
+        },
+        {
+          "name": "Authenticate the release handoff and write the draft",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T22:58:23Z",
+          "completed_at": "2026-11-10T22:58:33Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T22:58:33Z",
+          "completed_at": "2026-11-10T22:58:33Z"
+        }
+      ]
+    },
+    {
+      "name": "release / Report release outcome",
+      "conclusion": "success",
+      "started_at": "2026-11-10T22:58:39Z",
+      "completed_at": "2026-11-10T22:58:44Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T22:58:40Z",
+          "completed_at": "2026-11-10T22:58:42Z"
+        },
+        {
+          "name": "Decide outcome with failure precedence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T22:58:42Z",
+          "completed_at": "2026-11-10T22:58:42Z"
+        },
+        {
+          "name": "Upload the sole reusable outcome",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3,
+          "started_at": "2026-11-10T22:58:42Z",
+          "completed_at": "2026-11-10T22:58:42Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-10T22:58:42Z",
+          "completed_at": "2026-11-10T22:58:42Z"
+        }
+      ]
+    },
+    {
+      "name": "observe",
+      "conclusion": "success",
+      "started_at": "2026-11-10T22:58:46Z",
+      "completed_at": "2026-11-10T22:58:50Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-10T22:58:47Z",
+          "completed_at": "2026-11-10T22:58:47Z"
+        },
+        {
+          "name": "Retain the exact reusable handoff",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-10T22:58:47Z",
+          "completed_at": "2026-11-10T22:58:47Z"
+        },
+        {
+          "name": "Upload handoff observation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-10T22:58:47Z",
+          "completed_at": "2026-11-10T22:58:48Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-10T22:58:48Z",
+          "completed_at": "2026-11-10T22:58:48Z"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 13810653539,
+      "name": "release",
+      "digest": "sha256:941ff9943e9429201c9f2b4dceede13630c1d3cb2d1e9f3fefa7373e9d1e46c8",
+      "expired": false,
+      "created_at": "2026-11-10T22:58:14Z",
+      "expires_at": "2027-02-08T22:57:00Z",
+      "workflow_run": {
+        "id": 42919132649,
+        "repository_id": 952945989,
+        "head_repository_id": 952945989,
+        "head_branch": "main",
+        "head_sha": "c244eb55729947d293cfbc8837166086eb83df37"
+      }
+    },
+    {
+      "id": 13809549056,
+      "name": "probe-handoff",
+      "digest": "sha256:3be30d92e66ba9638180a7260eb5935b45e6f203ee35899630f01b8e5716dda3",
+      "expired": false,
+      "created_at": "2026-11-10T22:58:48Z",
+      "expires_at": "2027-02-08T22:57:00Z",
+      "workflow_run": {
+        "id": 42919132649,
+        "repository_id": 952945989,
+        "head_repository_id": 952945989,
+        "head_branch": "main",
+        "head_sha": "c244eb55729947d293cfbc8837166086eb83df37"
+      }
+    }
+  ],
+  "manifest": {
+    "sha": "c244eb55729947d293cfbc8837166086eb83df37",
+    "version": "4.48.0",
+    "packages": [
+      {
+        "id": "Hexalith.Release.CreateMode.Disposable",
+        "path": "packages/Hexalith.Release.CreateMode.Disposable.4.48.0.nupkg"
+      }
+    ],
+    "containers": []
+  },
+  "release_files": [
+    "packages/Hexalith.Release.CreateMode.Disposable.4.48.0.nupkg",
+    "release-manifest.json"
+  ],
+  "handoff": {
+    "outputs": {
+      "artifact-digest": "sha256:941ff9943e9429201c9f2b4dceede13630c1d3cb2d1e9f3fefa7373e9d1e46c8",
+      "artifact-id": "13810653539",
+      "artifact-run": "42919132649",
+      "draft-id": "441030264",
+      "last-tag": "v4.47.0",
+      "mode": "create",
+      "publish": "true",
+      "sha": "c244eb55729947d293cfbc8837166086eb83df37",
+      "version": "4.48.0"
+    },
+    "result": "success",
+    "scenario": "success"
+  },
+  "draft": {
+    "id": 441030264,
+    "draft": true,
+    "tag_name": "v4.48.0",
+    "target_commitish": "c244eb55729947d293cfbc8837166086eb83df37",
+    "body": "# [4.48.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.47.0...v4.48.0) (2026-11-10)\n\n\n### Bug Fixes\n\n* **ci:** complete sample consumer verification ([73469a6](https://github.com/Hexalith/Hexalith.Builds/commit/73469a690222b804a8676a7e14c6a80f8ab71213))\n* **ci:** fail release gates closed on cancellation and unprocessed SARIF ([fa5f487](https://github.com/Hexalith/Hexalith.Builds/commit/fa5f48734ca44ce63b55fc645f53c9c6bdccaa1c))\n* **ci:** harden release gate deadlines and outcome handoff ([ce726ae](https://github.com/Hexalith/Hexalith.Builds/commit/ce726ae24ba876069ca5d5e71a84c7e0085670a4))\n* **ci:** protect publish spike credentials across HTTP redirects ([66a617f](https://github.com/Hexalith/Hexalith.Builds/commit/66a617fec147bcba633e65b79ab7a0d46f15c907))\n* **ci:** reject publish spike metadata redirects and cover registry reads ([ec97b6b](https://github.com/Hexalith/Hexalith.Builds/commit/ec97b6be56b46795ffd454067b72dc0ff4b14b3a))\n* **ci:** verify numeric GitHub pagination aliases ([feef50a](https://github.com/Hexalith/Hexalith.Builds/commit/feef50a50870efb288002471293f76ab461f08a3))\n* **ci:** verify pinned Skopeo source commit in version output ([0705088](https://github.com/Hexalith/Hexalith.Builds/commit/0705088e92d6703232e62dcbe44b3bf0a0980ee3))\n* **module:** correct lifecycle reporting after review ([4ce510b](https://github.com/Hexalith/Hexalith.Builds/commit/4ce510b2b263f8e4ea469638a130f08776ba27a3))\n* **module:** harden attached-suite supervision after review ([ca84226](https://github.com/Hexalith/Hexalith.Builds/commit/ca842264ae91b38fd35c095147d8fbcbda79bb6e))\n\n\n### Features\n\n* build a frozen release payload and create its marked draft ([4dd100c](https://github.com/Hexalith/Hexalith.Builds/commit/4dd100c62ee8d5dd2952cfaa5c2516245d5e1c1c))\n* **ci:** add isolated publish archive spike helpers ([b260185](https://github.com/Hexalith/Hexalith.Builds/commit/b260185ebe0d0dd1ae9507b16f2b49b366ccd47c))\n* **ci:** add reusable release gates and outcome reporting ([796e5db](https://github.com/Hexalith/Hexalith.Builds/commit/796e5dbc4e4554a90aa6a07d20c096a6c5c94298))\n* **ci:** test sample consumer and prepare Windows jobs ([93c9db2](https://github.com/Hexalith/Hexalith.Builds/commit/93c9db2e2892be80ab8595052b91cbda5b7d158f))\n* **module:** report lifecycle observations ([f118c24](https://github.com/Hexalith/Hexalith.Builds/commit/f118c2440101fe67be2c7f7a569cbe2257223a16))\n* **module:** supervise runner-owned attached declared-suite runs ([08db49e](https://github.com/Hexalith/Hexalith.Builds/commit/08db49e8c525d3a8f6116eb4b8b11278d415598b))\n\nhexalith-release: c244eb55729947d293cfbc8837166086eb83df37\nhexalith-release-run: 42919132649\nhexalith-release-artifact: 13810653539 sha256:941ff9943e9429201c9f2b4dceede13630c1d3cb2d1e9f3fefa7373e9d1e46c8\nhexalith-release-packages: Hexalith.Release.CreateMode.Disposable\nhexalith-release-containers: \n",
+    "created_at": "2026-11-10T22:58:33Z",
+    "author": "github-actions[bot]"
+  },
+  "identified_probe_draft_deleted": true
+}

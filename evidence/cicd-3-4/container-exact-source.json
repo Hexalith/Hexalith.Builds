@@ -1,0 +1,20 @@
+{
+  "implementationRevision": "9517bca108b07750e31b1af6df6cfde2bd691bc9",
+  "probeRevision": "ee30004f574cb0925d665cffa196f6b0afb79db4",
+  "files": [
+    {
+      "path": "Tools/ci/probe_release_publish.py",
+      "revision": "ee30004f574cb0925d665cffa196f6b0afb79db4",
+      "gitBlob": "fee9866d3d7adb330172083e7a14d858fc8fb5a1",
+      "sha256": "d8eceb537da66d1375231ef1f8d3669c7ccdcba27bac59064dea1021d273e39d",
+      "retained": "evidence/cicd-3-4/source/container-only__Tools__ci__probe_release_publish.py"
+    },
+    {
+      "path": ".github/workflows/release-publish-probe.yml",
+      "revision": "ee30004f574cb0925d665cffa196f6b0afb79db4",
+      "gitBlob": "c6f4109b04a94a0074192b162f571782886b2646",
+      "sha256": "c582f967dc835e6bf79398bbb9223402e368c2a23939350882b97148344f5cbc",
+      "retained": "evidence/cicd-3-4/source/container-only__.github__workflows__release-publish-probe.yml"
+    }
+  ]
+}

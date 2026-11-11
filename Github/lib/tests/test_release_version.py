@@ -18,6 +18,8 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from release_state import Git, ReleaseError
 import release_version as version
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from actions_expressions import run_composite
 
 BUILDS = "Hexalith/Hexalith.Builds"
 MODULE = "Example/ReleaseFixture"
@@ -131,6 +133,20 @@ class ReleaseVersionTests(unittest.TestCase):
         commits = version.commits_since(Git(self.source), sha, "v2.3.4")
         self.assertEqual([sha], [commit["hash"] for commit in commits])
 
+    def test_non_utf8_legacy_commit_message_is_analyzed_instead_of_aborting(self):
+        self.git("tag", "v2.3.4")
+        # Current Git re-encodes on commit; older tools stored raw legacy bytes, so write one directly.
+        raw = self.root / "raw-commit"
+        raw.write_bytes(b"tree " + self.git("rev-parse", "HEAD^{tree}").encode() + b"\nparent "
+                        + self.git("rev-parse", "HEAD").encode()
+                        + b"\nauthor Fixture <fixture@example.com> 1700000000 +0000"
+                        + b"\ncommitter Fixture <fixture@example.com> 1700000000 +0000\n\nfix: caf\xe9 legacy encoding\n")
+        sha = self.git("hash-object", "-t", "commit", "-w", str(raw))
+        self.git("update-ref", "refs/heads/main", sha)
+        commit, = version.commits_since(Git(self.source), sha, "v2.3.4")
+        self.assertEqual("fix: caf\ufffd legacy encoding\n", commit["message"])
+        self.assertEqual("2.3.5", self.compute(sha=sha)["version"])
+
     def test_first_release_analyzes_full_history_and_is_exactly_one(self):
         self.commit("fix: older correction")
         self.commit("feat!: initial public capability")
@@ -187,7 +203,8 @@ class ReleaseVersionTests(unittest.TestCase):
 
     def test_actual_composite_uses_frozen_objects_and_isolated_npm(self):
         self.git("tag", "v2.3.4")
-        sha = self.commit("feat: adapter frozen capability")
+        self.commit("fix: adapter frozen capability")
+        sha = self.commit("refactor!: adapter breaking rework")
         (self.source / ".npmrc").write_text("registry=https://invalid.example/\n")
         (self.source / "release.config.cjs").write_text("throw Error('product release config executed');\n")
         bin_directory = self.root / "bin"
@@ -203,23 +220,32 @@ if 'fetch' in arguments:
 raise SystemExit(subprocess.call([{REAL_GIT!r},*arguments]))
 ''')
         wrapper.chmod(0o755)
-        output = self.root / "output"
-        environment = dict(os.environ, PATH=str(bin_directory) + os.pathsep + os.environ["PATH"],
-            GITHUB_ACTION_PATH=str(version.TOOLS), GITHUB_REPOSITORY=BUILDS,
-            GITHUB_TOKEN="adapter-secret-marker", GITHUB_SHA="f" * 40,
-            GITHUB_OUTPUT=str(output), RELEASE_SHA=sha, RELEASE_RULES="module",
-            RELEASE_MODULE_ROOT="", TEST_REMOTE=str(self.source))
-        action = yaml.safe_load((version.TOOLS / "action.yml").read_text())
-        script = next(step["run"] for step in action["runs"]["steps"] if "run" in step)
-        result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], cwd=self.source,
-                                env=environment, text=True, capture_output=True)
-        self.assertEqual(0, result.returncode, result.stderr)
-        values = read_outputs(output)
-        self.assertEqual("2.4.0", values["version"])
-        self.assertEqual("v2.3.4", values["last-tag"])
-        self.assertIn("adapter frozen capability", values["notes"])
-        self.assertNotIn("adapter-secret-marker", result.stdout + result.stderr)
-
+        node = []
+        def external(reference, values):
+            self.assertTrue(reference.startswith("actions/setup-node@"))
+            node.append(values)
+            return {}
+        # The composite's own input/env/output mappings run; RELEASE_* is never preset.
+        results = {}
+        for rules in ("", "builds"):
+            output = self.root / f"output-{rules or 'default'}"
+            output.write_text("")
+            environment = dict(os.environ, PATH=str(bin_directory) + os.pathsep + os.environ["PATH"],
+                GITHUB_REPOSITORY=BUILDS, GITHUB_TOKEN="adapter-secret-marker", GITHUB_SHA="f" * 40,
+                GITHUB_OUTPUT=str(output), TEST_REMOTE=str(self.source))
+            for name in ("RELEASE_SHA", "RELEASE_RULES", "RELEASE_MODULE_ROOT"):
+                environment.pop(name, None)
+            inputs = {"sha": sha, **({"release-rules": rules} if rules else {})}
+            outputs, processes = run_composite(version.TOOLS, inputs, environment, cwd=self.source,
+                                               runner_temp=self.root, external=external)
+            self.assertIsNotNone(outputs, processes[-1].stderr)
+            self.assertNotIn("adapter-secret-marker", processes[-1].stdout + processes[-1].stderr)
+            results[rules or "module"] = outputs
+        self.assertEqual({"version": "2.3.5", "last-tag": "v2.3.4", "no-version": "false"},
+                         {key: results["module"][key] for key in ("version", "last-tag", "no-version")})
+        self.assertIn("adapter frozen capability", results["module"]["notes"])
+        self.assertEqual("3.0.0", results["builds"]["version"])
+        self.assertEqual([{"node-version": "24", "package-manager-cache": "false"}] * 2, node)
 
 if __name__ == "__main__":
     unittest.main()

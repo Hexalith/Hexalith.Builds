@@ -1,0 +1,30 @@
+producer	Set up job	﻿2026-11-11T09:59:57.6206623Z Current runner version: '2.338.2'
+producer	Set up job	2026-11-11T09:59:57.9364379Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+producer	Set up job	2026-11-11T09:59:58.0575399Z Download action repository 'actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73' (SHA:0f4a354dd5547a28c70b7853dbd95d5b67886e73)
+producer	Set up job	2026-11-11T09:59:58.6795854Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T10:00:18.8497505Z Artifact release successfully finalized. Artifact ID 13844823819
+producer	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-11T10:00:18.8498242Z Artifact release has been successfully uploaded! Final size is 83251661 bytes. Artifact ID is 13844823819
+draft	Set up job	﻿2026-11-11T10:00:25.4319110Z Current runner version: '2.338.2'
+draft	Set up job	2026-11-11T10:00:25.7693630Z Download action repository 'Hexalith/Hexalith.Builds@9517bca108b07750e31b1af6df6cfde2bd691bc9' (SHA:9517bca108b07750e31b1af6df6cfde2bd691bc9)
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:00:27.9200069Z ##[start-action display=Authenticate artifact and create marked draft;id=draft.draft]
+draft	Run Hexalith/Hexalith.Builds/Github/release-draft@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:00:40.0464765Z ##[end-action id=draft.draft;outcome=success;conclusion=success;duration_ms=12126]
+publish	Set up job	﻿2026-11-11T10:00:47.5856939Z Current runner version: '2.338.2'
+publish	Set up job	2026-11-11T10:00:47.8519132Z Download action repository 'Hexalith/Hexalith.Builds@9517bca108b07750e31b1af6df6cfde2bd691bc9' (SHA:9517bca108b07750e31b1af6df6cfde2bd691bc9)
+publish	Set up job	2026-11-11T10:00:50.1360856Z Download action repository 'NuGet/login@8d196754b4036150537f80ac539e15c2f1028841' (SHA:8d196754b4036150537f80ac539e15c2f1028841)
+publish	Set up job	2026-11-11T10:00:50.2521794Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+publish	Poison workspace configuration before the no checkout publisher	﻿2026-11-11T10:00:50.4285659Z ##[group]Run python3 -c "from pathlib import Path; Path('NuGet.Config').write_text('poison'); Path('global.json').write_text('poison')"
+publish	Poison workspace configuration before the no checkout publisher	2026-11-11T10:00:50.4286804Z python3 -c "from pathlib import Path; Path('NuGet.Config').write_text('poison'); Path('global.json').write_text('poison')"
+publish	Poison workspace configuration before the no checkout publisher	2026-11-11T10:00:50.4339242Z shell: /usr/bin/bash -e {0}
+publish	Poison workspace configuration before the no checkout publisher	2026-11-11T10:00:50.4339894Z ##[endgroup]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:00:50.4997111Z ##[start-action display=Authenticate original artifact and preflight every destination;id=__Hexalith_Hexalith_Builds.prepare]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:00:58.4641649Z ##[end-action id=__Hexalith_Hexalith_Builds.prepare;outcome=success;conclusion=success;duration_ms=7964]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:00:58.4648274Z ##[start-action display=Exchange caller OIDC identity for a temporary NuGet key;id=__Hexalith_Hexalith_Builds.login]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:00:58.4671093Z ##[end-action id=__Hexalith_Hexalith_Builds.login;outcome=skipped;conclusion=skipped;duration_ms=0]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:00:58.4678367Z ##[start-action display=Publish original packages and images, then finalize GitHub;id=__Hexalith_Hexalith_Builds.publish]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:01:55.5720098Z ##[end-action id=__Hexalith_Hexalith_Builds.publish;outcome=success;conclusion=success;duration_ms=57104]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:01:55.5726788Z ##[start-action display=Write the sole publisher outcome and remove private payload;id=__Hexalith_Hexalith_Builds.outcome]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:01:55.6859853Z ##[end-action id=__Hexalith_Hexalith_Builds.outcome;outcome=success;conclusion=success;duration_ms=113]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:01:55.6863166Z ##[start-action display=Upload the sole release outcome;id=__Hexalith_Hexalith_Builds.__actions_upload-artifact]
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:01:56.8608264Z Artifact hexalith-release-outcome successfully finalized. Artifact ID 13844679235
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:01:56.8609752Z Artifact hexalith-release-outcome has been successfully uploaded! Final size is 252 bytes. Artifact ID is 13844679235
+publish	Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9	2026-11-11T10:01:56.8719421Z ##[end-action id=__Hexalith_Hexalith_Builds.__actions_upload-artifact;outcome=success;conclusion=success;duration_ms=1185]

@@ -1,0 +1,134 @@
+{
+  "conclusion": "failure",
+  "createdAt": "2026-11-11T09:55:21Z",
+  "databaseId": 42999230320,
+  "headSha": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+  "jobs": [
+    {
+      "completedAt": "2026-11-11T09:55:49Z",
+      "conclusion": "success",
+      "databaseId": 130450918167,
+      "name": "producer",
+      "startedAt": "2026-11-11T09:55:26Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Build isolated original package and dual platform image once",
+          "number": 4,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "number": 5,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73",
+          "number": 9,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "number": 10,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 11,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42999230320/job/130450918167"
+    },
+    {
+      "completedAt": "2026-11-11T09:56:06Z",
+      "conclusion": "success",
+      "databaseId": 130451117479,
+      "name": "draft",
+      "startedAt": "2026-11-11T09:55:51Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run Hexalith/Hexalith.Builds/Github/release-draft@9517bca108b07750e31b1af6df6cfde2bd691bc9",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 3,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42999230320/job/130451117479"
+    },
+    {
+      "completedAt": "2026-11-11T09:56:29Z",
+      "conclusion": "failure",
+      "databaseId": 130451250645,
+      "name": "publish",
+      "startedAt": "2026-11-11T09:56:11Z",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Poison workspace configuration before the no checkout publisher",
+          "number": 2,
+          "status": "completed"
+        },
+        {
+          "conclusion": "failure",
+          "name": "Run Hexalith/Hexalith.Builds/Github/publish@9517bca108b07750e31b1af6df6cfde2bd691bc9",
+          "number": 3,
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 4,
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42999230320/job/130451250645"
+    }
+  ],
+  "status": "completed",
+  "updatedAt": "2026-11-11T09:56:30Z",
+  "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/42999230320"
+}

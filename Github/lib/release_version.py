@@ -61,7 +61,8 @@ def commits_since(git, sha, last_tag):
             raise ReleaseError("invalid release base tag")
         base = git.run("rev-parse", "--verify", last_tag + "^{commit}").stdout.decode("ascii").strip()
         revision = base + ".." + sha
-    data = git.run("log", "-z", "--format=%H%x00%B", revision, "--").stdout.decode("utf-8")
+    # Git keeps legacy non-UTF-8 messages as raw bytes; analyze them as text, never abort.
+    data = git.run("log", "-z", "--format=%H%x00%B", revision, "--").stdout.decode("utf-8", errors="replace")
     fields = data.split("\0")
     if fields[-1] != "" or (len(fields) - 1) % 2:
         raise ReleaseError("malformed frozen commit history")
