@@ -46,6 +46,16 @@
       "localLog": "/tmp/cicd-3-4-api-implementation.log",
       "logSha256": "c761c0a17a6a992ec77475cbb4232c97f3d9166f067ab871a84c0cabd3c7c65d",
       "logSize": 208
+    },
+    {
+      "name": "cleanupApi",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/check_public_api.py",
+      "exitCode": 0,
+      "checkedRevision": "3bd1c7f9022158c3649824da25011a27087db693",
+      "result": "2554 entries, no removals against v4.47.0",
+      "localLog": "/tmp/cicd-3-4-final-api.log",
+      "logSha256": "2f0f7e4beee7b3f660e06228b3c840422cfb8568e461b1ee03495c5b517532c8",
+      "logSize": 208
     }
   ],
   "commitMessages": [
@@ -69,6 +79,13 @@
       "validator": "locked @commitlint/cli 21.2.4 with effective repository config",
       "exitCode": 0,
       "remoteFullShaVerified": true
+    },
+    {
+      "revision": "3bd1c7f9022158c3649824da25011a27087db693",
+      "exactMessage": "test(ci): retain publication evidence and remove probe controls\n",
+      "validator": "locked @commitlint/cli 21.2.4 with effective repository config",
+      "exitCode": 0,
+      "remoteFullShaVerified": true
     }
   ],
   "hostedNuget": {
@@ -86,5 +103,12 @@
     "outcomeArtifact": 13844679235
   },
   "temporaryControlsRemoved": true,
-  "storyStatus": "left unchanged for workflow handling"
+  "storyStatus": "left unchanged for workflow handling",
+  "cleanupRevision": "3bd1c7f9022158c3649824da25011a27087db693",
+  "frozenComparison": "frozen-files.json: 212 of 215 baseline files unchanged; the three exceptions are specified new-pipeline factoring/test/docs",
+  "whitespaceCheck": {
+    "command": "git diff --check and git diff --cached --check",
+    "exitCode": 0
+  },
+  "cleanupAdministrationDisclosure": "cleanup-container-probe.json and results document disclose the temporary exact-tag ruleset exclusion and its exact restoration; this exceeded resource-only authorization"
 }
