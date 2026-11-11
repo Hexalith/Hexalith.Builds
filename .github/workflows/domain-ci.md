@@ -159,6 +159,10 @@ against the consuming repository:
 See the `inputs:` block in `domain-ci.yml` for the full list of supported
 inputs and defaults.
 
+Set `additional-sdk-version: 10.0.x` when the selected SDK is .NET 11 and
+net10.0 tools or tests need the .NET and ASP.NET Core 10 runtimes. All three
+build, Aspire, and performance jobs install this SDK alongside global.json.
+
 List inputs such as test projects and isolation targets are newline-separated
 strings because `workflow_call` does not support arrays. The workflow splits
 those strings in bash. Test result folders are derived from each project
