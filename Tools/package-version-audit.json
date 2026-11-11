@@ -1,13 +1,17 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "46b988e750588291f8285fef3f71a7c534cf4943",
+  "generatedFromRevision": "019fc503e02f3239938c4793fea94021eccac094",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "5bbc75c6777650d0e6f7c5de07d532092a914ac07128973aa6e6fd0cf13a1544",
-  "catalogRawSha256": "71a23a664bb875476e0c7a81d7fc08823f2fa9a0c222a2dfeef349d80c6df8ee",
+  "catalogSha256": "d29dae9b7a2a93ea3093bcf4e8295fec4e7ce020021ec1d7877803737b6fe655",
+  "catalogRawSha256": "0bf4652cde995355b1d5c8b1da1a8ea966dba9dbc4d16ee46f30a14712df3c32",
   "snapshot": {
-    "mode": "complete",
-    "auditedAtUtc": "2026-11-11T12:53:33.2915483+00:00",
+    "mode": "incremental",
+    "auditedAtUtc": "2026-11-11T13:05:21.1668772+00:00",
     "refreshedFamilies": [
+      "package:swashbuckle.aspnetcore",
+      "package:swashbuckle.aspnetcore.swaggerui"
+    ],
+    "preservedFamilies": [
       "aspire",
       "bunit-html",
       "dapr",
@@ -151,8 +155,6 @@
       "package:sonaranalyzer.csharp",
       "package:stackexchange.redis",
       "package:stylecop.analyzers",
-      "package:swashbuckle.aspnetcore",
-      "package:swashbuckle.aspnetcore.swaggerui",
       "package:system.commandline",
       "package:system.componentmodel.annotations",
       "package:system.reactive",
@@ -165,8 +167,7 @@
       "roslyn",
       "verify",
       "xunit"
-    ],
-    "preservedFamilies": []
+    ]
   },
   "sources": [
     {
@@ -181,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "46b988e750588291f8285fef3f71a7c534cf4943",
+    "repositoryRevision": "019fc503e02f3239938c4793fea94021eccac094",
     "sha256": "bc62a9816e2f2288702315de36411cb577a3eaa8b502db47187b947bde0ad9f7",
     "entries": [
       {
@@ -66893,8 +66894,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-11T12:53:33.2915483+00:00",
-        "generatedFromRevision": "46b988e750588291f8285fef3f71a7c534cf4943",
+        "auditedAtUtc": "2026-11-11T13:05:21.1668772+00:00",
+        "generatedFromRevision": "019fc503e02f3239938c4793fea94021eccac094",
         "familySelectionSha256": "ee3c0067a2e78aee6b38bd5b97b6f82c106d8f1d3543dd02f8511490dfad3dbe",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "d7f245819343ba9863ce37f2d22d484b16bc805bae3feecc486f9aec81c88fe2",
@@ -67349,11 +67350,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-11T12:53:33.2915483+00:00",
-        "generatedFromRevision": "46b988e750588291f8285fef3f71a7c534cf4943",
-        "familySelectionSha256": "464524e4b618ce526da689f56775c627c657fa690f061018e09d1cdce493c07c",
+        "auditedAtUtc": "2026-11-11T13:05:21.1668772+00:00",
+        "generatedFromRevision": "019fc503e02f3239938c4793fea94021eccac094",
+        "familySelectionSha256": "b9b35513294a9f128fc01b06b2cad807ee9a5f15327a068acc194d48234d687f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "4e562053f2ec6cea5426c5a01ea722dbaec5c48faa49367a58208cc067b03f5e",
+        "packageMetadataSha256": "2b83d3e6b1cefadb9bfae7fd347883cf16248c920bce48aec5798170ffc990e3",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -67787,6 +67788,31 @@
             "familySelectionSha256": "464524e4b618ce526da689f56775c627c657fa690f061018e09d1cdce493c07c",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "6e1c4e1f589c0ca320bdb52f4cde490b6a30ac472a00adb44c7f85ea0c52cec0",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T12:53:33.2915483+00:00",
+          "generatedFromRevision": "46b988e750588291f8285fef3f71a7c534cf4943",
+          "family": "package:swashbuckle.aspnetcore.swaggerui",
+          "disposition": "retained",
+          "rollbackGroup": "package:swashbuckle.aspnetcore.swaggerui",
+          "packageIds": [
+            "Swashbuckle.AspNetCore.SwaggerUI"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T12:53:33.2915483+00:00",
+            "generatedFromRevision": "46b988e750588291f8285fef3f71a7c534cf4943",
+            "familySelectionSha256": "464524e4b618ce526da689f56775c627c657fa690f061018e09d1cdce493c07c",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4e562053f2ec6cea5426c5a01ea722dbaec5c48faa49367a58208cc067b03f5e",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -270670,15 +270696,15 @@
     },
     {
       "id": "Swashbuckle.AspNetCore.SwaggerUI",
-      "auditedVersion": "10.3.1",
-      "selectedVersion": "10.3.1",
+      "auditedVersion": "11.0.0",
+      "selectedVersion": "11.0.0",
       "latestStable": "11.0.0",
       "latestPrerelease": "6.6.0-preview.322",
       "listingState": "listed",
       "family": "package:swashbuckle.aspnetcore.swaggerui",
       "disposition": "retained",
       "rollbackGroup": "package:swashbuckle.aspnetcore.swaggerui",
-      "rationale": "Retain 10.3.1 pending compatibility validation of listed stable candidate 11.0.0.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=6.6.0-preview.322",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -271195,6 +271221,42 @@
             "familySelectionSha256": "464524e4b618ce526da689f56775c627c657fa690f061018e09d1cdce493c07c",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "6e1c4e1f589c0ca320bdb52f4cde490b6a30ac472a00adb44c7f85ea0c52cec0",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-11T12:53:33.2915483+00:00",
+          "generatedFromRevision": "46b988e750588291f8285fef3f71a7c534cf4943",
+          "id": "Swashbuckle.AspNetCore.SwaggerUI",
+          "auditedVersion": "10.3.1",
+          "selectedVersion": "10.3.1",
+          "latestStable": "11.0.0",
+          "latestPrerelease": "6.6.0-preview.322",
+          "listingState": "listed",
+          "family": "package:swashbuckle.aspnetcore.swaggerui",
+          "disposition": "retained",
+          "rollbackGroup": "package:swashbuckle.aspnetcore.swaggerui",
+          "rationale": "Retain 10.3.1 pending compatibility validation of listed stable candidate 11.0.0.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.0.0, prerelease=6.6.0-preview.322",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "11.0.0",
+              "latestPrerelease": "6.6.0-preview.322",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-11T12:53:33.2915483+00:00",
+            "generatedFromRevision": "46b988e750588291f8285fef3f71a7c534cf4943",
+            "familySelectionSha256": "464524e4b618ce526da689f56775c627c657fa690f061018e09d1cdce493c07c",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4e562053f2ec6cea5426c5a01ea722dbaec5c48faa49367a58208cc067b03f5e",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
