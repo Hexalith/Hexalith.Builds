@@ -27,17 +27,17 @@ rules:
       - codeql.yml:42:9
       - commitlint.yml:31:9
       - dependency-review.yml:26:9
-      - domain-ci-v2.yml:225:9
-      - domain-ci.yml:272:9
-      - domain-ci.yml:983:9
-      - domain-ci.yml:1251:9
+      - domain-ci-v2.yml:230:9
+      - domain-ci.yml:277:9
+      - domain-ci.yml:989:9
+      - domain-ci.yml:1261:9
   ref-version-mismatch:
     # AD-20: exact existing findings; retain runtime bytes until the rewrite.
     ignore:
-      - domain-ci-v2.yml:326:107
-      - domain-ci.yml:373:107
-      - domain-ci.yml:670:100
-      - domain-ci.yml:996:107
-      - domain-ci.yml:1126:100
-      - domain-ci.yml:1264:107
-      - domain-ci.yml:1316:100
+      - domain-ci-v2.yml:331:107
+      - domain-ci.yml:378:107
+      - domain-ci.yml:676:100
+      - domain-ci.yml:1002:107
+      - domain-ci.yml:1136:100
+      - domain-ci.yml:1274:107
+      - domain-ci.yml:1327:100
