@@ -1074,7 +1074,7 @@ jobs:
           node-version: '24'
       - name: Initialize Ubuntu APT mirrors
         if: ${{ inputs.aspire-test-project != '' || inputs.aspire-browser-project != '' }}
-        uses: $/Github/initialize-apt
+        uses: Hexalith/Hexalith.Builds/Github/initialize-apt@f5a46e8a70a1893bc638fa5f488d57767fafdede
       - name: Trust HTTPS development certificates for live sockets
         if: ${{ inputs.aspire-test-project != '' || inputs.aspire-browser-project != '' }}
         run: |
