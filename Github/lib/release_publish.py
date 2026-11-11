@@ -204,6 +204,14 @@ def push_packages(directory, values, key, *, run=subprocess.run):
             raise ReleaseError("NuGet publication execution failed or timed out") from error
         if result.returncode:
             raise ReleaseError("NuGet publication failed")
+        # Emit only fixed, recognized statuses; command output can contain credentials.
+        output = result.stdout or b""
+        if b"already exists" in output:
+            print("NuGet package version already exists; skipped duplicate", flush=True)
+        elif b"Your package was pushed" in output:
+            print("NuGet package version published", flush=True)
+        else:
+            print("NuGet package push completed", flush=True)
 
 
 def finalize_release(git, api, values, *, refresh=workflows_match):

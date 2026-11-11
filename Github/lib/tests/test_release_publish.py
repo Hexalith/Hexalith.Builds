@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import copy
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
 import http.server
 import io
 import json
@@ -333,6 +333,18 @@ class PublisherTests(History):
             publish.push_packages(self.root / "payload", values, "key", run=run)
         publish.push_packages(self.root / "payload", values, "key", run=run)
         self.assertEqual(observed[0], observed[1])
+
+    def test_nuget_status_reports_duplicate_without_exposing_tool_output(self):
+        control = self.control()
+        values = self.authenticate(control)
+        for output, expected in ((b"Your package was pushed. private-key", "NuGet package version published"),
+                                 (b"private-key already exists at feed", "NuGet package version already exists; skipped duplicate"),
+                                 (b"private-key", "NuGet package push completed")):
+            recorded = io.StringIO()
+            with redirect_stdout(recorded):
+                publish.push_packages(self.root / "payload", values, "private-key", run=lambda args, **kwargs:
+                                      subprocess.CompletedProcess(args, 0, stdout=output))
+            self.assertEqual(recorded.getvalue(), expected + "\n")
 
 
 def draft_files(payload):
