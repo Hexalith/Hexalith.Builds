@@ -211,8 +211,19 @@ def verify_preparation() -> None:
     _prepare.verified_environment(result, workspace)
 
 
+def read_owner_artifact(path: Path) -> bytes:
+    """Admit exact private owner bytes once through held, unlinked directory components."""
+    if not path.is_absolute() or ".." in path.parts:
+        raise ValueError("owner artifact requires an absolute bounded path")
+    held = open_directory(Path(path.anchor), path.parent, create=False)
+    try:
+        return read_private_artifact(held, path.name, FIXED_METADATA_BYTES)
+    finally:
+        os.close(held)
+
+
 def receipt_owner(receipt: Path, expected_context: dict) -> dict:
-    owner = read_json(real_path(receipt).read_text(encoding="utf-8"))
+    owner = read_json(read_owner_artifact(receipt).decode("utf-8"))
     if owner.get("schema") != SCHEMA or owner.get("executionContext") != expected_context:
         raise ValueError("CI receipt belongs to another repository, run, attempt or job")
     identities = [owner.get(key) for key in ("runId", "attemptId", "environmentId")]
@@ -225,15 +236,18 @@ def receipt_owner(receipt: Path, expected_context: dict) -> dict:
     expected = (
         Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))) / "hexalith-builds" / "g4-runs"
     )
-    if not state.is_absolute() or real_path(state) != real_path(expected):
+    if not state.is_absolute() or state != expected.absolute() or ".." in state.parts:
         raise ValueError("CI receipt uses an unexpected owner metadata root")
     for path in (state / (owner["runId"] + ".json"), state / "diagnostics" / owner["runId"] / "owner.json"):
-        if path.exists():
-            recorded = read_json(real_path(path).read_text(encoding="utf-8"))
-            if any(
-                recorded.get(key) != owner[key] for key in ("runId", "attemptId", "environmentId", "executionContext")
-            ):
-                raise ValueError("durable owner metadata differs from the receipt")
+        try:
+            body = read_owner_artifact(path)
+        except FileNotFoundError:
+            continue
+        recorded = read_json(body.decode("utf-8"))
+        if any(
+            recorded.get(key) != owner[key] for key in ("runId", "attemptId", "environmentId", "executionContext")
+        ):
+            raise ValueError("durable owner metadata differs from the receipt")
     return owner
 
 

@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess  # nosec B404 -- only a fixed interpreter and this test's temporary fixture are executed.
 import signal
+import shutil
 import sys
 import time
 import tempfile
@@ -90,7 +91,7 @@ receipt = pathlib.Path(next(arg.split('=', 1)[1] for arg in args if arg.startswi
 (root / 'actual-tool-args.json').write_text(json.dumps(args))
 (root / 'actual-tool-stdin.json').write_text(json.dumps(sys.stdin.read()))
 def write_receipt():
-    receipt.write_text(json.dumps(owner))
+    receipt.write_text(json.dumps(owner)); receipt.chmod(0o600)
 def report(code):
     print(json.dumps({'outcome': {'exitCode': code}}), flush=True)
 if scenario == 'success':
@@ -239,6 +240,7 @@ class IntegrationTests(unittest.TestCase):
 
     def write_receipt(self):
         self.receipt.write_text(json.dumps(self.owner))
+        self.receipt.chmod(0o600)
 
     def fake_tool(self, scenario, **extra):
         """Install a fake `dotnet` on PATH that records how the gated tool and its exact down were invoked."""
@@ -639,6 +641,7 @@ class IntegrationTests(unittest.TestCase):
         for name in ("plan.json", "source-mapping.json", "native-endpoint-credentials.json", "apphost.log"):
             (directory / name).write_text("private-endpoint-sentinel")
         (directory / "owner.json").write_text(json.dumps(self.owner))
+        (directory / "owner.json").chmod(0o600)
         held = directory.with_name("held-owner")
 
         def replace_after_owner_validation(*args, **kwargs):
@@ -1306,6 +1309,134 @@ class IntegrationTests(unittest.TestCase):
             with self.subTest(changed=changed):
                 self.assertFalse(helper.cleanup_verified(completed, changed, self.owner))
 
+    def test_receipt_and_durable_metadata_refuse_unsafe_entries(self):
+        self.write_receipt()
+        targets = [self.receipt, self.state / (self.owner["runId"] + ".json"),
+                   self.state / "diagnostics" / self.owner["runId"] / "owner.json"]
+        for target in targets:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            for fault in ("symlink", "hardlink", "permissions", "fifo", "directory", "conflicting-owner"):
+                with self.subTest(target=target.name, fault=fault):
+                    target.unlink(missing_ok=True)
+                    original = self.runner_temp / "original.json"
+                    original.write_text(json.dumps(self.owner)); original.chmod(0o600)
+                    if fault == "symlink": target.symlink_to(original)
+                    elif fault == "hardlink": os.link(original, target)
+                    elif fault == "fifo": os.mkfifo(target, 0o600)
+                    elif fault == "directory": target.mkdir()
+                    else:
+                        document = dict(self.owner)
+                        if fault == "conflicting-owner": document["attemptId"] = "f" * 32
+                        target.write_text(json.dumps(document)); target.chmod(0o644 if fault == "permissions" else 0o600)
+                    try:
+                        if target == self.receipt and fault == "conflicting-owner":
+                            continue  # The receipt itself supplies identity; durable records establish conflicts.
+                        if fault == "fifo":
+                            program = ("import importlib.util,json,sys; from pathlib import Path; "
+                                       "s=importlib.util.spec_from_file_location('owner',sys.argv[1]); "
+                                       "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
+                                       "m.receipt_owner(Path(sys.argv[2]),json.loads(sys.argv[3]))")
+                            result = subprocess.run([sys.executable, "-c", program, helper.__file__, str(self.receipt),
+                                                     json.dumps(helper.ci_context())], capture_output=True, text=True, timeout=3, check=False)
+                            self.assertNotEqual(result.returncode, 0)
+                            self.assertIn("ValueError", result.stderr)
+                        else:
+                            with self.assertRaises((ValueError, OSError)):
+                                helper.receipt_owner(self.receipt, helper.ci_context())
+                    finally:
+                        if target.is_dir(): target.rmdir()
+                        else: target.unlink()
+                        original.unlink()
+            if target == self.receipt: self.write_receipt()
+
+    def test_validation_uses_admitted_receipt_bytes_after_path_swap(self):
+        self.write_receipt()
+        read = helper.read_private_artifact
+        def swap_after_admission(directory, name, maximum):
+            body = read(directory, name, maximum)
+            self.receipt.unlink()
+            self.receipt.write_text(json.dumps(dict(self.owner, attemptId="f" * 32)))
+            return body
+        with patch.object(helper, "read_private_artifact", side_effect=swap_after_admission):
+            self.assertEqual(helper.receipt_owner(self.receipt, helper.ci_context()), self.owner)
+
+    def test_durable_metadata_validation_keeps_its_admitted_bytes_after_swaps(self):
+        self.write_receipt()
+        for target in (self.state / (self.owner["runId"] + ".json"),
+                       self.state / "diagnostics" / self.owner["runId"] / "owner.json"):
+            with self.subTest(target=target.name):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(json.dumps(self.owner)); target.chmod(0o600)
+                read = helper.read_private_artifact
+                def swap_after_admission(directory, name, maximum):
+                    body = read(directory, name, maximum)
+                    if name == target.name:
+                        target.unlink()
+                        target.write_text(json.dumps(dict(self.owner, environmentId="f" * 32))); target.chmod(0o600)
+                    return body
+                with patch.object(helper, "read_private_artifact", side_effect=swap_after_admission):
+                    self.assertEqual(helper.receipt_owner(self.receipt, helper.ci_context()), self.owner)
+                target.unlink()
+
+    def test_receipt_and_metadata_ancestor_replacements_are_bound_to_held_admission(self):
+        for role in ("receipt", "run-metadata", "diagnostic-metadata"):
+            for boundary in ("before-open", "after-open", "after-admission"):
+                for replacement in ("link", "conflicting-directory"):
+                    with self.subTest(role=role, boundary=boundary, replacement=replacement):
+                        self.write_receipt()
+                        metadata = [self.state / (self.owner["runId"] + ".json"),
+                                    self.state / "diagnostics" / self.owner["runId"] / "owner.json"]
+                        for record in metadata:
+                            record.parent.mkdir(parents=True, exist_ok=True)
+                            record.write_text(json.dumps(self.owner)); record.chmod(0o600)
+                        target = self.receipt if role == "receipt" else metadata[0 if role == "run-metadata" else 1]
+                        parent = target.parent
+                        identity = parent.stat().st_ino
+                        retained = parent.with_name(parent.name + "-held")
+                        foreign = self.root / "foreign-ancestor"
+                        foreign.mkdir(mode=0o700)
+                        conflict = json.dumps(dict(self.owner, attemptId="f" * 32))
+                        (foreign / target.name).write_text(conflict); (foreign / target.name).chmod(0o600)
+                        swapped = False
+                        def swap():
+                            nonlocal swapped
+                            if swapped: return
+                            swapped = True
+                            parent.rename(retained)
+                            if replacement == "link": parent.symlink_to(foreign, target_is_directory=True)
+                            else:
+                                parent.mkdir(mode=0o700)
+                                (parent / target.name).write_text(conflict); (parent / target.name).chmod(0o600)
+                        original_open = helper.os.open
+                        def open_component(name, flags, *arguments, **keywords):
+                            selected = name == parent.name and flags & os.O_DIRECTORY and "dir_fd" in keywords
+                            if selected and boundary == "before-open": swap()
+                            descriptor = original_open(name, flags, *arguments, **keywords)
+                            if selected and boundary == "after-open": swap()
+                            return descriptor
+                        original_read = helper.read_private_artifact
+                        def read_admitted(directory, name, maximum):
+                            body = original_read(directory, name, maximum)
+                            if boundary == "after-admission" and name == target.name and os.fstat(directory).st_ino == identity: swap()
+                            return body
+                        try:
+                            with patch.object(helper.os, "open", side_effect=open_component), \
+                                 patch.object(helper, "read_private_artifact", side_effect=read_admitted):
+                                if boundary == "before-open" or role == "run-metadata" and replacement == "link":
+                                    # The second metadata path must independently refuse a linked state ancestor.
+                                    with self.assertRaises((OSError, ValueError)):
+                                        helper.receipt_owner(self.receipt, helper.ci_context())
+                                else:
+                                    self.assertEqual(helper.receipt_owner(self.receipt, helper.ci_context()), self.owner)
+                            self.assertTrue(swapped, "The selected ancestor boundary must actually execute.")
+                            self.assertEqual((parent / target.name).read_text(), conflict)
+                        finally:
+                            if swapped:
+                                if parent.is_symlink(): parent.unlink()
+                                else: shutil.rmtree(parent)
+                                retained.rename(parent)
+                            shutil.rmtree(foreign)
+
     def test_receipt_with_a_foreign_state_directory_refuses(self):
         foreign = self.root / "foreign-state"
         foreign.mkdir()
@@ -1592,7 +1723,7 @@ class IntegrationTests(unittest.TestCase):
                 "if child == 0:\n"
                 "    def stop(signum, frame):\n"
                 "        if late == 'late':\n"
-                "            receipt.write_text(owner)\n"
+                "            receipt.write_text(owner); receipt.chmod(0o600)\n"
                 "        os._exit(0)\n"
                 "    signal.signal(signal.SIGINT, stop)\n"
                 "    marker.write_text(str(os.getpid()))\n"
