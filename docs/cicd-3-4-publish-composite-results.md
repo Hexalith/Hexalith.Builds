@@ -168,13 +168,18 @@ match their API SHA-256. Full source/run/jobs, safe hosted logs, authenticated
 original handoff/inventory, both outcomes and live release/tag readbacks are in
 [trusted-publishing](../evidence/cicd-3-4/trusted-publishing/). The two fixed NuGet
 status lines reveal recognized success/duplicate effects without exposing raw
-tool output or temporary credentials. Public feed retrieval observations are
-retained separately from the accepted hosted pushes: the public page and package
-feed returned HTTP 404 through the last observation after the successful retry.
-The hosted NuGet service acceptance and duplicate response are established;
-independent download/comparison of the repository-signed public package remains
-unverified. This visibility limit does not replace or weaken either hosted push
-result.
+tool output or temporary credentials. Initial public retrieval returned HTTP 404;
+the public version index, package page and package download now return HTTP 200.
+The independently downloaded package has SHA-256
+`616b2617d07f7cfc7d8098b7c7e980e3fc82e356b59cd823f81ac9ac57c81f30`.
+Every one of the six original ZIP entries matches its original bytes and size.
+The sole additional entry is nuget.org's 12,982-byte `.signature.p7s`, SHA-256
+`efbeab5c0184ddc5a358e4434c4ec90784977532feca8543869d58109ea3d92b`.
+`dotnet nuget verify --all` passes with a Repository signature from NuGet.org
+Repository by Microsoft, certificate SHA-256
+`1F4B311D9ACC115C8DC8018B5A49E00FCE6DA8E2855F9F014CA6F34570BC482D`.
+[Public package evidence](../evidence/cicd-3-4/trusted-publishing/nuget-public-package.json)
+retains the per-entry hashes, HTTP observations and signature-verification log.
 
 Resumed verification passes all 20 groups on both Python 3.12.13 and runner
 Python 3.14.4, the 11 publisher and 3 OCI focused cases on Python 3.12, pinned

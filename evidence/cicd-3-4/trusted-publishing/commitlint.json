@@ -18,5 +18,9 @@
   "cicd-3-4-completion-commitlint.log": {
     "sha256": "21f23e0241455cc81e0aeb1960e47de06940fa56c470d4042fe534249af5aaa8",
     "text": "\u29d7   --- input ---\ntest(ci): retain trusted publication and original-byte retry evidence\n\u2714   found 0 problems, 0 warnings\n"
+  },
+  "cicd-3-4-public-readback-commitlint.log": {
+    "sha256": "d4f599e5778c9683ef77516fb76feed99f8a9c789dc58c436b0e93bdef306c56",
+    "text": "\u29d7   --- input ---\ntest(ci): verify published NuGet bytes and repository signature\n\u2714   found 0 problems, 0 warnings\n"
   }
 }

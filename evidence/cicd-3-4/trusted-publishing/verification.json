@@ -157,6 +157,15 @@
   "originalArtifactDownloadedAndDigestValidated": true,
   "completeRemoteOCIValidatedByProductionControllerTwice": true,
   "whitespaceCheck": "git diff --check and git diff --cached --check passed",
-  "publicNuGetDownload": "HTTP 404 in retained observations; hosted successful OIDC/push and same-original duplicate-safe retry are independently retained. No public package-byte comparison is claimed.",
-  "protectionPolicyWrites": 0
+  "publicNuGetDownload": {
+    "evidence": "nuget-public-package.json",
+    "status": 200,
+    "publicPackageSha256": "616b2617d07f7cfc7d8098b7c7e980e3fc82e356b59cd823f81ac9ac57c81f30",
+    "originalPackageSha256": "ccef50a5127b8061356401eeb3941b1f6903528552d963c326e3f4f59f15509a",
+    "allSixOriginalEntriesUnchanged": true,
+    "onlyAdditionalEntry": ".signature.p7s",
+    "repositorySignatureVerificationExitCode": 0
+  },
+  "protectionPolicyWrites": 0,
+  "publicNuGetReadbackVerifiedAt": "2026-11-11T11:34:03.717521+00:00"
 }

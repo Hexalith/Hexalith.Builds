@@ -1,0 +1,103 @@
+{
+  "observedAt": "2026-11-11T11:34:03.717521+00:00",
+  "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.publishprobe.20261111/4.47.1/hexalith.builds.publishprobe.20261111.4.47.1.nupkg",
+  "status": 200,
+  "size": 17312,
+  "sha256": "616b2617d07f7cfc7d8098b7c7e980e3fc82e356b59cd823f81ac9ac57c81f30",
+  "headers": {
+    "Date": "Wed, 11 Nov 2026 11:34:03 GMT",
+    "Content-Type": "application/octet-stream",
+    "Content-Length": "17312",
+    "Cache-Control": "public, max-age=86400",
+    "Last-Modified": "Wed, 11 Nov 2026 11:30:52 GMT",
+    "ETag": "0x8DF3FE73E34EDB4",
+    "x-ms-meta-SHA512": "ah6tIF7ctGml4BHxurbbVHLE7/p/ISG8ROSsBAqR2xt5EzRcy+K7RC53DGQX+ndKDM7+eZTi0Ty62RDmkw0kOQ=="
+  },
+  "originalPackageSha256": "ccef50a5127b8061356401eeb3941b1f6903528552d963c326e3f4f59f15509a",
+  "originalPackageSize": 4226,
+  "originalEntries": {
+    "_rels/.rels": {
+      "size": 500,
+      "sha256": "d84c71b733188ccbdc5b9a1d83c2e8c309f430edd99f71f796204c8358521870"
+    },
+    "Hexalith.Builds.PublishProbe.20261111.nuspec": {
+      "size": 567,
+      "sha256": "2734cdda8db80cb433a71becbc988489d239af0d6636b9228f8ad969acda7cf6"
+    },
+    "lib/net10.0/PublishProbe.dll": {
+      "size": 4608,
+      "sha256": "de3e1b8fd3688b8bb4e5869bd07f19b8db02e1c80c34f44e736f8d80f2a55cca"
+    },
+    "lib/net10.0/PublishProbe.runtimeconfig.json": {
+      "size": 330,
+      "sha256": "9950d4583cfc9a106857c0d5b8a75b53e8774852b57b80bc3823a74d44a4d87f"
+    },
+    "[Content_Types].xml": {
+      "size": 522,
+      "sha256": "28d38bf63bcbe7d3429e7e627e5bfff75079bdc28bff837c58e85cd3448718c3"
+    },
+    "package/services/metadata/core-properties/nuget.psmdcp": {
+      "size": 671,
+      "sha256": "7e15efb46b5b0a54e59fbd8a8838bdc47635f886b796292860601ead567763e5"
+    }
+  },
+  "publicEntries": {
+    "_rels/.rels": {
+      "size": 500,
+      "sha256": "d84c71b733188ccbdc5b9a1d83c2e8c309f430edd99f71f796204c8358521870"
+    },
+    "Hexalith.Builds.PublishProbe.20261111.nuspec": {
+      "size": 567,
+      "sha256": "2734cdda8db80cb433a71becbc988489d239af0d6636b9228f8ad969acda7cf6"
+    },
+    "lib/net10.0/PublishProbe.dll": {
+      "size": 4608,
+      "sha256": "de3e1b8fd3688b8bb4e5869bd07f19b8db02e1c80c34f44e736f8d80f2a55cca"
+    },
+    "lib/net10.0/PublishProbe.runtimeconfig.json": {
+      "size": 330,
+      "sha256": "9950d4583cfc9a106857c0d5b8a75b53e8774852b57b80bc3823a74d44a4d87f"
+    },
+    "[Content_Types].xml": {
+      "size": 522,
+      "sha256": "28d38bf63bcbe7d3429e7e627e5bfff75079bdc28bff837c58e85cd3448718c3"
+    },
+    "package/services/metadata/core-properties/nuget.psmdcp": {
+      "size": 671,
+      "sha256": "7e15efb46b5b0a54e59fbd8a8838bdc47635f886b796292860601ead567763e5"
+    },
+    ".signature.p7s": {
+      "size": 12982,
+      "sha256": "efbeab5c0184ddc5a358e4434c4ec90784977532feca8543869d58109ea3d92b"
+    }
+  },
+  "allOriginalEntriesUnchanged": true,
+  "onlyAdditionalEntry": ".signature.p7s",
+  "publicVersionIndex": {
+    "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.publishprobe.20261111/index.json",
+    "status": 200,
+    "document": {
+      "versions": [
+        "4.47.1"
+      ]
+    }
+  },
+  "publicPackagePage": {
+    "url": "https://www.nuget.org/packages/Hexalith.Builds.PublishProbe.20261111/4.47.1",
+    "status": 200
+  },
+  "signatureVerification": {
+    "command": [
+      "dotnet",
+      "nuget",
+      "verify",
+      "/tmp/cicd-3-4-public-nuget.nupkg",
+      "--all"
+    ],
+    "exitCode": 0,
+    "log": "nuget-signature-verification.txt",
+    "logSha256": "fb8aa7a356bffb75b0b6436a48d2e242ccef0c32700f640b81e32830b66691ef",
+    "signatureType": "Repository",
+    "certificateSha256": "1F4B311D9ACC115C8DC8018B5A49E00FCE6DA8E2855F9F014CA6F34570BC482D"
+  }
+}
