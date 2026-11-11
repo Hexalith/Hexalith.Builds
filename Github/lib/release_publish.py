@@ -299,8 +299,9 @@ def main():
                     try:
                         state = strict_json((directory / "state.json").read_bytes())
                         document = validate_outcome(state["document"])
-                    except (ReleaseError, OSError, ValueError, KeyError, TypeError):
-                        print("release publication state unavailable; reporting failed dispatch", file=sys.stderr)
+                    except (ReleaseError, OSError, ValueError, KeyError, TypeError) as error:
+                        print(f"release publication state unavailable ({type(error).__name__}); reporting failed dispatch",
+                              file=sys.stderr)
                 if (os.environ.get("RELEASE_PREPARE_RESULT") != "success"
                         or os.environ.get("RELEASE_LOGIN_RESULT") not in {"success", "skipped"}
                         or os.environ.get("RELEASE_PUBLISH_RESULT") != "success"):

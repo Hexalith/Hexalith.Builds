@@ -44,7 +44,9 @@ The `outcome` output is `published`, `ready` or `failed`. An always-run finalize
 uploads exactly one `hexalith-release-outcome` artifact, with `overwrite: true`,
 containing schema-valid `outcome.json`. It covers failed preflight, nested
 NuGet login and push steps. Malformed handoffs report the trusted dispatch SHA;
-authenticated handoffs report the built SHA/version. `ready` includes `draftId`
+authenticated handoffs report the built SHA/version. If the private publisher
+state is missing or invalid when the finalizer runs, it reports a `failed`
+outcome with the trusted dispatch SHA and no version. `ready` includes `draftId`
 and the captured `lastTag`. The reusable reporter relinquishes ownership only
 for a successful validated handoff and must not upload a second outcome.
 

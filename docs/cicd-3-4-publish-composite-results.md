@@ -3,7 +3,9 @@ story: '3-4'
 created: '2026-11-11'
 status: hosted-publication-qualified
 implementation_baseline_revision: 891886ddc60a9924d053bb74bf6bcc73e101b2ce
-implementation_revision: e9741b56ac6f6512734b368492dbab892e109877
+hosted_qualified_revision: e9741b56ac6f6512734b368492dbab892e109877
+finalizer_repair_revision: 3699c6d6c72ca2a02940cdf73656ae7ebf53a6a8
+finalizer_repair_verification: local-actual-composite-only
 ---
 
 # Original release publication results
@@ -265,6 +267,17 @@ they are qualification payloads, not a Builds product release. Temporary control
 are removed and normal 90-day Actions artifact retention remains. The retained
 probe tag is now a reachable stable version and can affect future version-base
 selection until the maintainer removes the disposable resources through an
-authorized process. Complete-mode selection/recovery/deletion, production
+authorized process. Draft `441591623` still carries all five handoff trailers,
+and its tag targets the built source. Publisher authentication binds a handoff
+to its producer's caller workflow path. A re-added
+`.github/workflows/release-publish-probe.yml` on `main` could therefore replay
+that handoff until artifact `13850760915` expires at 2027-02-09T11:16:45Z. Such a
+replay either publishes the draft or leaves it `ready` for the downstream App.
+The dedicated nuget.org Trusted Publishing policy for that workflow filename,
+environment `hexalith-release` and package ID
+`Hexalith.Builds.PublishProbe.20261111` also remains active, so a later
+qualification can reuse it as the story allows. The authorized maintainer
+cleanup should delete the draft together with `v4.47.1`, and should remove the
+policy once re-qualification is no longer needed. Complete-mode selection/recovery/deletion, production
 caller rewrite, nightly/App publication and audit-bypass lint remain downstream
 as specified.

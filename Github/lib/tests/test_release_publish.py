@@ -484,9 +484,14 @@ raise SystemExit({0})
                 published = scenario in {"success", "empty", "tag-correct-lightweight", "tag-correct-annotated"}
                 expected = "ready" if scenario == "ready" else "published" if published else "failed"
                 self.assertEqual(uploads[0]["outcome"], expected)
+                self.assertEqual(result is None, expected == "failed")
                 if scenario in state_faults:
                     self.assertEqual(uploads[0], {"schema": "hexalith.release-outcome.v1",
                                                  "sha": environment["GITHUB_SHA"], "outcome": "failed"})
+                    cause = {"state-missing": "FileNotFoundError", "state-truncated": "ReleaseError",
+                             "state-invalid": "OutcomeError"}[scenario]
+                    self.assertIn(f"release publication state unavailable ({cause})",
+                                  "".join(process.stderr for process in processes))
                 self.assertEqual(len(control.writes), 1 if published else 0)
                 no_push = scenario in {"malformed", "api", "empty", "login"} | tag_conflicts | state_faults
                 self.assertEqual(len(push_log.read_text().splitlines()), 0 if no_push else 1)
