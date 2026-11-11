@@ -253,7 +253,7 @@ try {
             Copy-Item -LiteralPath $resource -Destination $target
         }
         [IO.File]::WriteAllText((Join-Path $copyRoot 'Directory.Packages.props'), '<Project><Import Project="Props/Directory.Packages.props" /></Project>')
-        [IO.File]::WriteAllText((Join-Path $copyRoot 'Directory.Build.props'), '<Project><PropertyGroup><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies></PropertyGroup></Project>')
+        [IO.File]::WriteAllText((Join-Path $copyRoot 'Directory.Build.props'), '<Project><PropertyGroup><LangVersion>latest</LangVersion><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies></PropertyGroup></Project>')
         $project = Join-Path $tooling 'Hexalith.Builds.Tooling.csproj'
         $log = @(& dotnet build $project -c Debug -m:1 2>&1) -join "`n"
         if ($LASTEXITCODE -ne 0) { throw "Baseline tooling rebuild failed: $log" }

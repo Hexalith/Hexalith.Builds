@@ -127,7 +127,11 @@ public sealed class CompositionSdkProcessTests
         CompositionProcessResult observed = await CompositionProcess.RunAsync(direct, TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
         observed.ExitCode.ShouldBe(0, observed.Output + observed.ErrorOutput);
         observed.TimedOut.ShouldBeFalse();
-        observed.Output.Trim().ShouldStartWith("10.");
+        using JsonDocument global = JsonDocument.Parse(await File.ReadAllTextAsync(
+            Path.Combine(CompositionTestFiles.RepositoryRoot(), "global.json"),
+            TestContext.Current.CancellationToken).ConfigureAwait(true));
+        Version pinned = Version.Parse(global.RootElement.GetProperty("sdk").GetProperty("version").GetString()!);
+        SatisfiesLatestPatchRollForward(observed.Output.Trim(), pinned).ShouldBeTrue(observed.Output);
     }
 
     /// <summary>Verifies the actual SDK stays on a latestPatch resolution of the repository pin.</summary>
