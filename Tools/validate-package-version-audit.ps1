@@ -1144,7 +1144,22 @@ function Invoke-CatalogEvaluation {
     )
 
     $output = if ([string]::IsNullOrWhiteSpace($ResolvedEvaluatorScriptPath)) {
-        @(& dotnet msbuild $ResolvedCatalogPath -nologo -getItem:PackageVersion 2>&1)
+        # SDK build-server fallback diagnostics may precede JSON on the console.
+        # Keep the getItem result on MSBuild's dedicated machine-readable channel.
+        $evaluationOutputPath = [IO.Path]::GetTempFileName()
+        try {
+            $consoleOutput = @(& dotnet msbuild $ResolvedCatalogPath -nologo -getItem:PackageVersion `
+                    "-getResultOutputFile:$evaluationOutputPath" 2>&1)
+            if ($LASTEXITCODE -eq 0) {
+                @([IO.File]::ReadAllText($evaluationOutputPath))
+            }
+            else {
+                $consoleOutput
+            }
+        }
+        finally {
+            [IO.File]::Delete($evaluationOutputPath)
+        }
     }
     else {
         @(& $pwshExecutable -NoLogo -NoProfile -File $ResolvedEvaluatorScriptPath $ResolvedCatalogPath 2>&1)

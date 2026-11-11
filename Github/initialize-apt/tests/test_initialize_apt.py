@@ -6,8 +6,7 @@ import subprocess
 import tempfile
 import unittest
 
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / 'Github/initialize-apt/initialize-apt.sh'
+SCRIPT = Path(__file__).resolve().parents[1] / 'initialize-apt.sh'
 ORIGINAL = (b'http://azure.archive.ubuntu.com/ubuntu/\tpriority:1\n'
             b'https://archive.ubuntu.com/ubuntu/\tpriority:2\n'
             b'https://security.ubuntu.com/ubuntu/\tpriority:3\n')
