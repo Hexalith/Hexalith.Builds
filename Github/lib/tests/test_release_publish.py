@@ -371,6 +371,8 @@ assert pathlib.Path.cwd() != pathlib.Path({str(work)!r})
 assert not pathlib.Path('NuGet.Config').exists() and not pathlib.Path('global.json').exists()
 path = pathlib.Path(sys.argv[3])
 assert path.read_bytes() == bytes.fromhex({dict(draft_files(self.payload))["packages/Fixture.Package." + VERSION + ".nupkg"].hex()!r})
+with pathlib.Path({str(work / "pushes")!r}).open('a') as log:
+    log.write(hashlib.sha256(path.read_bytes()).hexdigest() + '\\n')
 raise SystemExit({0})
 ''')
         for executable in binaries.iterdir():
@@ -378,11 +380,20 @@ raise SystemExit({0})
         (work / "NuGet.Config").write_text("poison")
         (work / "global.json").write_text("poison")
         action = Path(__file__).resolve().parents[2] / "publish"
-        for scenario in ("success", "login", "push", "api", "malformed", "empty", "patch", "ready"):
+        tag_conflicts = {"tag-lightweight", "tag-annotated", "tag-noncommit"}
+        for scenario in ("success", "login", "push", "api", "malformed", "empty", "patch",
+                         *sorted(tag_conflicts), "tag-correct-lightweight", "tag-correct-annotated", "ready"):
             with self.subTest(scenario=scenario):
                 if git_command(self.root, "tag", "--list", "v" + VERSION):
                     git_command(self.root, "tag", "-d", "v" + VERSION)
                 control = self.control(artifact(self.sha, packages=False) if scenario == "empty" else None)
+                if scenario.startswith("tag-"):
+                    target = (git_command(self.root, "rev-parse", self.sha + "^{tree}") if scenario == "tag-noncommit"
+                              else self.base if scenario in tag_conflicts else self.sha)
+                    annotation = ("-a", "-m", "fixture") if scenario.endswith("annotated") else ()
+                    git_command(self.root, "tag", *annotation, "v" + VERSION, target)
+                push_log = work / "pushes"
+                push_log.write_text("")
                 output = work / "output"
                 output.write_text("")
                 environment = {**os.environ, "PATH": str(binaries) + os.pathsep + os.environ["PATH"],
@@ -431,10 +442,18 @@ raise SystemExit({0})
                     result, processes = run_composite(action, inputs, environment, cwd=work, runner_temp=work, external=external)
                 tool.write_text(contents)
                 self.assertEqual(len(uploads), 1, "\n".join(process.stderr for process in processes))
-                expected = "ready" if scenario == "ready" else "published" if scenario in {"success", "empty"} else "failed"
+                published = scenario in {"success", "empty", "tag-correct-lightweight", "tag-correct-annotated"}
+                expected = "ready" if scenario == "ready" else "published" if published else "failed"
                 self.assertEqual(uploads[0]["outcome"], expected)
-                self.assertEqual(len(control.writes), 1 if scenario in {"success", "empty"} else 0)
-                self.assertEqual(len(logins), 0 if scenario in {"malformed", "api", "empty"} else 1)
+                self.assertEqual(len(control.writes), 1 if published else 0)
+                no_push = scenario in {"malformed", "api", "empty", "login"} | tag_conflicts
+                self.assertEqual(len(push_log.read_text().splitlines()), 0 if no_push else 1)
+                self.assertEqual(len(logins), 0 if scenario in {"malformed", "api", "empty"} | tag_conflicts else 1)
+                if scenario in tag_conflicts:
+                    self.assertIn("tag v2.3.5 does not point at the built commit",
+                                  "".join(process.stderr for process in processes))
+                    self.assertTrue(control.release["draft"])
+                    self.assertEqual(git_command(self.root, "rev-parse", "v" + VERSION + "^{}"), target)
                 self.assertNotIn("temporary-key-marker", "".join(process.stdout + process.stderr for process in processes))
                 self.assertFalse(any(Path(line.split("=", 1)[1]).exists() for line in output.read_text().splitlines() if line.startswith("state=")))
                 self.assertTrue(all(auth is None for method, path, auth in control.requests if path == "/archive"))

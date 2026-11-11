@@ -1,0 +1,189 @@
+{
+  "checkedProductionRevision": "64fb95ed0186acdcc83c45bd00356a1f301dcfa5",
+  "publisherTestGitBlob": "b8f505bbbd1d158326e0b480a237fa1556d9f4c5",
+  "matrixCoverage": {
+    "Publish": [
+      "PublishCompositeTests.test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff",
+      "PublisherTests.test_absent_and_correct_lightweight_and_annotated_tags_publish_tag_last"
+    ],
+    "AD-17 tag conflict": [
+      "PublisherTests.test_both_tag_forms_conflict_and_noncommit_ref_fail_before_materialization",
+      "PublishCompositeTests.test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff"
+    ],
+    "Authentication failure": [
+      "PublisherTests.test_producer_draft_artifact_errors_have_no_writes",
+      "PublisherTests.test_unsafe_archive_fails_without_any_materialized_payload",
+      "PublishCompositeTests.test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff"
+    ],
+    "Container conflict": [
+      "PublisherTests.test_all_images_precede_first_package_and_late_conflict_stops_copy",
+      "OciPublishTests.test_absence_conflict_auth_and_redirect_are_distinct"
+    ],
+    "Partial retry": [
+      "PublisherTests.test_empty_payload_no_package_command_and_partial_package_retry_same_bytes",
+      "OciPublishTests.test_complete_remote_bytes_and_correct_retry"
+    ],
+    "GitHub token restriction": [
+      "PublisherTests.test_main_advancement_workflow_difference_and_postpatch_race",
+      "PublishCompositeTests.test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff"
+    ],
+    "Finalization race": [
+      "PublisherTests.test_main_advancement_workflow_difference_and_postpatch_race",
+      "PublisherTests.test_draft_and_tag_revalidated_before_patch_and_returned_identity_verified"
+    ],
+    "Empty payload": [
+      "PublisherTests.test_empty_payload_no_package_command_and_partial_package_retry_same_bytes",
+      "PublishCompositeTests.test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff"
+    ]
+  },
+  "compositeTagControls": {
+    "conflicting": [
+      "lightweight",
+      "annotated",
+      "non-commit"
+    ],
+    "correctTarget": [
+      "lightweight",
+      "annotated"
+    ],
+    "allPassed": true,
+    "conflictObservations": [
+      "exact AD-17 diagnostic",
+      "no NuGet login",
+      "no package command",
+      "no release PATCH",
+      "existing draft and tag preserved",
+      "one schema-valid failed outcome"
+    ]
+  },
+  "independentHostedChecks": [
+    {
+      "run": 42999230320,
+      "originalArtifact": 13844493691,
+      "originalDigest": "sha256:e9fc141a09963df64b52cbc157a6996f4279b8f4162645622b801958cd4fe5f6",
+      "originalDownloadedAndInventoryValidated": true,
+      "outcomeArtifact": 13844409752,
+      "outcomeDigest": "sha256:7d2897f99cacbd006de546a8d5f1b718c534262a7e3941acef91b99c6cfed5ea",
+      "outcomeDownloadedAndValidated": true,
+      "soleOutcomeArtifactConfirmedFromLiveRun": true,
+      "outcome": {
+        "outcome": "failed",
+        "schema": "hexalith.release-outcome.v1",
+        "sha": "76e192ac556ee2a1b6dc59c4cdc32c77e15e4370",
+        "version": "4.47.1"
+      }
+    },
+    {
+      "run": 42999841348,
+      "originalArtifact": 13844823819,
+      "originalDigest": "sha256:4e4ad5e9d60aa80679db131536001f453762373264e0184708a5e6346dbaf944",
+      "originalDownloadedAndInventoryValidated": true,
+      "outcomeArtifact": 13844679235,
+      "outcomeDigest": "sha256:27604016e783060139f46484d0919c2b8671d49c69425d7deff9ab715e44048d",
+      "outcomeDownloadedAndValidated": true,
+      "soleOutcomeArtifactConfirmedFromLiveRun": true,
+      "outcome": {
+        "outcome": "published",
+        "schema": "hexalith.release-outcome.v1",
+        "sha": "ee30004f574cb0925d665cffa196f6b0afb79db4",
+        "version": "4.48.0"
+      }
+    }
+  ],
+  "protectionRulesetReadback": {
+    "id": 26812219,
+    "profile": "CiCd-agent",
+    "active": true,
+    "bypassActors": [],
+    "excludedTags": [],
+    "protectedPattern": "refs/tags/v*",
+    "rules": [
+      "update",
+      "deletion"
+    ],
+    "matchesRetainedOriginal": true
+  },
+  "hostedNuget": {
+    "status": "blocked",
+    "run": 42999230320,
+    "observedFailure": "NuGet/login HTTP 401: actual release-publish-probe.yml does not match any configured policy workflow",
+    "required": "A matching nuget.org Trusted Publishing policy and successful hosted package publication/retry"
+  },
+  "reviewWorkflow": {
+    "entered": false,
+    "reason": "Implementation verification requires successful hosted NuGet publication; stop before independent review when that verification cannot be completed"
+  },
+  "checks": [
+    {
+      "name": "publisher",
+      "command": "uv run --no-cache --with PyYAML==6.0.3 --with jsonschema==4.26.0 python -m unittest discover -s Github/lib/tests -p test_release_publish.py -v",
+      "exitCode": 0,
+      "result": "10 tests passed; includes 13 actual-composite scenarios",
+      "localLog": "/tmp/bmad-3-4-parent-publish.log",
+      "logSha256": "bb4966fa84f2a2bef743a92a5429353d1be531e3567c9fdd773b0529e11e0a17",
+      "logSize": 1963
+    },
+    {
+      "name": "oci",
+      "command": "uv run --no-cache --with PyYAML==6.0.3 --with jsonschema==4.26.0 python -m unittest discover -s Github/lib/tests -p test_oci_publish.py -v",
+      "exitCode": 0,
+      "result": "3 tests passed",
+      "localLog": "/tmp/bmad-3-4-parent-oci.log",
+      "logSha256": "73982549e5155c0901da60f38a8987a85603cbeb71170a4fe3fa80c1c8e15644",
+      "logSize": 566
+    },
+    {
+      "name": "python312",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/run_python_tests.py",
+      "exitCode": 0,
+      "result": "20/20 groups passed",
+      "localLog": "/tmp/bmad-3-4-parent-auth-3.12.log",
+      "logSha256": "042bd91535ccc078871e6d39bb4d06e2421bf5360a80f4a80c022fbac6900a0d",
+      "logSize": 155629
+    },
+    {
+      "name": "pythonRunner",
+      "command": "uv run --no-cache --locked --script --python \"$(command -v python3)\" Tools/ci/run_python_tests.py",
+      "exitCode": 0,
+      "result": "20/20 groups passed",
+      "localLog": "/tmp/bmad-3-4-parent-auth-runner.log",
+      "logSha256": "bb6dd56b6b4791d98f211d138dce5af9362efbb32eaff0b20f2f63142692cbc3",
+      "logSize": 157209
+    },
+    {
+      "name": "authenticatedLint",
+      "command": "python3 Tools/ci/lint_workflows.py",
+      "exitCode": 0,
+      "result": "12 exact frozen findings; zero new findings",
+      "localLog": "/tmp/bmad-3-4-parent-lint.log",
+      "logSha256": "b62acd9c363859a03ccd682e9828e77fe5d199bafc9df78389edb0b04f6ac483",
+      "logSize": 5852
+    },
+    {
+      "name": "commitlint",
+      "command": "./node_modules/.bin/commitlint --edit /tmp/bmad-3-4-parent-commit.txt",
+      "exitCode": 0,
+      "result": "Pinned @commitlint/cli 21.2.4; exact message accepted",
+      "localLog": "/tmp/bmad-3-4-parent-commitlint.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logSize": 0
+    },
+    {
+      "name": "committedApi",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/check_public_api.py",
+      "checkedRevision": "64fb95ed0186acdcc83c45bd00356a1f301dcfa5",
+      "exitCode": 0,
+      "result": "2554 entries; no removals against v4.47.0"
+    }
+  ],
+  "matrixAudit": {
+    "rows": 8,
+    "allCoveringTestsRanAndPassed": true
+  },
+  "commitMessage": "test(ci): verify AD-17 through the publisher composite\n",
+  "initialParentFullRuns": {
+    "status": "stopped before completion",
+    "reason": "Initial invocations omitted the online-audit token prerequisite; restarted authenticated after expanding the composite tests",
+    "notCountedAsPasses": true
+  }
+}

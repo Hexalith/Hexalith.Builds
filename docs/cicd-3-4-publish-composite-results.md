@@ -53,6 +53,15 @@ and reject missing/corrupt graph bytes. Tool controls cover exact reported
 version/source, original archive mounts, private endpoint-bound auth lifetime,
 and timeout cleanup.
 
+Parent verification additionally executes conflicting lightweight, annotated
+and non-commit tags through the actual composite. Each preserves the original
+draft/tag, skips NuGet login and package commands, uploads one failed outcome
+and emits the exact AD-17 diagnostic. Correct-target lightweight and annotated
+tags complete the same composite. Parent checks also independently downloaded
+both hosted original artifacts and both outcome ZIPs, validated their bytes and
+inventories, and confirmed one outcome artifact per run. Details and retained
+log hashes are in [parent-verification.json](../evidence/cicd-3-4/parent-verification.json).
+
 ## Hosted package/image attempt
 
 [Run 42999230320](https://github.com/Hexalith/Hexalith.Builds/actions/runs/42999230320)
