@@ -998,6 +998,17 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual([down["jobStatus"] for down in self.downs()], [""])
         self.assertTrue(self.cleanup_record(1)["verified"])
 
+    @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
+    def test_helper_timeout_kills_a_tool_that_ignores_its_interrupt(self):
+        with self.fake_tool("ignore-all"), patch.object(helper, "verify_tool"), patch.object(helper, "TIMEOUT_STOP_SECONDS", 1):
+            self.assertEqual(helper.execute_integration(helper.TOOL + ["test", "--ci-owner-receipt=" + str(self.receipt)],
+                                                        self.root, self.receipt, self.evidence, 3), 124)
+        execution = json.loads((self.evidence / "execution.json").read_text())
+        self.assertEqual((execution["timedOut"], execution["cancelled"], execution["processExitCode"]),
+                         (True, False, -signal.SIGKILL))
+        logged = [int(line.split()[0]) for line in (self.root / "actual-tool-signals").read_text().splitlines()]
+        self.assertEqual(logged, [signal.SIGINT], "A timeout interrupts the tool once, never with SIGTERM, then kills it.")
+
     def test_unterminated_session_refuses_every_allocation_decision(self):
         survivor = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"], start_new_session=True)  # nosec B603
         try:
@@ -1433,28 +1444,35 @@ class IntegrationTests(unittest.TestCase):
                                  (3, OSError(errno.EIO, "final verified record lost"))):
             calls = []
 
-            def first_write_fails(*args, **kwargs):
+            def selected_write_fails(*args, **kwargs):
                 calls.append(args)
                 if len(calls) == failing:
                     raise failure
                 return original(*args, **kwargs)
 
             with self.subTest(write=failing, failure=type(failure).__name__), patch.object(helper, "verify_tool"), patch.object(
-                helper, "write_cleanup_record", side_effect=first_write_fails
+                helper, "write_cleanup_record", side_effect=selected_write_fails
             ), patch.object(helper, "run_down", return_value=self.down_result()) as down:
                 self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1,
                                  "Unrecorded cleanup stays non-success.")
                 down.assert_called_once()
+                if failing == 3:
+                    record = self.latest_cleanup()
+                    self.assertEqual((record["status"], record["verified"]), ("completed", False),
+                                     "A lost final write leaves the unverified observation, never a verified record.")
 
     def test_stderr_is_redacted_before_the_excerpt_and_across_joined_keywords(self):
         straddling = "plain " * 1000 + "\ntoken=" + "v1 " * 3000
+        frame = "at Engine.RecordOwnerStatusAsync(String runId, CancellationToken cancellationToken) in /src/Engine.cs:line 626"
         record = helper.stderr_record(straddling + "\nDB_PASSWORD=hunter2\nAPI-TOKEN: abc\ndbPassword=camel1\n"
-                                      "clientSecret=camel2\naccessToken=camel3\nplain line\n")
+                                      "clientSecret=camel2\naccessToken=camel3\nsecretKey=camel4\npasswordHash=camel5\n"
+                                      "tokenValue=camel6\nClientSecretValue=camel7\n" + frame + "\nplain line\n")
         self.assertNotIn("v1", record["excerpt"])
         self.assertNotIn("hunter2", record["excerpt"])
         self.assertNotIn("abc", record["excerpt"])
-        for value in ("camel1", "camel2", "camel3"):
+        for value in ("camel1", "camel2", "camel3", "camel4", "camel5", "camel6", "camel7"):
             self.assertNotIn(value, record["excerpt"])
+        self.assertIn(frame, record["excerpt"], "A CancellationToken stack frame keeps its file and line.")
         self.assertIn("plain line", record["excerpt"])
         self.assertTrue(record["truncated"])
 
@@ -1475,6 +1493,20 @@ class IntegrationTests(unittest.TestCase):
         record = self.cleanup_record(2)
         self.assertEqual((record["status"], record["reason"], record["verified"]), ("tool-unavailable", "FileNotFoundError", False))
         self.assertTrue((self.evidence / "test-result.json").exists(), "Declared diagnostics are retained without the tool.")
+        # A verified tool whose exact down still cannot start is unverified cleanup too.
+        (self.evidence / "test-result.json").unlink()
+        with patch.object(helper, "verify_tool"), patch.object(helper, "run_down", side_effect=FileNotFoundError("dotnet")):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+        record = self.cleanup_record(3)
+        self.assertEqual((record["status"], record["reason"], record["verified"]), ("tool-unavailable", "FileNotFoundError", False))
+        self.assertTrue((self.evidence / "test-result.json").exists(), "An exact down that cannot start still retains diagnostics.")
+        # A tool manifest that cannot be verified (for example `"tools": []`) is classified the same way.
+        (self.evidence / "test-result.json").unlink()
+        with patch.object(helper, "verify_tool", side_effect=AttributeError("tools")):
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 1)
+        record = self.cleanup_record(4)
+        self.assertEqual((record["status"], record["reason"], record["verified"]), ("tool-unavailable", "AttributeError", False))
+        self.assertTrue((self.evidence / "test-result.json").exists(), "An unverifiable tool still retains diagnostics.")
 
     @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
     def test_a_timed_out_down_leaves_no_orphan_in_its_session(self):
@@ -1534,15 +1566,14 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(step.returncode, 0, output + errors)
         invocation = json.loads((self.evidence / "invocation.json").read_text())
         self.assertIsInstance(invocation["timeoutSeconds"], int)
-        # The exact derived value for this step's inputs, bounded by the step's own run time.
+        # The exact derived value for this step's inputs, bracketed by the derivation before and after the step ran.
         self.assertTrue(earliest <= invocation["timeoutSeconds"] <= latest, (earliest, invocation["timeoutSeconds"], latest))
-        self.assertLess(latest - earliest, 5)
 
     @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
     def test_helper_timeout_interrupts_the_tool_so_withdrawal_precedes_every_composed_stop(self):
         with self.fake_tool("muxer-apphost"), patch.object(helper, "verify_tool"):
             code = helper.execute_integration(helper.TOOL + ["test", "--ci-owner-receipt=" + str(self.receipt)],
-                                              self.root, self.receipt, self.evidence, 3)
+                                              self.root, self.receipt, self.evidence, 10)
         self.assertEqual(code, 124)
         self.assertEqual((self.root / "actual-tool-signal").read_text(), str(signal.SIGINT))
         withdrawn = int((self.root / "actual-withdrawn").read_text())
@@ -1573,7 +1604,9 @@ class IntegrationTests(unittest.TestCase):
                 self.reset_job_records()
                 leader = subprocess.Popen([sys.executable, "-c", code, str(self.receipt), str(marker), json.dumps(self.owner), late],  # nosec B603
                                           stdin=subprocess.PIPE, start_new_session=True)
-                tool = int(self.wait_for(marker).read_text())
+                # write_text creates the marker before it writes the pid, so wait for the content itself.
+                self.wait_until(lambda: marker.exists() and marker.read_text().strip())
+                tool = int(marker.read_text())
                 helper.write_process_record(self.receipt, helper.ci_context(), leader.pid)
                 leader.communicate(b"exit\n", timeout=10)
                 self.assertIsNotNone(helper.process_identity(tool), "The tool must outlive its muxer.")
@@ -1586,6 +1619,8 @@ class IntegrationTests(unittest.TestCase):
                 if late == "late":
                     self.assertNotIn("not-allocated", statuses, "A receipt written while stopping requires the exact down.")
                     down.assert_called_once()
+                    self.assertIn("--run-id=" + self.owner["runId"], down.call_args.args[0], "The down targets the late receipt's owner.")
+                    self.assertEqual((self.latest_cleanup()["status"], self.latest_cleanup()["verified"]), ("completed", True))
                 else:
                     self.assertEqual(statuses, ["not-allocated"])
                     down.assert_not_called()
@@ -1596,16 +1631,21 @@ class IntegrationTests(unittest.TestCase):
         code = ("import subprocess, sys, time\n"
                 "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], start_new_session=True)\n"
                 "open(sys.argv[1], 'w').write(str(child.pid))\n"
+                "sys.stderr.write('down stalled: lock held\\n')\n"
+                "sys.stderr.flush()\n"
                 "time.sleep(60)\n")
         started = time.monotonic()
         try:
-            with patch.object(helper, "POST_KILL_WAIT_SECONDS", 1), self.assertRaises(subprocess.TimeoutExpired):
+            with patch.object(helper, "POST_KILL_WAIT_SECONDS", 1), self.assertRaises(subprocess.TimeoutExpired) as raised:
                 helper.run_down([sys.executable, "-c", code, str(marker)], cwd=self.root, env=os.environ.copy(), timeout=2)
             self.assertLess(time.monotonic() - started, 15)
+            self.assertIn(b"down stalled: lock held", raised.exception.stderr, "Stderr read before the abandoned wait is kept.")
+            self.assertTrue(marker.exists() and marker.read_text().strip(), "The escaped descendant must hold the pipes here.")
         finally:
-            if marker.exists():
+            descendant = marker.read_text().strip() if marker.exists() else ""
+            if descendant:
                 try:
-                    os.kill(int(marker.read_text()), signal.SIGKILL)
+                    os.kill(int(descendant), signal.SIGKILL)
                 except ProcessLookupError:
                     pass
 

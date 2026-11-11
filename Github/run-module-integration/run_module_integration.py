@@ -67,8 +67,11 @@ STDOUT_BYTES = 16 * 1024 * 1024
 STDERR_EXCERPT_CHARACTERS = 4096
 # The tool runs only after the helper durably recorded its new session; an orphaned gate exits without launching.
 GATE = ["/bin/sh", "-c", 'IFS= read -r go || exit 125; [ "$go" = 1 ] || exit 125; exec "$@" </dev/null', "hexalith-ci-gate"]
+# Keywords match inside camelCase keys (dbPassword, secretKey): a following capital starts a new word. A .NET
+# CancellationToken parameter carries no secret, so its stack frames keep their file and line.
 SECRET_TEXT = re.compile(
-    r"(?i)(authorization|bearer|password|passwd|secret|token|api[-_]?key|credential)s?(?![a-z])[^\n]*")
+    r"(?i)(?<!cancellation)(authorization|bearer|password|passwd|secret|token|api[-_]?key|credential)s?(?-i:(?![a-z]))"
+    r"[^\n]*")
 OPAQUE_TEXT = re.compile(r"[A-Za-z\d+/=_-]{40,}", re.ASCII)
 FIXED_METADATA_BYTES = 4 * 1024 * 1024
 JSON_DIAGNOSTIC_BYTES = 1024 * 1024
@@ -760,8 +763,8 @@ def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = DOWN_TIME
         return 1
     try:
         verify_tool(root)
-    except (OSError, ValueError, subprocess.SubprocessError) as error:
-        # A missing or unexecutable tool is unverified cleanup; declared diagnostics are still retained.
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError, subprocess.SubprocessError) as error:
+        # A missing, unexecutable or unverifiable tool is unverified cleanup; declared diagnostics are still retained.
         record_cleanup(evidence, {"schema": CLEANUP_SCHEMA, "status": "tool-unavailable", "reason": type(error).__name__,
                                   "runId": owner["runId"], "executionContext": context, "jobStatus": job_status,
                                   "verified": False})
@@ -780,7 +783,7 @@ def record_cleanup(evidence: Path, value: dict, filename: str | None = None) -> 
 
 
 def run_down(command: list[str], *, cwd: Path, env: dict, timeout: int) -> subprocess.CompletedProcess:
-    """Run one exact down like subprocess.run, in its own session; a timeout kills that whole session."""
+    """Run one exact down like subprocess.run, in its own session; a timeout kills its process group."""
     # Output is decoded with replacement, so non-UTF-8 bytes are an unverified observation rather than an exception.
     child = subprocess.Popen(
         command,  # nosec B603 # nosemgrep -- fixed tool/options; canonical 128-bit run identity only.
@@ -798,9 +801,9 @@ def run_down(command: list[str], *, cwd: Path, env: dict, timeout: int) -> subpr
         signal_groups([child.pid], signal.SIGKILL)
         try:
             stdout, stderr = child.communicate(timeout=POST_KILL_WAIT_SECONDS)
-        except subprocess.TimeoutExpired:
-            # A descendant in another process group still holds the pipes; never wait on it.
-            stdout, stderr = b"", b""
+        except subprocess.TimeoutExpired as abandoned:
+            # A descendant in another process group still holds the pipes; never wait on it, but keep what was read.
+            stdout, stderr = abandoned.stdout or b"", abandoned.stderr or b""
         raise subprocess.TimeoutExpired(command, timeout, output=stdout, stderr=stderr) from None  # nosemgrep -- a record only.
     output, errors = stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace")
     return subprocess.CompletedProcess(command, child.returncode, output, errors)  # nosemgrep -- a record, nothing executes.
@@ -938,7 +941,9 @@ class ToolSession:
     def cancellation_settled(self) -> bool:
         """Escalate on the tool inside the runner grace; return once the final kill was sent."""
         # Composed processes are never signalled here: the always() finalizer's exact down withdraws attachments before
-        # it stops whatever the tool left behind. Only the runner's own process-tree kill after its grace can precede that.
+        # it stops whatever the tool left behind. The tool handles only SIGINT cooperatively, so this SIGTERM and the
+        # final kill end a tool that has not recorded withdrawal within that time, and a CI AppHost then stops on losing
+        # stdin before the exact down; the runner's own process-tree kill after its grace can do the same.
         self.forward()
         elapsed = time.monotonic() - self.signals[0]["observedAt"]
         if elapsed >= CANCELLATION_FINAL_SECONDS:
@@ -962,8 +967,10 @@ class ToolSession:
         return False
 
     def stop_after_timeout(self) -> None:
-        """A timeout is not a cancellation: interrupt the tool, which withdraws before it stops anything, then kill it."""
-        # The tool handles only SIGINT cooperatively; SIGTERM would end it before withdrawal.
+        """A timeout is not a job cancellation: interrupt the tool, which withdraws before it stops anything, then kill it."""
+        # The tool handles only SIGINT cooperatively; SIGTERM would end it before withdrawal. The tool records this
+        # interrupt as owner cancellation (holds end as ci-job-cancelled); execution.json and exit 124 classify the timeout.
+        # A tool that has not recorded withdrawal within TIMEOUT_STOP_SECONDS is killed before it.
         self.signal_tool(signal.SIGINT)
         if not wait_for_child(self.child, TIMEOUT_STOP_SECONDS):
             self.signal_tool(signal.SIGKILL)
