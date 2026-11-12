@@ -218,7 +218,7 @@ public sealed class WorkspaceAppHostTests
             }
 
             platform = directory.FullName;
-            model = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "bin", "Debug", "net10.0", "Hexalith.Platform.Composition.dll");
+            model = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "bin", "Debug", "net11.0", "Hexalith.Platform.Composition.dll");
             if (!File.Exists(model))
             {
                 Assert.Skip("Build the Platform composition model before its integration assertion.");

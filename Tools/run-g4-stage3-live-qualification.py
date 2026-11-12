@@ -67,20 +67,20 @@ def source_paths():
 
 def binary_paths():
     roots = [
-        ROOT / "src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0",
-        ROOT / "src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0",
-        ROOT / "test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0",
+        ROOT / "src/libraries/Hexalith.Builds.Tooling/bin/Debug/net11.0",
+        ROOT / "src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net11.0",
+        ROOT / "test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net11.0",
         ROOT / "artifacts/g4-fixture/bin",
         ROOT / "src/hosts",
     ]
     suffixes = {".dll", ".pdb", ".json"}
     files = [path for root in roots for path in root.rglob("*")
              if path.is_file() and path.suffix in suffixes
-             and ("/bin/Debug/net10.0/" in str(path) or "artifacts/g4-fixture/bin/" in str(path))]
+             and ("/bin/Debug/net11.0/" in str(path) or "artifacts/g4-fixture/bin/" in str(path))]
     required = [
-        ROOT / "test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll",
-        ROOT / "src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll",
-        ROOT / "src/hosts/Hexalith.Builds.Module.AppHost/bin/Debug/net10.0/Hexalith.Builds.Module.AppHost.dll",
+        ROOT / "test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net11.0/Hexalith.Builds.Tooling.IntegrationTests.dll",
+        ROOT / "src/libraries/Hexalith.Builds.Tooling/bin/Debug/net11.0/Hexalith.Builds.Tooling.dll",
+        ROOT / "src/hosts/Hexalith.Builds.Module.AppHost/bin/Debug/net11.0/Hexalith.Builds.Module.AppHost.dll",
     ]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
@@ -234,7 +234,7 @@ def main():
             break
         log_path = run_dir / "test.log"
         command = ["timeout", "--signal=TERM", "--kill-after=30s", "900s", "dotnet",
-                   "test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll",
+                   "test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net11.0/Hexalith.Builds.Tooling.IntegrationTests.dll",
                    "-noColor"]
         environment = os.environ.copy()
         environment.update(HEXALITH_G4_LIVE="1", HEXALITH_DAPR_HOME=str(args.dapr_home.resolve()),

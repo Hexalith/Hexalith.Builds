@@ -62,7 +62,7 @@ public static class CompositionResourceController
                     string detail = response.FailureStep is "project-stop" or "sidecar-stop" or "stopped-state" or "project-start" or "sidecar-start" or "resource-command" or "invalid-request"
                         ? response.FailureStep
                         : "resource-command";
-                    await Console.Error.WriteLineAsync("g4-resource-control: " + detail).ConfigureAwait(false);
+                    await Console.Error.WriteLineAsync("g4-resource-control: " + detail, cancellationToken).ConfigureAwait(false);
                 }
 
                 return matches && response.Success;

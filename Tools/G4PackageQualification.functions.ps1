@@ -461,7 +461,7 @@ function Assert-PackagedSeedSubscriptionEvidence {
             $proof.package.sha256, $proof.seed.entry, $proof.seed.sha256, $proof.seed.loadedSha256)) {
         if ($value -isnot [string]) { throw 'Packaged seed subscription proof requires scalar string identities.' }
     }
-    $seedEntry = 'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll'
+    $seedEntry = 'tools/net11.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll'
     $archive = [IO.Compression.ZipFile]::OpenRead($PackagePath)
     try {
         $entries = @($archive.Entries | Where-Object FullName -CEQ $seedEntry)

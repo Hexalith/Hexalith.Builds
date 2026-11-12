@@ -799,13 +799,13 @@ function Complete-QualificationInventory {
             }
 
             foreach ($requiredEntry in @(
-                    'tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.dll',
-                    'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll',
-                    'tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.dll',
-                    'tools/net10.0/any/g4-host/projects/EventStore/Host.csproj',
-                    'tools/net10.0/any/g4-host/projects/EventStore/Placeholder.cs',
-                    'tools/net10.0/any/g4-host/projects/Ui/Host.csproj',
-                    'tools/net10.0/any/g4-host/projects/Ui/Placeholder.cs')) {
+                    'tools/net11.0/any/g4-host/Hexalith.Builds.Module.AppHost.dll',
+                    'tools/net11.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll',
+                    'tools/net11.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.dll',
+                    'tools/net11.0/any/g4-host/projects/EventStore/Host.csproj',
+                    'tools/net11.0/any/g4-host/projects/EventStore/Placeholder.cs',
+                    'tools/net11.0/any/g4-host/projects/Ui/Host.csproj',
+                    'tools/net11.0/any/g4-host/projects/Ui/Placeholder.cs')) {
                 if ($entries -cnotcontains $requiredEntry) {
                     throw "Module tool package '$nupkg' lacks packaged host entry '$requiredEntry'."
                 }
@@ -1040,7 +1040,7 @@ try {
     $archive = [IO.Compression.ZipFile]::OpenRead($modulePackage)
     try {
         foreach ($schemaName in @('hexalith.module-manifest.v2.json', 'hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
-            $schemaEntry = $archive.GetEntry("tools/net10.0/any/schemas/$schemaName")
+            $schemaEntry = $archive.GetEntry("tools/net11.0/any/schemas/$schemaName")
             if ($null -eq $schemaEntry) { throw "The module tool package omitted its $schemaName schema." }
             $schemaReader = [IO.StreamReader]::new($schemaEntry.Open())
             try { $packagedSchema = $schemaReader.ReadToEnd() }
@@ -1048,7 +1048,7 @@ try {
             $expectedSchema = [IO.File]::ReadAllText((Join-Path $repositoryRoot "schemas/$schemaName"))
             if ($packagedSchema -cne $expectedSchema) { throw "The packed $schemaName schema differs from its source contract." }
         }
-        $toolingEntry = $archive.GetEntry('tools/net10.0/any/Hexalith.Builds.Tooling.dll')
+        $toolingEntry = $archive.GetEntry('tools/net11.0/any/Hexalith.Builds.Tooling.dll')
         if ($null -eq $toolingEntry) { throw 'The installed tool omitted its catalog-bearing tooling assembly.' }
         $toolingPath = Join-Path $consumerRoot 'catalog-probe/Hexalith.Builds.Tooling.dll'
         $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($toolingPath))
@@ -1264,8 +1264,8 @@ try {
             Invoke-DotNet -Arguments @('build', $projectPath, '--configuration', 'Debug',
                 '-p:GeneratePackageOnBuild=false', '-p:MinVerVersionOverride=0.0.0-source')
         }
-        $sourceModuleAssembly = Join-Path $sourceRoot 'src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll'
-        $sourceEvidenceAssembly = Join-Path $sourceRoot 'src/libraries/Hexalith.Builds.Evidence.Cli/bin/Debug/net10.0/Hexalith.Builds.Evidence.Cli.dll'
+        $sourceModuleAssembly = Join-Path $sourceRoot 'src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net11.0/Hexalith.Builds.Module.Cli.dll'
+        $sourceEvidenceAssembly = Join-Path $sourceRoot 'src/libraries/Hexalith.Builds.Evidence.Cli/bin/Debug/net11.0/Hexalith.Builds.Evidence.Cli.dll'
         foreach ($assembly in @($sourceModuleAssembly, $sourceEvidenceAssembly)) {
             if (-not (Test-Path -LiteralPath $assembly -PathType Leaf)) {
                 throw "Clean Debug source build did not produce '$assembly'."

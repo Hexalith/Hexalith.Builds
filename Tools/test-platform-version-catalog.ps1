@@ -35,7 +35,7 @@ $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pws
 $count = 0
 
 function Test-Catalog {
-    param([string] $Name, [string] $Catalog, [string] $EventStore, [string] $Range, [int] $ExpectedExit, [string[]] $ExpectedText = @(), [string] $Metadata = '', [string] $Configuration = 'Debug', [string] $TargetFramework = 'net10.0', [hashtable] $ExpectedSnapshot = @{}, [string] $ResponseFile = '')
+    param([string] $Name, [string] $Catalog, [string] $EventStore, [string] $Range, [int] $ExpectedExit, [string[]] $ExpectedText = @(), [string] $Metadata = '', [string] $Configuration = 'Debug', [string] $TargetFramework = 'net11.0', [hashtable] $ExpectedSnapshot = @{}, [string] $ResponseFile = '')
     $directory = Join-Path $temporaryRoot $Name
     $null = New-Item -ItemType Directory -Path $directory
     $catalogPath = Join-Path $directory 'Directory.Packages.props'
@@ -307,17 +307,17 @@ try {
             $count++
         }
         finally { [Environment]::SetEnvironmentVariable('HexalithFrontComposerVersion', $priorEnvironment) }
-        $conditionalBuildCatalog = $changed.Replace('</Project>', '<PropertyGroup Condition="''$(Configuration)'' == ''Debug'' and ''$(TargetFramework)'' == ''net10.0''"><HexalithDaprRuntimeVersion>2.3.6</HexalithDaprRuntimeVersion></PropertyGroup></Project>')
+        $conditionalBuildCatalog = $changed.Replace('</Project>', '<PropertyGroup Condition="''$(Configuration)'' == ''Debug'' and ''$(TargetFramework)'' == ''net11.0''"><HexalithDaprRuntimeVersion>2.3.6</HexalithDaprRuntimeVersion></PropertyGroup></Project>')
         [IO.File]::WriteAllText($catalogCopy, $conditionalBuildCatalog)
-        $log = @(& dotnet build $project -c Debug -m:1 -p:TargetFramework=net10.0 2>&1) -join "`n"
+        $log = @(& dotnet build $project -c Debug -m:1 -p:TargetFramework=net11.0 2>&1) -join "`n"
         if ($LASTEXITCODE -ne 0) { throw "Legitimate conditional controlled build selection failed: $log" }
-        $conditionalResource = Get-Content (Join-Path $tooling 'obj/Debug/net10.0/platform-version-catalog.json') -Raw | ConvertFrom-Json
+        $conditionalResource = Get-Content (Join-Path $tooling 'obj/Debug/net11.0/platform-version-catalog.json') -Raw | ConvertFrom-Json
         if ($conditionalResource.daprRuntimeVersion -cne '2.3.6') { throw 'Build generation omitted the Configuration/TargetFramework context.' }
         $count++
         [IO.File]::WriteAllText($catalogCopy, $changed)
         $log = @(& dotnet build $project -c Debug -m:1 2>&1) -join "`n"
         if ($LASTEXITCODE -ne 0) { throw "Restore of isolated catalog after conditional regression failed: $log" }
-        $assemblyPath = Join-Path $tooling 'bin/Debug/net10.0/Hexalith.Builds.Tooling.dll'
+        $assemblyPath = Join-Path $tooling 'bin/Debug/net11.0/Hexalith.Builds.Tooling.dll'
         $null = [Reflection.Assembly]::LoadFrom((Join-Path ([IO.Path]::GetDirectoryName($assemblyPath)) 'NuGet.Versioning.dll'))
         $assembly = [Reflection.Assembly]::LoadFrom($assemblyPath)
         $pins = $assembly.GetType('Hexalith.Builds.Tooling.Manifest.SupportedPlatformPins')

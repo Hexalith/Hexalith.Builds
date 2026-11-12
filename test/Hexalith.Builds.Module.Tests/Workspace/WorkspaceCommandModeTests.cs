@@ -1060,7 +1060,7 @@ public sealed class WorkspaceCommandModeTests
         _ = Directory.CreateDirectory(descriptorProjectDirectory);
         await File.WriteAllTextAsync(
             Path.Combine(descriptorProjectDirectory, "P0Fixture.Orders.Descriptor.csproj"),
-            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup></Project>",
             TestContext.Current.CancellationToken).ConfigureAwait(true);
         string source = await File.ReadAllTextAsync(descriptorSource, TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(
@@ -1113,7 +1113,7 @@ public sealed class WorkspaceCommandModeTests
             _ = Directory.CreateDirectory(descriptorDirectory);
             await File.WriteAllTextAsync(
                 Path.Combine(descriptorDirectory, "P0Fixture.Orders.Descriptor.csproj"),
-                "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+                "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup></Project>",
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
             string source = await File.ReadAllTextAsync(Path.Combine(repository, "test", "fixtures", "module", "executable", "P0Fixture.Orders.Descriptor", "ModuleDescriptorV1.cs"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             await File.WriteAllTextAsync(

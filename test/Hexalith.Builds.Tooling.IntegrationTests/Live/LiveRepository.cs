@@ -32,7 +32,7 @@ internal static class LiveRepository
         "Hexalith.Builds.Module.AppHost",
         "bin",
         typeof(LiveRepository).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration ?? "Debug",
-        "net10.0",
+        "net11.0",
         "Hexalith.Builds.Module.AppHost.dll");
 
     /// <summary>

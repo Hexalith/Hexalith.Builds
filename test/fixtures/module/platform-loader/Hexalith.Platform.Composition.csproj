@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -9,13 +9,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Reference Include="Hexalith.Builds.Tooling" HintPath="$(ToolPayload)/Hexalith.Builds.Tooling.dll" />
     <Reference Include="Aspire.Hosting" HintPath="$(ToolPayload)/g4-host/Aspire.Hosting.dll" />
-    <!-- The gate checks these files against the catalog before compilation. Keep them
-         out of the model directory so the packaged host must supply its own closure. -->
-    <Reference Include="Microsoft.Extensions.Configuration" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.Configuration.dll" Private="false" />
-    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.Configuration.Abstractions.dll" Private="false" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.DependencyInjection.dll" Private="false" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.DependencyInjection.Abstractions.dll" Private="false" />
-    <Reference Include="Microsoft.Extensions.Options" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.Options.dll" Private="false" />
-    <Reference Include="Microsoft.Extensions.Primitives" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.Primitives.dll" Private="false" />
+    <!-- .NET 11 supplies Microsoft.Extensions through the declared framework.
+         The loader gate verifies the child's resolved shared-runtime identities. -->
   </ItemGroup>
 </Project>

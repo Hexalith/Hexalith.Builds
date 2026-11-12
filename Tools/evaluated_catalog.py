@@ -23,7 +23,7 @@ def _controlled_property(name: str) -> bool:
 
 
 def _run(path: Path, arguments: list[str], *, neutral: bool = False,
-         configuration: str = "Debug", target_framework: str = "net10.0",
+         configuration: str = "Debug", target_framework: str = "net11.0",
          working_directory: Path | None = None) -> str:
     environment = dict(os.environ)
     if neutral:
@@ -41,7 +41,7 @@ def _run(path: Path, arguments: list[str], *, neutral: bool = False,
 
 
 def evaluate_catalog(path: Path, configuration: str = "Debug",
-                     target_framework: str = "net10.0",
+                     target_framework: str = "net11.0",
                      consumer_project_name: str | None = None) -> tuple[dict[str, str], dict[str, str]]:
     """Read authoritative evaluated properties/CPM items with inherited selections removed."""
     path = path.resolve()

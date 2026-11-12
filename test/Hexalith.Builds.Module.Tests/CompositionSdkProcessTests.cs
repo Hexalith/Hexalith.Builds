@@ -165,7 +165,7 @@ public sealed class CompositionSdkProcessTests
         {
             string childProject = Path.Combine(root, "WaitChild.csproj");
             string childOutput = Path.Combine(root, "out");
-            await File.WriteAllTextAsync(childProject, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await File.WriteAllTextAsync(childProject, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net11.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
             await File.WriteAllTextAsync(Path.Combine(root, "Program.cs"), "File.WriteAllText(args[0], Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture)); await Task.Delay(TimeSpan.FromMinutes(1));", TestContext.Current.CancellationToken).ConfigureAwait(true);
             CompositionProcessResult built = await CompositionSdkProcess.RunAsync(root, null, "build", childProject, "--configuration", "Debug", "--output", childOutput, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
             built.ExitCode.ShouldBe(0, built.Output + built.ErrorOutput);

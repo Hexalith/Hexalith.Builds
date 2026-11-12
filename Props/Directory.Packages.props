@@ -138,22 +138,22 @@
     <!-- FrontComposer bunit transitive floor pulls the vulnerable 1.4.0; pin the GHSA-pgww-w46g-26qg fix. -->
     <!-- bunit 2.15.2 implements AngleSharp 1.10 BeforeToggle; keep the latest 1.10 patch with that release. -->
     <PackageVersion Include="AngleSharp" Version="1.10.2" />
-    <!-- OAuth 11 and ASP.NET Core 11 packages target net11.0; retain the latest net10.0-compatible line. -->
-    <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Discord" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Okta" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Reddit" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Notion" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Basecamp" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.LinkedIn" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Instagram" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="10.1.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="10.1.0" />
+    <!-- OAuth and ASP.NET Core packages align with the .NET 11 host. -->
+    <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Discord" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Okta" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Reddit" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Notion" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Basecamp" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.LinkedIn" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Instagram" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="11.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="11.0.0" />
     <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.6.5" />
     <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.6.5" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.6.5" />
@@ -221,42 +221,41 @@
     <PackageVersion Include="MailKit" Version="5.0.0" />
     <PackageVersion Include="MediatR" Version="14.3.0" />
     <PackageVersion Include="MessagePack" Version="3.1.12" />
-    <!-- ASP.NET Core 10 AuthorizationMiddleware requires IAuthorizationPolicyProvider.AllowsCachingPolicies.
-         Authorization 11 fails that runtime ABI; retain the compatible ASP.NET Core 10 family. -->
-    <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.CustomElements" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.15" />
+    <!-- Authorization and SignalR align with the ASP.NET Core 11 host runtime. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.CustomElements" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.DataProtection" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.DataProtection.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity" Version="2.3.14" />
     <PackageVersion Include="StackExchange.Redis" Version="3.4.31" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
     <!-- ASP.NET Core 10 Blazor requires IInvocationBinder.GetTarget(ReadOnlySpan<byte>);
          SignalR 11 falls back to netstandard2.0 and aborts interactive circuits. -->
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="11.0.0" />
     <!-- GHSA-334f-vvp4-7g6p: patched Common for consumers with CentralPackageTransitivePinningEnabled=true. -->
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.15" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.64.0" />
     <PackageVersion Include="Microsoft.Bot.Builder" Version="4.23.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
-    <!-- Keep the .NET 10 MSBuild line: 18.10.1 through 18.12.2 ship net11.0/net472, causing NU1701 for the net10.0 architecture loader. -->
-    <PackageVersion Include="Microsoft.Build" Version="18.9.6" Condition="'$(_HexalithWorksOwnsMSBuildPackageVersions)' != 'true'" />
-    <PackageVersion Include="Microsoft.Build.Framework" Version="18.9.6" Condition="'$(_HexalithWorksOwnsMSBuildPackageVersions)' != 'true'" />
+    <!-- MSBuild 18.12 targets .NET 11, matching the tooling and SDK host. -->
+    <PackageVersion Include="Microsoft.Build" Version="18.12.2" Condition="'$(_HexalithWorksOwnsMSBuildPackageVersions)' != 'true'" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="18.12.2" Condition="'$(_HexalithWorksOwnsMSBuildPackageVersions)' != 'true'" />
     <PackageVersion Include="Microsoft.Build.Locator" Version="1.11.2" Condition="'$(_HexalithWorksOwnsMSBuildPackageVersions)' != 'true'" />
-    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.9.6" />
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.12.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="5.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.9.0" />
@@ -274,8 +273,7 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Identity.Http" Version="10.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Identity.Stores" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Identity.Stores" Version="11.0.0" />
     <!-- FrontComposer quickstart localization registration. -->
     <PackageVersion Include="Microsoft.Extensions.Localization" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Localization.Abstractions" Version="11.0.0" />
@@ -298,8 +296,8 @@
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.23.0" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.18.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
-    <!-- Keep Microsoft.OpenApi on 2.x: Microsoft.AspNetCore.OpenApi 10.x is compiled against the 2.x API surface; v3 breaks runtime OpenAPI document generation. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.13.0" />
+    <!-- ASP.NET Core OpenApi 11 and Swashbuckle 11 use OpenApi 3.x. -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.64.1" />
     <!-- Existing Timesheets Works prerequisite; retain the published version. -->
     <PackageVersion Include="Hexalith.Works.Contracts" Version="1.0.2" />
@@ -353,18 +351,15 @@
     <PackageVersion Include="Serilog.Enrichers.Process" Version="3.0.0" />
     <PackageVersion Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
-    <PackageVersion Include="Serilog.Sinks.Browser" Version="8.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.Debug" Version="3.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.36.0.15337" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.3.180" />
-    <!-- Swashbuckle 11 targets net10.0 but requires OpenApi >=3.11, conflicting with ASP.NET Core OpenApi 10.x (<3.0). -->
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.3.1" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="11.0.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="11.0.0" />
-    <!-- Keep Immutable on 10.x: source-generator tests run with the net10.0 reference assembly; 11.x produces MSB3277. -->
-    <PackageVersion Include="System.Collections.Immutable" Version="10.0.15" />
+    <PackageVersion Include="System.Collections.Immutable" Version="11.0.0" />
     <!-- Microsoft-supported CLI parser chosen per Hexalith.Memories ADR-7.1-008: recursive/global options, async handlers with CancellationToken, global-tool packaging. -->
     <PackageVersion Include="System.CommandLine" Version="3.0.0" />
     <!-- FrontComposer FcShellOptions data-annotation validation on netstandard2.0. -->

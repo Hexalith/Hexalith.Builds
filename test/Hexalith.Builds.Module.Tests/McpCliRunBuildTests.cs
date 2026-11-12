@@ -561,7 +561,7 @@ public sealed class McpCliRunBuildTests
         string target = siblingGuard
             ? "<Target Name=\"SiblingMustNotBuild\" BeforeTargets=\"Restore;_GenerateRestoreProjectSpec;Build\"><Error Text=\"The sibling McpCli checkout was built.\" /></Target>"
             : "<Target Name=\"ObserveCatalog\" BeforeTargets=\"CoreCompile\"><WriteLinesToFile File=\"$(IntermediateOutputPath)observed-catalog.txt\" Lines=\"$(Configuration);@(PackageVersion->'%(Identity)=%(Version)')\" Overwrite=\"true\" /></Target>";
-        string project = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>"
+        string project = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net11.0</TargetFramework>"
             + "<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally><PackAsTool>true</PackAsTool><GeneratePackageOnBuild>true</GeneratePackageOnBuild>"
             + "<TreatWarningsAsErrors>true</TreatWarningsAsErrors></PropertyGroup>" + target + "</Project>";
         File.WriteAllText(Path.Combine(projectDirectory, "Hexalith.McpCli.csproj"), project);

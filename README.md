@@ -238,7 +238,7 @@ Unsupported versions name the supported version for the requested document kind.
 Reads are offline, bounded to 1 MiB and 64 levels, reject duplicate keys and unknown
 properties, preserve omitted versus explicit holds, and verify effective timing
 and attached outcomes against their own hold.
-The CLI package includes both schemas under `tools/net10.0/any/schemas/`.
+The CLI package includes both schemas under `tools/net11.0/any/schemas/`.
 Tooling is not published as a standalone package: the reader runs inside the
 installed `hexalith-module` tool, and module fixtures that validate descriptors
 themselves use the published schemas.
@@ -859,7 +859,7 @@ can change.
 Building Tooling requires `pwsh` on `PATH` and access to configured NuGet feeds
 when the selected EventStore.Aspire nuspec is not cached. Running
 `Tools/validate-package-version-exceptions.ps1` also requires `python3`. Catalog
-and installed-tool contract tests load the net10.0 Tooling assembly and require
+and installed-tool contract tests load the net11.0 Tooling assembly and require
 PowerShell 7.6 or later.
 
 Run `pwsh -NoProfile -File Tools/validate-platform-version-catalog.ps1` to
@@ -1201,7 +1201,7 @@ all duplicate module, app and resource identity locations. Any error returns
 exit `1` and no usable declaration set. Success returns `0`; cancellation
 returns `130`. Validation accepts at most 256 files, with each UTF-8 document
 at most 1 MiB and 64 levels deep. The schema is embedded in Tooling and shipped
-under `tools/net10.0/any/schemas/`, so installed validation uses no source checkout
+under `tools/net11.0/any/schemas/`, so installed validation uses no source checkout
 or remote schema downloads.
 
 `source` and `field` are not present on every diagnostic:

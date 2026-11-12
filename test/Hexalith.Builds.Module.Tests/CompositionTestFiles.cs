@@ -264,7 +264,7 @@ internal static class CompositionTestFiles
         _ = Directory.CreateDirectory(project);
         await File.WriteAllTextAsync(
             Path.Combine(project, "FakeTool.csproj"),
-            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><UseAppHost>true</UseAppHost></PropertyGroup></Project>",
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net11.0</TargetFramework><UseAppHost>true</UseAppHost></PropertyGroup></Project>",
             cancellationToken).ConfigureAwait(false);
         string program = """
             using System;
@@ -362,7 +362,7 @@ internal static class CompositionTestFiles
     {
         string project = Path.Combine(root, "fake-apphost");
         _ = Directory.CreateDirectory(project);
-        const string projectXml = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>"
+        const string projectXml = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net11.0</TargetFramework>"
             + "<ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup></Project>";
         await File.WriteAllTextAsync(Path.Combine(project, "FakeAppHost.csproj"), projectXml, cancellationToken).ConfigureAwait(false);
         const string readiness = "{\"schema\":\"hexalith.g4-run-readiness.v1\",\"runId\":\"ffffffffffffffffffffffffffffffff\","

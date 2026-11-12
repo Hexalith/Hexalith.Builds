@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <AssemblyName>Hexalith.Builds.Module.Cli</AssemblyName>
     <RootNamespace>Hexalith.Builds.ModuleTool.Cli</RootNamespace>
     <PackageId>Hexalith.Builds.Module.Cli</PackageId>
@@ -20,19 +20,19 @@
     <Compile Remove="pack/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="../../../schemas/hexalith.module-manifest.v2.json" Pack="true" PackagePath="tools/net10.0/any/schemas/" />
-    <None Include="../../../schemas/hexalith.test-environment.v1.json" Pack="true" PackagePath="tools/net10.0/any/schemas/" />
-    <None Include="../../../schemas/hexalith.test-result.v1.json" Pack="true" PackagePath="tools/net10.0/any/schemas/" />
-    <None Include="../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/%(RecursiveDir)" />
-    <None Include="../../hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/bin/EventStoreHost/%(RecursiveDir)" />
-    <None Include="../../hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/bin/UiHost/%(RecursiveDir)" />
-    <None Include="pack/projects/EventStore/*" Pack="true" PackagePath="tools/net10.0/any/g4-host/projects/EventStore/" />
-    <None Include="pack/projects/Ui/*" Pack="true" PackagePath="tools/net10.0/any/g4-host/projects/Ui/" />
+    <None Include="../../../schemas/hexalith.module-manifest.v2.json" Pack="true" PackagePath="tools/net11.0/any/schemas/" />
+    <None Include="../../../schemas/hexalith.test-environment.v1.json" Pack="true" PackagePath="tools/net11.0/any/schemas/" />
+    <None Include="../../../schemas/hexalith.test-result.v1.json" Pack="true" PackagePath="tools/net11.0/any/schemas/" />
+    <None Include="../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net11.0/**" Pack="true" PackagePath="tools/net11.0/any/g4-host/%(RecursiveDir)" />
+    <None Include="../../hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net11.0/**" Pack="true" PackagePath="tools/net11.0/any/g4-host/bin/EventStoreHost/%(RecursiveDir)" />
+    <None Include="../../hosts/Hexalith.Builds.Module.UiHost/bin/Release/net11.0/**" Pack="true" PackagePath="tools/net11.0/any/g4-host/bin/UiHost/%(RecursiveDir)" />
+    <None Include="pack/projects/EventStore/*" Pack="true" PackagePath="tools/net11.0/any/g4-host/projects/EventStore/" />
+    <None Include="pack/projects/Ui/*" Pack="true" PackagePath="tools/net11.0/any/g4-host/projects/Ui/" />
   </ItemGroup>
   <!-- The host globs above silently match nothing without a prior Release build of the hosts. -->
   <Target Name="RequirePackagedHosts" BeforeTargets="GenerateNuspec">
-    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/Hexalith.Builds.Module.AppHost.dll')" Text="Build the Hexalith.Builds.Module.AppHost Release output before packing the module tool." />
-    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/Hexalith.Builds.Module.EventStoreHost.dll')" Text="Build the Hexalith.Builds.Module.EventStoreHost Release output before packing the module tool." />
-    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/Hexalith.Builds.Module.UiHost.dll')" Text="Build the Hexalith.Builds.Module.UiHost Release output before packing the module tool." />
+    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net11.0/Hexalith.Builds.Module.AppHost.dll')" Text="Build the Hexalith.Builds.Module.AppHost Release output before packing the module tool." />
+    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net11.0/Hexalith.Builds.Module.EventStoreHost.dll')" Text="Build the Hexalith.Builds.Module.EventStoreHost Release output before packing the module tool." />
+    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.UiHost/bin/Release/net11.0/Hexalith.Builds.Module.UiHost.dll')" Text="Build the Hexalith.Builds.Module.UiHost Release output before packing the module tool." />
   </Target>
 </Project>

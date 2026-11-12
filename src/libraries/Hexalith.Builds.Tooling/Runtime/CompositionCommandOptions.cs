@@ -53,7 +53,7 @@ public static class CompositionCommandOptions
                     "Hexalith.Builds.Module.AppHost",
                     "bin",
                     configuration,
-                    "net10.0",
+                    "net11.0",
                     "Hexalith.Builds.Module.AppHost.dll");
             }
 

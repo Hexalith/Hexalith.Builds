@@ -160,7 +160,16 @@ public sealed class RecordSchemaTests
         char[] characters = original.ToCharArray();
         characters[85]++;
         string changed = change == "newline" ? original + "\n" : new string(characters);
-        Convert.FromBase64String(changed).ShouldBe(Convert.FromBase64String(original));
+        if (change == "newline")
+        {
+            Convert.FromBase64String(changed).ShouldBe(Convert.FromBase64String(original));
+        }
+        else
+        {
+            // .NET 11 also rejects nonzero padding bits in the framework decoder.
+            _ = Should.Throw<FormatException>(() => Convert.FromBase64String(changed));
+        }
+
         json["signature"] = changed;
         ReleaseRecordCodec.Verify<ReleaseRecord>(Encoding.UTF8.GetBytes(json.ToJsonString()), context.Policy).FailureCode.ShouldBe("schema-rejected");
     }

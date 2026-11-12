@@ -203,7 +203,7 @@ public sealed class CompositionResourceClaimStoreTests
             string project = Path.Combine(root, "claim-child");
             _ = Directory.CreateDirectory(project);
             string assembly = System.Security.SecurityElement.Escape(typeof(CompositionResourceClaimStore).Assembly.Location);
-            await File.WriteAllTextAsync(Path.Combine(project, "child.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings></PropertyGroup><ItemGroup><Reference Include=\"Hexalith.Builds.Tooling\"><HintPath>" + assembly + "</HintPath></Reference></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await File.WriteAllTextAsync(Path.Combine(project, "child.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net11.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings></PropertyGroup><ItemGroup><Reference Include=\"Hexalith.Builds.Tooling\"><HintPath>" + assembly + "</HintPath></Reference></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
             await File.WriteAllTextAsync(
                 Path.Combine(project, "Program.cs"),
                 """
@@ -219,7 +219,7 @@ public sealed class CompositionResourceClaimStoreTests
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
             CompositionProcessResult build = await CompositionProcess.RunAsync(CompositionProcess.CreateStartInfo("dotnet", ["build", Path.Combine(project, "child.csproj"), "-c", "Debug", "-m:1", "-nodeReuse:false", "-p:UseSharedCompilation=false", "--nologo", "-v:q"], project, null), TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken).ConfigureAwait(true);
             build.ExitCode.ShouldBe(0, build.Output);
-            string executable = Path.Combine(project, "bin", "Debug", "net10.0", "child.dll");
+            string executable = Path.Combine(project, "bin", "Debug", "net11.0", "child.dll");
             HashSet<int> allocated = [];
             for (int allocation = 0; allocation < 12; allocation++)
             {

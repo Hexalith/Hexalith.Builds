@@ -23,7 +23,7 @@ if (Test-Path -LiteralPath $OutputDirectory) {
 $null = New-Item -ItemType Directory -Path $OutputDirectory
 $extracted = Join-Path $OutputDirectory 'package'
 [IO.Compression.ZipFile]::ExtractToDirectory($PackagePath, $extracted)
-$payload = Join-Path $extracted 'tools/net10.0/any'
+$payload = Join-Path $extracted 'tools/net11.0/any'
 $hostDirectory = Join-Path $payload 'g4-host'
 $hostAssembly = Join-Path $hostDirectory 'Hexalith.Builds.Module.AppHost.dll'
 $rootTooling = Join-Path $payload 'Hexalith.Builds.Tooling.dll'
@@ -33,9 +33,13 @@ foreach ($file in @($hostAssembly, $rootTooling, $hostTooling)) {
 }
 
 # A model compiled against current catalog APIs must use the packaged host's closure.
-# Framework-only fixtures miss a pruned .NET 11 dependency on a .NET 10 target.
+# Framework dependencies may be supplied by the matching shared runtime on .NET 11.
 [xml] $catalog = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../Props/Directory.Packages.props') -Raw
 $extensionClosure = @()
+$runtimeConfig = Get-Content (Join-Path $hostDirectory 'Hexalith.Builds.Module.AppHost.runtimeconfig.json') -Raw | ConvertFrom-Json
+$frameworks = @($runtimeConfig.runtimeOptions.frameworks)
+$runtimes = @(& dotnet --list-runtimes)
+if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the installed shared runtimes.' }
 foreach ($id in @('Microsoft.Extensions.Configuration', 'Microsoft.Extensions.Configuration.Abstractions',
     'Microsoft.Extensions.DependencyInjection', 'Microsoft.Extensions.DependencyInjection.Abstractions',
     'Microsoft.Extensions.Options')) {
@@ -43,7 +47,28 @@ foreach ($id in @('Microsoft.Extensions.Configuration', 'Microsoft.Extensions.Co
     if ($selection.Count -ne 1) { throw "Catalog must select exactly one '$id' dependency." }
     $version = [Version]::Parse([string]$selection[0].Version)
     $path = Join-Path $hostDirectory "$id.dll"
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Packaged current-catalog closure omitted '$id'." }
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        # Resolve only frameworks declared by the packaged host, using their installed
+        # matching major/minor line. The child must report this exact assembly path.
+        $candidates = @()
+        foreach ($framework in $frameworks) {
+            $required = [Version]$framework.version
+            foreach ($runtime in $runtimes) {
+                if ($runtime -match '^([^ ]+) ([^ ]+) \[(.+)\]$' -and $Matches[1] -ceq $framework.name) {
+                    $installed = [Version]$Matches[2]
+                    if ($installed.Major -eq $required.Major -and $installed.Minor -eq $required.Minor -and $installed -ge $required) {
+                        $candidate = Join-Path $Matches[3] "$installed/$id.dll"
+                        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+                            $candidates += @{ version = $installed; path = $candidate }
+                        }
+                    }
+                }
+            }
+        }
+        $selected = @($candidates | Sort-Object version -Descending | Select-Object -First 1)
+        if ($selected.Count -ne 1) { throw "Neither the package nor its declared shared runtimes supply '$id'." }
+        $path = $selected[0].path
+    }
     $identity = [Reflection.AssemblyName]::GetAssemblyName($path)
     if ($identity.Name -cne $id -or $identity.Version.Major -ne $version.Major -or $identity.Version.Minor -ne $version.Minor) {
         throw "Packaged '$id' identity '$($identity.FullName)' does not match catalog '$version'."
@@ -80,7 +105,7 @@ $plan = @{
     redisImage = ''; ports = @{}; modules = @(); uiMarkers = @()
     platformDeclarationPaths = @($declaration)
     platformDeclarationHash = (Get-FileHash -LiteralPath $declaration -Algorithm SHA256).Hash
-    platformModelAssemblyPath = (Join-Path $fixture 'bin/Debug/net10.0/Hexalith.Platform.Composition.dll')
+    platformModelAssemblyPath = (Join-Path $fixture 'bin/Debug/net11.0/Hexalith.Platform.Composition.dll')
 }
 $plan | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $planPath -Encoding utf8
 
@@ -206,8 +231,11 @@ foreach ($key in $created.Keys) { $environment[$key] = $created[$key] }
 $environment | ConvertTo-Json -Compress
 '@)
     $resolverErrors = Join-Path $OutputDirectory 'resolve-aspire-paths.stderr.log'
-    $pwshExecutable = @(Get-Command pwsh -CommandType Application -ErrorAction Stop)[0].Source
-    $resolverOutput = @(& $pwshExecutable -NoProfile -File $resolver -Payload $payload -Workspace $workspace 2> $resolverErrors)
+    # Run PowerShell's managed entry point under the tool's .NET 11 runtime; a
+    # machine's standalone PowerShell can still be hosted by .NET 10.
+    $pwshAssembly = Join-Path $PSHOME 'pwsh.dll'
+    $toolRuntimeConfig = Join-Path $payload 'Hexalith.Builds.Module.Cli.runtimeconfig.json'
+    $resolverOutput = @(& dotnet exec --runtimeconfig $toolRuntimeConfig $pwshAssembly -NoProfile -File $resolver -Payload $payload -Workspace $workspace 2> $resolverErrors)
     if ($LASTEXITCODE -ne 0) {
         throw "Packaged runtime start cannot resolve local Aspire orchestration (exit $LASTEXITCODE): $(Get-Content -LiteralPath $resolverErrors -Raw)"
     }

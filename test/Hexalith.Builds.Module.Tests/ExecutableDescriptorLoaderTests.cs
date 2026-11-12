@@ -396,7 +396,7 @@ public sealed class ExecutableDescriptorLoaderTests
         string project = Path.Combine(projectDirectory, name + ".csproj");
         await File.WriteAllTextAsync(
             project,
-            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup></Project>",
             cancellationToken).ConfigureAwait(false);
         await File.WriteAllTextAsync(
             Path.Combine(projectDirectory, sourceFileName), source, cancellationToken).ConfigureAwait(false);
@@ -419,7 +419,7 @@ public sealed class ExecutableDescriptorLoaderTests
         string standardOutput = await standardOutputTask.ConfigureAwait(false);
         string standardError = await standardErrorTask.ConfigureAwait(false);
         process.ExitCode.ShouldBe(0, standardOutput + standardError);
-        return Path.Combine(projectDirectory, "bin", "Debug", "net10.0", name + ".dll");
+        return Path.Combine(projectDirectory, "bin", "Debug", "net11.0", name + ".dll");
     }
 
     private static string DescribeSource(string typeName, string json) =>

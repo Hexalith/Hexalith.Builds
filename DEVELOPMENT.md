@@ -50,41 +50,27 @@ and supply no hosted lifecycle or accepted-tool qualification.
 
 ## Technology Stack
 
-- .NET 10 or later and C# 14 or later
+- .NET 11 or later and C# 15 or later
 - Dapr 1.18 or later for distributed applications
 - Microsoft Fluent UI Blazor for user-interface components
 - xUnit with Shouldly for unit tests
 
-The repository and sample pin .NET SDK 11.0.100. Published tools continue to
-target .NET 10. Compile the MSBuild tasks against the catalog's .NET 10
-packages, with runtime assets excluded; the executing SDK supplies its own
-MSBuild assemblies. Unit tests use the same package versions with runtime
-assets included. Referencing SDK 11 assemblies directly from these .NET 10
-projects fails with CS1705.
+The repository and sample pin .NET SDK 11.0.100. Active tools, runner hosts,
+probes and executable fixtures target `net11.0`. Compile MSBuild tasks against
+catalog packages 18.12.2 with runtime assets excluded; the executing SDK supplies
+its own MSBuild assemblies. Unit tests include those packages' runtime assets.
 
-Keep framework-dependent packages on the latest compatible .NET 10 line.
-MSBuild 18.12.2 and ASP.NET Core 11 require .NET 11; upgrading the SDK alone
-does not retarget consumers. Retain Microsoft.OpenApi 2.x for ASP.NET Core 10,
-and the Dapr hosting integration required by the published EventStore package.
-The package audit records newer candidates and unresolved feed entries.
+ASP.NET Core, OAuth, Identity Stores and Immutable now use version 11.0.0.
+Authorization and SignalR advance with the host's ASP.NET Core runtime, removing
+the mixed-major ABI constraints. OpenApi 3.11.0 and Swashbuckle 11.0.0 align with
+ASP.NET Core OpenApi 11. Retain the Dapr hosting integration required by the
+published EventStore package. Package migration evidence and remaining holds
+are recorded in `docs/dotnet-11-migration.md`.
 
-Keep `Microsoft.AspNetCore.Authorization` on the compatible ASP.NET Core 10
-family (currently `10.0.15`). Version `11.0.0` permits restore and compilation,
-but the retained ASP.NET Core 10 `AuthorizationMiddleware` calls
-`IAuthorizationPolicyProvider.AllowsCachingPolicies`; application startup then
-fails with `MissingMethodException` for that getter. SDK 11 and compatible
-Extensions/System 11 packages do not remove this runtime ABI requirement.
-Revisit this hold only when the host's ASP.NET Core middleware and Authorization
-package advance together and application/browser startup passes.
-
-Keep `Microsoft.AspNetCore.SignalR.Client` and `Microsoft.AspNetCore.SignalR.Common`
-on `10.0.15` for ASP.NET Core 10 hosts. SignalR 11 selects its `netstandard2.0`
-Common asset for `net10.0`; that asset lacks
-`IInvocationBinder.GetTarget(ReadOnlySpan<byte>)`, which the ASP.NET Core 10
-Blazor MessagePack worker calls. The resulting `MissingMethodException` closes
-the circuit after a successful WebSocket handshake. Restore and compilation
-alone do not detect this mismatch. Revisit the hold when the server and SignalR
-advance together and a real browser reaches interactive rendering.
+Older framework inputs in workspace MSBuild tests, catalog compatibility tests,
+release multi-target fixtures and byte-bound historical evidence are intentional.
+They exercise backward compatibility; installing SDK 10 alongside SDK 11 in CI
+supplies their offline reference packs and runtime without changing the active SDK.
 
 ## Commit Messages and Releases
 

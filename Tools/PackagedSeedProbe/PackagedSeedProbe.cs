@@ -24,7 +24,7 @@ using Microsoft.Extensions.Hosting;
 /// <summary>Exercises the EventStore seed from one actual distributable module-tool archive.</summary>
 internal static class PackagedSeedProbe
 {
-    private const string _seedEntry = "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll";
+    private const string _seedEntry = "tools/net11.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll";
 
     /// <summary>Loads only the archive's seed, tests both subscription modes and retains their observations.</summary>
     /// <param name="args">The archive, its expected version and a new evidence path.</param>

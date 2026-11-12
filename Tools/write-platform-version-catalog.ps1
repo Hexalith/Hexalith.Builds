@@ -6,7 +6,7 @@ param(
     [string] $NuspecPath = '',
     [string] $BuildSelectionsPath = '',
     [string] $Configuration = 'Debug',
-    [string] $TargetFramework = 'net10.0',
+    [string] $TargetFramework = 'net11.0',
     [ValidateRange(1, 300)]
     [int] $TimeoutSeconds = 60
 )

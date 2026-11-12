@@ -89,7 +89,7 @@ public sealed class PlatformModelBuildIsolationTests
         string directory = Path.Combine(root, "src", name);
         _ = Directory.CreateDirectory(directory);
         string projectReference = reference is null ? string.Empty : "<ItemGroup><ProjectReference Include=\"../" + reference + "/" + reference + ".csproj\" /></ItemGroup>";
-        await File.WriteAllTextAsync(Path.Combine(directory, name + ".csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>" + projectReference + "</Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(directory, name + ".csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup>" + projectReference + "</Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(directory, "Code.cs"), code, TestContext.Current.CancellationToken).ConfigureAwait(true);
     }
 }

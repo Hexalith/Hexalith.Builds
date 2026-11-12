@@ -478,7 +478,7 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("<ItemGroup><ProjectReference Include=\"Local.csproj\"><AdditionalProperties>Configuration=Debug;HexalithTenantsRoot=../Hexalith.Tenants</AdditionalProperties></ProjectReference></ItemGroup>", false)]
     [InlineData("<Target Name=\"BuildLocal\"><MSBuild Projects=\"Local.csproj\" Properties=\"Configuration=Debug;UseHexalithProjectReferences=false\" /></Target>", false)]
     [InlineData("<Target Name=\"BuildLocal\"><MSBuild Projects=\"Local.csproj\" Properties=\"HexalithTenantsRoot=../Hexalith.Tenants\" /></Target>", false)]
-    [InlineData("<ItemGroup><ProjectReference Include=\"Local.csproj\" AdditionalProperties=\"Configuration=Debug;TargetFramework=net10.0\" /></ItemGroup>", true)]
+    [InlineData("<ItemGroup><ProjectReference Include=\"Local.csproj\" AdditionalProperties=\"Configuration=Debug;TargetFramework=net11.0\" /></ItemGroup>", true)]
     [InlineData("<ItemGroup><ProjectReference Include=\"Local.csproj\"><AdditionalProperties>Configuration=Debug</AdditionalProperties></ProjectReference></ItemGroup>", true)]
     [InlineData("<Target Name=\"BuildLocal\"><MSBuild Projects=\"Local.csproj\" Properties=\"Configuration=Release;EnableFeature=true\" /></Target>", true)]
     public async Task BuildMetadataAndTasksPreserveReservedPropertiesAsync(string body, bool passes)

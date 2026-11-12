@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
     with:
-      # SDK 11 remains selected by global.json; SDK 10 supplies offline net10.0 reference packs.
+      # Active projects use SDK 11; SDK 10 supplies offline backward-compatibility fixtures.
       additional-sdk-version: '10.0.404'
     secrets:
       registry-pull-username: ${{ secrets.HEXALITH_REGISTRY_PULL_USERNAME }}

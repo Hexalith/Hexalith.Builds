@@ -174,7 +174,7 @@ public sealed class CatalogVersionTests
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string directory = Path.Combine(workspace, "source-mapping");
         string assets = Path.Combine(workspace, "project.assets.json");
-        await File.WriteAllTextAsync(assets, "{\"targets\":{\"net10.0\":{\"Hexalith.Dep/2.0.0\":{\"type\":\"package\"}}}}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(assets, "{\"targets\":{\"net11.0\":{\"Hexalith.Dep/2.0.0\":{\"type\":\"package\"}}}}", TestContext.Current.CancellationToken).ConfigureAwait(true);
         TaskItem package = new("Hexalith.Dep");
         package.SetMetadata("Version", "1.0.0");
         CatalogTestBuildEngine engine = new();
@@ -186,7 +186,7 @@ public sealed class CatalogVersionTests
             CatalogFile = Path.Combine(directory, "catalog-versions.json"),
             AssetsFile = assets,
             CheckAssets = true,
-            TargetFramework = "net10.0",
+            TargetFramework = "net11.0",
             Packages = [package],
         };
 
@@ -359,13 +359,13 @@ public sealed class CatalogVersionTests
             CatalogFile = Path.Combine(directory, "catalog-versions.json"),
             AssetsFile = assets,
             CheckAssets = true,
-            TargetFramework = "net10.0",
+            TargetFramework = "net11.0",
             Packages = [new TaskItem("Hexalith.Dep")],
         };
 
         task.Execute().ShouldBeFalse();
         engine.Error.ShouldNotBeNull().Code.ShouldBe("HXW012");
-        engine.Error.Message.ShouldNotBeNull().ShouldContain("no active target 'net10.0'");
+        engine.Error.Message.ShouldNotBeNull().ShouldContain("no active target 'net11.0'");
     }
 
     /// <summary>Verifies an ancestor <c>Directory.Build.rsp</c> cannot change the isolated catalog evaluation.</summary>
@@ -405,7 +405,7 @@ public sealed class CatalogVersionTests
         string project = Path.Combine(host, hostName + ".csproj");
         await File.WriteAllTextAsync(
             project,
-            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Dep\" VersionOverride=\"2.0.0\" /></ItemGroup></Project>",
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Dep\" VersionOverride=\"2.0.0\" /></ItemGroup></Project>",
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         CompositionProcessResult build = await CompositionProcess.RunAsync(
@@ -429,7 +429,7 @@ public sealed class CatalogVersionTests
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string directory = Path.Combine(workspace, "source-mapping");
         string assets = Path.Combine(workspace, "project.assets.json");
-        await File.WriteAllTextAsync(assets, "{\"targets\":{\"net9.0\":{\"Hexalith.Dep/2.0.0\":{\"type\":\"package\"}},\"net10.0\":{\"Hexalith.Dep/1.0.0\":{\"type\":\"package\"}}}}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(assets, "{\"targets\":{\"net9.0\":{\"Hexalith.Dep/2.0.0\":{\"type\":\"package\"}},\"net11.0\":{\"Hexalith.Dep/1.0.0\":{\"type\":\"package\"}}}}", TestContext.Current.CancellationToken).ConfigureAwait(true);
         TaskItem package = new("Hexalith.Dep");
         package.SetMetadata("Version", "[1.0.0,3.0.0)");
         CatalogTestBuildEngine engine = new();
@@ -441,7 +441,7 @@ public sealed class CatalogVersionTests
             CatalogFile = Path.Combine(directory, "catalog-versions.json"),
             AssetsFile = assets,
             CheckAssets = true,
-            TargetFramework = "net10.0",
+            TargetFramework = "net11.0",
             Packages = [package],
         };
 
@@ -501,7 +501,7 @@ public sealed class CatalogVersionTests
         string host = Path.Combine(workspace, "hosts", "Hexalith.Folders.Aspire");
         _ = Directory.CreateDirectory(host);
         string project = Path.Combine(host, "Hexalith.Folders.Aspire.csproj");
-        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" VersionOverride=\"13.6.0-preview.1\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" VersionOverride=\"13.6.0-preview.1\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult build = await CompositionProcess.RunAsync(
             CompositionSdkProcess.CreateStartInfo(["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
             TimeSpan.FromMinutes(1),
@@ -546,7 +546,7 @@ public sealed class CatalogVersionTests
         string host = Path.Combine(workspace, "hosts", "Hexalith.Folders.Aspire");
         _ = Directory.CreateDirectory(host);
         string project = Path.Combine(host, "Hexalith.Folders.Aspire.csproj");
-        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" VersionOverride=\"13.6.0-preview.1\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" VersionOverride=\"13.6.0-preview.1\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult build = await CompositionProcess.RunAsync(
             CompositionSdkProcess.CreateStartInfo(["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
             TimeSpan.FromMinutes(1),
@@ -580,7 +580,7 @@ public sealed class CatalogVersionTests
             CatalogFile = Path.Combine(directory, "catalog-versions.json"),
             AssetsFile = Path.Combine(workspace, "missing.assets.json"),
             CheckAssets = true,
-            TargetFramework = "net10.0",
+            TargetFramework = "net11.0",
             Packages = [new TaskItem("Hexalith.Dep")],
         };
 
@@ -615,7 +615,7 @@ public sealed class CatalogVersionTests
         string host = Path.Combine(workspace, "hosts", "Generated");
         _ = Directory.CreateDirectory(host);
         string project = Path.Combine(host, "Generated.csproj");
-        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(host, "Directory.Packages.props"), "<Project><ItemGroup><GlobalPackageReference Include=\"Hexalith.Dep\" Version=\"2.0.0\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         CompositionProcessResult build = await CompositionProcess.RunAsync(
@@ -642,7 +642,7 @@ public sealed class CatalogVersionTests
         _ = Directory.CreateDirectory(feed);
         _ = Directory.CreateDirectory(packageDirectory);
         string packageProject = Path.Combine(packageDirectory, "Hexalith.Dep.csproj");
-        await File.WriteAllTextAsync(packageProject, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.Dep</PackageId><Version>2.0.0</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(packageProject, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework><PackageId>Hexalith.Dep</PackageId><Version>2.0.0</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(packageDirectory, "Class1.cs"), "public class Class1 {}", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult pack = await CompositionProcess.RunAsync(
             CompositionSdkProcess.CreateStartInfo(["pack", packageProject, "-o", feed, "-v:q", "-p:NuGetAudit=false", "-p:RestoreSources=" + feed], packageDirectory, null),
@@ -654,7 +654,7 @@ public sealed class CatalogVersionTests
         _ = Directory.CreateDirectory(host);
         await File.WriteAllTextAsync(Path.Combine(host, "NuGet.Config"), "<configuration><packageSources><clear /><add key=\"local\" value=\"" + feed + "\" /></packageSources></configuration>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         string project = Path.Combine(host, "Generated.csproj");
-        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Dep\" Version=\"[1.0.0,3.0.0)\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Dep\" Version=\"[1.0.0,3.0.0)\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         Dictionary<string, string> environment = new(SourceMappingMaterializer.Environment(mapping, workspace), StringComparer.Ordinal)
         {
             ["NUGET_PACKAGES"] = Path.Combine(fixture.Directory, "isolated-packages"),
@@ -692,7 +692,7 @@ public sealed class CatalogVersionTests
         _ = Directory.CreateDirectory(feed);
         _ = Directory.CreateDirectory(packageDirectory);
         string packageProject = Path.Combine(packageDirectory, "Package.csproj");
-        await File.WriteAllTextAsync(packageProject, $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>{packageId}</PackageId><Version>{version}</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(packageProject, $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework><PackageId>{packageId}</PackageId><Version>{version}</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(packageDirectory, "Class1.cs"), "public class Class1 {}", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult pack = await CompositionProcess.RunAsync(
             CompositionSdkProcess.CreateStartInfo(["pack", packageProject, "-o", feed, "-v:q", "-p:NuGetAudit=false", "-p:RestoreSources=" + feed], packageDirectory, null),
@@ -710,7 +710,7 @@ public sealed class CatalogVersionTests
 
         string project = Path.Combine(host, projectName + ".csproj");
         string reference = central ? $"<PackageReference Include=\"{packageId}\" />" : $"<PackageReference Include=\"{packageId}\" Version=\"[{version}]\" />";
-        await File.WriteAllTextAsync(project, $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup>{reference}</ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(project, $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup>{reference}</ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         Dictionary<string, string> environment = new(SourceMappingMaterializer.Environment(mapping, workspace), StringComparer.Ordinal)
         {
             ["NUGET_PACKAGES"] = Path.Combine(fixture.Directory, "isolated-packages"),

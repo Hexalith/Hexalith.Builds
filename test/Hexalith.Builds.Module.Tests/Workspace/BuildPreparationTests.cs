@@ -55,7 +55,7 @@ public sealed class BuildPreparationTests
         string configuration = mode == "source" ? "Debug" : "Release";
         string selected = mode == "source" ? "true" : "false";
         string project = Path.Combine(fixture.Checkout, "Prepared.csproj");
-        await File.WriteAllTextAsync(project, $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><Target Name=\"Probe\"><Error Condition=\"'$(Configuration)' != '{configuration}' or '$(UseHexalithProjectReferences)' != '{selected}' or '$(HexalithDepFromSource)' != '{selected}'\" Text=\"Wrong mapped selection\" /><Message Importance=\"high\" Text=\"PREPARED-{mode}-{configuration}\" /></Target></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(project, $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><Target Name=\"Probe\"><Error Condition=\"'$(Configuration)' != '{configuration}' or '$(UseHexalithProjectReferences)' != '{selected}' or '$(HexalithDepFromSource)' != '{selected}'\" Text=\"Wrong mapped selection\" /><Message Importance=\"high\" Text=\"PREPARED-{mode}-{configuration}\" /></Target></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         Dictionary<string, string> environment = preparation.GetProperty("environment").EnumerateObject().ToDictionary(property => property.Name, property => property.Value.GetString()!);
         CompositionProcessResult probe = await CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("dotnet", ["msbuild", project, "-t:Probe", "-nologo"], fixture.Checkout, environment),
@@ -251,7 +251,7 @@ public sealed class BuildPreparationTests
         string project = Path.Combine(root, "catalog-barrier");
         string tools = Path.Combine(project, "out");
         _ = Directory.CreateDirectory(project);
-        await File.WriteAllTextAsync(Path.Combine(project, "CatalogBarrier.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><UseAppHost>true</UseAppHost></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(project, "CatalogBarrier.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net11.0</TargetFramework><UseAppHost>true</UseAppHost></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(project, "Program.cs"), "using System; using System.IO; using System.Threading; File.WriteAllText(Path.Combine(AppContext.BaseDirectory, \"materialization-ready\"), \"ready\"); using ManualResetEventSlim barrier = new(false); barrier.Wait();", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult built = await CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("dotnet", ["build", project, "--configuration", "Debug", "--output", tools, "-v:q"], root, null),
