@@ -139,6 +139,61 @@ function Get-ConsumerXmlFiles {
     )
 }
 
+function Invoke-JsonEvaluation {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Executable,
+
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Description
+    )
+
+    $startInfo = [Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $Executable
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    foreach ($argument in $Arguments) {
+        $startInfo.ArgumentList.Add($argument)
+    }
+
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    try {
+        [void] $process.Start()
+        # Drain both streams concurrently: diagnostics must never enter the JSON document
+        # or block an evaluator whose stderr pipe fills before stdout completes.
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $process.WaitForExit()
+        $stdout = $stdoutTask.GetAwaiter().GetResult()
+        $stderr = $stderrTask.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne 0) {
+            throw "$Description exited with code $($process.ExitCode).`nStandard output:`n$stdout`nStandard error:`n$stderr"
+        }
+
+        if (-not [string]::IsNullOrEmpty($stderr)) {
+            [Console]::Error.Write($stderr)
+        }
+
+        try {
+            if ([string]::IsNullOrWhiteSpace($stdout)) {
+                throw 'The JSON document is empty.'
+            }
+            return ConvertFrom-Json -InputObject $stdout -ErrorAction Stop
+        }
+        catch {
+            throw "$Description returned malformed JSON. $($_.Exception.GetBaseException().Message)`nStandard output:`n$stdout"
+        }
+    }
+    finally {
+        $process.Dispose()
+    }
+}
+
 function Invoke-ProjectEvaluation {
     param(
         [Parameter(Mandatory = $true)]
@@ -148,18 +203,9 @@ function Invoke-ProjectEvaluation {
         [string[]] $Arguments
     )
 
-    $output = @(& dotnet msbuild $ProjectPath -nologo @Arguments 2>&1)
-    $outputText = [string]::Join("`n", @($output | ForEach-Object { [string] $_ }))
-    if ($LASTEXITCODE -ne 0) {
-        throw "Evaluation of '$ProjectPath' exited with code $LASTEXITCODE. $outputText"
-    }
-
-    try {
-        return $outputText | ConvertFrom-Json -ErrorAction Stop
-    }
-    catch {
-        throw "Evaluation of '$ProjectPath' returned malformed JSON. $($_.Exception.GetBaseException().Message)"
-    }
+    return Invoke-JsonEvaluation -Executable 'dotnet' `
+        -Arguments (@('msbuild', $ProjectPath, '-nologo') + $Arguments) `
+        -Description "Evaluation of '$ProjectPath'"
 }
 
 try {
@@ -395,15 +441,12 @@ foreach ($projectPath in $projectFiles) {
     }
 
     try {
-        $catalogOutput = @(& (Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })) `
-                -NoLogo -NoProfile -File (Join-Path $PSScriptRoot 'validate-central-package-versions.ps1') `
-                -CatalogPath $resolvedCatalogPath -ConsumerProjectName ([string] $evaluation.Properties.MSBuildProjectName) `
-                -EmitEvaluation 2>&1)
-        if ($LASTEXITCODE -ne 0) {
-            throw "Authoritative catalog evaluation for '$relativeProjectPath' failed: $([string]::Join("`n", $catalogOutput))"
-        }
-
-        $catalogEvaluation = ([string]::Join("`n", $catalogOutput)) | ConvertFrom-Json -ErrorAction Stop
+        $catalogEvaluation = Invoke-JsonEvaluation `
+            -Executable (Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })) `
+            -Arguments @('-NoLogo', '-NoProfile', '-File', (Join-Path $PSScriptRoot 'validate-central-package-versions.ps1'),
+                '-CatalogPath', $resolvedCatalogPath, '-ConsumerProjectName', ([string] $evaluation.Properties.MSBuildProjectName),
+                '-EmitEvaluation') `
+            -Description "Authoritative catalog evaluation for '$relativeProjectPath'"
         $authoritativePackages = @{}
         foreach ($packageVersion in @($catalogEvaluation.Items.PackageVersion)) {
             $authoritativePackages[[string] $packageVersion.Identity] = [string] $packageVersion.Version

@@ -114,6 +114,78 @@ function Test-Scenario {
 
 New-Item -ItemType Directory -Path $temporaryRoot -Force | Out-Null
 try {
+    # Exercise the real native-process reader without loading the validator's executable
+    # entry point. The child processes keep stdout and stderr physically independent.
+    $validatorAst = [Management.Automation.Language.Parser]::ParseFile($validatorPath, [ref] $null, [ref] $null)
+    $jsonEvaluationFunction = $validatorAst.Find({
+            param($node)
+            $node -is [Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -eq 'Invoke-JsonEvaluation'
+        }, $true)
+    . ([scriptblock]::Create($jsonEvaluationFunction.Extent.Text))
+
+    $script:scenarioCount++
+    $noticePath = Join-Path $temporaryRoot 'evaluation-with-notice.ps1'
+    Write-Utf8File -Path $noticePath -Content @'
+[Console]::Error.WriteLine('MSBuild server started on stderr.')
+[Console]::Out.WriteLine('{"Properties":{"MSBuildProjectName":"Fixture"}}')
+exit 0
+'@
+    $stderrWriter = [IO.StringWriter]::new()
+    $originalErrorWriter = [Console]::Error
+    try {
+        [Console]::SetError($stderrWriter)
+        $noticeEvaluation = Invoke-JsonEvaluation -Executable $pwshExecutable `
+            -Arguments @('-NoLogo', '-NoProfile', '-File', $noticePath) -Description 'Notice fixture'
+        if ($noticeEvaluation.Properties.MSBuildProjectName -cne 'Fixture' -or
+            $stderrWriter.ToString() -notlike '*MSBuild server started on stderr.*') {
+            $failures.Add('Successful evaluation must parse stdout JSON and retain its stderr notice separately.')
+        }
+    }
+    finally {
+        [Console]::SetError($originalErrorWriter)
+        $stderrWriter.Dispose()
+    }
+
+    $script:scenarioCount++
+    $failingPath = Join-Path $temporaryRoot 'evaluation-failure.ps1'
+    Write-Utf8File -Path $failingPath -Content @'
+[Console]::Out.WriteLine('stdout evaluation diagnostic')
+[Console]::Error.WriteLine('stderr evaluation diagnostic')
+exit 23
+'@
+    try {
+        $null = Invoke-JsonEvaluation -Executable $pwshExecutable `
+            -Arguments @('-NoLogo', '-NoProfile', '-File', $failingPath) -Description 'Failing fixture'
+        $failures.Add('Nonzero evaluation must fail before attempting to parse its output.')
+    }
+    catch {
+        $diagnostic = $_.Exception.Message
+        foreach ($expected in @('exited with code 23', 'stdout evaluation diagnostic', 'stderr evaluation diagnostic')) {
+            if ($diagnostic -notlike "*$expected*") {
+                $failures.Add("Nonzero evaluation lost '$expected'. Output: $diagnostic")
+            }
+        }
+    }
+
+    $script:scenarioCount++
+    $malformedPath = Join-Path $temporaryRoot 'evaluation-malformed.ps1'
+    Write-Utf8File -Path $malformedPath -Content @'
+[Console]::Out.WriteLine('MSBuild notice on stdout is not JSON.')
+[Console]::Out.WriteLine('{"Properties":{"MSBuildProjectName":"Fixture"}}')
+exit 0
+'@
+    try {
+        $null = Invoke-JsonEvaluation -Executable $pwshExecutable `
+            -Arguments @('-NoLogo', '-NoProfile', '-File', $malformedPath) -Description 'Malformed fixture'
+        $failures.Add('Successful exit with polluted stdout must remain a malformed-JSON failure.')
+    }
+    catch {
+        if ($_.Exception.Message -notlike '*returned malformed JSON*') {
+            $failures.Add("Malformed evaluation lost its JSON failure diagnostic: $($_.Exception.Message)")
+        }
+    }
+
     Write-Utf8File -Path $catalogPath -Content @'
 <Project>
   <PropertyGroup>
