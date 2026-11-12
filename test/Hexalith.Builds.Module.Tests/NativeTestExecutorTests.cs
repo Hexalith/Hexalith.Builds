@@ -754,22 +754,41 @@ public sealed class NativeTestExecutorTests
         Directory.Exists(ownedRoot).ShouldBeFalse("Malformed proof reads must release every owned file before cleanup.");
     }
 
-    /// <summary>An attached run captures immutable owner routing proofs with exact owner, environment and attached identities.</summary>
-    /// <param name="foreign">Whether to substitute another owner in the descriptor.</param>
+    /// <summary>Routing captures require the descriptor and hold to identify the exact owner and attached run.</summary>
+    /// <param name="fault">The descriptor or hold identity mutation.</param>
     /// <returns>The immutable capture or explicit mismatch refusal.</returns>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AttachedRoutingSnapshotsRequireExactOwnerAsync(bool foreign)
+    [InlineData("none")]
+    [InlineData("foreign-owner")]
+    [InlineData("sibling-run")]
+    [InlineData("owner-role")]
+    [InlineData("hold-owner")]
+    [InlineData("hold-environment")]
+    [InlineData("owner-descriptor")]
+    [InlineData("owner-descriptor-role")]
+    [InlineData("owner-descriptor-owner")]
+    public async Task AttachedRoutingSnapshotsRequireExactOwnerAsync(string fault)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunPlan plan, ModuleTestSelection _, string _) = await PrepareSelectedRunAsync(workspace, string.Empty).ConfigureAwait(true);
         IReadOnlyDictionary<string, byte[]> originals = await WriteRequiredRoutingEvidenceAsync(plan).ConfigureAwait(true);
         DateTimeOffset now = DateTimeOffset.UtcNow;
         string attachedRun = CompositionRunPlanFactory.NewRunId();
-        AttachedSuiteIdentity attached = new(new(CompositionRunPlanFactory.NewRunId(), plan.EnvironmentId, plan.RunId, attachedRun, 60, now, 60, now.AddSeconds(60)), CompositionRunPlanFactory.NewRunId(), AttachedSuiteIdentity.WorkspaceFor(plan.Workspace, attachedRun), Path.Combine(workspace.Root, "attached-diagnostics"));
-        byte[] descriptor = JsonSerializer.SerializeToUtf8Bytes(new { bindings = new { run = new { runId = attachedRun, ownerRunId = foreign ? CompositionRunPlanFactory.NewRunId() : plan.RunId, environmentId = plan.EnvironmentId, role = "attached" }, environment = new { catalog = new { instanceId = plan.EnvironmentId + "-catalog", commit = plan.SourceMapping!.PlatformIdentity!.CatalogCommit } } } });
-        if (foreign)
+        bool ownerDescriptor = fault.StartsWith("owner-descriptor", StringComparison.Ordinal);
+        string holdEnvironment = fault == "hold-environment" ? CompositionRunPlanFactory.NewRunId() : plan.EnvironmentId;
+        string holdOwner = fault == "hold-owner" ? CompositionRunPlanFactory.NewRunId() : plan.RunId;
+        AttachedSuiteIdentity? attached = ownerDescriptor ? null : new(new(CompositionRunPlanFactory.NewRunId(), holdEnvironment, holdOwner, attachedRun, 60, now, 60, now.AddSeconds(60)), CompositionRunPlanFactory.NewRunId(), AttachedSuiteIdentity.WorkspaceFor(plan.Workspace, attachedRun), Path.Combine(workspace.Root, "attached-diagnostics"));
+        JsonObject run = new()
+        {
+            ["runId"] = fault == "sibling-run" ? CompositionRunPlanFactory.NewRunId() : attached?.RunId ?? plan.RunId,
+            ["ownerRunId"] = fault is "foreign-owner" or "owner-descriptor-owner" ? CompositionRunPlanFactory.NewRunId() : plan.RunId,
+            ["environmentId"] = plan.EnvironmentId,
+            ["role"] = fault == "owner-role" || (attached is null && fault != "owner-descriptor-role") ? "owner" : "attached",
+        };
+        JsonObject catalog = new() { ["instanceId"] = plan.EnvironmentId + "-catalog", ["commit"] = plan.SourceMapping!.PlatformIdentity!.CatalogCommit };
+        JsonObject bindings = new() { ["run"] = run, ["environment"] = new JsonObject { ["catalog"] = catalog } };
+        byte[] descriptor = Encoding.UTF8.GetBytes(new JsonObject { ["bindings"] = bindings }.ToJsonString());
+        if (fault is not ("none" or "owner-descriptor"))
         {
             _ = await Should.ThrowAsync<InvalidDataException>(() => SelectedRoutingCatalogSnapshot.ReadAsync(plan, descriptor, TestContext.Current.CancellationToken, true, [], attached)).ConfigureAwait(true);
         }
@@ -782,6 +801,26 @@ public sealed class NativeTestExecutorTests
                 held[value.Key].ShouldBe(value.Value);
             }
         }
+    }
+
+    /// <summary>A candidate-gated owner refuses attached execution before any child or private output is created.</summary>
+    /// <returns>The refusal and no-child assertions.</returns>
+    [Fact]
+    public async Task AttachedCandidatePolicyRefusesBeforeChildLaunchAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string marker = Path.Combine(workspace.Root, "candidate-attached-started");
+        (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, "from pathlib import Path; Path(" + JsonSerializer.Serialize(marker) + ").touch()").ConfigureAwait(true);
+        plan = plan with { CandidatePolicy = new(plan.RunId, plan.AttemptId, 1, default, default, default) };
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        string runId = CompositionRunPlanFactory.NewRunId();
+        AttachedSuiteIdentity attached = new(new(CompositionRunPlanFactory.NewRunId(), plan.EnvironmentId, plan.RunId, runId, 60, now, 60, now.AddSeconds(60)), CompositionRunPlanFactory.NewRunId(), AttachedSuiteIdentity.WorkspaceFor(plan.Workspace, runId), Path.Combine(workspace.Root, "attached-diagnostics"));
+        using Process process = new();
+        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAttachedAsync(new(plan, HealthyReadiness(plan), "private-signing-key-value", process), selection, manifest, "python3", attached, null, null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        AssertNotPassing(result, "HXT009", ToolExitCode.ProductOrTest);
+        result.Result.Diagnostics.ShouldContain(value => value.Message.Contains("owner's gate", StringComparison.Ordinal));
+        File.Exists(marker).ShouldBeFalse();
+        Directory.Exists(attached.Workspace).ShouldBeFalse();
     }
 
     /// <summary>The selected executor archives its own original capture after the real child mutates and removes all input proofs.</summary>

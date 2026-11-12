@@ -636,11 +636,13 @@ teardown like an unrecorded withdrawal (`HXR037`), so nothing stops while attach
 `--ci-owner-receipt`, more than one `--profile`, or a suite needing an owner's retention gate or
 access observation (a declared `daprRuntimeVersion`, Memories `functional-retention`) refuses
 with `HXC002`; `--hold-seconds` or `--attachment-request-id` without `--attach-to` is a usage
-error. Attached descriptors and fallback results preserve the live owner's original executing
+error. `--eventstore-port` with `--attach-to` is also a usage error. Attached descriptors and
+fallback results preserve the live owner's original executing
 tool and measured environment startup, including its original request, deadline and override.
-Attachment preparation never becomes environment startup. Limits of this revision: the Parties
-caller is not adopted, owners requiring routing-catalog observations fail an attached run as
-`startup-failure`, and no tool acceptance, qualification or pin is implied.
+Attachment preparation never becomes environment startup. Attached suites can capture validated
+immutable routing-catalog observations from their exact owner. The Parties lifecycle caller
+requires compatible published Builds, Platform and EventStore Testing releases before hosted
+qualification; no tool acceptance, qualification or pin is implied.
 CI package integration additionally supports `test --ci-owner-receipt <external-file>`.
 The tool publishes exact ownership before allocation and refuses an unwritable receipt.
 The workflow-owned helper checks the receipt's repository/run/attempt/job bindings,
@@ -750,12 +752,30 @@ prior closed v1 schema: pinned validators must move with this tool. Earlier
 artifacts remain supported by the current validator.
 
 Managed exclusive listener claims are atomic across runner processes. When a
-claim conflicts, the runner allocates fresh ports and retries, up to 64
+default allocation conflicts, the runner allocates fresh ports and retries, up to 64
 attempts; only if every attempt conflicts does the run fail with `HXR031`
-naming the last blocking run. Independent environments coexist. Port
+naming the last blocking run. An explicit `--eventstore-port` fails on its first conflict
+and names that blocking owner. Independent environments coexist. Port
 probes are not operating-system reservations. Claims are released only after the
 existing ownership-limited cleanup verifies that the owning resources are gone.
 `down --run-id <owner>` continues to target only that run.
+
+### Explicit endpoints and attached routing snapshots
+
+Fresh `run`, `debug` and `test` owners accept `--eventstore-port 18080`.
+The integer must be 1–65535. The runner claims that actual EventStore HTTP
+endpoint before binding it. Platform v2 binds this run-plan port through the
+compatible Platform composition model release. A managed conflict fails as `HXR031`,
+naming the blocking owner; it never chooses another requested port. Other endpoints retain
+independent allocation. Attachments cannot request owner ports.
+
+A declared attached suite may consume validated immutable public routing
+snapshots from its exact owner and environment. It receives its own descriptor,
+credentials, process identity, output and first result. Owner candidate gates and
+live access observations remain refused. The original hold expiry bounds access
+and is unchanged by reconnection. This prerequisite requires a compatible tool
+release before downstream package callers can qualify it; it changes no tool pin
+or qualification claim.
 
 ### Authenticated candidate selection (policy v1)
 
@@ -1391,19 +1411,3 @@ their existing protected release callers until their own migration.
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for
 details.
-
-### Explicit endpoints and attached routing snapshots
-
-Fresh `run`, `debug` and `test` owners accept `--eventstore-port 18080`.
-The integer must be 1–65535. The runner claims that actual EventStore HTTP
-endpoint before binding it. A managed conflict fails as `HXR031`, naming the
-blocking owner; it never chooses another requested port. Other endpoints retain
-independent allocation. Attachments cannot request owner ports.
-
-A declared attached suite may consume validated immutable public routing
-snapshots from its exact owner and environment. It receives its own descriptor,
-credentials, process identity, output and first result. Owner candidate gates and
-live access observations remain refused. The original hold expiry bounds access
-and is unchanged by reconnection. This prerequisite requires a compatible tool
-release before downstream package callers can qualify it; it changes no tool pin
-or qualification claim.
