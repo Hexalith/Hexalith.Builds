@@ -14,6 +14,8 @@ param(
     [string] $ConsumerScanRoot = ''
 )
 
+. (Join-Path $PSScriptRoot 'OpenApiCompatibility.functions.ps1')
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
@@ -1603,8 +1605,13 @@ foreach ($package in $packages) {
         $failures.Add("Accepted package '$id' selected version '$selectedVersion' has no configured-source candidate evidence.")
     }
 
-    if ($id -eq 'Microsoft.OpenApi' -and $selectedVersion -notmatch '^2\.') {
-        $failures.Add('Microsoft.OpenApi must remain on the proven 2.x line until compatibility evidence changes the contract.')
+    if ($id -eq 'Microsoft.OpenApi') {
+        $aspNetOpenApiVersion = if ($catalogVersions.ContainsKey('Microsoft.AspNetCore.OpenApi')) {
+            [string] $catalogVersions['Microsoft.AspNetCore.OpenApi']
+        } else { '' }
+        if (-not (Test-OpenApiPackageCompatibility -OpenApiVersion $selectedVersion -AspNetCoreOpenApiVersion $aspNetOpenApiVersion)) {
+            $failures.Add('Microsoft.OpenApi must match a proven ASP.NET Core OpenApi pair: 10.x with 2.x, or 11.x with >=3.11 and <4.0.')
+        }
     }
 
     if (

@@ -23,6 +23,29 @@ param(
     [string] $PackageBuildScriptPath = ''
 )
 
+# Installed tooling requires .NET 11 even when the caller's PowerShell uses .NET 10.
+# Preserve every supplied parameter and perform reflection checks in that runtime.
+if ([Environment]::Version.Major -lt 11) {
+    $runtimeConfig = Join-Path ([IO.Path]::GetTempPath()) "hexalith-contract-runtime-$([Guid]::NewGuid().ToString('N')).json"
+    try {
+        [IO.File]::WriteAllText($runtimeConfig, '{"runtimeOptions":{"tfm":"net11.0","framework":{"name":"Microsoft.NETCore.App","version":"11.0.0"}}}')
+        $forwarded = [Collections.Generic.List[string]]::new()
+        foreach ($entry in $PSBoundParameters.GetEnumerator()) {
+            if ($entry.Value -is [Management.Automation.SwitchParameter]) {
+                $forwarded.Add("-$($entry.Key):$([bool]$entry.Value)")
+            }
+            else {
+                $forwarded.Add("-$($entry.Key)")
+                $forwarded.Add([string]$entry.Value)
+            }
+        }
+        & dotnet exec --runtimeconfig $runtimeConfig (Join-Path $PSHOME 'pwsh.dll') -NoProfile -File $PSCommandPath @forwarded
+        $contractExit = $LASTEXITCODE
+    }
+    finally { Remove-Item -LiteralPath $runtimeConfig -Force -ErrorAction SilentlyContinue }
+    exit $contractExit
+}
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 

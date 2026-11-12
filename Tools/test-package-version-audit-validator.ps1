@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param()
 
+. (Join-Path $PSScriptRoot 'OpenApiCompatibility.functions.ps1')
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $validatorPath = Join-Path $PSScriptRoot 'validate-package-version-audit.ps1'
@@ -666,6 +668,22 @@ function Test-ReadyRepositoryScenario {
 
 New-Item -ItemType Directory -Path $temporaryRoot -Force | Out-Null
 try {
+    foreach ($pair in @(
+        @('2.13.0', '10.0.15', $true),
+        @('3.11.0', '11.0.0', $true),
+        @('3.11.0', '10.0.15', $false),
+        @('2.13.0', '11.0.0', $false),
+        @('3.10.2', '11.0.0', $false),
+        @('4.0.0', '11.0.0', $false),
+        @('3.11.0', '12.0.0', $false),
+        @('3.11.0', '', $false)
+    )) {
+        $scenarioCount++
+        if ((Test-OpenApiPackageCompatibility -OpenApiVersion $pair[0] -AspNetCoreOpenApiVersion $pair[1]) -ne $pair[2]) {
+            $failures.Add("OpenAPI dependency pair $($pair[0]) / $($pair[1]) returned an incorrect compatibility decision.")
+        }
+    }
+
     $catalogPath = Join-Path $temporaryRoot 'fixture.props'
     Write-Utf8File -Path $catalogPath -Content @'
 <Project><ItemGroup><PackageVersion Include="Fixture.One" Version="1.0.0" /><PackageVersion Include="Fixture.Two" Version="2.0.0" /></ItemGroup></Project>
