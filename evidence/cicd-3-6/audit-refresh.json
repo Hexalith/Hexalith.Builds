@@ -1,0 +1,37 @@
+{
+  "generated_from_revision": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+  "catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+  "refreshed_families": [
+    "hexalith-commons",
+    "hexalith-polymorphicserializations"
+  ],
+  "preserved_families": 156,
+  "preserved_packages": 304,
+  "preserved_rows_identical": true,
+  "listing_states": {
+    "Hexalith.Commons": "listed",
+    "Hexalith.Commons.Aspire": "listed",
+    "Hexalith.Commons.Configurations": "listed",
+    "Hexalith.Commons.Diagnostics": "listed",
+    "Hexalith.Commons.Http": "listed",
+    "Hexalith.Commons.Metadatas": "listed",
+    "Hexalith.Commons.Publication": "listed",
+    "Hexalith.Commons.Serialization": "listed",
+    "Hexalith.Commons.ServiceDefaults": "listed",
+    "Hexalith.Commons.StringEncoders": "listed",
+    "Hexalith.Commons.TenantAccess": "listed",
+    "Hexalith.Commons.UniqueIds": "listed",
+    "Hexalith.PolymorphicSerializations": "listed",
+    "Hexalith.PolymorphicSerializations.CodeGenerators": "listed"
+  },
+  "validation": {
+    "command": "pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1",
+    "exit_code": 0,
+    "output": "Package version audit validation passed for 318 packages, 158 families, and 1 source(s).\n"
+  },
+  "audit_sha256": "27dc4eddec2ac6f81c6efdb46bd1fd6332c17c4b72b118f63d75954d3fe5c45b",
+  "catalog_selections_changed": false,
+  "audit_selections_updated_to_committed_catalog": true,
+  "provenance_note": "Independent refresh from 42cfc1413927b5c55d27835a40bc07c9079f50d9 verified two refreshed families and 156 preserved families. The same valid audit repair was subsequently fetched in upstream cac8bf5ca50741f9ece4f75d9633292c78f58d6c (generated from c48c20d0fb2e39ef53888e5061ee27c7b8410344); upstream audit bytes were retained. The recorded audit_sha256 describes the independent temporary reproduction, not the final tracked audit.",
+  "upstream_audit_commit": "cac8bf5ca50741f9ece4f75d9633292c78f58d6c"
+}

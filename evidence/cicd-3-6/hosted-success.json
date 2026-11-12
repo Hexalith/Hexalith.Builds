@@ -1,0 +1,89 @@
+{
+  "id": 43174705780,
+  "run_attempt": 2,
+  "head_sha": "d8b2be323528e624316d4049b7c86d03ba0f74e0",
+  "head_branch": "main",
+  "event": "push",
+  "path": ".github/workflows/builds-ci.yml",
+  "status": "completed",
+  "conclusion": "success",
+  "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780",
+  "created_at": "2026-11-12T07:21:52Z",
+  "updated_at": "2026-11-12T08:18:35Z",
+  "jobs": [
+    {
+      "id": 131049264718,
+      "name": ".NET tests / Build and tests",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T08:02:22Z",
+      "completed_at": "2026-11-12T08:18:34Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131049264718"
+    },
+    {
+      "id": 131049266347,
+      "name": "Workflow lint and public API",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:36:48Z",
+      "completed_at": "2026-11-12T07:37:04Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131049266347"
+    },
+    {
+      "id": 131049267133,
+      "name": "Sample module / Build and tests",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:25:43Z",
+      "completed_at": "2026-11-12T07:26:26Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131049267133"
+    },
+    {
+      "id": 131049267164,
+      "name": "Sample Windows tests",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:29:08Z",
+      "completed_at": "2026-11-12T07:30:30Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131049267164"
+    },
+    {
+      "id": 131049318326,
+      "name": "Python contract tests (3.12)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:32:49Z",
+      "completed_at": "2026-11-12T07:39:43Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131049318326"
+    },
+    {
+      "id": 131049321134,
+      "name": "Python contract tests (runner)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:38:58Z",
+      "completed_at": "2026-11-12T07:45:41Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131049321134"
+    },
+    {
+      "id": 131049323571,
+      "name": "Package catalog contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:25:41Z",
+      "completed_at": "2026-11-12T07:53:23Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131049323571"
+    }
+  ],
+  "retired_jobs_absent": true,
+  "rerun_scope": "Only the first attempt failed .NET job was rerun; six successful jobs were retained.",
+  "sample_outputs": {
+    "solution": "Samples/Hexalith.Sample/solutions/Hexalith.Sample.slnx",
+    "global-json": "Samples/Hexalith.Sample/global.json",
+    "submodules": "[]",
+    "linux_test_count": 4,
+    "windows_test_count": 1,
+    "failed": 0,
+    "skipped": 0
+  }
+}

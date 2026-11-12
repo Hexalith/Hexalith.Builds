@@ -1,0 +1,719 @@
+{
+  "checked_at": "2026-11-12T08:01:40.593999+00:00",
+  "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+  "upstream_baseline": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+  "protected_files_checked": 118,
+  "protected_files_matching_latest_upstream": 118,
+  "comparison": "baseline blobs with tracked checkout filters",
+  "mismatches": [],
+  "comparisons": [
+    {
+      "path": ".github/actions/after-unit-tests/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "303d46c95a110f02a7db75c6064bb176e0ea6bcdaea4eea9a97d70f34e49e506",
+      "actual_sha256": "303d46c95a110f02a7db75c6064bb176e0ea6bcdaea4eea9a97d70f34e49e506"
+    },
+    {
+      "path": ".github/actions/sample-windows/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "52ba23ebf0da4f0167ef1780e91b8cfbd6d0a731b60d8d596fe1137cafc9e96e",
+      "actual_sha256": "52ba23ebf0da4f0167ef1780e91b8cfbd6d0a731b60d8d596fe1137cafc9e96e"
+    },
+    {
+      "path": ".github/workflows/candidate-policy.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "40bd57cacf6cabe72846c3c7ddb043346051b58c57cf132fa1cce1a0d2262f0e",
+      "actual_sha256": "40bd57cacf6cabe72846c3c7ddb043346051b58c57cf132fa1cce1a0d2262f0e"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "d927b07006f41814988bde8af3522c3098f1474d7d609af9a96d0e5d980cf0c1",
+      "actual_sha256": "d927b07006f41814988bde8af3522c3098f1474d7d609af9a96d0e5d980cf0c1"
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "72bb04bf6f1230f1cb482613f91cf57cdb6a60c1de1078905105b9a621355579",
+      "actual_sha256": "72bb04bf6f1230f1cb482613f91cf57cdb6a60c1de1078905105b9a621355579"
+    },
+    {
+      "path": ".github/workflows/commitlint-caller.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "09f560c5f28d1eb2dcd45ba03e384b5d2bd88787d82100e86b4693808bd6a945",
+      "actual_sha256": "09f560c5f28d1eb2dcd45ba03e384b5d2bd88787d82100e86b4693808bd6a945"
+    },
+    {
+      "path": ".github/workflows/commitlint.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "a7a6034c82b68b3b1b1f48a8dd6ceee0f5a3fd00eac3672ef7773f3ec88f9140",
+      "actual_sha256": "a7a6034c82b68b3b1b1f48a8dd6ceee0f5a3fd00eac3672ef7773f3ec88f9140"
+    },
+    {
+      "path": ".github/workflows/dependency-review.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "543bf9ec073075d0a11d0e107aa45a0d9e8363425770d704fab91da068e5f76c",
+      "actual_sha256": "543bf9ec073075d0a11d0e107aa45a0d9e8363425770d704fab91da068e5f76c"
+    },
+    {
+      "path": ".github/workflows/domain-ci-v2.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "0bbacbc146f83d2bcb7121744d77325f59f33123155eac607b465444718619b6",
+      "actual_sha256": "0bbacbc146f83d2bcb7121744d77325f59f33123155eac607b465444718619b6"
+    },
+    {
+      "path": ".github/workflows/domain-ci.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "beb4c0a0e3ed532030ae9dbafae56f01e24018574faf264adae969290fabc37d",
+      "actual_sha256": "beb4c0a0e3ed532030ae9dbafae56f01e24018574faf264adae969290fabc37d"
+    },
+    {
+      "path": ".github/workflows/domain-release.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "4826f5ef4e457930d8aa89c6c8c4c92d9db483787850b4d1f426b5e4f8269ab7",
+      "actual_sha256": "4826f5ef4e457930d8aa89c6c8c4c92d9db483787850b4d1f426b5e4f8269ab7"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "8f241e399b93d7e5a13e75d92cb022b469dfc655bd466094d0ad12e533c9a7ac",
+      "actual_sha256": "8f241e399b93d7e5a13e75d92cb022b469dfc655bd466094d0ad12e533c9a7ac"
+    },
+    {
+      "path": "Github/ci-build/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "5882fdc59e550026b020926df86dfd1f01b085172afaff08616e8267745c254a",
+      "actual_sha256": "5882fdc59e550026b020926df86dfd1f01b085172afaff08616e8267745c254a"
+    },
+    {
+      "path": "Github/ci-environment/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "e43a7855482ed48854400f96ede185bcde65dfd6b0994992c8c2bd641683fcf9",
+      "actual_sha256": "e43a7855482ed48854400f96ede185bcde65dfd6b0994992c8c2bd641683fcf9"
+    },
+    {
+      "path": "Github/ci-integration-tests/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "68a5d1a3b5b97f6c41cec4696701845b8f65167a8715ba18a89aaf0c79b7d8cd",
+      "actual_sha256": "68a5d1a3b5b97f6c41cec4696701845b8f65167a8715ba18a89aaf0c79b7d8cd"
+    },
+    {
+      "path": "Github/ci-prepare/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "f2c4f2a66db1816c755bcfd5084f2195b6108462189251667bcd4656ed92c70e",
+      "actual_sha256": "f2c4f2a66db1816c755bcfd5084f2195b6108462189251667bcd4656ed92c70e"
+    },
+    {
+      "path": "Github/ci-unit-tests/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "df3f93fa751e95c330c557ebc92e048b78b606da995ba629937fe9aa0bb87a73",
+      "actual_sha256": "df3f93fa751e95c330c557ebc92e048b78b606da995ba629937fe9aa0bb87a73"
+    },
+    {
+      "path": "Github/create-release/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "3f967c43dd92ef6edc62b62d5273b4a06ae98504ee531d2e5cc2b648d03e93eb",
+      "actual_sha256": "3f967c43dd92ef6edc62b62d5273b4a06ae98504ee531d2e5cc2b648d03e93eb"
+    },
+    {
+      "path": "Github/create-release/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "290537e830b75c3ea961fe2ad053855b27034fa82f8c71377b3d5614fce22311",
+      "actual_sha256": "290537e830b75c3ea961fe2ad053855b27034fa82f8c71377b3d5614fce22311"
+    },
+    {
+      "path": "Github/create-release/git-with-retry.sh",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "1c8a43b4c88041eb9a222c48a6eed3e1ea01acd58dcabc2fd93d9111a3ab9a1a",
+      "actual_sha256": "1c8a43b4c88041eb9a222c48a6eed3e1ea01acd58dcabc2fd93d9111a3ab9a1a"
+    },
+    {
+      "path": "Github/dapr-init/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "e098d7fc602c979186c3015c40f9787b7fc73ef0fe393d13ae65bb784c226548",
+      "actual_sha256": "e098d7fc602c979186c3015c40f9787b7fc73ef0fe393d13ae65bb784c226548"
+    },
+    {
+      "path": "Github/dapr-init/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "6829c38623de70d3db6f8baacd4fd03bb568e0d3158ee823c886190b829727af",
+      "actual_sha256": "6829c38623de70d3db6f8baacd4fd03bb568e0d3158ee823c886190b829727af"
+    },
+    {
+      "path": "Github/governed-provenance/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "00028f026647fcdd449269e886088c8d632bf8734567b9f3e58fba01b5f24c2a",
+      "actual_sha256": "00028f026647fcdd449269e886088c8d632bf8734567b9f3e58fba01b5f24c2a"
+    },
+    {
+      "path": "Github/governed-provenance/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "2f5b910f0a5f3ace38bf4b9b6740592fd0c3ac1ab6f27d56a2a1972e4d057743",
+      "actual_sha256": "2f5b910f0a5f3ace38bf4b9b6740592fd0c3ac1ab6f27d56a2a1972e4d057743"
+    },
+    {
+      "path": "Github/governed-provenance/candidate_policy.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "a3d96b26b800d5e353ba3aeb898c458e882921927071257ed0b446a41ebef1db",
+      "actual_sha256": "a3d96b26b800d5e353ba3aeb898c458e882921927071257ed0b446a41ebef1db"
+    },
+    {
+      "path": "Github/governed-provenance/candidate_workspace.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "123251685635b1ec2f1a682628d857a5a9ebda8e0c500654119b5a3bde0cd27f",
+      "actual_sha256": "123251685635b1ec2f1a682628d857a5a9ebda8e0c500654119b5a3bde0cd27f"
+    },
+    {
+      "path": "Github/governed-provenance/execution_identity.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "13008f9131457764520353424a5e72f37b674013716487245c431a614be21b0d",
+      "actual_sha256": "13008f9131457764520353424a5e72f37b674013716487245c431a614be21b0d"
+    },
+    {
+      "path": "Github/governed-provenance/governed_provenance.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "9ea23bccc2c0464c5a4685eb85a4fcc8d33d7b18db8d6aeb5f89fba6f2b6492f",
+      "actual_sha256": "9ea23bccc2c0464c5a4685eb85a4fcc8d33d7b18db8d6aeb5f89fba6f2b6492f"
+    },
+    {
+      "path": "Github/governed-provenance/source_workflow_gates.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "a62cb50165882672ad5af54ac2e2f43a970519c2f2e99c7e9441e90b6f828251",
+      "actual_sha256": "a62cb50165882672ad5af54ac2e2f43a970519c2f2e99c7e9441e90b6f828251"
+    },
+    {
+      "path": "Github/initialize-apt/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "d76e41a84ff70ecd1d2edd0d2e31c40bfe0f745909041f113705733648e1afc5",
+      "actual_sha256": "d76e41a84ff70ecd1d2edd0d2e31c40bfe0f745909041f113705733648e1afc5"
+    },
+    {
+      "path": "Github/initialize-apt/initialize-apt.sh",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "e870add906b08ebb1f536c06709c0059360b4393d5f3e9c8fa835885f1f6eabc",
+      "actual_sha256": "e870add906b08ebb1f536c06709c0059360b4393d5f3e9c8fa835885f1f6eabc"
+    },
+    {
+      "path": "Github/initialize-build/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "f09251608473813707dbc681112ac3976a326fe0afe75acd0406f24371e6bf19",
+      "actual_sha256": "f09251608473813707dbc681112ac3976a326fe0afe75acd0406f24371e6bf19"
+    },
+    {
+      "path": "Github/initialize-build/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "8b73ee347e0a2e5c934e87b9fded11cb480970da29abf64db5bda36ecf5e139a",
+      "actual_sha256": "8b73ee347e0a2e5c934e87b9fded11cb480970da29abf64db5bda36ecf5e139a"
+    },
+    {
+      "path": "Github/initialize-dotnet/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "2846a1fe9cc597d931e8ed62eeaa4f3584d114f3c1263114b4a28ba800bd4de9",
+      "actual_sha256": "2846a1fe9cc597d931e8ed62eeaa4f3584d114f3c1263114b4a28ba800bd4de9"
+    },
+    {
+      "path": "Github/initialize-dotnet/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "42eb0afe805b3f28b646420029c978dc6567ec9db5441bf17d44104c8a08d2df",
+      "actual_sha256": "42eb0afe805b3f28b646420029c978dc6567ec9db5441bf17d44104c8a08d2df"
+    },
+    {
+      "path": "Github/lib/ci_config.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "5276b42c6a32f983ef56cf3005806e242e5ed7c8cb0c902cd4b1e0f5b17561d2",
+      "actual_sha256": "5276b42c6a32f983ef56cf3005806e242e5ed7c8cb0c902cd4b1e0f5b17561d2"
+    },
+    {
+      "path": "Github/lib/ci_environment.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "c955f954326b1b158d5779469e1323481a536e9fda9601205a22076110b7dd39",
+      "actual_sha256": "c955f954326b1b158d5779469e1323481a536e9fda9601205a22076110b7dd39"
+    },
+    {
+      "path": "Github/lib/ci_pipeline.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "24a9e8fea2fe91f9472a6483f711fbc601741e11b67dd146ab949f5471341f8c",
+      "actual_sha256": "24a9e8fea2fe91f9472a6483f711fbc601741e11b67dd146ab949f5471341f8c"
+    },
+    {
+      "path": "Github/lib/oci_archive.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "40091954728b910e454d4fc41ed626cfc8967da3126da1343cd0487b52ebf7f0",
+      "actual_sha256": "40091954728b910e454d4fc41ed626cfc8967da3126da1343cd0487b52ebf7f0"
+    },
+    {
+      "path": "Github/lib/oci_publish.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "445cb3fd31086b6adc6f9f4248d1e39c6eef7d7746c71e81e4cb5801c8657851",
+      "actual_sha256": "445cb3fd31086b6adc6f9f4248d1e39c6eef7d7746c71e81e4cb5801c8657851"
+    },
+    {
+      "path": "Github/lib/publish_spike.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "576f57431fcc5a6e6bcdb630fa95fc56f227225d99c7fbb0221da83851c0fdc0",
+      "actual_sha256": "576f57431fcc5a6e6bcdb630fa95fc56f227225d99c7fbb0221da83851c0fdc0"
+    },
+    {
+      "path": "Github/lib/release_build.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "1c76ba2b95e412f7134552ceffd8effecbb120e3e49b832636f98832635f95f8",
+      "actual_sha256": "1c76ba2b95e412f7134552ceffd8effecbb120e3e49b832636f98832635f95f8"
+    },
+    {
+      "path": "Github/lib/release_complete.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997",
+      "actual_sha256": "5b116fb40eff9075309359f5722917ac6fcedc7895592ca16fa40a583fe56997"
+    },
+    {
+      "path": "Github/lib/release_draft.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "e2e24b1af6193777044757af35046aa3c1bc7220a9a5649f707760dbe9abfad4",
+      "actual_sha256": "e2e24b1af6193777044757af35046aa3c1bc7220a9a5649f707760dbe9abfad4"
+    },
+    {
+      "path": "Github/lib/release_outcome.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "71821b5ff99c9ea33652a1fa1c80f6e011748094ba9e4f3690179d224702d168",
+      "actual_sha256": "71821b5ff99c9ea33652a1fa1c80f6e011748094ba9e4f3690179d224702d168"
+    },
+    {
+      "path": "Github/lib/release_publish.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "211a8f423fa5c60f4053a98f47775aea0ddec3c5b274a58a6320b51f002c8513",
+      "actual_sha256": "211a8f423fa5c60f4053a98f47775aea0ddec3c5b274a58a6320b51f002c8513"
+    },
+    {
+      "path": "Github/lib/release_security.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "ff87e574d4758b35b65b93cc26a752597afad8ab7d49e0babbacb010ec8e1047",
+      "actual_sha256": "ff87e574d4758b35b65b93cc26a752597afad8ab7d49e0babbacb010ec8e1047"
+    },
+    {
+      "path": "Github/lib/release_state.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "0f827881e0ef5aa46d0f269cfa7ccfb9b74e2496345f491100adec7c5b29c070",
+      "actual_sha256": "0f827881e0ef5aa46d0f269cfa7ccfb9b74e2496345f491100adec7c5b29c070"
+    },
+    {
+      "path": "Github/lib/release_version.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "55389914aa8fdcab21c1ea2e8daee4dd0d34ec3ca2879d82109c7d195221d614",
+      "actual_sha256": "55389914aa8fdcab21c1ea2e8daee4dd0d34ec3ca2879d82109c7d195221d614"
+    },
+    {
+      "path": "Github/package-release/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "4266d6cdb9ec13fe1c4b52335fe8a981baaf69f87226be45a7cc66eeae68c4a9",
+      "actual_sha256": "4266d6cdb9ec13fe1c4b52335fe8a981baaf69f87226be45a7cc66eeae68c4a9"
+    },
+    {
+      "path": "Github/package-release/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "c15122e63a80e2703b9f1f9d75596dc09e3956c42d22457e677d70375da800e0",
+      "actual_sha256": "c15122e63a80e2703b9f1f9d75596dc09e3956c42d22457e677d70375da800e0"
+    },
+    {
+      "path": "Github/package-release/release.config.json",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "be83f0e20e1dfbfe31ab1883cb4e029d719b0c74fe205ef40728cf8324dda01b",
+      "actual_sha256": "be83f0e20e1dfbfe31ab1883cb4e029d719b0c74fe205ef40728cf8324dda01b"
+    },
+    {
+      "path": "Github/prepare-domain-release/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "bb53c02624028e6a062af18cca4c8c417b16df64c7bf2aa506dd8339206b26c0",
+      "actual_sha256": "bb53c02624028e6a062af18cca4c8c417b16df64c7bf2aa506dd8339206b26c0"
+    },
+    {
+      "path": "Github/prepare-domain-release/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "9a74745084acfb6cc996637cfe29a369675ce20736c6fe7dfc42ccac1cdacbbf",
+      "actual_sha256": "9a74745084acfb6cc996637cfe29a369675ce20736c6fe7dfc42ccac1cdacbbf"
+    },
+    {
+      "path": "Github/prepare-module-build/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "be7013059bb609043bc1e27850ff9e9fb866dad0a75f44593580e179ba053bbb",
+      "actual_sha256": "be7013059bb609043bc1e27850ff9e9fb866dad0a75f44593580e179ba053bbb"
+    },
+    {
+      "path": "Github/prepare-module-build/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "285b897bb67a163fde16a3ca6cdbf6eb68254955ca4fc9b3bcde038eb9b4f7fa",
+      "actual_sha256": "285b897bb67a163fde16a3ca6cdbf6eb68254955ca4fc9b3bcde038eb9b4f7fa"
+    },
+    {
+      "path": "Github/prepare-module-build/prepare_module_build.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "df1544f1dd129a388f4ec9c78ab71233e60eb6368390635c19b41c5ed32a9550",
+      "actual_sha256": "df1544f1dd129a388f4ec9c78ab71233e60eb6368390635c19b41c5ed32a9550"
+    },
+    {
+      "path": "Github/prepare/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "c9aaed81d28a15f0c3cf101d37aa5e34bf3afa31cd17310922a707398969cc31",
+      "actual_sha256": "c9aaed81d28a15f0c3cf101d37aa5e34bf3afa31cd17310922a707398969cc31"
+    },
+    {
+      "path": "Github/prepare/prepare_linux.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "88679c8736bb20263ddfc10dde354bf14873079e183ca571485aa9bb5ec63bb5",
+      "actual_sha256": "88679c8736bb20263ddfc10dde354bf14873079e183ca571485aa9bb5ec63bb5"
+    },
+    {
+      "path": "Github/prepare/prepare_windows.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "e1cb0ba1112766bae355ade3bc8f826470736bf35bf0c4fcab0e35b760833e15",
+      "actual_sha256": "e1cb0ba1112766bae355ade3bc8f826470736bf35bf0c4fcab0e35b760833e15"
+    },
+    {
+      "path": "Github/publish-azure-container-app/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "bdcb7df0015c24d8edbad9dc95b383b695aebfa1f46491b415da02f6d05e0cfc",
+      "actual_sha256": "bdcb7df0015c24d8edbad9dc95b383b695aebfa1f46491b415da02f6d05e0cfc"
+    },
+    {
+      "path": "Github/publish-azure-container-app/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "24da79ea9c53065c2ecb92a6f161823bbe74ca62b95c3eb0a8e05c22715123c1",
+      "actual_sha256": "24da79ea9c53065c2ecb92a6f161823bbe74ca62b95c3eb0a8e05c22715123c1"
+    },
+    {
+      "path": "Github/publish-container-to-registry/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "d7535ab6f10d7ca798d7db31e84c39582251bd6e5932923f595db5cdcf61050d",
+      "actual_sha256": "d7535ab6f10d7ca798d7db31e84c39582251bd6e5932923f595db5cdcf61050d"
+    },
+    {
+      "path": "Github/publish-container-to-registry/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "31a18f4fa2b8b065f366f2b8855d9c92e4ad5f911d3aa51cc70b914127a60242",
+      "actual_sha256": "31a18f4fa2b8b065f366f2b8855d9c92e4ad5f911d3aa51cc70b914127a60242"
+    },
+    {
+      "path": "Github/publish-containers/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "45cb40c6d706256ff3e027c0b74fb98528769cb0385610b0a530367e8b24bac1",
+      "actual_sha256": "45cb40c6d706256ff3e027c0b74fb98528769cb0385610b0a530367e8b24bac1"
+    },
+    {
+      "path": "Github/publish-containers/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "0262e6fee149f91a046830e941e6010bb46fd1a03b7f40341d8ee12cdf70484b",
+      "actual_sha256": "0262e6fee149f91a046830e941e6010bb46fd1a03b7f40341d8ee12cdf70484b"
+    },
+    {
+      "path": "Github/publish-containers/oci_registry_validator.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "3f54edb036642551e64c180b4708a954d84bd55cac381a4459c3f75448488608",
+      "actual_sha256": "3f54edb036642551e64c180b4708a954d84bd55cac381a4459c3f75448488608"
+    },
+    {
+      "path": "Github/publish-containers/publication_preflight.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "3da0d1ca20af78b69b8d5868b9a3311b448c53c5fca04f0d0fb8643db59fd196",
+      "actual_sha256": "3da0d1ca20af78b69b8d5868b9a3311b448c53c5fca04f0d0fb8643db59fd196"
+    },
+    {
+      "path": "Github/publish-containers/publish-containers.sh",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "7b0b29d552fb38ab20db6c5faf650ac314a8fac17a6b9f43417035d29ef649ed",
+      "actual_sha256": "7b0b29d552fb38ab20db6c5faf650ac314a8fac17a6b9f43417035d29ef649ed"
+    },
+    {
+      "path": "Github/publish-containers/smoke-container-platforms.sh",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "f11865658a24ecea906da087d8446c7f631dc5a9328e294676534d590ef0e89e",
+      "actual_sha256": "f11865658a24ecea906da087d8446c7f631dc5a9328e294676534d590ef0e89e"
+    },
+    {
+      "path": "Github/publish-containers/smoke_container_platforms.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "7f1161d6f477c77ddf6a1e2f381df03451168565dd8cabc28010ab23db443491",
+      "actual_sha256": "7f1161d6f477c77ddf6a1e2f381df03451168565dd8cabc28010ab23db443491"
+    },
+    {
+      "path": "Github/publish/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "43fe0a10836d3219fb0c10d04d41ae5047bf03987bb1e5cdf107e3d5adcf8d7c",
+      "actual_sha256": "43fe0a10836d3219fb0c10d04d41ae5047bf03987bb1e5cdf107e3d5adcf8d7c"
+    },
+    {
+      "path": "Github/publish/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "0c9a4cc4d166d85b7b43fd0d38f4c1c5eeb10775c9f8d199be74633bf07b5670",
+      "actual_sha256": "0c9a4cc4d166d85b7b43fd0d38f4c1c5eeb10775c9f8d199be74633bf07b5670"
+    },
+    {
+      "path": "Github/release-build/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "069ef034e9d9d1443be56625ada2bad8f88d4745c81caa5a9b6cfebd105de4df",
+      "actual_sha256": "069ef034e9d9d1443be56625ada2bad8f88d4745c81caa5a9b6cfebd105de4df"
+    },
+    {
+      "path": "Github/release-build/release.targets",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "8db6b34ae89e2f928fafbae0ecbf75894041a4276e809ffd0e47bdb31dbf44d4",
+      "actual_sha256": "8db6b34ae89e2f928fafbae0ecbf75894041a4276e809ffd0e47bdb31dbf44d4"
+    },
+    {
+      "path": "Github/release-draft/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "1b6663d1ba4ad5879a5d23234b2c435722bd4fcf594d27dc64bd39111d0e44ec",
+      "actual_sha256": "1b6663d1ba4ad5879a5d23234b2c435722bd4fcf594d27dc64bd39111d0e44ec"
+    },
+    {
+      "path": "Github/release-outcome/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "c05169bef8704143ad878010a7c137f03cda78767c1c108dfa31bed222986899",
+      "actual_sha256": "c05169bef8704143ad878010a7c137f03cda78767c1c108dfa31bed222986899"
+    },
+    {
+      "path": "Github/release-resolve/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "68c66ebbf9f6e9fda958d1e61a32f0165a281ae9ab20566d3794077f295d1a40",
+      "actual_sha256": "68c66ebbf9f6e9fda958d1e61a32f0165a281ae9ab20566d3794077f295d1a40"
+    },
+    {
+      "path": "Github/release-security/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "badb13a7d882e8fe5ceb08589f6c2cdbf262d8dcae7514a832057dc13eea88d2",
+      "actual_sha256": "badb13a7d882e8fe5ceb08589f6c2cdbf262d8dcae7514a832057dc13eea88d2"
+    },
+    {
+      "path": "Github/release-version/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "2a4c2cd8ae545a57c64b94dbf3d5b3ee9bbaf5253aa3766a320bac42cc473c99",
+      "actual_sha256": "2a4c2cd8ae545a57c64b94dbf3d5b3ee9bbaf5253aa3766a320bac42cc473c99"
+    },
+    {
+      "path": "Github/release-version/invoke_plugins.mjs",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "5a69c07ec6fb7a219f106699013bcfe2c4c5dd70239824ba0779be3f8d3020c6",
+      "actual_sha256": "5a69c07ec6fb7a219f106699013bcfe2c4c5dd70239824ba0779be3f8d3020c6"
+    },
+    {
+      "path": "Github/release-version/package-lock.json",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "8f67fa08edcc9d6f0b0fd7621f2b1849a4db6213b7f8444088a3eab4265940db",
+      "actual_sha256": "8f67fa08edcc9d6f0b0fd7621f2b1849a4db6213b7f8444088a3eab4265940db"
+    },
+    {
+      "path": "Github/release-version/package.json",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "fe5a96b2380541d8bf2e2f2c1fe4eedd1f33682339a0d41d36aac372628475eb",
+      "actual_sha256": "fe5a96b2380541d8bf2e2f2c1fe4eedd1f33682339a0d41d36aac372628475eb"
+    },
+    {
+      "path": "Github/run-module-integration/run_module_integration.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "19d51bcffd60b6fcb6c5d3eb67892eef0420498f6796328af045943316cfbc88",
+      "actual_sha256": "19d51bcffd60b6fcb6c5d3eb67892eef0420498f6796328af045943316cfbc88"
+    },
+    {
+      "path": "Github/scripts/build-packages.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "abdef8a25d50810450fc0e2a38a3d7f4cbce2b4220fdf1257552d5ded436cac2",
+      "actual_sha256": "abdef8a25d50810450fc0e2a38a3d7f4cbce2b4220fdf1257552d5ded436cac2"
+    },
+    {
+      "path": "Github/scripts/publish-packages.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "5433578b83959861aa937075a4a3861324dfac41f8cfbace4dbc18107935b6d1",
+      "actual_sha256": "5433578b83959861aa937075a4a3861324dfac41f8cfbace4dbc18107935b6d1"
+    },
+    {
+      "path": "Github/split-publication/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "e58f3b40ef0f94aaf3750f2f58292943c88cbdf03a80b5a2b9c21d5953419b86",
+      "actual_sha256": "e58f3b40ef0f94aaf3750f2f58292943c88cbdf03a80b5a2b9c21d5953419b86"
+    },
+    {
+      "path": "Github/split-publication/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "9860e59dc836f3cee2781268d987e34d18b36971535aacbaedb8a0aeb70efe7c",
+      "actual_sha256": "9860e59dc836f3cee2781268d987e34d18b36971535aacbaedb8a0aeb70efe7c"
+    },
+    {
+      "path": "Github/split-publication/archive_scan.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "053314c73804557d8fd719a6acd84c2a8c1078fe4a9957451315459823d7835a",
+      "actual_sha256": "053314c73804557d8fd719a6acd84c2a8c1078fe4a9957451315459823d7835a"
+    },
+    {
+      "path": "Github/split-publication/attestation.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "38c9df04721ac062bcb38cff1cf8fbd5fd1daf8aad74855ead44c1f9bd4b61a6",
+      "actual_sha256": "38c9df04721ac062bcb38cff1cf8fbd5fd1daf8aad74855ead44c1f9bd4b61a6"
+    },
+    {
+      "path": "Github/split-publication/canonical.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "2ab11253a058c33c4f7ec679742f04def091b1a39f181ad9cb9a6d3140b9e2d1",
+      "actual_sha256": "2ab11253a058c33c4f7ec679742f04def091b1a39f181ad9cb9a6d3140b9e2d1"
+    },
+    {
+      "path": "Github/split-publication/descriptor.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "2ca9ab7c74df3794f5a392daa6a408c9393b48ffed95246b6c81733b0769042a",
+      "actual_sha256": "2ca9ab7c74df3794f5a392daa6a408c9393b48ffed95246b6c81733b0769042a"
+    },
+    {
+      "path": "Github/split-publication/graph.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "c9709fb629fb4b09d86c7f3d2da080ae91009e9c179458a094717b6b24bef347",
+      "actual_sha256": "c9709fb629fb4b09d86c7f3d2da080ae91009e9c179458a094717b6b24bef347"
+    },
+    {
+      "path": "Github/split-publication/handoff.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "aa85cc83e4242c6464cd1cddf948cc3d6e1c330da4683472526aca58cd516fe9",
+      "actual_sha256": "aa85cc83e4242c6464cd1cddf948cc3d6e1c330da4683472526aca58cd516fe9"
+    },
+    {
+      "path": "Github/split-publication/manifest.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "422e94596cf16d85189fec5566350f38b21bdbba6e673b472797641474de0610",
+      "actual_sha256": "422e94596cf16d85189fec5566350f38b21bdbba6e673b472797641474de0610"
+    },
+    {
+      "path": "Github/split-publication/publication.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "4fb9b60974033ca57ef6f26c78332e15d143800dcd10da0e62969a5115f861cc",
+      "actual_sha256": "4fb9b60974033ca57ef6f26c78332e15d143800dcd10da0e62969a5115f861cc"
+    },
+    {
+      "path": "Github/split-publication/split_publication.py",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "885af2f72488c0dba3b63b5dab85aed92622fe1d1f29e55f44c5235b32ef9a46",
+      "actual_sha256": "885af2f72488c0dba3b63b5dab85aed92622fe1d1f29e55f44c5235b32ef9a46"
+    },
+    {
+      "path": "Github/unit-tests/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "766a66d289ce72ca4451dc889eed170da81e49bf3fa44a04bc798a79680d1678",
+      "actual_sha256": "766a66d289ce72ca4451dc889eed170da81e49bf3fa44a04bc798a79680d1678"
+    },
+    {
+      "path": "Github/unit-tests/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "9ac66272b1f17960c41b81e52b60aace57aaf255a04d9a45a02a5cfa9e20a880",
+      "actual_sha256": "9ac66272b1f17960c41b81e52b60aace57aaf255a04d9a45a02a5cfa9e20a880"
+    },
+    {
+      "path": "Github/verify/README.md",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "0019cb9fcfad3eb30a4832ac9e7cbd7ccd718cc213d141020c0358611d3b3aa2",
+      "actual_sha256": "0019cb9fcfad3eb30a4832ac9e7cbd7ccd718cc213d141020c0358611d3b3aa2"
+    },
+    {
+      "path": "Github/verify/action.yml",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "6faf86a6ed62db7d4de5ed5e87c2914e2ff4125339614595f406390e2c05c82e",
+      "actual_sha256": "6faf86a6ed62db7d4de5ed5e87c2914e2ff4125339614595f406390e2c05c82e"
+    },
+    {
+      "path": "Hexalith.Builds.slnx",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "981dd346b32a29622782767e3cf3dc6562838812b6a6255d72829fb57e1fb095",
+      "actual_sha256": "981dd346b32a29622782767e3cf3dc6562838812b6a6255d72829fb57e1fb095"
+    },
+    {
+      "path": "Props/ContainerProvenance.targets",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "2f45651a7d68445836dcb39f7a7096b868d4123d9f208e86a174b67984343f7c",
+      "actual_sha256": "2f45651a7d68445836dcb39f7a7096b868d4123d9f208e86a174b67984343f7c"
+    },
+    {
+      "path": "Props/Directory.Packages.props",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150",
+      "actual_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+    },
+    {
+      "path": "Props/Environment.Build.props",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "e5d210cc151a8835d52e56addbd4e17debfa528c110b453aad6604b0a979989d",
+      "actual_sha256": "e5d210cc151a8835d52e56addbd4e17debfa528c110b453aad6604b0a979989d"
+    },
+    {
+      "path": "Props/Logging.Build.targets",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "7e01de7239cfaaa7840863b82540d2f5d6cd6623a9a0107d4e1b275f3748ca6e",
+      "actual_sha256": "7e01de7239cfaaa7840863b82540d2f5d6cd6623a9a0107d4e1b275f3748ca6e"
+    },
+    {
+      "path": "Props/dapr-toolchain-sha256.json",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "5efc6b13da703fb9f83265ef02973877f33e094192e0bf36c1fe30ebdfc23376",
+      "actual_sha256": "5efc6b13da703fb9f83265ef02973877f33e094192e0bf36c1fe30ebdfc23376"
+    },
+    {
+      "path": "Tools/build-g4-tool-packages.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "6f39697f9e707e467d33338e7ba4af006279dbba2b21b116ce82c6fc51409a98",
+      "actual_sha256": "6f39697f9e707e467d33338e7ba4af006279dbba2b21b116ce82c6fc51409a98"
+    },
+    {
+      "path": "Tools/ci/frozen-composite-findings.json",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "f06b7410c44c8beb1157927d393a26e6abe626b71d5c33774329e931ae4409ea",
+      "actual_sha256": "f06b7410c44c8beb1157927d393a26e6abe626b71d5c33774329e931ae4409ea"
+    },
+    {
+      "path": "Tools/prepare-g4-tool-release.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "262fb51b11cd9869914971a20a7b18b74811192bafc42c711f1058c22dd606ab",
+      "actual_sha256": "262fb51b11cd9869914971a20a7b18b74811192bafc42c711f1058c22dd606ab"
+    },
+    {
+      "path": "Tools/publish-g4-tool-packages.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "3dd414c9cca715b4ae05d7353f7afbad7a98dd509789685aabc9d4a1fdc6aa4b",
+      "actual_sha256": "3dd414c9cca715b4ae05d7353f7afbad7a98dd509789685aabc9d4a1fdc6aa4b"
+    },
+    {
+      "path": "Tools/test-g4-packaged-platform-loader.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "0b98e2fe6368e1e17cf6d249b29cb1fc8d8513438a1af168221fd8bf6b8e6d84",
+      "actual_sha256": "0b98e2fe6368e1e17cf6d249b29cb1fc8d8513438a1af168221fd8bf6b8e6d84"
+    },
+    {
+      "path": "Tools/test-g4-packaged-seed-subscriptions.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "aaf81d01b946c6c4ee3e0f50d1074feba3e5832c0a9fe09c5450df7523ee7aea",
+      "actual_sha256": "aaf81d01b946c6c4ee3e0f50d1074feba3e5832c0a9fe09c5450df7523ee7aea"
+    },
+    {
+      "path": "Tools/test-g4-tool-package-contracts.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "6ddaaf0ca9d650222d19fe018daf9e11f8eb40c27025777fcc484b5e412d303d",
+      "actual_sha256": "6ddaaf0ca9d650222d19fe018daf9e11f8eb40c27025777fcc484b5e412d303d"
+    },
+    {
+      "path": "Tools/verify-g4-tool-release.ps1",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "b28f2a327716a759e0394c3a2c5642ecf73e8e4e925bc5488c4a106fc000c356",
+      "actual_sha256": "b28f2a327716a759e0394c3a2c5642ecf73e8e4e925bc5488c4a106fc000c356"
+    },
+    {
+      "path": "global.json",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "5feaf50426a6c5554654e326bedd2f6c6273f13b948b1ec6e11e12cae68f9f05",
+      "actual_sha256": "5feaf50426a6c5554654e326bedd2f6c6273f13b948b1ec6e11e12cae68f9f05"
+    },
+    {
+      "path": "package-lock.json",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "fb1bb642480452647a000a3d9b3cb052fcf055750d12a4aa4da1ee6f61ec59b0",
+      "actual_sha256": "fb1bb642480452647a000a3d9b3cb052fcf055750d12a4aa4da1ee6f61ec59b0"
+    },
+    {
+      "path": "package.json",
+      "matches_latest_upstream": true,
+      "baseline_sha256": "4a854f91a1547db34ec7db50d9e1771d719f62ac89cae3b0c307bc39682b167e",
+      "actual_sha256": "4a854f91a1547db34ec7db50d9e1771d719f62ac89cae3b0c307bc39682b167e"
+    }
+  ]
+}

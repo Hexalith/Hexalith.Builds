@@ -96,13 +96,65 @@ integrated revision. No history was rewritten.
 - Exact full implementation and follow-up evidence commit messages passed the
   pinned commitlint 21.2.4 policy with zero problems and zero warnings.
 
-All fifteen exact catalog commands and the exact-source hosted push conclusion
-are being verified before this report is finalized. The initial interrupted
-checks against the older base are not used as final combined-tree evidence.
-Local full logs use `/tmp/cicd-3-6-integrated-*.log`; matrix coverage is recorded
-in `/tmp/cicd-3-6-matrix-audit.json`. Hosted publication remains outside this
-implementation; these checks do not establish production package, artifact,
-outcome or final-tag publication.
+All fifteen exact catalog commands passed, including 113 audit-generator,
+101 audit-validator, 101 Platform-catalog and 35 Dapr-validator scenarios.
+Local catalog execution took 1,754.76 seconds under concurrent load; its retained
+hosted timeout remains 30 minutes. Local full logs use
+`/tmp/cicd-3-6-integrated-*.log`; durable summaries, matrix coverage and exact
+command statuses are in [the evidence directory](../evidence/cicd-3-6/).
+
+Concurrent upstream `c48c20d0fb2e39ef53888e5061ee27c7b8410344` then selected
+Commons `2.30.11` and PolymorphicSerializations `1.19.9` without updating their
+revision-bound audit. Eight source-sensitive validators were repeated at
+`42cfc1413927b5c55d27835a40bc07c9079f50d9`; seven passed, and audit validation
+reported fifteen errors for the stale hash and fourteen old audit selections.
+The existing generator refreshed only those two families from committed
+declarations and real listed NuGet metadata, preserving all 156 other families
+and 304 package rows unchanged. The catalog selections and validator code were
+unchanged. The repaired audit passes for all 318 packages and 158 families;
+new observations retain the generator's `retained` disposition and make no new
+compatibility-acceptance claim. The API check also passes at `42cfc1413927b5c55d27835a40bc07c9079f50d9`.
+
+A subsequent fetch found the same repair already published in upstream
+`cac8bf5ca50741f9ece4f75d9633292c78f58d6c`, generated from
+`c48c20d0fb2e39ef53888e5061ee27c7b8410344`. Those upstream audit bytes were
+retained; the independent temporary reproduction is identified separately in
+[audit-refresh.json](../evidence/cicd-3-6/audit-refresh.json). Upstream
+`25a6b5a613aca2ee37ebec582f69ad01a3b99e36` and
+`1ecbcd6c6f61629086d019c37557d10d4247b0c3` also corrected consumer-validator
+diagnostic separation and native discovery success status. All three upstream
+commits are preserved. Audit validation and the two affected consumer commands
+pass on that final integrated source: 318 packages/158 families, all 31 consumer
+projects and all 36 consumer-validator scenarios. The source revision and six
+relevant blobs remained unchanged before/after every command. All 118
+protected/runtime files match it byte-for-byte under tracked checkout filters.
+The release/CI callers, runner, caller tests and lint policy are byte-identical
+to the implementation commit tested by hosted CI.
+
+Exact-source [push run 43174705780](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780)
+at `d8b2be323528e624316d4049b7c86d03ba0f74e0` passed catalog, quality, both
+Python lanes, Linux sample and Windows sample. The sample produced solution
+`Samples/Hexalith.Sample/solutions/Hexalith.Sample.slnx`, SDK path
+`Samples/Hexalith.Sample/global.json` and submodules `[]`; Windows consumed
+those exact outputs. Linux passed four sample tests across unit/hook/integration,
+and Windows passed one test, with no failures or skips.
+
+The first .NET job failed in the unchanged
+`ReviewDetachedNativeDescendantsAreVerifiedAsync(discoveryVerified: True)`
+test at its process-stop observation. Its project builds locally, both focused
+cases pass, and its full test class passes all 62 cases without failures or
+skips. The failure correctly failed the workflow
+without an aggregator; later .NET stages were skipped. Only the failed .NET
+job was submitted for retry after the other jobs completed. The retry's final
+conclusion is **success**, with all seven retained jobs green on attempt 2.
+No runtime/test logic was changed or skipped to obtain that result. The cause
+of the first cleanup observation remains unproven. The first attempt is
+retained in [hosted-attempt-1.json](../evidence/cicd-3-6/hosted-attempt-1.json),
+and the successful exact-source job identities, timestamps and sample outputs
+are in [hosted-success.json](../evidence/cicd-3-6/hosted-success.json).
+
+Hosted publication remains outside this implementation; these checks do not
+establish production package, artifact, outcome or final-tag publication.
 
 ## AD-19 read-only preflight and bootstrap stops
 

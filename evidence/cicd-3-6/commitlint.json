@@ -1,0 +1,26 @@
+{
+  "cli_version": "21.2.4",
+  "config": "commitlint.config.mjs",
+  "validations": [
+    {
+      "name": "implementation",
+      "revision": "d8b2be323528e624316d4049b7c86d03ba0f74e0",
+      "message": "build: sync local changes via /pushall\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\n",
+      "exit_code": 0,
+      "output": "\u29d7   --- input ---\nbuild: sync local changes via /pushall\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\u2714   found 0 problems, 0 warnings\n"
+    },
+    {
+      "name": "concurrent-evidence",
+      "revision": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+      "message": "docs(cicd): record shared-release integration evidence\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\n",
+      "exit_code": 0,
+      "output": "\u29d7   --- input ---\ndocs(cicd): record shared-release integration evidence\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\u2714   found 0 problems, 0 warnings\n"
+    },
+    {
+      "name": "final-evidence-candidate",
+      "message": "docs(cicd): record shared Builds release verification\n\nRecord story 3-6 checks, hosted observations, and integration provenance.\nPreserve upstream catalog and validator repairs.\n",
+      "exit_code": 0,
+      "output": "\u29d7   --- input ---\ndocs(cicd): record shared Builds release verification\n\nRecord story 3-6 checks, hosted observations, and integration provenance.\nPreserve upstream catalog and validator repairs.\n\u2714   found 0 problems, 0 warnings\n"
+    }
+  ]
+}

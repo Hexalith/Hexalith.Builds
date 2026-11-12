@@ -107,6 +107,6 @@
   "manual_observations": {
     "Existing probe draft": "Read-only draft/artifact/tag inventory: /tmp/cicd-3-6-ad19-inventory.json; retained draft and mismatched producer stop bootstrap",
     "Settings inaccessible": "Read-only scoped HTTP 403 checks: /tmp/cicd-3-6-ad19-preflight.json; exact accepted read permissions retained; settings marked unverified",
-    "CI simplification": "Hosted exact-source push run 43174705780 is pending; final conclusion is separately required"
+    "CI simplification": "Hosted exact-source push run 43174705780 at d8b2be323528e624316d4049b7c86d03ba0f74e0 succeeded on attempt 2 with all seven retained jobs green. First attempt failed directly from a retained .NET job; no aggregator, qualification or CI CodeQL jobs exist."
   }
 }

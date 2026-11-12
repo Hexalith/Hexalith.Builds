@@ -1,0 +1,89 @@
+{
+  "id": 43174705780,
+  "run_attempt": 1,
+  "head_sha": "d8b2be323528e624316d4049b7c86d03ba0f74e0",
+  "head_branch": "main",
+  "event": "push",
+  "path": ".github/workflows/builds-ci.yml",
+  "status": "completed",
+  "conclusion": "failure",
+  "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780",
+  "created_at": "2026-11-12T07:21:52Z",
+  "updated_at": "2026-11-12T07:53:24Z",
+  "jobs": [
+    {
+      "id": 131036023964,
+      "name": "Package catalog contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:25:41Z",
+      "completed_at": "2026-11-12T07:53:23Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131036023964"
+    },
+    {
+      "id": 131036024222,
+      "name": "Workflow lint and public API",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:36:48Z",
+      "completed_at": "2026-11-12T07:37:04Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131036024222"
+    },
+    {
+      "id": 131036024233,
+      "name": "Python contract tests (runner)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:38:58Z",
+      "completed_at": "2026-11-12T07:45:41Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131036024233"
+    },
+    {
+      "id": 131036024249,
+      "name": "Sample module / Build and tests",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:25:43Z",
+      "completed_at": "2026-11-12T07:26:26Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131036024249"
+    },
+    {
+      "id": 131036024260,
+      "name": "Python contract tests (3.12)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:32:49Z",
+      "completed_at": "2026-11-12T07:39:43Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131036024260"
+    },
+    {
+      "id": 131036024414,
+      "name": ".NET tests / Build and tests",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-11-12T07:26:21Z",
+      "completed_at": "2026-11-12T07:41:40Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131036024414"
+    },
+    {
+      "id": 131037926013,
+      "name": "Sample Windows tests",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-12T07:29:08Z",
+      "completed_at": "2026-11-12T07:30:30Z",
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43174705780/job/131037926013"
+    }
+  ],
+  "failure": {
+    "test": "ReviewDetachedNativeDescendantsAreVerifiedAsync(discoveryVerified: True)",
+    "assertion": "NativeTestExecutorTests.cs:64: StopObserved was false, expected true",
+    "focused_local_build_exit_code": 0,
+    "focused_local_test_cases": 2,
+    "focused_local_test_failures": 0,
+    "focused_local_test_skips": 0,
+    "focused_local_full_class_cases": 62,
+    "focused_local_full_class_failures": 0,
+    "focused_local_full_class_skips": 0
+  }
+}

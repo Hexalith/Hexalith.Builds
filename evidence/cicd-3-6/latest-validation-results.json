@@ -1,0 +1,314 @@
+{
+  "started_at": "2026-11-12T08:02:01.817389+00:00",
+  "status": "completed",
+  "before": {
+    "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+    "sources": {
+      "Props/Directory.Packages.props": {
+        "head_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "Tools/package-version-audit.json": {
+        "head_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+        "working_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+        "working_sha256": "2d8d23c2b2d1135771f4409e8929222d7d7eea64281153e96f1acc239a314b3b"
+      },
+      "Tools/validate-package-version-audit.ps1": {
+        "head_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+        "working_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+        "working_sha256": "98c90b61ed1873495c30d302b508ced48570190e89caf8f67c11bab47b1e1826"
+      },
+      "Tools/validate-consumer-package-authority.ps1": {
+        "head_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+        "working_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+        "working_sha256": "b1c62ba6bc34d12550a2550b25bf5e769ca444e9984dbc60ffb21cc89be233c2"
+      },
+      "Tools/test-consumer-package-authority-validator.ps1": {
+        "head_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+        "working_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+        "working_sha256": "84b48d5ee1f2c17035d899b6b7b52ea729f01593f7259283ce53195731d10112"
+      },
+      ".github/workflows/builds-ci.yml": {
+        "head_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+        "working_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+        "working_sha256": "f9b524101ce0a8afcf21286606d0d77221567f86b5ddefad7a0cce5f1f1edf59"
+      }
+    }
+  },
+  "commands": [
+    {
+      "index": 5,
+      "command": "pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1",
+      "exit_code": 0,
+      "seconds": 23.72,
+      "full_output": "/tmp/cicd-3-6-latest-validation-05.log",
+      "before": {
+        "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+        "sources": {
+          "Props/Directory.Packages.props": {
+            "head_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+          },
+          "Tools/package-version-audit.json": {
+            "head_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_sha256": "2d8d23c2b2d1135771f4409e8929222d7d7eea64281153e96f1acc239a314b3b"
+          },
+          "Tools/validate-package-version-audit.ps1": {
+            "head_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_sha256": "98c90b61ed1873495c30d302b508ced48570190e89caf8f67c11bab47b1e1826"
+          },
+          "Tools/validate-consumer-package-authority.ps1": {
+            "head_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_sha256": "b1c62ba6bc34d12550a2550b25bf5e769ca444e9984dbc60ffb21cc89be233c2"
+          },
+          "Tools/test-consumer-package-authority-validator.ps1": {
+            "head_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_sha256": "84b48d5ee1f2c17035d899b6b7b52ea729f01593f7259283ce53195731d10112"
+          },
+          ".github/workflows/builds-ci.yml": {
+            "head_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_sha256": "f9b524101ce0a8afcf21286606d0d77221567f86b5ddefad7a0cce5f1f1edf59"
+          }
+        }
+      },
+      "after": {
+        "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+        "sources": {
+          "Props/Directory.Packages.props": {
+            "head_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+          },
+          "Tools/package-version-audit.json": {
+            "head_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_sha256": "2d8d23c2b2d1135771f4409e8929222d7d7eea64281153e96f1acc239a314b3b"
+          },
+          "Tools/validate-package-version-audit.ps1": {
+            "head_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_sha256": "98c90b61ed1873495c30d302b508ced48570190e89caf8f67c11bab47b1e1826"
+          },
+          "Tools/validate-consumer-package-authority.ps1": {
+            "head_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_sha256": "b1c62ba6bc34d12550a2550b25bf5e769ca444e9984dbc60ffb21cc89be233c2"
+          },
+          "Tools/test-consumer-package-authority-validator.ps1": {
+            "head_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_sha256": "84b48d5ee1f2c17035d899b6b7b52ea729f01593f7259283ce53195731d10112"
+          },
+          ".github/workflows/builds-ci.yml": {
+            "head_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_sha256": "f9b524101ce0a8afcf21286606d0d77221567f86b5ddefad7a0cce5f1f1edf59"
+          }
+        }
+      },
+      "source_stable": true
+    },
+    {
+      "index": 8,
+      "command": "pwsh -NoProfile -File ./Tools/validate-consumer-package-authority.ps1 -RepositoryRoot . -CatalogPath ./Props/Directory.Packages.props",
+      "exit_code": 0,
+      "seconds": 77.66,
+      "full_output": "/tmp/cicd-3-6-latest-validation-08.log",
+      "before": {
+        "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+        "sources": {
+          "Props/Directory.Packages.props": {
+            "head_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+          },
+          "Tools/package-version-audit.json": {
+            "head_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_sha256": "2d8d23c2b2d1135771f4409e8929222d7d7eea64281153e96f1acc239a314b3b"
+          },
+          "Tools/validate-package-version-audit.ps1": {
+            "head_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_sha256": "98c90b61ed1873495c30d302b508ced48570190e89caf8f67c11bab47b1e1826"
+          },
+          "Tools/validate-consumer-package-authority.ps1": {
+            "head_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_sha256": "b1c62ba6bc34d12550a2550b25bf5e769ca444e9984dbc60ffb21cc89be233c2"
+          },
+          "Tools/test-consumer-package-authority-validator.ps1": {
+            "head_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_sha256": "84b48d5ee1f2c17035d899b6b7b52ea729f01593f7259283ce53195731d10112"
+          },
+          ".github/workflows/builds-ci.yml": {
+            "head_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_sha256": "f9b524101ce0a8afcf21286606d0d77221567f86b5ddefad7a0cce5f1f1edf59"
+          }
+        }
+      },
+      "after": {
+        "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+        "sources": {
+          "Props/Directory.Packages.props": {
+            "head_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+          },
+          "Tools/package-version-audit.json": {
+            "head_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_sha256": "2d8d23c2b2d1135771f4409e8929222d7d7eea64281153e96f1acc239a314b3b"
+          },
+          "Tools/validate-package-version-audit.ps1": {
+            "head_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_sha256": "98c90b61ed1873495c30d302b508ced48570190e89caf8f67c11bab47b1e1826"
+          },
+          "Tools/validate-consumer-package-authority.ps1": {
+            "head_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_sha256": "b1c62ba6bc34d12550a2550b25bf5e769ca444e9984dbc60ffb21cc89be233c2"
+          },
+          "Tools/test-consumer-package-authority-validator.ps1": {
+            "head_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_sha256": "84b48d5ee1f2c17035d899b6b7b52ea729f01593f7259283ce53195731d10112"
+          },
+          ".github/workflows/builds-ci.yml": {
+            "head_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_sha256": "f9b524101ce0a8afcf21286606d0d77221567f86b5ddefad7a0cce5f1f1edf59"
+          }
+        }
+      },
+      "source_stable": true
+    },
+    {
+      "index": 9,
+      "command": "pwsh -NoProfile -File ./Tools/test-consumer-package-authority-validator.ps1",
+      "exit_code": 0,
+      "seconds": 94.09,
+      "full_output": "/tmp/cicd-3-6-latest-validation-09.log",
+      "before": {
+        "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+        "sources": {
+          "Props/Directory.Packages.props": {
+            "head_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+          },
+          "Tools/package-version-audit.json": {
+            "head_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_sha256": "2d8d23c2b2d1135771f4409e8929222d7d7eea64281153e96f1acc239a314b3b"
+          },
+          "Tools/validate-package-version-audit.ps1": {
+            "head_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_sha256": "98c90b61ed1873495c30d302b508ced48570190e89caf8f67c11bab47b1e1826"
+          },
+          "Tools/validate-consumer-package-authority.ps1": {
+            "head_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_sha256": "b1c62ba6bc34d12550a2550b25bf5e769ca444e9984dbc60ffb21cc89be233c2"
+          },
+          "Tools/test-consumer-package-authority-validator.ps1": {
+            "head_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_sha256": "84b48d5ee1f2c17035d899b6b7b52ea729f01593f7259283ce53195731d10112"
+          },
+          ".github/workflows/builds-ci.yml": {
+            "head_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_sha256": "f9b524101ce0a8afcf21286606d0d77221567f86b5ddefad7a0cce5f1f1edf59"
+          }
+        }
+      },
+      "after": {
+        "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+        "sources": {
+          "Props/Directory.Packages.props": {
+            "head_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+            "working_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+          },
+          "Tools/package-version-audit.json": {
+            "head_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+            "working_sha256": "2d8d23c2b2d1135771f4409e8929222d7d7eea64281153e96f1acc239a314b3b"
+          },
+          "Tools/validate-package-version-audit.ps1": {
+            "head_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+            "working_sha256": "98c90b61ed1873495c30d302b508ced48570190e89caf8f67c11bab47b1e1826"
+          },
+          "Tools/validate-consumer-package-authority.ps1": {
+            "head_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+            "working_sha256": "b1c62ba6bc34d12550a2550b25bf5e769ca444e9984dbc60ffb21cc89be233c2"
+          },
+          "Tools/test-consumer-package-authority-validator.ps1": {
+            "head_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+            "working_sha256": "84b48d5ee1f2c17035d899b6b7b52ea729f01593f7259283ce53195731d10112"
+          },
+          ".github/workflows/builds-ci.yml": {
+            "head_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+            "working_sha256": "f9b524101ce0a8afcf21286606d0d77221567f86b5ddefad7a0cce5f1f1edf59"
+          }
+        }
+      },
+      "source_stable": true
+    }
+  ],
+  "completed_at": "2026-11-12T08:05:17.654366+00:00",
+  "after": {
+    "head": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+    "sources": {
+      "Props/Directory.Packages.props": {
+        "head_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "Tools/package-version-audit.json": {
+        "head_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+        "working_blob": "467948b9febc092b2e183957fb37721e992b9e6d",
+        "working_sha256": "2d8d23c2b2d1135771f4409e8929222d7d7eea64281153e96f1acc239a314b3b"
+      },
+      "Tools/validate-package-version-audit.ps1": {
+        "head_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+        "working_blob": "4a0ee5a9ed1ee87be068661026e9c41e5ec20d78",
+        "working_sha256": "98c90b61ed1873495c30d302b508ced48570190e89caf8f67c11bab47b1e1826"
+      },
+      "Tools/validate-consumer-package-authority.ps1": {
+        "head_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+        "working_blob": "6d2ad732b215bcda3d2a9b6327e94469c7339c84",
+        "working_sha256": "b1c62ba6bc34d12550a2550b25bf5e769ca444e9984dbc60ffb21cc89be233c2"
+      },
+      "Tools/test-consumer-package-authority-validator.ps1": {
+        "head_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+        "working_blob": "0d2279cf87637656b6429713fd3dec343ef654ec",
+        "working_sha256": "84b48d5ee1f2c17035d899b6b7b52ea729f01593f7259283ce53195731d10112"
+      },
+      ".github/workflows/builds-ci.yml": {
+        "head_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+        "working_blob": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+        "working_sha256": "f9b524101ce0a8afcf21286606d0d77221567f86b5ddefad7a0cce5f1f1edf59"
+      }
+    }
+  },
+  "passed": 3,
+  "total": 3,
+  "source_stable": true
+}

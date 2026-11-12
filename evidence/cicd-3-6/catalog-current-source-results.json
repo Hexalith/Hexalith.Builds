@@ -1,0 +1,182 @@
+{
+  "started_at": "2026-11-12T07:50:26.466163+00:00",
+  "status": "completed",
+  "before": {
+    "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+    "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+    "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+    "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+  },
+  "commands": [
+    {
+      "index": 1,
+      "command": "pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1",
+      "exit_code": 0,
+      "seconds": 2.75,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-current-source-01.log",
+      "before": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "after": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "source_stable": true
+    },
+    {
+      "index": 2,
+      "command": "pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1",
+      "exit_code": 0,
+      "seconds": 6.75,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-current-source-02.log",
+      "before": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "after": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "source_stable": true
+    },
+    {
+      "index": 3,
+      "command": "python3 Tools/test-logging-generator-selection.py",
+      "exit_code": 0,
+      "seconds": 1.38,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-current-source-03.log",
+      "before": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "after": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "source_stable": true
+    },
+    {
+      "index": 5,
+      "command": "pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1",
+      "exit_code": 1,
+      "seconds": 22.62,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-current-source-05.log",
+      "before": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "after": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "source_stable": true
+    },
+    {
+      "index": 8,
+      "command": "pwsh -NoProfile -File ./Tools/validate-consumer-package-authority.ps1 -RepositoryRoot . -CatalogPath ./Props/Directory.Packages.props",
+      "exit_code": 0,
+      "seconds": 78.44,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-current-source-08.log",
+      "before": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "after": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "source_stable": true
+    },
+    {
+      "index": 10,
+      "command": "pwsh -NoProfile -File ./Tools/validate-package-version-exceptions.ps1 -InventoryPath ./Tools/package-version-exceptions.json -CatalogPath ./Props/Directory.Packages.props",
+      "exit_code": 0,
+      "seconds": 4.43,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-current-source-10.log",
+      "before": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "after": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "source_stable": true
+    },
+    {
+      "index": 12,
+      "command": "pwsh -NoProfile -File ./Tools/validate-platform-version-catalog.ps1",
+      "exit_code": 0,
+      "seconds": 2.44,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-current-source-12.log",
+      "before": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "after": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "source_stable": true
+    },
+    {
+      "index": 14,
+      "command": "pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1",
+      "exit_code": 0,
+      "seconds": 1.94,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-current-source-14.log",
+      "before": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "after": {
+        "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+        "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+        "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+      },
+      "source_stable": true
+    }
+  ],
+  "completed_at": "2026-11-12T07:52:27.298171+00:00",
+  "after": {
+    "head": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+    "head_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+    "working_catalog_blob": "156f7c51dce1c4911b60387194cc637dc32bdf5c",
+    "working_catalog_sha256": "9709d85cda6706f7468cb643b67e20150cb7fcc542e1efd9af82b93ca9008150"
+  },
+  "passed": 7,
+  "total": 8,
+  "source_stable": true
+}

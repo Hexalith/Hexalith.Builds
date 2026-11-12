@@ -1,0 +1,118 @@
+{
+  "head": "6ad5854aa14a9950e1fbfc32d7e27953a1c4b82b",
+  "started_at": "2026-11-12T07:20:41.201175+00:00",
+  "status": "completed",
+  "commands": [
+    {
+      "index": 1,
+      "command": "pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1",
+      "exit_code": 0,
+      "seconds": 3.9,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-01.log"
+    },
+    {
+      "index": 2,
+      "command": "pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1",
+      "exit_code": 0,
+      "seconds": 8.63,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-02.log"
+    },
+    {
+      "index": 3,
+      "command": "python3 Tools/test-logging-generator-selection.py",
+      "exit_code": 0,
+      "seconds": 1.52,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-03.log"
+    },
+    {
+      "index": 4,
+      "command": "pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1",
+      "exit_code": 0,
+      "seconds": 73.46,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-04.log"
+    },
+    {
+      "index": 5,
+      "command": "pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1",
+      "exit_code": 0,
+      "seconds": 30.51,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-05.log"
+    },
+    {
+      "index": 6,
+      "command": "pwsh -NoProfile -File ./Tools/test-package-version-audit-generator.ps1",
+      "exit_code": 0,
+      "seconds": 93.97,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-06.log"
+    },
+    {
+      "index": 7,
+      "command": "pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1",
+      "exit_code": 0,
+      "seconds": 756.05,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-07.log"
+    },
+    {
+      "index": 8,
+      "command": "pwsh -NoProfile -File ./Tools/validate-consumer-package-authority.ps1 -RepositoryRoot . -CatalogPath ./Props/Directory.Packages.props",
+      "exit_code": 0,
+      "seconds": 86.18,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-08.log"
+    },
+    {
+      "index": 9,
+      "command": "pwsh -NoProfile -File ./Tools/test-consumer-package-authority-validator.ps1",
+      "exit_code": 0,
+      "seconds": 92.25,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-09.log"
+    },
+    {
+      "index": 10,
+      "command": "pwsh -NoProfile -File ./Tools/validate-package-version-exceptions.ps1 -InventoryPath ./Tools/package-version-exceptions.json -CatalogPath ./Props/Directory.Packages.props",
+      "exit_code": 0,
+      "seconds": 5.08,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-10.log"
+    },
+    {
+      "index": 11,
+      "command": "pwsh -NoProfile -File ./Tools/test-package-version-exception-validator.ps1",
+      "exit_code": 0,
+      "seconds": 245.44,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-11.log"
+    },
+    {
+      "index": 12,
+      "command": "pwsh -NoProfile -File ./Tools/validate-platform-version-catalog.ps1",
+      "exit_code": 0,
+      "seconds": 2.58,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-12.log"
+    },
+    {
+      "index": 13,
+      "command": "pwsh -NoProfile -File ./Tools/test-platform-version-catalog.ps1",
+      "exit_code": 0,
+      "seconds": 289.29,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-13.log"
+    },
+    {
+      "index": 14,
+      "command": "pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1",
+      "exit_code": 0,
+      "seconds": 1.9,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-14.log"
+    },
+    {
+      "index": 15,
+      "command": "pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1",
+      "exit_code": 0,
+      "seconds": 64.0,
+      "full_output": "/tmp/cicd-3-6-integrated-catalog-15.log"
+    }
+  ],
+  "completed_at": "2026-11-12T07:49:55.881595+00:00",
+  "passed": 15,
+  "total": 15,
+  "observed_head_after_run": "42cfc1413927b5c55d27835a40bc07c9079f50d9",
+  "source_context": "All fifteen invocations completed successfully. Concurrent commits d8b2be323528e624316d4049b7c86d03ba0f74e0, c48c20d0fb2e39ef53888e5061ee27c7b8410344 and 42cfc1413927b5c55d27835a40bc07c9079f50d9 landed during execution; c48c20d0 changed Commons/PolymorphicSerializations catalog versions. The initial fifteen-pass result does not establish all fifteen on one stable final source. See the eight source-sensitive reruns, whose source was stable and whose audit validator failed.",
+  "current_source_reruns": "/tmp/cicd-3-6-integrated-catalog-current-source-results.json"
+}

@@ -37,5 +37,28 @@
       "full_log": "/tmp/cicd-3-6-public-api.log",
       "log_sha256": "0defb056ec859b9bdf195be84bde0af57ad603b3c0b18cc361199391f95a7723"
     }
-  ]
+  ],
+  "latest_upstream_revision": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+  "later_source_validation": "latest-validation-results.json",
+  "focused_dotnet": {
+    "build_exit_code": 0,
+    "focused_cases": 2,
+    "class_cases": 62,
+    "failed": 0,
+    "skipped": 0
+  },
+  "implementation_blobs_unchanged": {
+    ".github/workflows/builds-release.yml": "01978ac334a9292fef85a2b126c7a128a5ac8b08",
+    ".github/workflows/builds-ci.yml": "3d3b1ce541bb5288b58dc9db08eee3d800dd79b6",
+    "Github/lib/tests/test_release_outcome.py": "49d83ab8d62e55fc823b867fc3221f63db5e6dc2",
+    "Tools/ci/run_python_tests.py": "b364e11e78e9c7b993d6d8220067395efbb0cc33",
+    "Tools/ci/tests/test_python_runner.py": "3c88dea911900f2736e3bad0db9bac3ad612b4d3",
+    ".github/zizmor.yml": "ad2c3891c6528113916d9c3cc01392bd2bf16e29"
+  },
+  "hosted_success": "hosted-success.json",
+  "latest_public_api": {
+    "revision": "1ecbcd6c6f61629086d019c37557d10d4247b0c3",
+    "exit_code": 0,
+    "output": "Installed 1 package in 3ms\nPublic API baseline: v4.48.2 (6ad5854aa14a9950e1fbfc32d7e27953a1c4b82b); checked revision: 1ecbcd6c6f61629086d019c37557d10d4247b0c3\nPublic API compatible: 2565 entries; no removals\n"
+  }
 }
