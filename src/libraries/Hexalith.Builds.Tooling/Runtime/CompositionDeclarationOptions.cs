@@ -40,6 +40,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/3.0.24"] = "859680b38a77f04cc8f81ab7a5fe7f40a617cc2a",
         ["memories/3.0.25"] = "246157a7ff8e2dcd8d356c833a77a02514490d2f",
         ["memories/3.0.26"] = "f807701e45297064f3968bcc8052e8002eac6d34",
+        ["memories/3.0.27"] = "535ee97b694c79e6c7608e90a5a725f092ad982c",
         ["parties/3.1.0"] = "50904cc4ba53c9b0b2c082d5872a0d276be8f5c3",
         ["parties/3.1.1"] = "84e3df796ac977041a21ec7bd8e5789bdc44241a",
     }.ToFrozenDictionary(StringComparer.Ordinal);
@@ -64,6 +65,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/3.0.24"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
         ["memories/3.0.25"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
         ["memories/3.0.26"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
+        ["memories/3.0.27"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
         ["parties/3.1.0"] = "d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348",
         ["parties/3.1.1"] = "d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348",
     }.ToFrozenDictionary(StringComparer.Ordinal);

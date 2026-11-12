@@ -1,0 +1,28 @@
+{
+  "scope": "Add the exact released Memories3.0.27 source/declaration to finite producer authority for the current catalog. Preserve historical authority and refuse changed or unknown owner evidence.",
+  "sourceVerification": {
+    "sourceRevision": "535ee97b694c79e6c7608e90a5a725f092ad982c",
+    "tag": "v3.0.27",
+    "canonicalPath": "module/hexalith.module-manifest.v2.json",
+    "sha256": "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
+    "byteIdenticalToRetained26": true
+  },
+  "canonicalSourceUrl": "https://github.com/Hexalith/Hexalith.Memories/blob/535ee97b694c79e6c7608e90a5a725f092ad982c/module/hexalith.module-manifest.v2.json",
+  "retainedAuthorities": "All pre-existing release commit/hash entries unchanged; existing Memories3.0.26 fixture bytes unchanged.",
+  "checks": {
+    "ReleaseModuleTestsBuild": "passed;0warnings0errors",
+    "DirectCatalogDeclarationTests": {
+      "total": 21,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    "behavior": [
+      "Platform and direct-module cold start for SDK4.1.0/4.2.0 paired with Memories3.0.26/3.0.27",
+      "Released Parties3.1.1 closure under both Memories3.0.26/3.0.27",
+      "Existing dirty/missing/wrong-pin direct-catalog refusals",
+      "Changed declaration, wrong release commit and unknown Memories3.0.28 refusal"
+    ]
+  },
+  "candidateAcceptance": false
+}
