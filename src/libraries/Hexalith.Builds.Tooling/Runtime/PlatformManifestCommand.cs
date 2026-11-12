@@ -92,7 +92,8 @@ public static class PlatformManifestCommand
             "--artifacts-path", Path.Combine(workspace, "build", "platform-model"),
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
             "-p:CopyLocalLockFileAssemblies=true",
-            "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
+            "-p:CentralPackageTransitivePinningEnabled=true",
+            "-p:NuGetAudit=true", "-p:NuGetAuditMode=all", "-p:NuGetAuditLevel=low", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
             "-m:1", "-p:BuildInParallel=false", "-p:RestoreBuildInParallel=false",
             "-p:AlternateCommonProps=" + SourceMappingMaterializer.ModelCommonPropsPath(workspace),
             .. (mapping.Mode == WorkspaceMode.Source ? PinnedSourceModelCatalogArguments(pinnedCatalog) : PinnedCatalogArguments(pinnedCatalog))
