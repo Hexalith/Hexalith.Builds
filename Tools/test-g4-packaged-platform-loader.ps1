@@ -32,6 +32,26 @@ foreach ($file in @($hostAssembly, $rootTooling, $hostTooling)) {
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Package omitted '$file'." }
 }
 
+# A model compiled against current catalog APIs must use the packaged host's closure.
+# Framework-only fixtures miss a pruned .NET 11 dependency on a .NET 10 target.
+[xml] $catalog = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../Props/Directory.Packages.props') -Raw
+$extensionClosure = @()
+foreach ($id in @('Microsoft.Extensions.Configuration', 'Microsoft.Extensions.Configuration.Abstractions',
+    'Microsoft.Extensions.DependencyInjection', 'Microsoft.Extensions.DependencyInjection.Abstractions',
+    'Microsoft.Extensions.Options')) {
+    $selection = @($catalog.Project.ItemGroup.PackageVersion | Where-Object Include -CEQ $id)
+    if ($selection.Count -ne 1) { throw "Catalog must select exactly one '$id' dependency." }
+    $version = [Version]::Parse([string]$selection[0].Version)
+    $path = Join-Path $hostDirectory "$id.dll"
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Packaged current-catalog closure omitted '$id'." }
+    $identity = [Reflection.AssemblyName]::GetAssemblyName($path)
+    if ($identity.Name -cne $id -or $identity.Version.Major -ne $version.Major -or $identity.Version.Minor -ne $version.Minor) {
+        throw "Packaged '$id' identity '$($identity.FullName)' does not match catalog '$version'."
+    }
+    $extensionClosure += @{ name = $id; selectedPackageVersion = [string]$selection[0].Version
+        identity = $identity.FullName; path = $path; sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash }
+}
+
 # Isolate configuration discovery even when output is beneath the checkout. No feed is used.
 $fixture = Join-Path $OutputDirectory 'fixture'
 $null = New-Item -ItemType Directory -Path $fixture
@@ -140,6 +160,7 @@ $receipt = [ordered]@{
     result = 'failed'; validation = $null; runtime = $null
     rootTooling = @{ path = $rootTooling; identity = [Reflection.AssemblyName]::GetAssemblyName($rootTooling).FullName; sha256 = (Get-FileHash -LiteralPath $rootTooling -Algorithm SHA256).Hash }
     hostTooling = @{ path = $hostTooling; identity = [Reflection.AssemblyName]::GetAssemblyName($hostTooling).FullName; sha256 = (Get-FileHash -LiteralPath $hostTooling -Algorithm SHA256).Hash }
+    extensions = $extensionClosure
 }
 $clock = [Diagnostics.Stopwatch]::StartNew()
 try {
@@ -148,6 +169,14 @@ try {
     if ($loaded.identity -cne $receipt.rootTooling.identity -or $loaded.path -cne $hostTooling -or
         $receipt.rootTooling.sha256 -cne $receipt.hostTooling.sha256) {
         throw 'Packaged child did not load the same Tooling contract as the CLI/model.'
+    }
+    $loadedExtensions = @(Get-Content -LiteralPath (Join-Path $workspace 'loaded-extensions.json') -Raw | ConvertFrom-Json)
+    if ($loadedExtensions.Count -ne $extensionClosure.Count) { throw 'Packaged child did not report every extension dependency.' }
+    foreach ($expected in $extensionClosure) {
+        $observed = @($loadedExtensions | Where-Object name -CEQ $expected.name)
+        if ($observed.Count -ne 1 -or $observed[0].identity -cne $expected.identity -or $observed[0].path -cne $expected.path) {
+            throw "Current-catalog model did not load '$($expected.name)' from the packaged host."
+        }
     }
     if (Test-Path -LiteralPath $plan.readinessPath) { throw 'Validation unexpectedly wrote runtime readiness.' }
     if (Test-Path -LiteralPath (Join-Path $workspace 'startup-attempted')) { throw 'Validation unexpectedly attempted runtime startup.' }

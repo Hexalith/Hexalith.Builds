@@ -12,6 +12,10 @@ using Aspire.Hosting.ApplicationModel;
 
 using Hexalith.Builds.Tooling.Runtime;
 
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+
 /// <summary>
 /// Exercises the shared contract across the packaged child boundary. Validation never starts the application; a runtime
 /// start records the Aspire store and orchestration paths it resolved and exits before any resource starts.
@@ -27,6 +31,23 @@ public static class PlatformAppModel
     {
         _ = signingKey;
         _ = seed;
+        IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?> { ["closure"] = "current-catalog" }).Build();
+        using ServiceProvider services = new ServiceCollection()
+            .AddSingleton(configuration)
+            .AddSingleton(Options.Create("current-catalog"))
+            .BuildServiceProvider();
+        if (services.GetRequiredService<IConfiguration>()["closure"] != "current-catalog"
+            || services.GetRequiredService<IOptions<string>>().Value != "current-catalog")
+        {
+            throw new InvalidOperationException("Packaged current-catalog extension closure failed.");
+        }
+
+        Type[] extensionTypes = [typeof(ConfigurationBuilder), typeof(IConfiguration),
+            typeof(ServiceProvider), typeof(IServiceCollection), typeof(Options)];
+        File.WriteAllText(Path.Combine(plan.Workspace, "loaded-extensions.json"), JsonSerializer.Serialize(
+            extensionTypes.Select(type => new { name = type.Assembly.GetName().Name,
+                identity = type.Assembly.FullName, path = type.Assembly.Location })));
         _ = builder.Eventing.Subscribe<BeforeStartEvent>((startEvent, _) =>
         {
             File.WriteAllText(Path.Combine(plan.Workspace, "startup-attempted"), "forbidden");

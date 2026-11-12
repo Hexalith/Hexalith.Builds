@@ -6,9 +6,16 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Microsoft.Extensions configuration types used by Aspire.Hosting come from the AppHost's shared framework. -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Reference Include="Hexalith.Builds.Tooling" HintPath="$(ToolPayload)/Hexalith.Builds.Tooling.dll" />
     <Reference Include="Aspire.Hosting" HintPath="$(ToolPayload)/g4-host/Aspire.Hosting.dll" />
+    <!-- The gate checks these files against the catalog before compilation. Keep them
+         out of the model directory so the packaged host must supply its own closure. -->
+    <Reference Include="Microsoft.Extensions.Configuration" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.Configuration.dll" Private="false" />
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.Configuration.Abstractions.dll" Private="false" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.DependencyInjection.dll" Private="false" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.DependencyInjection.Abstractions.dll" Private="false" />
+    <Reference Include="Microsoft.Extensions.Options" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.Options.dll" Private="false" />
+    <Reference Include="Microsoft.Extensions.Primitives" HintPath="$(ToolPayload)/g4-host/Microsoft.Extensions.Primitives.dll" Private="false" />
   </ItemGroup>
 </Project>
