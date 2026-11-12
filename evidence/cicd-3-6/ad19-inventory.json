@@ -1,0 +1,126 @@
+{
+  "checked_at": "2026-11-12T07:12:03.147267+00:00",
+  "marked_drafts": [
+    {
+      "id": 441591623,
+      "tag_name": "v4.47.1",
+      "target_commitish": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+      "draft": true,
+      "prerelease": false,
+      "immutable": false,
+      "html_url": "https://github.com/Hexalith/Hexalith.Builds/releases/tag/untagged-6c9fc6056619d6647c2d",
+      "body": "Disposable story 3-4 publication qualification. Only the identified isolated package and registry image are authorized.\n\nhexalith-release: 75e1d4a3809b30684e67c7e9b2c8043720b49c53\nhexalith-release-run: 43010609603\nhexalith-release-artifact: 13850760915 sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30\nhexalith-release-packages: Hexalith.Builds.PublishProbe.20261111\nhexalith-release-containers: cicd-publish-spike-3-1\n"
+    }
+  ],
+  "stable_tag_count": 203,
+  "unpublished_v_tags": [
+    {
+      "tag": "v4.47.1",
+      "sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53"
+    },
+    {
+      "tag": "v4.46.0",
+      "sha": "a8a87160f2708322d5520742b9a0c3f93d23db78"
+    }
+  ],
+  "rulesets": [
+    {
+      "id": 19196298,
+      "name": "Protect main",
+      "target": "branch",
+      "source_type": "Repository",
+      "source": "Hexalith/Hexalith.Builds",
+      "enforcement": "active",
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "~DEFAULT_BRANCH"
+          ]
+        }
+      },
+      "rules": [
+        {
+          "type": "deletion"
+        },
+        {
+          "type": "non_fast_forward"
+        }
+      ],
+      "node_id": "RRS_lACqUmVwb3NpdG9yec44zM1FzgEk6Yo",
+      "created_at": "2026-07-20T09:31:13.745+02:00",
+      "updated_at": "2026-11-08T21:25:52.675+01:00",
+      "bypass_actors": [],
+      "current_user_can_bypass": "never",
+      "_links": {
+        "self": {
+          "href": "https://api.github.com/repos/Hexalith/Hexalith.Builds/rulesets/19196298"
+        },
+        "html": {
+          "href": "https://github.com/Hexalith/Hexalith.Builds/rules/19196298"
+        }
+      }
+    },
+    {
+      "id": 26812219,
+      "name": "v tags",
+      "target": "tag",
+      "source_type": "Repository",
+      "source": "Hexalith/Hexalith.Builds",
+      "enforcement": "active",
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "refs/tags/v*"
+          ]
+        }
+      },
+      "rules": [
+        {
+          "type": "update"
+        },
+        {
+          "type": "deletion"
+        }
+      ],
+      "node_id": "RRS_lACqUmVwb3NpdG9yec44zM1FzgGZHzs",
+      "created_at": "2026-11-08T21:25:53.491+01:00",
+      "updated_at": "2026-11-11T11:03:40.459+01:00",
+      "bypass_actors": [],
+      "current_user_can_bypass": "never",
+      "_links": {
+        "self": {
+          "href": "https://api.github.com/repos/Hexalith/Hexalith.Builds/rulesets/26812219"
+        },
+        "html": {
+          "href": "https://github.com/Hexalith/Hexalith.Builds/rules/26812219"
+        }
+      }
+    }
+  ],
+  "probe_run": {
+    "id": 43010609603,
+    "head_sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53",
+    "head_branch": "main",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "success",
+    "path": ".github/workflows/release-publish-probe.yml",
+    "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43010609603"
+  },
+  "probe_artifact": {
+    "id": 13850760915,
+    "name": "release",
+    "expired": false,
+    "expires_at": "2027-02-09T11:16:45Z",
+    "digest": "sha256:18db4ed7b07ffa3c5fd4496afce65dd50888705687d42695260e7573a7456d30",
+    "workflow_run": {
+      "id": 43010609603,
+      "repository_id": 952945989,
+      "head_repository_id": 952945989,
+      "head_branch": "main",
+      "head_sha": "75e1d4a3809b30684e67c7e9b2c8043720b49c53"
+    }
+  }
+}

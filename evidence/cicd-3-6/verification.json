@@ -1,0 +1,41 @@
+{
+  "implementation_revision": "d8b2be323528e624316d4049b7c86d03ba0f74e0",
+  "integration_revision": "6ad5854aa14a9950e1fbfc32d7e27953a1c4b82b",
+  "checks": [
+    {
+      "name": "python312",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/run_python_tests.py",
+      "exit_code": 0,
+      "full_log": "/tmp/cicd-3-6-integrated-python312.log",
+      "log_sha256": "73002a4ad0a8ddbe7d512c102a0c44e3bf189ee0022384a97bb7414bbc2d68dd"
+    },
+    {
+      "name": "python-runner",
+      "command": "uv run --no-cache --locked --script --python \"$RUNNER_PYTHON\" Tools/ci/run_python_tests.py",
+      "exit_code": 0,
+      "full_log": "/tmp/cicd-3-6-integrated-python-runner.log",
+      "log_sha256": "f171d03d79aa99eecef6ef0824bbb9c15aaab47cc5ff0374bba38a5696ab8719"
+    },
+    {
+      "name": "lint",
+      "command": "python3 Tools/ci/lint_workflows.py",
+      "exit_code": 0,
+      "full_log": "/tmp/cicd-3-6-integrated-lint.log",
+      "log_sha256": "49871821bbd309968e17b5b461eed12d8f8103bd75bfdf8c737ae7a4bbf6a03a"
+    },
+    {
+      "name": "release-outcome",
+      "command": "python3 -m unittest discover -s Github/lib/tests -p test_release_outcome.py -v",
+      "exit_code": 0,
+      "full_log": "/tmp/cicd-3-6-integrated-outcome.log",
+      "log_sha256": "61ce572746f41da5f805f3bfd540d1c7f7f06d7b25d3e66766000f2140cf2d97"
+    },
+    {
+      "name": "public-api",
+      "command": "uv run --no-cache --locked --script --python 3.12 Tools/ci/check_public_api.py",
+      "exit_code": 0,
+      "full_log": "/tmp/cicd-3-6-public-api.log",
+      "log_sha256": "0defb056ec859b9bdf195be84bde0af57ad603b3c0b18cc361199391f95a7723"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ baseline_revision: 22387551f497bfef53af37c0c35d86b0d40c8d3f
 implementation_repository: references/Hexalith.Builds
 planning_baseline_revision: d4f75283221fc11779416c5f2b531ea09f22582c
 implementation_baseline_revision: aca0183fdeb4a7fcd02546ff8f082acbf73a0585
+implementation_integration_revision: 6ad5854aa14a9950e1fbfc32d7e27953a1c4b82b
 ---
 
 # Builds shared release plan
@@ -172,7 +173,8 @@ bootstrap remains unauthorized; no retained resource or live setting is changed.
 Implementation runs real actionlint/zizmor with authenticated online
 audits; both locked Python suites; focused runner behavioral controls; all
 fifteen unchanged catalog commands; and the committed-object public API check.
-Compare frozen runtime bytes with the full baseline above. Observe a green
+Compare frozen runtime bytes with the integrated upstream revision above, and
+record concurrent upstream changes separately from this story. Observe a green
 exact-source hosted **push** CI with the retained shared/sample/Windows jobs
 and no retired qualification/aggregator/CodeQL jobs. Reuse existing executable
 release-expression/adapter controls for the matrix; extend only uncovered

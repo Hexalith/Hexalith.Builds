@@ -50,9 +50,10 @@ added.
 All fifteen catalog commands, their existing arguments/languages and SDK
 prerequisites remain unchanged. Their complete KEEP classification is in the
 [quality documentation](../Tools/ci/README.md). All three .NET product test
-projects remain. SDK 11.0.100, offline-fixture SDK 10.0.404, catalog data,
-root npm legacy release configuration and the frozen module runtime are
-preserved. Only obsolete Builds-caller zizmor exceptions were removed.
+projects remain. SDK 11.0.100, offline-fixture SDK 10.0.404, the integrated
+catalog data, root npm legacy release configuration and the frozen module
+runtime are preserved relative to the integrated upstream base. Only obsolete
+Builds-caller zizmor exceptions were removed.
 
 Deferred legacy release remains executable: `verify-g4-tool-release.ps1` calls
 `test-g4-tool-package-contracts.ps1`; `build-g4-tool-packages.ps1` calls
@@ -63,41 +64,45 @@ describe historical evidence identities; their retired regression scripts are
 not current executable checks. Guard commitlint and `commitlint-caller.yml`
 retirement remain story 5-1 work.
 
-## Local verification
+## Implementation source and verification
+
+The initial implementation baseline is
+`aca0183fdeb4a7fcd02546ff8f082acbf73a0585`. Eight concurrent upstream commits
+were integrated through `6ad5854aa14a9950e1fbfc32d7e27953a1c4b82b` before final
+verification, preserving their catalog, validator, runtime and product-fixture
+changes. The only modify/delete conflict was the explicitly retired
+`Tools/test_g6_current.py` regression; the upstream G-6 runtime/policy remains.
+A concurrent Cursor `/pushall` session committed and pushed the exact staged
+implementation as `d8b2be323528e624316d4049b7c86d03ba0f74e0`, whose parent is the
+integrated revision. No history was rewritten.
 
 - Real actionlint 1.7.12 and authenticated online zizmor 1.32.0 passed, with
   10 unchanged exact frozen composite findings and zero new findings.
-- Focused real-process Python runner controls passed: 4 tests on Python 3.14.4.
-- Full locked Python 3.12.13 and captured runner Python 3.14.4 suites started
-  with 14 retained groups each. They were deliberately stopped during the
-  Github/lib group before completion when upstream advancement was discovered.
-  No full-suite pass or execution claim for the new caller-graph tests is made.
-- The first six exact catalog invocations passed: central versions,
-  authoritative catalog, logging selection, central validator, package audit,
-  and audit generator (113 scenarios). Execution was stopped during the seventh,
-  audit-validator command. The remaining nine command conclusions are unverified.
-- Structural comparison confirmed all six retained CI job definitions unchanged,
-  including every catalog invocation. A byte comparison against the baseline,
-  applying tracked checkout filters, confirmed 118 frozen runtime/pinned-data/
-  legacy-dependency files unchanged. No module repository was edited.
-- Committed-object public API checking and exact-source hosted push CI are
-  recorded after the implementation commit. Local controls do not establish
-  hosted package/artifact/tag publication.
+- Both full locked Python suites passed, 14/14 retained groups each, on Python
+  3.12.13 and the captured runner interpreter Python 3.14.4. All ten matrix rows
+  have passing executed behavioral controls on both interpreters; read-only
+  operational preflight observations are recorded separately below.
+- All 35 focused release-outcome/caller-graph tests and all four real-process
+  Python runner controls passed independently.
+- The committed-object API check passed at implementation revision
+  `d8b2be323528e624316d4049b7c86d03ba0f74e0`: 2,565 entries, no removals, baseline
+  `v4.48.2` at `6ad5854aa14a9950e1fbfc32d7e27953a1c4b82b`.
+- Structural comparison confirmed all six retained CI job definitions, including
+  all fifteen catalog invocations, unchanged. All 118 frozen/pinned/dependency
+  files match the integrated upstream revision under tracked checkout filters.
+  Two differ from the original starting revision solely through upstream work:
+  `Props/Directory.Packages.props` and
+  `Tools/test-g4-packaged-platform-loader.ps1`. This story changes neither.
+- Exact full implementation and follow-up evidence commit messages passed the
+  pinned commitlint 21.2.4 policy with zero problems and zero warnings.
 
-Local command logs are retained under `/tmp/cicd-3-6-*.log` in the implementation
-workspace. Preservation comparison results are in
-`/tmp/cicd-3-6-preservation.json`; completed catalog command/exit-status results
-and the explicit interruption status are in `/tmp/cicd-3-6-catalog-results.json`.
-
-During verification, a fetch revealed eight new upstream commits ending at
-`6ad5854aa14a9950e1fbfc32d7e27953a1c4b82b`. They change catalog/validator/product
-fixtures and the `Tools/test_g6_current.py` regression retired by this story.
-The parent stopped all three broad verification process trees before combining
-the implementation with upstream. No combined-tree check has passed yet.
-Preserve upstream catalog/validator/product changes during integration, resolve
-the retired regression deliberately, then rerun the affected full dual-Python,
-all-fifteen catalog, lint, preservation and committed-API checks before the
-exact-source hosted push observation.
+All fifteen exact catalog commands and the exact-source hosted push conclusion
+are being verified before this report is finalized. The initial interrupted
+checks against the older base are not used as final combined-tree evidence.
+Local full logs use `/tmp/cicd-3-6-integrated-*.log`; matrix coverage is recorded
+in `/tmp/cicd-3-6-matrix-audit.json`. Hosted publication remains outside this
+implementation; these checks do not establish production package, artifact,
+outcome or final-tag publication.
 
 ## AD-19 read-only preflight and bootstrap stops
 

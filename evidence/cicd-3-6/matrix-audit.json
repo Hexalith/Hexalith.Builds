@@ -1,0 +1,112 @@
+{
+  "status": "passed",
+  "rows": {
+    "Releasable Builds main": {
+      "3.12": {
+        "test_actual_builds_plugin_rules_exclude_exact_nonrelease_types": true,
+        "test_real_multitarget_import_discovery_and_pack_stamp": true,
+        "test_builds_caller_forwards_original_complete_identity_to_the_publisher": true,
+        "test_absent_and_correct_lightweight_and_annotated_tags_publish_tag_last": true
+      },
+      "runner": {
+        "test_actual_builds_plugin_rules_exclude_exact_nonrelease_types": true,
+        "test_real_multitarget_import_discovery_and_pack_stamp": true,
+        "test_builds_caller_forwards_original_complete_identity_to_the_publisher": true,
+        "test_absent_and_correct_lightweight_and_annotated_tags_publish_tag_last": true
+      }
+    },
+    "Commit classes": {
+      "3.12": {
+        "test_actual_builds_plugin_rules_exclude_exact_nonrelease_types": true
+      },
+      "runner": {
+        "test_actual_builds_plugin_rules_exclude_exact_nonrelease_types": true
+      }
+    },
+    "Red or missing exact-source CI": {
+      "3.12": {
+        "test_latest_exact_sha_push_or_manual_ci_governs": true,
+        "test_no_ci_and_each_non_success_conclusion_fail_without_waiting": true
+      },
+      "runner": {
+        "test_latest_exact_sha_push_or_manual_ci_governs": true,
+        "test_no_ci_and_each_non_success_conclusion_fail_without_waiting": true
+      }
+    },
+    "Disabled / invalid switch": {
+      "3.12": {
+        "test_disabled_and_invalid_switches_retain_settings_and_selected_identity": true,
+        "test_builds_caller_uses_builds_rules_and_does_not_publish_without_a_successful_handoff": true
+      },
+      "runner": {
+        "test_disabled_and_invalid_switches_retain_settings_and_selected_identity": true,
+        "test_builds_caller_uses_builds_rules_and_does_not_publish_without_a_successful_handoff": true
+      }
+    },
+    "No releasable commit": {
+      "3.12": {
+        "test_no_version_tagless_or_at_base_has_explicit_noop": true,
+        "test_builds_caller_uses_builds_rules_and_does_not_publish_without_a_successful_handoff": true
+      },
+      "runner": {
+        "test_no_version_tagless_or_at_base_has_explicit_noop": true,
+        "test_builds_caller_uses_builds_rules_and_does_not_publish_without_a_successful_handoff": true
+      }
+    },
+    "Interrupted product release": {
+      "3.12": {
+        "test_original_handoff_survives_dispatch_workflow_config_and_current_run_changes": true,
+        "test_original_recovery_handoff_retries_actual_publisher_with_identical_package_bytes": true
+      },
+      "runner": {
+        "test_original_handoff_survives_dispatch_workflow_config_and_current_run_changes": true,
+        "test_original_recovery_handoff_retries_actual_publisher_with_identical_package_bytes": true
+      }
+    },
+    "Original artifact gone": {
+      "3.12": {
+        "test_packages_always_retain_when_original_bytes_are_unavailable_without_destination_reads": true
+      },
+      "runner": {
+        "test_packages_always_retain_when_original_bytes_are_unavailable_without_destination_reads": true
+      }
+    },
+    "Existing probe draft": {
+      "3.12": {
+        "test_each_well_formed_producer_mismatch_and_404_allow_only_conservative_stale": true,
+        "test_packages_always_retain_when_original_bytes_are_unavailable_without_destination_reads": true
+      },
+      "runner": {
+        "test_each_well_formed_producer_mismatch_and_404_allow_only_conservative_stale": true,
+        "test_packages_always_retain_when_original_bytes_are_unavailable_without_destination_reads": true
+      }
+    },
+    "Settings inaccessible": {
+      "3.12": {
+        "test_http_transport_auth_redirect_and_malformed_producer_fail_without_stale": true,
+        "test_ci_api_errors_unknown_status_and_invalid_identity_fail_visibly": true
+      },
+      "runner": {
+        "test_http_transport_auth_redirect_and_malformed_producer_fail_without_stale": true,
+        "test_ci_api_errors_unknown_status_and_invalid_identity_fail_visibly": true
+      }
+    },
+    "CI simplification": {
+      "3.12": {
+        "test_failure_in_assertion_script_fails_suite_and_other_groups_still_run": true,
+        "test_failure_in_discovered_group_fails_suite": true,
+        "test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter": true
+      },
+      "runner": {
+        "test_failure_in_assertion_script_fails_suite_and_other_groups_still_run": true,
+        "test_failure_in_discovered_group_fails_suite": true,
+        "test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter": true
+      }
+    }
+  },
+  "manual_observations": {
+    "Existing probe draft": "Read-only draft/artifact/tag inventory: /tmp/cicd-3-6-ad19-inventory.json; retained draft and mismatched producer stop bootstrap",
+    "Settings inaccessible": "Read-only scoped HTTP 403 checks: /tmp/cicd-3-6-ad19-preflight.json; exact accepted read permissions retained; settings marked unverified",
+    "CI simplification": "Hosted exact-source push run 43174705780 is pending; final conclusion is separately required"
+  }
+}
