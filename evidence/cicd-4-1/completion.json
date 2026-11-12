@@ -1,0 +1,92 @@
+{
+  "schema": "hexalith.cicd-story-completion.v1",
+  "story": "4-1",
+  "source": "9ebc31f606bc02f8a0ec2f1ec344127e2468c6b4",
+  "implementation_baseline": "3238aa2742dd69ec75144a6f523fd1f86c3f3174",
+  "ci_run": 43322385361,
+  "ci_jobs_passed": 7,
+  "focused_tests_each_interpreter": 58,
+  "library_rerun_tests_each_interpreter": 354,
+  "hosted_retained_groups_each_interpreter": 14,
+  "preflight_checks": 39,
+  "release_run": {
+    "id": 43325614833,
+    "run_attempt": 1,
+    "path": ".github/workflows/builds-release.yml",
+    "event": "workflow_dispatch",
+    "head_branch": "main",
+    "head_sha": "9ebc31f606bc02f8a0ec2f1ec344127e2468c6b4",
+    "created_at": "2026-11-12T23:04:12Z",
+    "updated_at": "2026-11-12T23:12:35Z",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43325614833"
+  },
+  "outcome": {
+    "outcome": "published",
+    "schema": "hexalith.release-outcome.v1",
+    "sha": "9ebc31f606bc02f8a0ec2f1ec344127e2468c6b4",
+    "version": "5.1.0"
+  },
+  "release_id": 443617691,
+  "tag": "v5.1.0",
+  "immutable": true,
+  "author": "github-actions[bot]",
+  "original_artifact": {
+    "id": 13992553006,
+    "node_id": "MDg6QXJ0aWZhY3QxMzk5MjU1MzAwNg==",
+    "name": "release",
+    "size_in_bytes": 43936397,
+    "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13992553006",
+    "archive_download_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13992553006/zip",
+    "expired": false,
+    "digest": "sha256:b582f9ea801ca3970a88c87eff98068bbb3eb9250a98615ea07195aefa7d3f6a",
+    "created_at": "2026-11-12T23:11:33Z",
+    "updated_at": "2026-11-12T23:11:33Z",
+    "expires_at": "2027-02-10T23:04:14Z",
+    "workflow_run": {
+      "id": 43325614833,
+      "repository_id": 952945989,
+      "head_repository_id": 952945989,
+      "head_branch": "main",
+      "head_sha": "9ebc31f606bc02f8a0ec2f1ec344127e2468c6b4"
+    }
+  },
+  "original_downloaded_digest": "sha256:b582f9ea801ca3970a88c87eff98068bbb3eb9250a98615ea07195aefa7d3f6a",
+  "outcome_artifact": {
+    "id": 13992897976,
+    "node_id": "MDg6QXJ0aWZhY3QxMzk5Mjg5Nzk3Ng==",
+    "name": "hexalith-release-outcome",
+    "size_in_bytes": 251,
+    "url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13992897976",
+    "archive_download_url": "https://api.github.com/repos/Hexalith/Hexalith.Builds/actions/artifacts/13992897976/zip",
+    "expired": false,
+    "digest": "sha256:70278e0eccb1e2f247dd1d3103503110e0c961049f0ba55bf57879f89ffb7e3c",
+    "created_at": "2026-11-12T23:12:32Z",
+    "updated_at": "2026-11-12T23:12:32Z",
+    "expires_at": "2027-02-10T23:04:14Z",
+    "workflow_run": {
+      "id": 43325614833,
+      "repository_id": 952945989,
+      "head_repository_id": 952945989,
+      "head_branch": "main",
+      "head_sha": "9ebc31f606bc02f8a0ec2f1ec344127e2468c6b4"
+    }
+  },
+  "outcome_downloaded_digest": "sha256:70278e0eccb1e2f247dd1d3103503110e0c961049f0ba55bf57879f89ffb7e3c",
+  "inventory": {
+    "packages": [
+      "Hexalith.Builds.Evidence.Cli",
+      "Hexalith.Builds.Module.Cli"
+    ],
+    "containers": []
+  },
+  "tag_source_verified": true,
+  "source_ancestor_of_main": true,
+  "manual_publications": 0,
+  "redispatches": 0,
+  "rebuilds": 0,
+  "deferred": [
+    "RB9: minimum Git attribute-source capability, medium unverified"
+  ]
+}

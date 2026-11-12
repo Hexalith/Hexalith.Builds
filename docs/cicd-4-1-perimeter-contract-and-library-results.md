@@ -161,9 +161,11 @@ patterns. Timed matching covers 200-byte repeated-star input and paths with
 1,200 directory components. Compliant JSON avoids unnecessary serialization;
 repair nesting overflow and overlong array indexes report controlled errors
 without replacing the index. Both locked focused lanes passed all 58 tests on
-Python 3.12.13 and runner Python 3.14.4 at 22:41:06Z on 2026-11-12. The full
-retained suites are running and their terminal results will be recorded in the
-canonical CiCd story. Authenticated workflow lint passed at 22:37:04Z with
+Python 3.12.13 and runner Python 3.14.4 at 22:41:06Z on 2026-11-12. The initial full
+processes loaded the pre-correction bracket matcher and passed 13/14 groups.
+Targeted reruns of the sole affected library group passed all 354 tests on both
+interpreters; the other 13 groups passed unchanged. Final-source hosted CI
+independently passed all 14 groups in both lanes from one immutable checkout. Authenticated workflow lint passed at 22:37:04Z with
 10 exact frozen findings and zero new findings.
 
 Pinned commitlint 21.2.4 validated the exact resumed implementation message
@@ -173,3 +175,45 @@ unverified older-Git attribute-capability follow-up; current local/hosted Git
 passes snapshot attribute controls. Runtime remains Linux x86_64 as stated in
 the CI tooling documentation. The public schema, workflow text and package
 catalog are unchanged by this resumed correction.
+
+## Published release and adoption
+
+The final implementation source is
+`9ebc31f606bc02f8a0ec2f1ec344127e2468c6b4`. All seven jobs passed in
+[CI run 43322385361](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43322385361),
+including catalog, shared Builds/sample/Windows, lint/API and both Python lanes.
+Direct job-log API downloads independently confirm every new perimeter control
+and 14/14 retained groups; the Python 3.12 lane used 3.12.16 and the runner lane
+used 3.14.4. The combined cached CLI log omitted a Python 3.12 suffix, so the
+direct raw job logs supply the retained proof.
+
+The parent interactive CiCd session passed 39 fresh prerequisite checks at
+23:04 UTC on 2026-11-12, then dispatched exactly once.
+[Release run 43325614833](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43325614833),
+attempt 1, succeeded from that same source with sole authenticated outcome
+`published`. CodeQL and audited build passed. The original release artifact
+is `13992553006`, with downloaded/API/trailer digest
+`sha256:b582f9ea801ca3970a88c87eff98068bbb3eb9250a98615ea07195aefa7d3f6a`.
+Its exact archive contents, producer, manifest and package identities were
+validated. Packages are `Hexalith.Builds.Evidence.Cli` and
+`Hexalith.Builds.Module.Cli`; containers are empty. Outcome artifact
+`13992897976` has downloaded/API digest
+`sha256:70278e0eccb1e2f247dd1d3103503110e0c961049f0ba55bf57879f89ffb7e3c`.
+
+[Release v5.1.0](https://github.com/Hexalith/Hexalith.Builds/releases/tag/v5.1.0),
+ID `443617691`, is published, immutable and authored by `github-actions[bot]`
+(account `41898282`). API and local Git peeling both resolve the tag to the
+exact built source. Its schema and both library blobs match, and the source
+is an ancestor of Builds main. Only after acceptance did the parent write
+`v5.1.0` plus LF to CiCd's `builds-version`. There was no manual draft
+publication, redispatch or rebuild, and qualification resources remain retained.
+The public schema is an additive minor addition; no frozen file or package pin
+was changed. The older-Git attribute capability claim remains an explicitly
+unverified medium follow-up in CiCd's deferred-work ledger.
+
+Machine-readable release evidence is in `evidence/cicd-4-1/completion.json`.
+The canonical CiCd evidence directory additionally retains the fresh preflight,
+original outcome, API readbacks, archive-member hashes and preservation proof.
+CiCd changes are staged by this invocation, without a CiCd commit or push.
+An independent workspace operation advanced CiCd main during verification;
+that separate submodule synchronization is preserved in the canonical story.
