@@ -150,6 +150,8 @@ class PerimeterTests(unittest.TestCase):
         settings = json.loads(snapshot.read(".claude/settings.json"))
         self.assertEqual(["module allow"], settings["permissions"]["allow"])
         self.assertEqual("module deny", settings["permissions"]["deny"][0])
+        required = next(entry["values"] for entry in document["entries"] if entry["kind"] == "json-superset")
+        self.assertTrue(set(required).issubset(settings["permissions"]["deny"]))
         self.assertTrue(settings["module"])
         package = json.loads(snapshot.read("package.json"))
         self.assertEqual("module", package.pop("name"))
@@ -163,6 +165,30 @@ class PerimeterTests(unittest.TestCase):
         self.assertEqual(b"#!/bin/sh\nmodule-command\n", snapshot.read(".husky/commit-msg"))
         self.assertTrue(snapshot.read("AGENTS.md").startswith(b"module instructions\n"))
         self.assertEqual(b"module-owned\n", snapshot.read(".github/actions/module/action.yml"))
+
+    def test_superset_adds_every_required_value_when_only_first_exists(self):
+        self.module.write("settings", '{"deny":["first","foreign"]}')
+        self.module.commit()
+        document = self.document({"kind": "json-superset", "path": "settings", "pointer": "/deny",
+                                  "values": ["first", "second", "third"]})
+        self.assertEqual([P.Drift("settings", "json-superset", "partial")], self.compare(document))
+        self.assert_roundtrip(document)
+        self.assertEqual(["first", "foreign", "second", "third"], json.loads(self.module.blob("settings"))["deny"])
+
+    def test_long_array_pointer_is_a_controlled_atomic_error(self):
+        self.module.write("settings", '["foreign"]')
+        self.module.commit()
+        self.assert_atomic_error(self.document({"kind": "json-superset", "path": "settings",
+                                                "pointer": "/" + "9" * 5000, "values": ["owned"]}),
+                                 "pointer cannot repair")
+
+    def test_compliant_deep_json_is_not_serialized(self):
+        data = ('{"deny":["owned"],"foreign":' + '[' * 700 + '0' + ']' * 700 + '}').encode()
+        self.module.write("settings", data)
+        self.module.commit()
+        document = self.document({"kind": "json-superset", "path": "settings", "pointer": "/deny", "values": ["owned"]})
+        self.assertEqual([], self.assert_roundtrip(document))
+        self.assertEqual(data, self.module.blob("settings"))
 
     def test_head_index_dirty_and_pinned_expected_tree_are_distinct(self):
         path = "literal $ # : (name).json"
@@ -318,6 +344,43 @@ class PerimeterTests(unittest.TestCase):
         self.assertNotIn("duplicate", repaired)
         self.assertNotIn("branch =", repaired)
         self.assertNotIn("update =", repaired)
+
+    def test_gitmodules_url_only_drift_is_observable_through_git(self):
+        self.module.write("modules", '[submodule "owned"]\npath=refs/builds\nurl=wrong\ncustom=keep\n')
+        self.module.commit()
+        document = self.document({"kind": "gitmodules-section", "path": "modules", "submodulePath": "refs/builds", "url": "expected"})
+        self.assertEqual([P.Drift("modules", "gitmodules-section", "partial")], self.compare(document))
+        self.assert_roundtrip(document)
+        self.assertEqual(b"expected\n", self.module.command("config", "--file", "-", "--get", "submodule.owned.url", data=self.module.blob("modules")))
+
+    def test_gitmodules_bom_and_cr_headers_cannot_hide_owned_sections(self):
+        for prefix in ("\ufeff", "\r", "\ufeff\r"):
+            with self.subTest(prefix=prefix):
+                self.module.write("modules", prefix + '[submodule "owned"]\npath=refs/builds\nurl=wrong\nbranch=main\ncustom=keep\n')
+                self.module.stage()
+                document = self.document({"kind": "gitmodules-section", "path": "modules", "submodulePath": "refs/builds", "url": "expected"})
+                self.assertEqual([P.Drift("modules", "gitmodules-section", "partial")], self.compare(document))
+                self.assert_roundtrip(document)
+                data = self.module.blob("modules")
+                self.assertTrue(data.startswith(prefix.encode()))
+                self.assertEqual(b"refs/builds\n", self.module.command("config", "--file", "-", "--get-all", "submodule.owned.path", data=data))
+                self.assertEqual(b"expected\n", self.module.command("config", "--file", "-", "--get-all", "submodule.owned.url", data=data))
+                self.assertNotIn(b"branch=", data)
+                self.assertIn(b"custom=keep", data)
+
+    def test_gitmodules_and_hooks_use_only_physical_lf_lines(self):
+        for separator in ("\u2028", "\u2029", "\u0085", "\v", "\f", "\r"):
+            with self.subTest(separator=separator):
+                foreign = 'custom=keep' + separator + 'url=foreign\n'
+                self.module.write("modules", '[submodule "owned"]\npath=refs/builds\nurl=wrong\n' + foreign)
+                self.module.write("hook", 'keep\necho keep' + separator + 'commitlint xx\nlast\n')
+                self.module.stage()
+                original = self.module.command("config", "--file", "-", "--get", "submodule.owned.custom", data=self.module.blob("modules"))
+                self.assert_roundtrip(self.document(
+                    {"kind": "gitmodules-section", "path": "modules", "submodulePath": "refs/builds", "url": "expected"},
+                    {"kind": "absent-line", "path": "hook", "pattern": "commitlint"}))
+                self.assertEqual(original, self.module.command("config", "--file", "-", "--get", "submodule.owned.custom", data=self.module.blob("modules")))
+                self.assertEqual(b"keep\nlast\n", self.module.blob("hook"))
 
     def test_gitmodules_default_name_collision_fails_before_any_index_change(self):
         self.module.write("modules", '[submodule "refs/builds"]\n path=refs/other\n url=keep\n')
@@ -510,6 +573,39 @@ class PerimeterTests(unittest.TestCase):
                 removed.update(expected)
         self.assert_roundtrip(self.document(*[{"kind": "absent-glob", "pattern": pattern} for pattern in patterns]))
         self.assertEqual(paths - removed, set(self.module.git.snapshot("index").items))
+
+    def test_git_wildmatch_malformed_classes_never_remove_unmatched_paths(self):
+        paths = {"xa[]", "xa[", "x[", "x]", "x[:]", "x::]", "x!", "x:", "xb", "x[]", "x^]", "xa]", "keep"}
+        for path in paths:
+            self.module.write(path, "foreign\n")
+        self.module.commit()
+        patterns = ("x[a][]", "x[a][", "x[", "x[]", "x[[:]:]", "x[]:b!:[:]", "x[[b![:]",
+                    "x[:[:]", "x[[:]", "x[a[^[:]]")
+        removed = set()
+        for pattern in patterns:
+            with self.subTest(pattern=pattern):
+                # Glob pathspecs may short-circuit malformed patterns as exact
+                # literal paths. Git's ignore matcher uses raw wildmatch.
+                (self.module.path / ".git/info/exclude").write_text(pattern + "\n")
+                oracle = self.module.command("check-ignore", "--no-index", "--stdin", "-z",
+                                             data=b"\0".join(os.fsencode(path) for path in paths) + b"\0",
+                                             check=False).split(b"\0")
+                expected = {os.fsdecode(path) for path in oracle if path}
+                if pattern == "x[[:]:]":
+                    self.assertEqual({"x[:]", "x::]"}, expected)
+                elif pattern in patterns[:4]:
+                    self.assertEqual(set(), expected)
+                self.assertEqual(expected, {path for path in paths if P.wildmatch(pattern, path)})
+                removed.update(expected)
+        self.assert_roundtrip(self.document(*[{"kind": "absent-glob", "pattern": pattern} for pattern in patterns]))
+        self.assertEqual(paths - removed, set(self.module.git.snapshot("index").items))
+
+    def test_git_wildmatch_bounds_star_work_and_handles_deep_git_paths(self):
+        script = ("import sys; sys.path.insert(0, sys.argv[1]); import perimeter; "
+                  "assert not perimeter.wildmatch('*a' * 5 + 'b', 'a' * 200); "
+                  "assert perimeter.wildmatch('**/x', '/'.join(['a'] * 1200 + ['x'])); "
+                  "assert not perimeter.wildmatch('**/y', '/'.join(['a'] * 1200 + ['x']))")
+        subprocess.run([sys.executable, "-c", script, str(ROOT / "Github/lib")], check=True, timeout=5, capture_output=True)
 
     def test_sparse_outside_cone_tracked_content_is_read_and_deleted_without_materializing(self):
         self.module.write("keep/file", "visible\n")

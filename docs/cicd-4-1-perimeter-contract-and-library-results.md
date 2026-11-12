@@ -134,3 +134,42 @@ Parent authenticated lint passed again at 21:25:10Z: actionlint clean,
 problems/warnings. The schema remains unchanged and the corpus contains
 129 cases (27 valid, 102 invalid). No public fields, frozen runtime or
 package/catalog pins changed.
+
+## Resumed review and verification
+
+The previous hardening source
+`ff0ca31c26cded8d5b1824f9968fa04815da8707` passed all seven jobs in
+[CI run 43311699191](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43311699191).
+Downloaded logs independently confirm perimeter discovery and 14/14 retained
+groups in both Python lanes. This is historical evidence; the resumed review's
+additional corrections require a new exact-source CI gate before release.
+
+Three fresh review layers found physical-line and header parsing boundaries,
+wildmatch bounds and malformed bracket cases, controlled JSON/pointer failures,
+and two missing independent assertions. Gitmodules and shell records now split
+only at LF, preserving foreign Unicode/control separators inside values. Git's
+leading UTF-8 BOM and accepted CR header whitespace remain visible to section
+repair. Finite position sets replace recursive/backtracking glob matching;
+malformed bracket tests use Git's raw ignore matcher because pathspecs can
+short-circuit exact literal names. A differential check matched Git for all
+519 patterns across 591 paths after the final scanner correction.
+
+New real-Git assertions verify every required deny, partially present multiple
+requirements, URL-only drift, exact parsed staged path/URL values, foreign
+logical values, untouched worktrees, and final index membership after malformed
+patterns. Timed matching covers 200-byte repeated-star input and paths with
+1,200 directory components. Compliant JSON avoids unnecessary serialization;
+repair nesting overflow and overlong array indexes report controlled errors
+without replacing the index. Both locked focused lanes passed all 58 tests on
+Python 3.12.13 and runner Python 3.14.4 at 22:41:06Z on 2026-11-12. The full
+retained suites are running and their terminal results will be recorded in the
+canonical CiCd story. Authenticated workflow lint passed at 22:37:04Z with
+10 exact frozen findings and zero new findings.
+
+Pinned commitlint 21.2.4 validated the exact resumed implementation message
+`fix(cicd): preserve Git perimeter matching semantics`: zero problems or
+warnings. The canonical story records every individual verdict, including the
+unverified older-Git attribute-capability follow-up; current local/hosted Git
+passes snapshot attribute controls. Runtime remains Linux x86_64 as stated in
+the CI tooling documentation. The public schema, workflow text and package
+catalog are unchanged by this resumed correction.

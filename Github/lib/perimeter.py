@@ -151,24 +151,19 @@ def wildmatch(pattern: str, path: str) -> bool:
     Only a complete ** path component crosses directories.
     """
     patterns, parts = pattern.split("/"), path.split("/")
-    memo: dict[tuple[int, int], bool] = {}
-
-    def match(i: int, j: int) -> bool:
-        key = (i, j)
-        if key in memo:
-            return memo[key]
-        if i == len(patterns):
-            result = j == len(parts)
-        elif patterns[i] == "**":
+    positions = {0}
+    for index, pattern_part in enumerate(patterns):
+        if pattern_part == "**":
             # A trailing /** means descendants, not the directory itself.
-            result = (j < len(parts) if i == len(patterns) - 1
-                      else match(i + 1, j) or (j < len(parts) and match(i, j + 1)))
+            if index == len(patterns) - 1:
+                return any(position < len(parts) for position in positions)
+            positions = set(range(min(positions), len(parts) + 1))
         else:
-            result = j < len(parts) and _segment_match(patterns[i], parts[j]) and match(i + 1, j + 1)
-        memo[key] = result
-        return result
-
-    return match(0, 0)
+            positions = {position + 1 for position in positions
+                         if position < len(parts) and _segment_match(pattern_part, parts[position])}
+        if not positions:
+            return False
+    return len(parts) in positions
 
 
 def _segment_match(pattern: str, value: str) -> bool:
@@ -187,8 +182,10 @@ def _segment_match(pattern: str, value: str) -> bool:
                 start += 1
             end = start
             while end < len(pattern):
-                if pattern.startswith("[:", end) and pattern.find(":]", end + 2) != -1:
-                    end = pattern.index(":]", end + 2) + 2
+                if (pattern.startswith("[:", end)
+                        and (class_end := pattern.find("]", end + 2)) > end + 2
+                        and pattern[class_end - 1] == ":"):
+                    end = class_end + 1
                 elif pattern[end] == "]" and end != start:
                     break
                 elif end + 2 < len(pattern) and pattern[end + 1] == "-" and pattern[end + 2] != "]":
@@ -198,7 +195,7 @@ def _segment_match(pattern: str, value: str) -> bool:
                 else:
                     end += 1
             if end == len(pattern):
-                expression.append(rb"\[")
+                return False
             else:
                 raw, chunks, offset = pattern[start:end].encode("utf-8"), [], 0
                 while offset < len(raw):
@@ -230,7 +227,18 @@ def _segment_match(pattern: str, value: str) -> bool:
         # Git wildmatch counts path bytes, including for '?' and bracket
         # classes. Keep Unicode literals as UTF-8 sequences, while matching
         # operators against the original filesystem/Git byte representation.
-        return re.fullmatch(b"".join(expression), os.fsencode(value), re.DOTALL) is not None
+        value_bytes = os.fsencode(value)
+        positions = {0}
+        for atom in expression:
+            if atom == b".*":
+                positions = set(range(min(positions), len(value_bytes) + 1))
+            else:
+                matcher = re.compile(atom, re.DOTALL)
+                positions = {match.end() for position in positions
+                             if (match := matcher.match(value_bytes, position)) is not None}
+            if not positions:
+                return False
+        return len(value_bytes) in positions
     except re.error:
         return False
 
@@ -310,7 +318,10 @@ def _json_bytes(value: Any) -> bytes:
             return opening + "\n" + ",\n".join("  " * (depth + 1) + child for child in children) + "\n" + "  " * depth + closing
         return json.dumps(node, ensure_ascii=True, allow_nan=False)
 
-    return (encode(value) + "\n").encode()
+    try:
+        return (encode(value) + "\n").encode()
+    except RecursionError as error:
+        raise PerimeterError("JSON nesting exceeds the repair limit") from error
 
 
 def _superset(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
@@ -332,7 +343,8 @@ def _superset(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
             return node, valid and not missing
         part = parts[offset]
         if isinstance(node, list):
-            if re.fullmatch(r"0|[1-9][0-9]*", part) is None or int(part) >= len(node):
+            if (re.fullmatch(r"0|[1-9][0-9]*", part) is None
+                    or len(part) > len(str(len(node))) or int(part) >= len(node)):
                 raise PerimeterError(f"{entry['path']}: pointer cannot repair an absent array position")
             index = int(part)
             node[index], valid = repair(node[index], offset + 1)
@@ -344,7 +356,9 @@ def _superset(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
 
     repaired, valid = repair(document, 0)
     # A missing source with an empty required array must still create the file.
-    return parsed and valid, _json_bytes(repaired)
+    if parsed and valid:
+        return True, data
+    return False, _json_bytes(repaired)
 
 
 def _absent_json(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
@@ -395,6 +409,11 @@ def _marker(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
     return text[start:stop].replace("\r\n", "\n") == block, (text[:start] + block + text[stop:]).encode()
 
 
+def _lines(text: str) -> list[str]:
+    """Physical Git/shell lines; only LF terminates a record."""
+    return re.findall(r"[^\n]*\n|[^\n]+$", text)
+
+
 def _line(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
     if data is None:
         return True, b""
@@ -405,7 +424,7 @@ def _line(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
     except (ValueError, UnicodeError):
         return False, b""
     pattern = re.compile(entry["pattern"])
-    lines = text.splitlines(keepends=True)
+    lines = _lines(text)
     retained = [line for line in lines if pattern.search(line.replace("\r\n", "\n").removesuffix("\n")) is None]
     return len(retained) == len(lines), "".join(retained).encode()
 
@@ -416,7 +435,7 @@ def _git_config(git: Git, text: str) -> list[tuple[str, str]]:
             for record in raw.split(b"\0") if record]
 
 
-_HEADER = re.compile(r'^[ \t]*\[[A-Za-z0-9.-]+(?:[ \t]+"(?:[^"\\\n]|\\.)*")?[ \t]*\]', re.MULTILINE)
+_HEADER = re.compile(r'^[ \t\r]*\[[A-Za-z0-9.-]+(?:[ \t\r]+"(?:[^"\\\n]|\\.)*")?[ \t\r]*\]', re.MULTILINE)
 _KEY = re.compile(r"^\s*([A-Za-z][A-Za-z0-9-]*)\s*(?:=|$)")
 
 
@@ -439,7 +458,7 @@ def _continuation(line: str, quoted: bool) -> tuple[bool, bool]:
 def _headers(text: str) -> list[re.Match]:
     result = []
     offset, continued, quoted = 0, False, False
-    for line in text.splitlines(keepends=True):
+    for line in _lines(text):
         if not continued:
             match = _HEADER.match(text, offset)
             if match:
@@ -452,7 +471,7 @@ def _headers(text: str) -> list[re.Match]:
 def _finish_record(text: str) -> str:
     """Terminate a valid final Git continuation without changing its value."""
     continued, quoted = False, False
-    for line in text.splitlines(keepends=True):
+    for line in _lines(text):
         continued, quoted = _continuation(line, quoted)
     return text + ("" if not text or text.endswith("\n") else "\n") + ("\n" if continued else "")
 
@@ -466,6 +485,8 @@ def _gitmodules(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]
 
     try:
         text = _text(data)
+        bom = "\ufeff" if text.startswith("\ufeff") else ""
+        text = text.removeprefix(bom) if bom else text
         if "\0" in text:
             raise ValueError("NUL in Git configuration")
         _git_config(git, text)  # Git, rather than an INI approximation, validates syntax.
@@ -494,7 +515,7 @@ def _gitmodules(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]
         if defaults:
             matches = [defaults[0]]
         else:
-            return False, (_finish_record(text) + section(entry["submodulePath"])).encode()
+            return False, (bom + _finish_record(text) + section(entry["submodulePath"])).encode()
     first = matches[0]
     chunk, properties, name = chunks[first]
     matching_names = {chunks[index][2] for index in matches}
@@ -518,7 +539,7 @@ def _gitmodules(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]
         retained = []
         skipping = False
         continuation, quoted = False, False
-        for line in chunk[header_length:].splitlines(keepends=True):
+        for line in _lines(chunk[header_length:]):
             match = _KEY.match(line) if not continuation else None
             if not continuation:
                 skipping = bool(match and match[1].lower() in {"path", "url", "branch", "update"})
@@ -542,7 +563,7 @@ def _gitmodules(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]
         else:
             result += original
     _git_config(git, result)
-    return False, result.encode()
+    return False, (bom + result).encode()
 
 
 def _partial(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]:
