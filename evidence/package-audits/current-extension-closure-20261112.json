@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "scope": "Synthetic packaged child loader and extension closure regression; no resources started or composed-workload acceptance claimed.",
+  "candidateVersion": "4.48.2",
+  "candidatePackageSha256": "D019B1872F0E530B02264645697A9505A91EF5BCDA7AD5C84A24C483AC6EE8DE",
+  "validationChildExitCode": 0,
+  "runtimeChildExitCode": 0,
+  "extensions": [
+    {
+      "name": "Microsoft.Extensions.Configuration",
+      "selectedPackageVersion": "11.0.0",
+      "identity": "Microsoft.Extensions.Configuration, Version=11.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60",
+      "sha256": "F1996C6C86BF81C03EFC079B14B83997F47C9260A6D942A728952FED461C4E2D"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Abstractions",
+      "selectedPackageVersion": "11.0.0",
+      "identity": "Microsoft.Extensions.Configuration.Abstractions, Version=11.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60",
+      "sha256": "2527A31B60171870B285436FA93858411669033ED13EBE4622B2F284CF854FF3"
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection",
+      "selectedPackageVersion": "11.0.0",
+      "identity": "Microsoft.Extensions.DependencyInjection, Version=11.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60",
+      "sha256": "30E82E2318BE85ABE25E0A07997C66BDE14021800E8AD8C8BD08D2D57C2EE26A"
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "selectedPackageVersion": "11.0.0",
+      "identity": "Microsoft.Extensions.DependencyInjection.Abstractions, Version=11.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60",
+      "sha256": "A015B5671749C8C5AE710FECA9B7D7DB0EF6E24CBBFBEE616842536A6E665709"
+    },
+    {
+      "name": "Microsoft.Extensions.Options",
+      "selectedPackageVersion": "11.0.0",
+      "identity": "Microsoft.Extensions.Options, Version=11.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60",
+      "sha256": "74D1B3872649EBA8747192AA800D4A61ADD2166B669AA6D87FF6368D5BABA9F7"
+    }
+  ],
+  "modelReferences": "Offline references to verified current-catalog package payload assemblies with Private=false; no extension assemblies copied to the model output.",
+  "oldPublicPackageNegativeControl": {
+    "version": "4.48.1",
+    "exitCode": 1,
+    "reason": "Packaged current-catalog closure omitted Microsoft.Extensions.Configuration.",
+    "publishedBytesModified": false
+  },
+  "syntheticCorpus": {
+    "evidenceControls": 191,
+    "moduleManifestAndFixtureControls": 269,
+    "preparationControls": 7,
+    "preparationIdempotent": true,
+    "expectationFilesModified": false,
+    "archivesModified": false
+  }
+}

@@ -25,7 +25,7 @@
     "eventStoreVersion": "4.2.0",
     "daprRuntimeVersion": "1.19.1",
     "daprSdkVersion": "1.19.1",
-    "frontComposerVersion": "4.7.6"
+    "frontComposerVersion": "5.0.0"
   },
   "ui": {
     "descriptorAssembly": "artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll"

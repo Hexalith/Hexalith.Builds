@@ -1,0 +1,327 @@
+{
+  "schemaVersion": 1,
+  "observedAtUtc": "2026-11-12T01:26:18.898139+00:00",
+  "catalogRevision": "db2dac29ea20358978122595a7d31549ec9f05ef",
+  "catalogRawSha256": "00ee2ef9e668c897d97e704c59f5b1b3c75d4a86c92511612255d22a378c06ba",
+  "frontComposer": {
+    "version": "5.0.0",
+    "sourceRevision": "18bf4e1627169103646beb0467c8f557e3f3d007",
+    "immutableGitHubReleaseId": 442346686,
+    "releaseRun": 43124080589,
+    "ciRun": 43122408993,
+    "qualityRun": 43122408736,
+    "packages": [
+      {
+        "id": "Hexalith.FrontComposer.Cli",
+        "version": "5.0.0",
+        "sha256": "7b5b3bd98433adb4bcc3c903ed697709465d3370c817bf3e267a21ed656ec6ca",
+        "sha512": "qH+05sR+4etGo3GTJJsFdLMS8Ypu4p62oEYwyq4BpF9dfr6Jnd2GD/lqmIt03Fa9DboSjvXkYcZvP//yzWLyhQ==",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+          "commit": "18bf4e1627169103646beb0467c8f557e3f3d007"
+        },
+        "source": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.cli/5.0.0/hexalith.frontcomposer.cli.5.0.0.nupkg",
+        "signatureVerification": "passed"
+      },
+      {
+        "id": "Hexalith.FrontComposer.Contracts",
+        "version": "5.0.0",
+        "sha256": "fe211c93bc6bf02117e6506277e22f061d5b3bc3e2940dac3c04463ae456bfba",
+        "sha512": "0N4q1hzszajXbkcLzRvpJ/jE48MyjEUAilQOnwOE544XL6kh6PHom8pXaufY1p+R6FLwkcxSKUqcjAufTJmD4Q==",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+          "commit": "18bf4e1627169103646beb0467c8f557e3f3d007"
+        },
+        "source": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.contracts/5.0.0/hexalith.frontcomposer.contracts.5.0.0.nupkg",
+        "signatureVerification": "passed"
+      },
+      {
+        "id": "Hexalith.FrontComposer.Contracts.UI",
+        "version": "5.0.0",
+        "sha256": "9d51db5a60db7b919360746a2c267a478dc9ddcd5b349f861125429d2c1668bb",
+        "sha512": "acMHYVF922LM0QHUE65lXf6MsvDobnnTDnofuQrZdwsaCwksDnChivsePEEW/oIc0HfL2ihoJCl7OmHSJcP5nQ==",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+          "commit": "18bf4e1627169103646beb0467c8f557e3f3d007"
+        },
+        "source": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.contracts.ui/5.0.0/hexalith.frontcomposer.contracts.ui.5.0.0.nupkg",
+        "signatureVerification": "passed"
+      },
+      {
+        "id": "Hexalith.FrontComposer.Mcp",
+        "version": "5.0.0",
+        "sha256": "ac2fdbd4ba7b56bdf1a181f79a5a52b708a231e9c7296e00fe2555d4cdf7177b",
+        "sha512": "TnY+ZHmiylLHN3RT6L2/rInMtN2AE1/kWvJEiHOzyPpsz5mnB8OOGPTnS+ZzYmp/DYE7nuUiKRmrcbwtCAPQLQ==",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+          "commit": "18bf4e1627169103646beb0467c8f557e3f3d007"
+        },
+        "source": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.mcp/5.0.0/hexalith.frontcomposer.mcp.5.0.0.nupkg",
+        "signatureVerification": "passed"
+      },
+      {
+        "id": "Hexalith.FrontComposer.Schema",
+        "version": "5.0.0",
+        "sha256": "4eb38fd76b44e4db37a1baa2692ad7caf5acb0912dfd4df3b05c3b1f6ffcc3c2",
+        "sha512": "XQd8gfHYAo1mWr7Y+fPZQmhEIO9yfNstssgDcuTxvH9vfSzLAlpF4xATVF5hEA5Wi/kKuffzPYubv+AFkCF4VQ==",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+          "commit": "18bf4e1627169103646beb0467c8f557e3f3d007"
+        },
+        "source": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.schema/5.0.0/hexalith.frontcomposer.schema.5.0.0.nupkg",
+        "signatureVerification": "passed"
+      },
+      {
+        "id": "Hexalith.FrontComposer.Shell",
+        "version": "5.0.0",
+        "sha256": "b447eda2985589c82b96d3c638a5999084103ab90e4d1f9e9ad97454a31250f8",
+        "sha512": "YHcKXamQ5KZUEae2QhEv2kjYQh5hKnviXz15pxlfJcso2cZ04q4lvrCnXPqvX7zEynyIRYr+SYouJqzdYhWuHg==",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+          "commit": "18bf4e1627169103646beb0467c8f557e3f3d007"
+        },
+        "source": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.shell/5.0.0/hexalith.frontcomposer.shell.5.0.0.nupkg",
+        "signatureVerification": "passed"
+      },
+      {
+        "id": "Hexalith.FrontComposer.SourceTools",
+        "version": "5.0.0",
+        "sha256": "d3f7350e2e012ec9af4bb84e771ffcd17d2865b64fa9062590d7827e7af56403",
+        "sha512": "4m0GxJGuZcRwYc7xJgwEYoax8gCU+rMtVACQdm2yHT2gAk31saHu+KhbVDE6R5X7z/TE36cIgv0GOsLJWy6sxQ==",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+          "commit": "18bf4e1627169103646beb0467c8f557e3f3d007"
+        },
+        "source": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.sourcetools/5.0.0/hexalith.frontcomposer.sourcetools.5.0.0.nupkg",
+        "signatureVerification": "passed"
+      },
+      {
+        "id": "Hexalith.FrontComposer.Testing",
+        "version": "5.0.0",
+        "sha256": "0d9c92280547240d2f119dc8af5b7f433a36f9e42ae035b0999cd1abd49fe0fc",
+        "sha512": "sxA+ogaFV3RSrJ549rnKjmibpOubHHEGaPpXJW7PvtggbHdmx2oiLt2Ot2t5muhbI+XgHcJvuF7NsXFhdz58gQ==",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+          "commit": "18bf4e1627169103646beb0467c8f557e3f3d007"
+        },
+        "source": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.testing/5.0.0/hexalith.frontcomposer.testing.5.0.0.nupkg",
+        "signatureVerification": "passed"
+      }
+    ]
+  },
+  "consumerNativeUnitTotal": 12141,
+  "consumers": [
+    {
+      "name": "Projects",
+      "sourceRevision": "897ab885619c12470c4a3a450ac7c4e2f13753cd",
+      "releaseBuild": {
+        "target": "Hexalith.Projects.CI.slnx",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "projects-front5-native-ui.log",
+          "total": 211,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "921b880f173071bbcdcd7014985a8f1f5dee40e720a03e9dade7f441304c2f3a"
+        },
+        {
+          "suite": "projects-front5-native-mcp.log",
+          "total": 35,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "655c46f2d686d59f8aca033fd16f91cb42b9d00f029fe02d1760ab9045c24a8a"
+        }
+      ]
+    },
+    {
+      "name": "Agents",
+      "sourceRevision": "d40641c6e550b96bb48c26e5cb932f623efce90e",
+      "releaseBuild": {
+        "target": "test/Hexalith.Agents.UI.Tests/Hexalith.Agents.UI.Tests.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "Agents.test-Hexalith.Agents.UI.Tests.log",
+          "total": 1249,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "b1edd7ada5482330b2dc7ea9fdfdee15c4f77e01c3d8fc13bf4fa977c2c6b1cc"
+        }
+      ]
+    },
+    {
+      "name": "Folders",
+      "sourceRevision": "8063a0392789bd45a214c2c873298ef25d481bb9",
+      "releaseBuild": {
+        "target": "tests/Hexalith.Folders.UI.Tests/Hexalith.Folders.UI.Tests.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "Folders.test-Hexalith.Folders.UI.Tests.log",
+          "total": 552,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "ff6706302e6ee80f2bba3cc4ced2fc12e01be535a56cf556911910f296879c84"
+        }
+      ]
+    },
+    {
+      "name": "Memories",
+      "sourceRevision": "ca3bcc981e8e3dd6be41f669587984225171f7ca",
+      "releaseBuild": {
+        "target": "tests/Hexalith.Memories.Web.Tests/Hexalith.Memories.Web.Tests.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "Memories.test-Hexalith.Memories.Web.Tests.log",
+          "total": 493,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "b6a3b8495e6717b449b9d7fcee7ef1cc9bf385830234a3593ae6257013cc8d95"
+        }
+      ]
+    },
+    {
+      "name": "Tenants",
+      "sourceRevision": "6188ea48cab9fdf4207072135c66aab5a7b7fe32",
+      "releaseBuild": {
+        "target": "tests/Hexalith.Tenants.UI.Tests/Hexalith.Tenants.UI.Tests.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "Tenants.test-Hexalith.Tenants.UI.Tests.log",
+          "total": 8080,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "b6825e11099ed4aab160c27e54aa2104f15315899142021ff2628389d4ce30f3"
+        }
+      ]
+    },
+    {
+      "name": "Parties",
+      "sourceRevision": "b6b4f8a5c83b77ab57a9b947436317162b4fb337",
+      "releaseBuild": {
+        "target": "tests/Hexalith.Parties.UI.Tests/Hexalith.Parties.UI.Tests.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "Parties.test-Hexalith.Parties.UI.Tests.log",
+          "total": 459,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "3919a1c679a5e3131301e413eaa087a2ff8ff9f8705ffc007f3d017c894ee616"
+        }
+      ],
+      "qualificationLayout": "Hexalith1BuildPackageProps selects the exact canonical producer Props, matching the root-declared dependency layout."
+    },
+    {
+      "name": "Parties.ConsumerPortal",
+      "sourceRevision": "b6b4f8a5c83b77ab57a9b947436317162b4fb337",
+      "releaseBuild": {
+        "target": "tests/Hexalith.Parties.ConsumerPortal.Tests/Hexalith.Parties.ConsumerPortal.Tests.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "Parties.ConsumerPortal.test-Hexalith.Parties.ConsumerPortal.Tests.log",
+          "total": 97,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "27f7a1b8d826c1fce86067e60ee38146170016471d58ca1d5ad69f51ae3016a1"
+        }
+      ],
+      "qualificationLayout": "Hexalith1BuildPackageProps selects the exact canonical producer Props, matching the root-declared dependency layout."
+    },
+    {
+      "name": "Parties.AdminPortal",
+      "sourceRevision": "b6b4f8a5c83b77ab57a9b947436317162b4fb337",
+      "releaseBuild": {
+        "target": "tests/Hexalith.Parties.AdminPortal.Tests/Hexalith.Parties.AdminPortal.Tests.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "Parties.AdminPortal.test-Hexalith.Parties.AdminPortal.Tests.log",
+          "total": 352,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "964911f594b8d86602c92fb893f72b11183eccce09b2eb2859cf7645692f3c24"
+        }
+      ],
+      "qualificationLayout": "Hexalith1BuildPackageProps selects the exact canonical producer Props, matching the root-declared dependency layout."
+    },
+    {
+      "name": "ChatBot",
+      "sourceRevision": "28a527d19f7cc64e92bb8301d19492a13b8178ee",
+      "releaseBuild": {
+        "target": "tests/Hexalith.ChatBot.UI.Tests/Hexalith.ChatBot.UI.Tests.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": [
+        {
+          "suite": "ChatBot.test-Hexalith.ChatBot.UI.Tests.log",
+          "total": 613,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0,
+          "logSha256": "73b5b6f335dc9e830e90dd52571218a1bb17452bbaf345296a8ab11fb989b83b"
+        }
+      ],
+      "qualificationLayout": "Required root-declared catalog import uses a byte-identical producer Props fixture; no nested Git initialization or version override."
+    },
+    {
+      "name": "Builds.UiHost",
+      "sourceRevision": "00681381c5c81069623478fd75f8650333542d82",
+      "releaseBuild": {
+        "target": "src/hosts/Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": []
+    },
+    {
+      "name": "Builds.UiFixture",
+      "sourceRevision": "00681381c5c81069623478fd75f8650333542d82",
+      "releaseBuild": {
+        "target": "test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj",
+        "warnings": 0,
+        "errors": 0
+      },
+      "native": []
+    }
+  ],
+  "qualificationScope": "Package-only compilation and native unit interfaces. Full current source CI and composed/browser acceptance remain separate required gates."
+}
