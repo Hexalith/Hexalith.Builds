@@ -204,7 +204,10 @@ def _segment_match(pattern: str, value: str) -> bool:
             expression.append(re.escape(char))
         index += 1
     try:
-        return re.fullmatch("".join(expression), value, re.DOTALL) is not None
+        # Git wildmatch counts path bytes, including for '?' and bracket
+        # classes. Keep Unicode literals as UTF-8 sequences, while matching
+        # operators against the original filesystem/Git byte representation.
+        return re.fullmatch("".join(expression).encode("utf-8"), os.fsencode(value), re.DOTALL) is not None
     except re.error:
         return False
 

@@ -391,6 +391,19 @@ class PerimeterTests(unittest.TestCase):
         self.assertIn("src/keep.rsp", remaining)
         self.assertIn("a/x2a", remaining)
 
+    def test_git_wildmatch_question_and_classes_count_utf8_path_bytes(self):
+        paths = ["xé", "xéa", "xza", "x☃", "x☃a"]
+        for path in paths:
+            self.module.write(path, "tracked\n")
+        self.module.commit()
+        for pattern in ("x?", "x??", "x???", "x[é]", "x[!é]", "xé?", "x☃*", "x*"):
+            with self.subTest(pattern=pattern):
+                oracle = self.module.command("ls-files", "-z", "--", ":(glob)" + pattern).split(b"\0")
+                self.assertEqual({os.fsdecode(path) for path in oracle if path},
+                                 {path for path in paths if P.wildmatch(pattern, path)})
+        self.assert_roundtrip(self.document({"kind": "absent-glob", "pattern": "x??"}))
+        self.assertEqual({"xéa", "x☃", "x☃a"}, set(self.module.git.snapshot("index").items))
+
     def test_sparse_outside_cone_tracked_content_is_read_and_deleted_without_materializing(self):
         self.module.write("keep/file", "visible\n")
         self.module.write("outside/Directory.Build.rsp", "forbidden\n")
