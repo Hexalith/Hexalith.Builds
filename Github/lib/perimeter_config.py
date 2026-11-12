@@ -166,7 +166,7 @@ def validate_config(document: Any, *, source: str = "perimeter.json") -> dict[st
         if kind == "absent-line":
             try:
                 re.compile(entry["pattern"])
-            except re.error as error:
+            except (re.error, OverflowError, RecursionError) as error:
                 fail(f"{location}/pattern", f"invalid Python regex: {error}")
     return document
 

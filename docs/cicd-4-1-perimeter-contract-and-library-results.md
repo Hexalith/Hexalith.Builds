@@ -19,8 +19,8 @@ planning companion remains historical evidence.
 
 ## Behavior and executable evidence
 
-`Github/lib/tests/fixtures/perimeter-contract.json` supplies 128 shared cases:
-26 valid and 102 invalid. Both the draft-2020-12 validator with regex format
+`Github/lib/tests/fixtures/perimeter-contract.json` supplies 129 shared cases:
+27 valid and 102 invalid. Both the draft-2020-12 validator with regex format
 checking and the independent stdlib loader consume the same corpus. It includes
 an explicit AD-4 manifest covering every kind, root configuration patterns,
 root/deep response files and skill paths, all four package dependency groups,
@@ -80,8 +80,14 @@ exit 0, `found 0 problems, 0 warnings`. The CiCd-agent profile is
 absent. Fetch/divergence checks confirmed `main` equaled `origin/main` before
 the implementation commit.
 
-The full captured-runner pass, committed-object API result and hosted
-exact-source run identities will be recorded after their completion.
+The initial full locked Python 3.12 and captured-runner Python 3.14.4 runs
+each passed 14/14 groups. Their source was subsequently hardened through
+review. Both final focused locked environments passed 50 tests on the repaired
+source, including all matrix rows and the 129-case contract corpus. Parent full-suite reruns each passed all 14 retained groups on Python
+3.12.13 and runner Python 3.14.4, completing at 21:33:33Z and 21:33:32Z
+on 2026-11-12. Those full runs began before the final two index/glob
+corrections; the final focused reruns cover all 50 tests on the repaired
+runtime. Final hosted CI executes the complete suite at the committed source.
 
 ## Publication boundary
 
@@ -92,3 +98,39 @@ artifact/outcome correlation and acceptable-publication verification. The
 canonical story remains incomplete until a published immutable bot-authored
 tag at an ancestor of Builds main contains this implementation and is adopted.
 The retained qualification draft is preserved.
+
+## Review hardening
+
+The initial feature commit is `2aee4c90d170f6d50f11314ba2552e826e55213c`;
+selection and byte-wildmatch corrections are
+`5fabd0ec468fe1c5c3a822f96a9b799b83feb81d` and
+`bc456853bfd45a021f025c7f592fca1e86790f3e`. The latter passed every job in
+[CI run 43304535305](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43304535305).
+That passing run is pre-hardening evidence and is not the final release gate.
+
+Four independent review lenses produced 24 individual findings; post-patch
+differential validation found one additional bracket scanner defect. The
+canonical story records every verdict and root-cause grouping. Corrections
+retain exact JSON numeric tokens (including large exponents and integers),
+foreign CRLF ranges and successful-filter preservation; reject intent-to-add
+indexes, including stale alternate indexes; preserve raw symlink targets; and
+repair Gitmodules missing-path and final-continuation cases. NUL marker bodies
+retain their existing valid contract. Regex compiler limit failures now take
+the controlled diagnostic path. The schema itself is unchanged.
+
+Tests independently assert extra workflow removal and concurrent-staging
+refusal. Non-BMP parity uses Unicode regex mode, as recommended by
+[JSON Schema 2020-12 section 6.4](https://json-schema.org/draft/2020-12/json-schema-core#section-6.4).
+Post-patch independent checks matched real Git for 1,419 patterns across 197
+tracked filenames, with zero mismatches. They also verified composed JSON
+repair orders, exact long numeric tokens, every partial kind's filter refusal,
+20 Gitmodules continuation variants and alternate-index intent-to-add cases.
+No remaining defect was reproduced in these follow-up areas.
+
+Parent authenticated lint passed again at 21:25:10Z: actionlint clean,
+10 exact frozen zizmor findings and zero new findings. Pinned commitlint
+21.2.4 validated the exact hardening message
+`fix(cicd): preserve unowned content during perimeter repair` with zero
+problems/warnings. The schema remains unchanged and the corpus contains
+129 cases (27 valid, 102 invalid). No public fields, frozen runtime or
+package/catalog pins changed.

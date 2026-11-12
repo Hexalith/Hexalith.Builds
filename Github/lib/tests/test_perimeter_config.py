@@ -54,9 +54,10 @@ class PerimeterContractTests(unittest.TestCase):
         paths = [entry["path"] for case in CORPUS if isinstance(case["document"], dict)
                  for entry in case["document"].get("entries", []) if isinstance(entry, dict) and "path" in entry]
         pattern = SCHEMA["$defs"]["repositoryPattern"]["pattern"]
+        self.assertTrue(any(any(ord(char) > 0xFFFF for char in path) for path in paths))
         result = subprocess.run(["node", "--input-type=module", "-e",
                                  "import fs from 'node:fs'; const x=JSON.parse(fs.readFileSync(0,'utf8'));"
-                                 "process.stdout.write(JSON.stringify(x.paths.map(p=>new RegExp(x.pattern).test(p))));"],
+                                 "process.stdout.write(JSON.stringify(x.paths.map(p=>new RegExp(x.pattern,'u').test(p))));"],
                                 input=json.dumps({"pattern": pattern, "paths": paths}),
                                 text=True, capture_output=True, check=False)
         self.assertEqual(0, result.returncode, result.stderr)
@@ -126,6 +127,27 @@ class PerimeterContractTests(unittest.TestCase):
                     self.assertEqual(document, json.loads(result.stdout))
                 else:
                     self.assertEqual("", result.stdout)
+
+    def test_regex_compile_limits_have_controlled_isolated_cli_diagnostics(self):
+        patterns = ("a{4294967296}", "(" * 10000 + "a" + ")" * 10000)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "document.json"
+            for pattern in patterns:
+                with self.subTest(pattern_prefix=pattern[:30]):
+                    document = {"schema": "hexalith.perimeter.v1", "entries": [
+                        {"kind": "absent-line", "path": "hook", "pattern": pattern}]}
+                    path.write_text(json.dumps(document))
+                    with self.assertRaises(CONFIG.ConfigError) as caught:
+                        CONFIG.load_config(path)
+                    self.assertIn("$/entries/0/pattern: invalid Python regex:", str(caught.exception))
+                    result = subprocess.run([sys.executable, "-I", "-S", str(SCRIPT), str(path)],
+                                            cwd=root, capture_output=True, text=True, check=False)
+                    self.assertEqual(1, result.returncode)
+                    self.assertEqual("", result.stdout)
+                    self.assertEqual(str(caught.exception) + "\n", result.stderr)
+                    self.assertEqual(1, len(result.stderr.splitlines()))
+                    self.assertNotIn("Traceback", result.stderr)
 
 
 if __name__ == "__main__":

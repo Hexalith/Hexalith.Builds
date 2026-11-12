@@ -142,7 +142,9 @@ class PerimeterTests(unittest.TestCase):
         (checkout / "checkout.txt").write_text("preserve submodule checkout")
         drift = self.assert_roundtrip(document)
         self.assertEqual(set(P.config.FIELDS), {record.kind for record in drift})
+        self.assertIn(P.Drift(".github/workflows/extra.yml", "whole-dir", "unexpected"), drift)
         snapshot = self.module.git.snapshot("index")
+        self.assertNotIn(".github/workflows/extra.yml", snapshot.items)
         self.assertEqual(P.Item("160000", self.builds_sha), snapshot.items["references/Hexalith.Builds"])
         self.assertEqual(staged, snapshot.items["unrelated"])
         settings = json.loads(snapshot.read(".claude/settings.json"))
@@ -252,6 +254,23 @@ class PerimeterTests(unittest.TestCase):
         original["items"][0]["deny"].append("owned")
         self.assertEqual(original, json.loads(self.module.blob("settings")))
 
+    def test_json_positive_and_absence_repairs_preserve_exact_foreign_number_tokens(self):
+        numeric = b'"precise": 0.123456789012345678901234567890, "large": 1e999, "negativeZero": -0'
+        original = b'{' + numeric + b', "deny": [], "remove": true}'
+        for path in ("positive", "absence"):
+            self.module.write(path, original)
+        self.module.commit()
+        self.assert_roundtrip(self.document(
+            {"kind": "json-superset", "path": "positive", "pointer": "/deny", "values": ["owned"]},
+            {"kind": "absent-json", "path": "absence", "selectors": [["remove"]]}))
+        for path in ("positive", "absence"):
+            repaired = self.module.blob(path)
+            for token in (b"0.123456789012345678901234567890", b"1e999", b"-0"):
+                self.assertIn(token, repaired)
+            self.assertNotIn(b"Infinity", repaired)
+        self.assertEqual(["owned"], json.loads(self.module.blob("positive"))["deny"])
+        self.assertNotIn("remove", json.loads(self.module.blob("absence")))
+
     def test_valid_marker_replaces_only_block_and_duplicate_markers_recreate(self):
         before = "module prefix\n<!-- hexalith-cicd:begin -->\nold\n<!-- hexalith-cicd:end -->\nmodule suffix\n"
         self.module.write("guide", before)
@@ -263,6 +282,29 @@ class PerimeterTests(unittest.TestCase):
         self.module.stage()
         self.assert_roundtrip(document)
         self.assertNotIn(b"module prefix", self.module.blob("guide"))
+
+    def test_schema_valid_marker_body_with_nul_converges(self):
+        document = self.document({"kind": "marker-block", "path": "guide", "text": "owned\0body"})
+        self.assert_roundtrip(document)
+        self.assertIn(b"owned\0body", self.module.blob("guide"))
+
+    def test_partial_repairs_preserve_foreign_crlf_bytes_with_text_conversion_disabled(self):
+        self.module.write(".gitattributes", "* -text\n")
+        prefix, suffix = b"foreign prefix\r\n", b"\r\nforeign suffix\r\n"
+        self.module.write("guide", prefix + b"<!-- hexalith-cicd:begin -->\r\nold\r\n<!-- hexalith-cicd:end -->" + suffix)
+        self.module.write("hook", b"#!/bin/sh\r\nnpx commitlint --edit\r\nmodule-command\r\n")
+        foreign = b'[submodule "foreign"]\r\npath=refs/other\r\nurl=keep\r\ncustom=unchanged\r\n'
+        self.module.write("modules", foreign + b'[submodule "owned"]\r\npath=refs/builds\r\nurl=old\r\ncustom=retained\r\n')
+        self.module.commit()
+        self.assert_roundtrip(self.document(
+            {"kind": "marker-block", "path": "guide", "text": "owned"},
+            {"kind": "absent-line", "path": "hook", "pattern": "commitlint"},
+            {"kind": "gitmodules-section", "path": "modules", "submodulePath": "refs/builds", "url": "expected"}))
+        self.assertTrue(self.module.blob("guide").startswith(prefix))
+        self.assertTrue(self.module.blob("guide").endswith(suffix))
+        self.assertEqual(b"#!/bin/sh\r\nmodule-command\r\n", self.module.blob("hook"))
+        self.assertIn(foreign, self.module.blob("modules"))
+        self.assertIn(b"custom=retained\r\n", self.module.blob("modules"))
 
     def test_gitmodules_git_syntax_duplicate_sections_and_foreign_keys_survive(self):
         self.module.write("modules", '# prefix\n[submodule "first \\"name\\""]\n path = "refs/builds" # owned\n url = old\n update = checkout\n branch = main\n custom = "kept \\\nvalue"\n[submodule "duplicate"]\n path = refs/builds\n url = bad\n[submodule.other]\n path=refs/other\n url=foreign\n')
@@ -283,6 +325,26 @@ class PerimeterTests(unittest.TestCase):
         document = self.document({"kind": "marker-block", "path": "guide", "text": "owned"},
                                  {"kind": "gitmodules-section", "path": "modules", "submodulePath": "refs/builds", "url": "expected"})
         self.assert_atomic_error(document, "default submodule section name")
+
+    def test_gitmodules_default_name_without_path_is_completed_preserving_foreign_keys(self):
+        self.module.write("modules", '[submodule "refs/builds"]\nurl=old\ncustom=keep\n')
+        self.module.commit()
+        self.assert_roundtrip(self.document({"kind": "gitmodules-section", "path": "modules", "submodulePath": "refs/builds", "url": "expected"}))
+        self.assertIn(b"custom=keep\n", self.module.blob("modules"))
+        self.assertIn(b'path = "refs/builds"', self.module.blob("modules"))
+
+    def test_gitmodules_final_foreign_continuations_keep_their_parsed_values(self):
+        self.module.write("new-section", '[submodule "foreign"]\npath=refs/other\nurl=keep\ncustom=tail \\\n')
+        self.module.write("existing-section", '[submodule "owned"]\npath=refs/builds\nurl=old\ncustom=tail \\\n')
+        self.module.commit()
+        originals = {path: self.module.command("config", "--file", "-", "--get", key, data=self.module.blob(path))
+                     for path, key in (("new-section", "submodule.foreign.custom"),
+                                       ("existing-section", "submodule.owned.custom"))}
+        self.assert_roundtrip(self.document(*[
+            {"kind": "gitmodules-section", "path": path, "submodulePath": "refs/builds", "url": "expected"}
+            for path in originals]))
+        for path, key in (("new-section", "submodule.foreign.custom"), ("existing-section", "submodule.owned.custom")):
+            self.assertEqual(originals[path], self.module.command("config", "--file", "-", "--get", key, data=self.module.blob(path)))
 
     def test_gitmodules_comment_backslash_cannot_hide_or_modify_foreign_sections(self):
         foreign = '[submodule "foreign"]\npath=refs/other\nurl=keep\ncustom=foreign-key\n'
@@ -331,6 +393,18 @@ class PerimeterTests(unittest.TestCase):
         self.module.command("update-index", "--add", "--cacheinfo", "160000", self.builds_sha, "script")
         self.assert_roundtrip(document)
         self.assertEqual("preserve external", external.read_text())
+
+    def test_whole_symlink_target_bypasses_regular_file_clean_filters(self):
+        target = self.render.path / "rendered/Fixture/link"
+        target.parent.mkdir(parents=True)
+        target.symlink_to("raw lower target")
+        self.render.commit()
+        self.module.write(".gitattributes", "link filter=uppercase\n")
+        self.module.commit()
+        self.module.command("config", "filter.uppercase.clean", "tr a-z A-Z")
+        self.assert_roundtrip(self.document({"kind": "whole", "path": "link"}))
+        self.assertEqual("120000", self.module.git.snapshot("index").items["link"].mode)
+        self.assertEqual(b"raw lower target", self.module.blob("link"))
 
     def test_whole_directory_replaces_an_owned_non_directory_without_touching_it(self):
         self.module.write("owned", "tracked file in directory position\n")
@@ -404,6 +478,39 @@ class PerimeterTests(unittest.TestCase):
         self.assert_roundtrip(self.document({"kind": "absent-glob", "pattern": "x??"}))
         self.assertEqual({"xéa", "x☃", "x☃a"}, set(self.module.git.snapshot("index").items))
 
+    def test_git_wildmatch_descending_ranges_keep_the_starting_endpoint(self):
+        paths = ("xa", "xb", "xz", "xc", "x-")
+        for path in paths:
+            self.module.write(path, "tracked\n")
+        self.module.commit()
+        for pattern, expected in (("x[b-a]", {"xb"}), ("x[z-a]", {"xz"}), ("x[a--]", {"xa"})):
+            with self.subTest(pattern=pattern):
+                oracle = self.module.command("ls-files", "-z", "--", ":(glob)" + pattern).split(b"\0")
+                self.assertEqual(expected, {os.fsdecode(path) for path in oracle if path})
+                self.assertEqual(expected, {path for path in paths if P.wildmatch(pattern, path)})
+
+    def test_git_wildmatch_posix_opener_consumed_as_range_endpoint_is_literal(self):
+        paths = {"xa", "xz", "x0", "x1", "xd", "xg", "xi", "xt", "x:", "x[", "x]", "keep",
+                 "xa]", "xz]", "xd]", "x0]", "xZ]", "x[]", "x]]", "x-]", "x:]"}
+        for path in paths:
+            self.module.write(path, "tracked\n")
+        self.module.commit()
+        patterns = ("x[a-[:digit:]]", "x[z-[:digit:]]", "x[0-[:digit:]]", "x[--[:digit:]]",
+                    "x[]-[:digit:]]")
+        removed = set()
+        for pattern in patterns:
+            with self.subTest(pattern=pattern):
+                oracle = self.module.command("ls-files", "-z", "--", ":(glob)" + pattern).split(b"\0")
+                expected = {os.fsdecode(path) for path in oracle if path}
+                self.assertTrue(expected)
+                self.assertTrue(all(len(path) == 3 and path.endswith("]") for path in expected))
+                if pattern in ("x[0-[:digit:]]", "x[--[:digit:]]"):
+                    self.assertIn("x[]", expected)
+                self.assertEqual(expected, {path for path in paths if P.wildmatch(pattern, path)})
+                removed.update(expected)
+        self.assert_roundtrip(self.document(*[{"kind": "absent-glob", "pattern": pattern} for pattern in patterns]))
+        self.assertEqual(paths - removed, set(self.module.git.snapshot("index").items))
+
     def test_sparse_outside_cone_tracked_content_is_read_and_deleted_without_materializing(self):
         self.module.write("keep/file", "visible\n")
         self.module.write("outside/Directory.Build.rsp", "forbidden\n")
@@ -474,6 +581,65 @@ class PerimeterTests(unittest.TestCase):
         self.module.command("update-index", "--index-info", data=f"100644 {oid} 1\tconflict\n100644 {oid} 2\tconflict\n".encode())
         self.assert_atomic_error(self.document({"kind": "marker-block", "path": "guide", "text": "owned"}), "unmerged index")
 
+    def test_intent_to_add_empty_blob_cannot_report_compliance_or_be_applied(self):
+        self.module.write("empty", b"")
+        self.module.command("add", "--intent-to-add", "--", "empty")
+        self.render.write("rendered/Fixture/empty", b"")
+        self.render.commit()
+        tree = self.module.command("write-tree").decode().strip()
+        self.assertNotIn(b"empty", self.module.command("ls-tree", "--name-only", tree).splitlines())
+        document = self.document({"kind": "whole", "path": "empty"})
+        before = self.module.git.index_path().read_bytes()
+        with self.assertRaisesRegex(P.PerimeterError, "intent-to-add"):
+            self.compare(document)
+        self.assertEqual(before, self.module.git.index_path().read_bytes())
+        self.assert_atomic_error(document, "intent-to-add")
+
+    def test_stale_alternate_index_intent_to_add_rejects_modified_or_deleted_same_path(self):
+        self.module.write("empty", b"")
+        self.module.command("add", "--intent-to-add", "--", "empty")
+        alternate = self.module.path.parent / "intent-index"
+        alternate.write_bytes(self.module.git.index_path().read_bytes())
+        self.module.write("empty", "committed nonempty content\n")
+        self.module.commit()
+        repository = P.Git(self.module.path, index_file=alternate)
+        tree = repository.run("write-tree").decode().strip()
+        self.assertNotIn(b"empty", self.module.command("ls-tree", "--name-only", tree).splitlines())
+        self.render.write("rendered/Fixture/empty", b"")
+        self.render.commit()
+        document = self.document({"kind": "whole", "path": "empty"})
+        default_before = self.module.git.index_path().read_bytes()
+        alternate_before = alternate.read_bytes()
+        worktree_before = self.module.tree_bytes()
+        for operation in (self.compare, self.apply):
+            with self.subTest(operation=operation.__name__):
+                with self.assertRaisesRegex(P.PerimeterError, "intent-to-add"):
+                    operation(document, repository=repository)
+                self.assertEqual(default_before, self.module.git.index_path().read_bytes())
+                self.assertEqual(alternate_before, alternate.read_bytes())
+                self.assertEqual(worktree_before, self.module.tree_bytes())
+
+    def test_concurrent_staging_after_preflight_is_rejected_and_preserved(self):
+        document = self.document({"kind": "marker-block", "path": "guide", "text": "owned"})
+        original_plan = P._Plan
+        interleaving = {}
+
+        def plan_then_stage(*arguments, **keywords):
+            plan = original_plan(*arguments, **keywords)
+            self.module.write("concurrent", "new staging\n")
+            self.module.command("add", "--", "concurrent")
+            interleaving["index"] = self.module.git.index_path().read_bytes()
+            interleaving["item"] = self.module.git.snapshot("index").items["concurrent"]
+            return plan
+
+        with mock.patch.object(P, "_Plan", side_effect=plan_then_stage):
+            with self.assertRaisesRegex(P.PerimeterError, "index changed during perimeter preflight"):
+                self.apply(document)
+        self.assertEqual(interleaving["index"], self.module.git.index_path().read_bytes())
+        snapshot = self.module.git.snapshot("index")
+        self.assertEqual(interleaving["item"], snapshot.items["concurrent"])
+        self.assertNotIn("guide", snapshot.items)
+
     def test_conflicting_ownership_and_file_directory_repairs_fail_atomically(self):
         self.assert_atomic_error(self.document({"kind": "whole-dir", "path": "owned"},
                                                {"kind": "whole", "path": "owned/child"}), "ownership overlap")
@@ -532,6 +698,17 @@ class PerimeterTests(unittest.TestCase):
         self.module.commit()
         self.assert_atomic_error(self.document({"kind": "marker-block", "path": "guide", "text": "owned"}),
                                  "attributes prevent a compliant")
+
+    def test_successful_filter_changing_only_foreign_marker_or_json_data_is_refused(self):
+        self.module.write(".gitattributes", "* -text filter=rewrite\n")
+        self.module.write("guide", "foreign-before\n")
+        self.module.write("settings", '{"foreign":"foreign-before","deny":[]}')
+        self.module.commit()
+        self.module.command("config", "filter.rewrite.clean", "sed s/foreign-before/foreign-after/g")
+        for entry in ({"kind": "marker-block", "path": "guide", "text": "owned"},
+                      {"kind": "json-superset", "path": "settings", "pointer": "/deny", "values": ["owned"]}):
+            with self.subTest(kind=entry["kind"]):
+                self.assert_atomic_error(self.document(entry), "without changing proposed content")
 
 
 if __name__ == "__main__":

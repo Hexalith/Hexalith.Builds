@@ -130,7 +130,12 @@ Gitmodules keys/sections, marker surroundings and unmatched hook lines.
 Gitlinks resolve exact stable tags with `^{}` and require a commit.
 
 All selected sources, selectors, ownership overlaps, index stages and path
-conflicts are checked before application. Application hashes with `--path`,
+conflicts are checked before application. Unmerged and intent-to-add indexes
+are refused; fully stage new files before selecting the index snapshot. JSON
+repairs retain foreign numeric tokens exactly, and text repairs retain foreign
+line endings before Git conversion. Filters that change proposed content
+beyond CRLF normalization are refused atomically. Application hashes regular
+files with `--path` and preserves raw symlink targets,
 stages cacheinfo and removes exact enumerated cached paths with NUL-delimited
 literal pathspecs. Attributes come from a Git tree built from the selected
 index's attribute blobs, so dirty working-tree attributes cannot steer hashing.

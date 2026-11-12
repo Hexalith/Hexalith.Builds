@@ -51,6 +51,7 @@ class Content:
     mode: str
     data: bytes | None = None
     oid: str | None = None
+    partial: bool = False
 
 
 class Git:
@@ -103,6 +104,12 @@ class Snapshot:
         self.ref = ref
         self.items: dict[str, Item] = {}
         if ref == "index":
+            def staged_records(visibility: str) -> bytes:
+                return repository.run("diff", "--cached", "--raw", "--no-abbrev", "-z", "--no-ext-diff",
+                                      "--no-textconv", "--no-renames", visibility)
+
+            if staged_records("--ita-visible-in-index") != staged_records("--ita-invisible-in-index"):
+                raise PerimeterError("intent-to-add index entries are not a perimeter snapshot")
             records = repository.run("ls-files", "--stage", "-z")
         else:
             # Pin moving refs before enumeration and later blob access.
@@ -172,42 +179,58 @@ def _segment_match(pattern: str, value: str) -> bool:
     while index < len(pattern):
         char = pattern[index]
         if char in "*?":
-            expression.append(".*" if char == "*" else ".")
+            expression.append(b".*" if char == "*" else b".")
         elif char == "[":
             start = index + 1
             negated = start < len(pattern) and pattern[start] in "!^"
             if negated:
                 start += 1
-            end = start + (start < len(pattern) and pattern[start] == "]")
+            end = start
             while end < len(pattern):
                 if pattern.startswith("[:", end) and pattern.find(":]", end + 2) != -1:
                     end = pattern.index(":]", end + 2) + 2
-                elif pattern[end] == "]":
+                elif pattern[end] == "]" and end != start:
                     break
+                elif end + 2 < len(pattern) and pattern[end + 1] == "-" and pattern[end + 2] != "]":
+                    # Consume the endpoint literally, even when it is '[';
+                    # it can no longer start a POSIX class on the next step.
+                    end += 3
                 else:
                     end += 1
             if end == len(pattern):
-                expression.append(r"\[")
+                expression.append(rb"\[")
             else:
-                body = pattern[start:end]
-                chunks, offset = [], 0
-                for match in re.finditer(r"\[:([a-z]+):\]", body):
-                    if match[1] not in classes:
-                        return False
-                    chunks.extend((body[offset:match.start()].replace("[", r"\[").replace("]", r"\]"), classes[match[1]]))
-                    offset = match.end()
-                chunks.append(body[offset:].replace("[", r"\[").replace("]", r"\]"))
-                body = "".join(chunks)
-                expression.append("[" + ("^" if negated else "") + body + "]")
+                raw, chunks, offset = pattern[start:end].encode("utf-8"), [], 0
+                while offset < len(raw):
+                    if raw.startswith(b"[:", offset) and raw.find(b":]", offset + 2) != -1:
+                        stop = raw.index(b":]", offset + 2)
+                        name = raw[offset + 2:stop].decode("ascii", "replace")
+                        if name not in classes:
+                            return False
+                        chunks.append(classes[name].encode())
+                        offset = stop + 2
+                        continue
+                    current = raw[offset:offset + 1]
+                    chunks.append(re.escape(current))
+                    if offset + 2 < len(raw) and raw[offset + 1:offset + 2] == b"-":
+                        endpoint = raw[offset + 2:offset + 3]
+                        # Git first matches the starting literal, even when
+                        # the subsequent range descends and matches nothing.
+                        if current <= endpoint:
+                            chunks.append(re.escape(current) + b"-" + re.escape(endpoint))
+                        offset += 3
+                    else:
+                        offset += 1
+                expression.append(b"[" + (b"^" if negated else b"") + b"".join(chunks) + b"]")
                 index = end
         else:
-            expression.append(re.escape(char))
+            expression.append(re.escape(char.encode("utf-8")))
         index += 1
     try:
         # Git wildmatch counts path bytes, including for '?' and bracket
         # classes. Keep Unicode literals as UTF-8 sequences, while matching
         # operators against the original filesystem/Git byte representation.
-        return re.fullmatch("".join(expression).encode("utf-8"), os.fsencode(value), re.DOTALL) is not None
+        return re.fullmatch(b"".join(expression), os.fsencode(value), re.DOTALL) is not None
     except re.error:
         return False
 
@@ -258,14 +281,36 @@ def _ownership(entries: list[dict[str, Any]]) -> None:
                 raise PerimeterError(f"conflicting ownership at {path}")
 
 
+@dataclass(frozen=True)
+class _JsonNumber:
+    token: str
+
+
 def _json(data: bytes | None) -> Any:
     if data is None:
         raise ValueError("missing JSON")
-    return config.read_json(data, source="partial JSON")
+    try:
+        return json.loads(data.decode("utf-8"), object_pairs_hook=config._object, parse_constant=config._constant,
+                          parse_int=_JsonNumber, parse_float=_JsonNumber)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise config.ConfigError(f"partial JSON: {error}") from error
 
 
 def _json_bytes(value: Any) -> bytes:
-    return (json.dumps(value, ensure_ascii=True, indent=2) + "\n").encode()
+    def encode(node: Any, depth: int = 0) -> str:
+        if isinstance(node, _JsonNumber):
+            return node.token
+        if isinstance(node, (dict, list)):
+            opening, closing = ("{", "}") if isinstance(node, dict) else ("[", "]")
+            if not node:
+                return opening + closing
+            children = ([json.dumps(key, ensure_ascii=True) + ": " + encode(child, depth + 1)
+                         for key, child in node.items()] if isinstance(node, dict)
+                        else [encode(child, depth + 1) for child in node])
+            return opening + "\n" + ",\n".join("  " * (depth + 1) + child for child in children) + "\n" + "  " * depth + closing
+        return json.dumps(node, ensure_ascii=True, allow_nan=False)
+
+    return (encode(value) + "\n").encode()
 
 
 def _superset(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
@@ -331,10 +376,7 @@ def _absent_json(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
 def _text(data: bytes | None) -> str:
     if data is None:
         raise ValueError("missing text")
-    text = data.decode("utf-8").replace("\r\n", "\n")
-    if "\0" in text:
-        raise ValueError("NUL in partial text")
-    return text
+    return data.decode("utf-8")
 
 
 def _marker(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
@@ -350,7 +392,7 @@ def _marker(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
     if begin != 1 or end != 1 or text.index(config.BEGIN) >= text.index(config.END):
         return False, (block + "\n").encode()
     start, stop = text.index(config.BEGIN), text.index(config.END) + len(config.END)
-    return text[start:stop] == block, (text[:start] + block + text[stop:]).encode()
+    return text[start:stop].replace("\r\n", "\n") == block, (text[:start] + block + text[stop:]).encode()
 
 
 def _line(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
@@ -358,11 +400,13 @@ def _line(data: bytes | None, entry: dict) -> tuple[bool, bytes]:
         return True, b""
     try:
         text = _text(data)
+        if "\0" in text:
+            raise ValueError("NUL in line data")
     except (ValueError, UnicodeError):
         return False, b""
     pattern = re.compile(entry["pattern"])
     lines = text.splitlines(keepends=True)
-    retained = [line for line in lines if pattern.search(line.removesuffix("\n")) is None]
+    retained = [line for line in lines if pattern.search(line.replace("\r\n", "\n").removesuffix("\n")) is None]
     return len(retained) == len(lines), "".join(retained).encode()
 
 
@@ -378,7 +422,7 @@ _KEY = re.compile(r"^\s*([A-Za-z][A-Za-z0-9-]*)\s*(?:=|$)")
 
 def _continuation(line: str, quoted: bool) -> tuple[bool, bool]:
     """Recognize Git value continuations, excluding backslashes in comments."""
-    value = line.removesuffix("\n")
+    value = line.removesuffix("\r\n").removesuffix("\n")
     escaped = False
     for char in value:
         if escaped:
@@ -405,6 +449,14 @@ def _headers(text: str) -> list[re.Match]:
     return result
 
 
+def _finish_record(text: str) -> str:
+    """Terminate a valid final Git continuation without changing its value."""
+    continued, quoted = False, False
+    for line in text.splitlines(keepends=True):
+        continued, quoted = _continuation(line, quoted)
+    return text + ("" if not text or text.endswith("\n") else "\n") + ("\n" if continued else "")
+
+
 def _gitmodules(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]:
     def section(name: str, extra: str = "") -> str:
         escaped = name.replace("\\", "\\\\").replace('"', '\\"')
@@ -414,6 +466,8 @@ def _gitmodules(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]
 
     try:
         text = _text(data)
+        if "\0" in text:
+            raise ValueError("NUL in Git configuration")
         _git_config(git, text)  # Git, rather than an INI approximation, validates syntax.
         headers = _headers(text)
         chunks = []
@@ -433,10 +487,14 @@ def _gitmodules(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]
                       for key, value in properties)]
     if not matches:
         default_name = "submodule." + entry["submodulePath"]
-        if any(name == default_name for _, _, name in chunks):
+        defaults = [index for index, (_, _, name) in enumerate(chunks) if name == default_name]
+        if any(key == default_name + ".path" and value != entry["submodulePath"]
+               for index in defaults for key, value in chunks[index][1]):
             raise PerimeterError(f"{entry['path']}: default submodule section name belongs to unrelated state")
-        return False, (text + ("" if not text or text.endswith("\n") else "\n")
-                       + section(entry["submodulePath"])).encode()
+        if defaults:
+            matches = [defaults[0]]
+        else:
+            return False, (_finish_record(text) + section(entry["submodulePath"])).encode()
     first = matches[0]
     chunk, properties, name = chunks[first]
     matching_names = {chunks[index][2] for index in matches}
@@ -472,7 +530,7 @@ def _gitmodules(data: bytes | None, entry: dict, git: Git) -> tuple[bool, bytes]
     retained_text = strip_owned(chunk, header_length)
     # The existing header/name stays byte-for-byte; new values are appended.
     additions = section(entry["submodulePath"]).split("\n", 1)[1]
-    retained_text += ("" if retained_text.endswith("\n") else "\n") + additions
+    retained_text = _finish_record(retained_text) + additions
     result = text[:headers[0].start()] if headers else text
     for index, (original, _, section_name) in enumerate(chunks):
         if index == first:
@@ -585,7 +643,7 @@ class _Plan:
                 current = self.changes.get(path)
                 if current is not None:
                     _, repaired = _partial(current.data, entry, actual.git)
-                set_change(path, Content(item.mode if regular else "100644", repaired))
+                set_change(path, Content(item.mode if regular else "100644", repaired, partial=True))
 
         # Validate every final addition against selected ownership before writes.
         for path, content in list(self.changes.items()):
@@ -681,8 +739,13 @@ def apply(document: dict, repository: Git, *, expected: Snapshot,
                 continue
             oid = content.oid
             if oid is None:
-                oid = repository.run("hash-object", "-w", f"--path={path}", "--stdin", data=content.data,
+                conversion = "--no-filters" if content.mode == "120000" else f"--path={path}"
+                oid = repository.run("hash-object", "-w", conversion, "--stdin", data=content.data,
                                      environment=environment).decode().strip()
+                hashed = repository.blob(oid)
+                if hashed != content.data and (not content.partial or
+                        hashed.replace(b"\r\n", b"\n") != content.data.replace(b"\r\n", b"\n")):
+                    raise PerimeterError(f"{path}: selected index attributes prevent a compliant repair without changing proposed content")
             repository.run("update-index", "--add", "--cacheinfo", content.mode, oid, path,
                            environment=environment)
         # Clean filters can transform even stdin. Refuse a candidate whose

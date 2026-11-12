@@ -2208,5 +2208,32 @@
         }
       ]
     }
+  },
+  {
+    "name": "valid astral paths and inline data",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "unicode/\ud83d\ude80-\ud801\udc00.txt"
+        },
+        {
+          "kind": "marker-block",
+          "path": "unicode/guide-\ud83c\udf0d.md",
+          "text": "Owned \ud83d\ude80 instructions \ud801\udc00"
+        },
+        {
+          "kind": "json-superset",
+          "path": "unicode/settings-\ud83c\udf0d.json",
+          "pointer": "/permissions/\ud83d\ude80",
+          "values": [
+            "\ud83c\udf0d",
+            "\ud801\udc00"
+          ]
+        }
+      ]
+    }
   }
 ]
