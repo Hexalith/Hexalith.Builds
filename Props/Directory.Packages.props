@@ -15,7 +15,7 @@
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.0</HexalithPolymorphicSerializationsVersion>
     <!-- Record the composed-host consumer while keeping one canonical SDK version authority. -->
     <HexalithPlatformEventStoreHostCatalogView Condition="'$(MSBuildProjectName)' == 'Hexalith.Platform.EventStoreHost'">true</HexalithPlatformEventStoreHostCatalogView>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">4.2.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.0.0</HexalithEventStoreVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">5.0.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.4.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">2.0.1</HexalithMcpCliVersion>
