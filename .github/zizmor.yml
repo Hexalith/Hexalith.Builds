@@ -12,8 +12,6 @@ rules:
         "*": hash-pin
     # AD-20: exact existing findings; retain runtime bytes until the rewrite.
     ignore:
-      - builds-release.yml:19:13
-      - builds-release.yml:45:13
       - codeql.yml:42:15
       - codeql.yml:46:15
       - codeql.yml:52:15

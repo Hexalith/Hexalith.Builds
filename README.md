@@ -110,8 +110,8 @@ This repository:
 ### Reusable Workflows
 
 - `.github/workflows/builds-ci.yml`: Validates this repository on pushes and pull requests.
-- `.github/workflows/builds-release.yml`: Releases this repository with
-  `Github/create-release`.
+- `.github/workflows/builds-release.yml`: Releases this repository with the local
+  shared release and caller-owned `Github/publish` composite.
 - `.github/workflows/domain-ci.yml`: Existing reusable domain module CI contract. See
   [domain-ci.md](.github/workflows/domain-ci.md).
 - `.github/workflows/domain-ci-v2.yml`: Explicit strict package integration contract.
@@ -1332,27 +1332,23 @@ Release jobs analyze commits, calculate the next version, create a Git tag and
 GitHub release, and publish the configured tool or NuGet packages. They do not
 commit generated release files back to protected branches.
 
-For this repository, Release requires successful push CI for the exact current
-branch commit. CI owns source tests, catalog validation, and tooling regression
-suites. Release builds and qualifies the actual versioned packages once, records
-the verified CI run and attempt in the package inventory, and rechecks that run
-before tagging and publishing. Package controls, remote package verification,
-and qualification evidence retention remain part of Release. Node dependencies
-and signatures are initialized once by `Github/create-release`.
+Builds uses the local shared `release.yml` runtime and caller-owned
+`Github/publish` composite. Manual dispatch on main requires green exact-source
+`builds-ci.yml`, the exact boolean publishing switch and current-dispatch
+security gates. Shared Builds rules select the stable version, build/pack once
+with NuGet auditing, and produce the authenticated original release artifact.
+The caller's `hexalith-release` publisher consumes its eight-field handoff,
+publishes the original bytes with duplicate-safe retries and creates the tag
+last. A workflow-tree change may produce `ready` for separate AD-18 publication.
+Only the publisher receives OIDC and environment-scoped push credentials.
 
-Actual-version qualification remains in `verifyRelease`. After release notes,
-the final `prepare` action validates that same qualified inventory and carrier
-and rechecks the current source and recorded CI attempt before tagging. The
-publisher independently repeats the source check. These checks close the known
-lifecycle window; they do not lock the remote branch atomically.
-
-If a genuine tag exists but package publication was rejected or only partly
-completed, inspect the tag's source, release evidence, and actual public package
-and symbol artifacts first. Preserve the tag and any partial registry history;
-do not infer that packages are absent from a failed workflow alone. If source
-has advanced, qualify the current tip through normal CI and release its next
-genuine semantic-release version. Never rewrite a tag, represent old-source
-qualification as current, or bypass gates through a same-version recovery path.
+Interrupted releases complete from their authenticated original artifact,
+without rebuilding or rechecking historical CI/configuration. If that artifact
+is unavailable, any listed package retains the draft and fails conservatively;
+anonymous package lookup cannot authorize deletion or version reuse. Preserve
+existing tags, registry history and marked drafts until separately authorized
+maintainer disposition. See [quality and release contracts](Tools/ci/README.md)
+and the [3-6 rollout results](docs/cicd-3-6-builds-shared-release-results.md).
 
 This repository's `commitlint.config.mjs` accepts `build`, `ci`, `docs`, `feat`,
 `fix`, `perf`, `refactor`, `revert`, `style`, and `test` as commit types. Use
@@ -1376,20 +1372,20 @@ Package publishing behavior:
 - Debug and non-release local builds receive a generated `VersionSuffix` from
   `Hexalith.Package.props`.
 
-The NuGet.org `Hexalith` owner must have a Trusted Publishing policy for GitHub
-repository owner `Hexalith`, repository `Hexalith.Builds`, workflow file
-`builds-release.yml`, and environment `production`. Grant publication of new
-versions for `Hexalith.Builds.Evidence.Cli` and `Hexalith.Builds.Module.Cli`;
-grant new-package publication only if those package IDs have not yet been
-created. Set the repository variable `NUGET_USER` to the individual NuGet.org
-username that created the policy, rather than the `Hexalith` organization name.
-NuGet.org checks this policy before issuing the temporary key.
+The maintainer coordinates Builds' nuget.org Trusted Publishing policy for
+repository `Hexalith/Hexalith.Builds`, caller `builds-release.yml`, environment
+`hexalith-release` and package scope `Hexalith.Builds*`. The caller uses
+`vars.HEXALITH_NUGET_USER`; its publisher receives the Builds-owned
+`HEXALITH_REGISTRY_USERNAME/PASSWORD` environment secrets. The environment is
+main-only without required reviewers or a wait timer. The reusable release
+receives only named `HEXALITH_REGISTRY_PULL_USERNAME/PASSWORD` secrets.
 
-For domain modules, manually dispatch the module release caller only after its
-exact current `main` SHA has successful push CI, then approve the protected
-environment deployment. This Builds repository releases only through a manual
-dispatch from the exact current `main` tip and its protected `production`
-environment. Merging or pushing does not start a release.
+Builds releases only by manual dispatch on main. Before a separately authorized
+first production bootstrap, all AD-19 preconditions must pass, including
+maintainer disposition of the retained probe draft/tags and reconciliation of
+probe-only policies/credentials. A setting that returns 403 remains unverified.
+Pushing the rewritten caller does not authorize publication. Domain modules keep
+their existing protected release callers until their own migration.
 
 ## License
 

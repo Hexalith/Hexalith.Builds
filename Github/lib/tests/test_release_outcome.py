@@ -400,7 +400,7 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
         self.workflow = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
 
     def run_graph(self, *, resolve=None, stages=None, inputs=None, codeql="skipped", hook="skipped",
-                  cancelled=False):
+                  cancelled=False, workflow_ref=None):
         stages = stages or {}
         trigger = self.workflow.get("on", self.workflow.get(True))["workflow_call"]
         values = {name: str(entry.get("default", "")) for name, entry in trigger["inputs"].items()}
@@ -410,7 +410,7 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
                      "nightly-hook": "false", "config-valid": "true", **(resolve or {})}},
                  "codeql": {"result": codeql, "outputs": {}},
                  "nightly-hook": {"result": hook, "outputs": {}}}
-        workflow_ref = "Hexalith/Hexalith.Builds/.github/workflows/release-probe.yml@refs/heads/main"
+        workflow_ref = workflow_ref or "Hexalith/Hexalith.Builds/.github/workflows/release-probe.yml@refs/heads/main"
         base = {"inputs": values, "github": {"sha": DISPATCH_SHA, "token": "token-marker",
                                             "workflow_ref": workflow_ref},
                 "secrets": {"registry-pull-username": "pull-reader", "registry-pull-password": "pull-secret"},
@@ -455,6 +455,60 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
         return {"executed": executed, "stage_environment": stage_environment, "needs": needs,
                 "environment": environment, "process": processes[-1],
                 "recorded": recorded, "uploaded": uploaded, "outputs": published}
+
+    def run_builds_caller(self, *, result="success", **scenario):
+        caller = yaml.safe_load((ROOT / ".github/workflows/builds-release.yml").read_text())
+        release = caller["jobs"]["release"]
+        self.workflow = yaml.safe_load((ROOT / release["uses"]).read_text())
+        context = {"vars": {"HEXALITH_NUGET_USER": "nuget-policy-owner"}, "secrets": {
+            "HEXALITH_REGISTRY_PULL_USERNAME": "pull-reader", "HEXALITH_REGISTRY_PULL_PASSWORD": "pull-secret",
+            "HEXALITH_REGISTRY_USERNAME": "builds-writer", "HEXALITH_REGISTRY_PASSWORD": "builds-push-secret"}}
+        evaluator = Evaluator(context)
+        graph = self.run_graph(inputs={key: evaluator.template(value) for key, value in release["with"].items()},
+            workflow_ref="Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@refs/heads/main", **scenario)
+        context["needs"] = {"release": {"result": result, "outputs": graph["outputs"]}}
+        evaluator = Evaluator(context, status={"success": result == "success", "cancelled": result == "cancelled"})
+        job = caller["jobs"]["publish"]
+        graph["caller_publish"] = []
+        if evaluator.condition(job["if"]):
+            for step in job["steps"]:
+                graph["caller_publish"].append((ROOT / step["uses"].removeprefix("$/"),
+                    {key: evaluator.template(value) for key, value in step.get("with", {}).items()}))
+        graph["caller_pull"] = {key: evaluator.template(value) for key, value in release["secrets"].items()}
+        return graph
+
+    def test_builds_caller_forwards_original_complete_identity_to_the_publisher(self):
+        expected = handoff()["draft"]["outputs"]
+        graph = self.run_builds_caller(resolve={"mode": "complete", "version": "2.0.0", "draft-id": "456",
+                                               "last-tag": "v1.9.0"},
+                                      stages={"draft": lambda _values: ("success", expected)})
+        self.assertEqual([(ROOT / "Github/publish", expected | {"nuget-user": "nuget-policy-owner",
+            "registry-username": "builds-writer", "registry-password": "builds-push-secret"})], graph["caller_publish"])
+        self.assertEqual({"registry-pull-username": "pull-reader", "registry-pull-password": "pull-secret"},
+                         graph["caller_pull"])
+        self.assertEqual("Hexalith/Hexalith.Builds/.github/workflows/builds-release.yml@refs/heads/main",
+                         graph["stage_environment"]["draft"]["GITHUB_WORKFLOW_REF"])
+        self.assertFalse(graph["uploaded"])
+
+    def test_builds_caller_uses_builds_rules_and_does_not_publish_without_a_successful_handoff(self):
+        def version(values):
+            self.assertEqual("builds", values["release-rules"])
+            return "success", {"no-version": "true"}
+        graph = self.run_builds_caller(stages={"version": version})
+        self.assertEqual([], graph["caller_publish"])
+        self.assertEqual("nothing", self.document()["outcome"])
+        self.assertTrue(graph["uploaded"])
+        for resolve in ({"enabled": "false"}, {"enabled": "invalid"}):
+            with self.subTest(resolve=resolve):
+                graph = self.run_builds_caller(resolve=resolve)
+                self.assertEqual([], graph["caller_publish"])
+                self.assertTrue(graph["uploaded"])
+        for result in ("failure", "cancelled", "skipped"):
+            with self.subTest(result=result):
+                graph = self.run_builds_caller(result=result, resolve={"mode": "complete", "version": "2.0.0",
+                    "draft-id": "456", "last-tag": "v1.9.0"},
+                    stages={"draft": lambda _values: ("success", handoff()["draft"]["outputs"])})
+                self.assertEqual([], graph["caller_publish"])
 
     def document(self):
         document = json.loads((self.root / "runner-temp/hexalith-release-outcome/outcome.json").read_text())

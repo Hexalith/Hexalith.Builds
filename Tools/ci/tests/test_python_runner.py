@@ -23,7 +23,7 @@ class PythonRunnerTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="builds-suite-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        for directory in ("Tools", "Github/fixture/tests", "test/qualification", "Tools/ci/tests"):
+        for directory in ("Tools", "Github/fixture/tests", "Tools/ci/tests"):
             (self.root / directory).mkdir(parents=True, exist_ok=True)
         self.log = self.root / "executions.jsonl"
 
@@ -42,9 +42,9 @@ class PythonRunnerTests(unittest.TestCase):
 
     def test_hyphen_underscore_assertion_and_discovery_groups_run_with_same_interpreter(self):
         paths = ("Tools/test-hyphen.py", "Tools/test_assertions.py", "Github/fixture/tests/test_nested.py",
-                 "test/qualification/test_qualification.py", "Tools/ci/tests/test_quality.py")
+                 "Tools/ci/tests/test_quality.py")
         for path in paths:
-            self.script(path, unit="/tests/" in path or "qualification/" in path)
+            self.script(path, unit="/tests/" in path)
         with contextlib.redirect_stdout(io.StringIO()):
             result = RUNNER.run(self.root)
         self.assertEqual(0, result)
@@ -52,7 +52,7 @@ class PythonRunnerTests(unittest.TestCase):
         self.assertEqual(set(paths), {row[0] for row in records})
         self.assertEqual({sys.executable}, {row[1] for row in records})
         for path, _, cwd in records:
-            expected = self.root / Path(path).parent if "/tests/" in path or "qualification/" in path else self.root
+            expected = self.root / Path(path).parent if "/tests/" in path else self.root
             self.assertEqual(str(expected), cwd)
 
     def test_failure_in_assertion_script_fails_suite_and_other_groups_still_run(self):
@@ -72,7 +72,7 @@ class PythonRunnerTests(unittest.TestCase):
             self.assertEqual(1, RUNNER.run(self.root))
 
     def test_missing_required_group_refuses_partial_suite(self):
-        (self.root / "test/qualification").rmdir()
+        (self.root / "Tools/ci/tests").rmdir()
         with self.assertRaisesRegex(ValueError, "Missing Python test group"):
             RUNNER.commands(self.root)
 

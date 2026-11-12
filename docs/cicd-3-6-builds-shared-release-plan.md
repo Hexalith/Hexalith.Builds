@@ -1,18 +1,20 @@
 ---
 story: '3-6'
 created: '2026-11-11'
-status: ready-for-dev
-planning_only: true
+status: in-progress
+planning_only: false
 baseline_revision: 22387551f497bfef53af37c0c35d86b0d40c8d3f
 implementation_repository: references/Hexalith.Builds
-implementation_baseline_revision: d4f75283221fc11779416c5f2b531ea09f22582c
+planning_baseline_revision: d4f75283221fc11779416c5f2b531ea09f22582c
+implementation_baseline_revision: aca0183fdeb4a7fcd02546ff8f082acbf73a0585
 ---
 
 # Builds shared release plan
 
 Story 3-6 replaces Builds' legacy release caller and removes its matching
-qualification CI gates for CAP-10/12/14/15 and AD-11/19/20. This delivery is
-planning only. The canonical intent, matrix, Code Map, unchecked tasks and
+qualification CI gates for CAP-10/12/14/15 and AD-11/19/20. The user authorized
+implementation on 2026-11-12; this companion now records that implementation
+contract. The canonical intent, matrix, Code Map, execution tasks and
 acceptance criteria live in the enclosing CiCd repository at
 `_bmad-output/specs/spec-cicd/stories/3-6-rewrite-builds-release-yml-onto-the-shared-release.md`.
 
@@ -161,13 +163,13 @@ No production release SDK defect is established by source inspection.
 
 ## Verification and delivery
 
-This planning delivery validates frontmatter, unchecked implementation tasks,
-whitespace, a docs-only Builds diff and its exact commit message with pinned
-commitlint 21.2.4. Commit/push only this companion, then stage the canonical
-CiCd story and pushed Builds gitlink without a CiCd commit/push. No runtime
-tests, implementation, live probe, dispatch or publication occur now.
+The planning companion was pushed as `aca0183fdeb4a7fcd02546ff8f082acbf73a0585`.
+The current authorized delivery implements the seven execution tasks in Builds,
+then commits/pushes that repository and stages the canonical story with its
+pushed gitlink in CiCd. CiCd is not committed or pushed. The separate production
+bootstrap remains unauthorized; no retained resource or live setting is changed.
 
-On later implementation, run real actionlint/zizmor with authenticated online
+Implementation runs real actionlint/zizmor with authenticated online
 audits; both locked Python suites; focused runner behavioral controls; all
 fifteen unchanged catalog commands; and the committed-object public API check.
 Compare frozen runtime bytes with the full baseline above. Observe a green
@@ -176,7 +178,7 @@ and no retired qualification/aggregator/CodeQL jobs. Reuse existing executable
 release-expression/adapter controls for the matrix; extend only uncovered
 changed behavior.
 
-Record full revisions/run/artifact identities and limits in new
+Record full revisions/run/artifact identities and limits in
 `docs/cicd-3-6-builds-shared-release-results.md`. Do not dispatch production to
 manufacture test evidence while bootstrap preconditions fail or change the
 switch just to obtain a branch. Local controls and earlier invalid-switch

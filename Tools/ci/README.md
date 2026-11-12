@@ -97,15 +97,54 @@ read-only GitHub token exported above. They invoke those binaries with the
 committed policies and online audits enabled; missing prerequisites fail tests.
 
 The runner invokes each `Tools/test-*.py` and `Tools/test_*.py` as a separate
-script, then explicitly discovers each `Github/*/tests` group,
-`test/qualification` and `Tools/ci/tests` in separate processes. This preserves
+script, then discovers every `Github/*/tests` group and the mandatory
+`Tools/ci/tests` group in separate processes. This preserves
 hyphenated and assertion-based `__main__` suites as well as local module imports.
 `--no-cache` gives concurrent interpreter runs independent uv environments.
 Every group uses the selected interpreter and all failures contribute to the
 exit status. Unit tests use temporary Git repositories and synthetic API/tool
 fixtures. Existing shell execution/output tests remain; workflow-source text
-assertions have been removed. Legacy .NET, catalog, contract, qualification and
-CodeQL jobs remain in CI; quality and both Python runs feed its aggregate verdict.
+assertions have been removed. Builds CI retains the shared .NET product tests,
+sample, dependent Windows sample, catalog, quality and both Python interpreter
+lanes. Each retained job determines the workflow conclusion directly. The
+aggregator, legacy contracts/qualification job and push/PR CodeQL call are
+retired; release still runs the shared current-dispatch CodeQL gate. CI triggers
+on push/PR to main and manual dispatch. Only PR runs cancel by ref; push/manual
+concurrency uses the source SHA and never cancels those exact-source runs.
+
+The catalog job retains all fifteen product checks, with the existing command,
+arguments and language. SDK 11 from `global.json` and SDK 10.0.404 for offline
+fixtures remain unchanged:
+
+| `Tools/` file | Language | Product checked |
+| --- | --- | --- |
+| `validate-central-package-versions.ps1` | PowerShell | Evaluated NuGet identities/versions |
+| `test-central-package-version-validator.ps1` | PowerShell | Catalog validator acceptance/rejection |
+| `test-authoritative-package-catalog.ps1` | PowerShell | Required packages/authoritative family selections |
+| `test-logging-generator-selection.py` | Python | Real MSBuild logging generator selection without duplicates |
+| `validate-package-version-audit.ps1` | PowerShell | Catalog/source/dependency-disposition agreement |
+| `test-package-version-audit-generator.ps1` | PowerShell | Audit generator behavior |
+| `test-package-version-audit-validator.ps1` | PowerShell | Audit validator rejection controls |
+| `validate-consumer-package-authority.ps1` | PowerShell | Effective consumer graph obeys central catalog |
+| `test-consumer-package-authority-validator.ps1` | PowerShell | Consumer authority validator behavior |
+| `validate-package-version-exceptions.ps1` | PowerShell | Exceptions match catalog and evaluated SDK requirements |
+| `test-package-version-exception-validator.ps1` | PowerShell | Exception validator behavior |
+| `validate-platform-version-catalog.ps1` | PowerShell | Catalog/EventStore metadata hosting compatibility |
+| `test-platform-version-catalog.ps1` | PowerShell | Platform compatibility validator behavior |
+| `validate-dapr-package-versions.ps1` | PowerShell | Evaluated Dapr family compatibility |
+| `test-dapr-package-version-validator.ps1` | PowerShell | Dapr identity/timeout/rejection controls |
+
+Story 3-6 retires the fourteen standalone G-4/G-6 qualification/evidence
+regressions listed in the [implementation plan](../../docs/cicd-3-6-builds-shared-release-plan.md).
+The runner no longer requires the empty `test/qualification` group; it does not
+exclude retained tests or allow missing mandatory groups. The three .NET
+product test projects remain. Deferred root npm release configuration still
+calls `verify-g4-tool-release.ps1`, which calls
+`test-g4-tool-package-contracts.ps1`; the build helper calls
+`test-g4-packaged-platform-loader.ps1`, and contracts call
+`test-g4-packaged-seed-subscriptions.ps1`. Preserve that executable chain until
+final AD-20 cleanup. Historical evidence-validator artifact paths remain
+historical identities; their retired regressions are no longer current checks.
 
 The CI configuration contract is `schemas/hexalith.ci.v1.json` (draft 2020-12).
 `Github/lib/tests/fixtures/contract.json` contains complete positive and negative
@@ -307,9 +346,8 @@ own-code-checkout fallback is unnecessary. All new composites locate their
 scripts through `GITHUB_ACTION_PATH`, independently of the module's Builds
 gitlink. The first CI step reserves stage 1 for story 5-1's guard and commitlint;
 Builds' own call runs no delivered-ref guard. A manual `workflow_dispatch` of
-`builds-ci.yml` runs every lane but skips G-4 evidence archiving, whose carrier
-is credited only for push and pull_request runs. Its concurrency group includes
-the event name, so a dispatch never cancels the push run that release consumes.
+`builds-ci.yml` runs every retained lane. Its concurrency group includes the
+event and source SHA; dispatch and push runs never cancel one another.
 
 The executor also overrides xUnit's within-project `stopOnFail` setting so
 project-level failure never cancels the remaining tests in that project. xUnit
@@ -359,7 +397,7 @@ integration. The dependent Windows job has only prepare and the root
 `--project`, `--no-build`, `--no-restore`, and Release selection; they reuse built
 outputs and write no evidence. Only the sample configuration enables them and
 delegates those projects through exclusions, avoiding duplicate test execution.
-Both sample verdicts feed Builds' retained aggregate job.
+Both sample verdicts directly contribute to the Builds workflow conclusion.
 
 The sample's expected-source fixture contains
 `rendered/Hexalith.Sample/.github/hexalith-ci.json` and a sibling
@@ -419,8 +457,35 @@ NuGet/login, pushes original packages and complete OCI graphs, then creates
 the GitHub tag last or reports `ready` when fresh workflow trees differ.
 Its always-run finalizer owns the single outcome even when login or push fails.
 See the [publisher interface](../../Github/publish/README.md) for retry, credential
-and downstream caller boundaries. Production callers still use the
-legacy release until their separate rewrite.
+and downstream caller boundaries. Builds now uses this caller contract;
+module callers remain on their legacy release until their separate rewrite.
+
+Builds' [builds-release.yml](../../.github/workflows/builds-release.yml) is manual
+dispatch only, with `permissions: {}`, `cache-mode: none` and a serialized
+`release` concurrency group without cancellation. Its local reusable `release`
+call supplies `ci-workflow: builds-ci.yml`, `release-rules: builds` and only the
+named pull secrets from `HEXALITH_REGISTRY_PULL_USERNAME/PASSWORD`. The call
+has exactly contents write/actions read/security-events write. Builds has no
+setup/delivered state, `buildsTag` or drift check.
+
+The dependent caller `publish` job runs only after successful `publish=true`
+handoff, in `hexalith-release`, with exactly contents write/actions read/OIDC
+write. Its sole step uses `$/Github/publish` from the caller revision and
+forwards `publish`, `version`, `sha`, `last-tag`, `draft-id`, `artifact-id`,
+`artifact-digest` and `artifact-run` unchanged. Only this environment-bound job
+receives `vars.HEXALITH_NUGET_USER` and the Builds-owned push secrets
+`HEXALITH_REGISTRY_USERNAME/PASSWORD`. It does no checkout, login or source
+build outside the publisher composite. The shared release receives neither
+push credentials nor OIDC.
+
+The maintainer coordinates nuget.org's Builds policy switch from `production`
+to `hexalith-release`, for `builds-release.yml` and `Hexalith.Builds*`. A separate
+production bootstrap requires a fresh complete AD-19 preflight. Retained probe
+draft 441591623 and stable tags without published releases are explicit stops;
+settings that return 403 stay unverified. See the [3-6 results](../../docs/cicd-3-6-builds-shared-release-results.md)
+for the read-only inventory, exact access failures and current verification
+limits. No implementation check authorizes a production dispatch or resource
+cleanup.
 
 Create mode computes a version, produces an audited original artifact and
 creates a marked draft. `release-rules` defaults to `module`; only the actual
@@ -514,9 +579,10 @@ existing or uncertain destination fails with
 `draft vX.Y.Z cannot be completed: its build artifact is gone`. A successful
 original-artifact handoff instead transfers outcome ownership to the publisher;
 the reusable reporter uploads nothing. Failed/cancelled gates and unexpected
-recovery skips remain failures. Caller integration remains downstream work.
+recovery skips remain failures. Builds uses the original-artifact caller
+handoff; module caller integration remains downstream work.
 
-Production callers remain on their existing workflows. `delivered-sha` is the
+Module production callers remain on their existing workflows. `delivered-sha` is the
 integration slot for story 5-1;
 its presence currently provides no drift protection. The test-only
 `module-root` is guarded to the Builds sample and excluded from the public

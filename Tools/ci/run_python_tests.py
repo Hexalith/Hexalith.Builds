@@ -23,7 +23,7 @@ def commands(root: Path) -> list[tuple[Path, list[str]]]:
     for path in sorted(set(root.glob("Tools/test-*.py")) | set(root.glob("Tools/test_*.py"))):
         groups.append((root, [sys.executable, str(path)]))
     # Separate discovery processes preserve imports and each suite's local cwd.
-    for directory in sorted(root.glob("Github/*/tests")) + [root / "test/qualification", root / "Tools/ci/tests"]:
+    for directory in sorted(root.glob("Github/*/tests")) + [root / "Tools/ci/tests"]:
         if not directory.is_dir():
             raise ValueError(f"Missing Python test group: {directory}")
         groups.append((directory, [sys.executable, "-m", "unittest", "discover", "-s", str(directory), "-v"]))

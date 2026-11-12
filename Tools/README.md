@@ -555,7 +555,8 @@ that the live runtime passed.
 CLI policy, evidence and audit output paths must resolve inside the selected
 workspace. Relative paths and absolute paths inside that workspace are accepted;
 parent traversal and symlink escapes are refused before reading or writing.
-Run `python3 Tools/test-g6-cli-paths.py` for the isolated boundary controls.
+The standalone G-6 boundary regression was retired in CI/CD story 3-6; this
+historical qualification runtime is retained until final AD-20 cleanup.
 
 The v3 policy approves the current Toolkit pin `13.6.0-preview.1.261001-0243`
 and its prerelease exception. Jérôme Piquot, as Builds/Platform/FrontComposer-Web
@@ -599,8 +600,6 @@ workspace containing alternate inputs when validating a copied fixture.
 
 ```bash
 python3 Tools/validate-runtime-toolchain-disposition.py
-python3 Tools/test-runtime-toolchain-disposition.py
-python3 Tools/test-runtime-toolchain-evidence-validator.py
 ```
 
 The new validator permits only CRLF-to-LF equivalence and rejects substantive

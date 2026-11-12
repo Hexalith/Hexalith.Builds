@@ -3,102 +3,48 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: builds-release-production
+  group: release
   cancel-in-progress: false
 
 permissions: {}
+cache-mode: none
 
 jobs:
-  verify-source:
-    runs-on: ubuntu-latest
-    name: Verify current main source
-    permissions:
-      contents: read
-      actions: read
-    steps:
-    - uses: actions/checkout@v7.0.1
-      with:
-        persist-credentials: false
-
-    - name: Require exact current branch and successful push CI
-      shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-        REPOSITORY: ${{ github.repository }}
-        DISPATCH_REF: ${{ github.ref }}
-        DISPATCH_SHA: ${{ github.sha }}
-      run: bash ./Tools/verify-g4-release-source.sh
-
   release:
-    needs: verify-source
-    runs-on: ubuntu-latest
-    name: Release
-    environment: ${{ github.ref_name == 'prerelease' && 'prerelease' || 'production' }}
+    uses: ./.github/workflows/release.yml
     permissions:
-      contents: write        # push tag and create GitHub release
-      issues: write          # semantic-release comments on released issues
-      pull-requests: write   # semantic-release comments on released PRs
-      packages: write        # publish future tool packages to GitHub Packages
-      actions: read          # verify exact-SHA push CI after protected approval
-      id-token: write         # exchange GitHub OIDC identity for a temporary NuGet.org key
+      contents: write
+      actions: read
+      security-events: write
+    with:
+      ci-workflow: builds-ci.yml
+      release-rules: builds
+    secrets:
+      registry-pull-username: ${{ secrets.HEXALITH_REGISTRY_PULL_USERNAME }}
+      registry-pull-password: ${{ secrets.HEXALITH_REGISTRY_PULL_PASSWORD }}
+
+  publish:
+    needs: release
+    if: needs.release.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: hexalith-release
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
     steps:
-    - uses: actions/checkout@v7.0.1
-      with:
-        fetch-depth: 0
-        persist-credentials: false
-
-    - name: Initialize .NET
-      uses: ./Github/initialize-dotnet
-      with:
-        global-json-file: global.json
-
-    # Exact-SHA push CI owns source tests and regression suites. Only the actual
-    # release version is built and qualified by the semantic-release lifecycle.
-    - name: Initialize runner NuGet configuration
-      shell: bash
-      run: install -D -m 600 test/fixtures/package-consumer/NuGet.Config "$HOME/.nuget/NuGet/NuGet.Config"
-
-    - name: Recheck approved release source and push CI
-      id: approved_source
-      shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-        REPOSITORY: ${{ github.repository }}
-        DISPATCH_REF: ${{ github.ref }}
-        DISPATCH_SHA: ${{ github.sha }}
-      run: bash ./Tools/verify-g4-release-source.sh
-
-    - name: Authenticate to NuGet.org with Trusted Publishing
-      if: github.ref_name != 'prerelease'
-      id: nuget_login
-      uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
-      with:
-        user: ${{ vars.NUGET_USER }}
-
-    - name: Create Release
-      id: create_release
-      uses: ./Github/create-release
-      env:
-        HEXALITH_G4_SOURCE_CI_RUN_ID: ${{ steps.approved_source.outputs.ci-run-id }}
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        nuget-api-key: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
-
-    - name: Record release qualification attempt
-      if: always()
-      env:
-        G4_PRODUCER_STEP_OUTCOME: ${{ steps.create_release.outcome }}
-      run: python3 Tools/archive-g4-qualification-evidence.py --package-directory artifacts/g4-tool-packages --kind release --record-attempt
-
-    - name: Retain actual-version qualification evidence
-      if: always()
-      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-      with:
-        name: g4-release-qualification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-        path: |
-          artifacts/g4-tool-packages/producer-attempt.json
-          artifacts/g4-tool-packages/**/g4-tool-qualification-evidence.zip
-          artifacts/g4-tool-packages/**/g4-tool-package-inventory.json
-          artifacts/g4-tool-packages/**/qualification-evidence/
-        if-no-files-found: warn
-        retention-days: 90
+      - name: Publish authenticated original release
+        uses: $/Github/publish
+        with:
+          publish: ${{ needs.release.outputs.publish }}
+          version: ${{ needs.release.outputs.version }}
+          sha: ${{ needs.release.outputs.sha }}
+          last-tag: ${{ needs.release.outputs.last-tag }}
+          draft-id: ${{ needs.release.outputs.draft-id }}
+          artifact-id: ${{ needs.release.outputs.artifact-id }}
+          artifact-digest: ${{ needs.release.outputs.artifact-digest }}
+          artifact-run: ${{ needs.release.outputs.artifact-run }}
+          nuget-user: ${{ vars.HEXALITH_NUGET_USER }}
+          registry-username: ${{ secrets.HEXALITH_REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.HEXALITH_REGISTRY_PASSWORD }}
