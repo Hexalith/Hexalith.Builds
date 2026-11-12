@@ -483,8 +483,10 @@ class PerimeterTests(unittest.TestCase):
         self.module.commit()
         self.render.write("rendered/Fixture/owned/file.txt", "expected\n")
         self.render.commit()
-        self.assert_atomic_error(self.document({"kind": "whole-dir", "path": "owned"},
-                                               {"kind": "absent-glob", "pattern": "owned/*.txt"}), "conflicting ownership")
+        document = self.document({"kind": "whole-dir", "path": "owned"},
+                                 {"kind": "absent-glob", "pattern": "owned/*.txt"})
+        self.assert_atomic_error(document, "conflicting ownership")
+        self.assert_atomic_error(document, "conflicting ownership", selected={1})
 
     def test_literal_special_paths_use_nul_delimited_deletions(self):
         names = [".releaserc $ # (x)", ".releaserc:literal", ".releaserc\u2028line"]

@@ -498,6 +498,15 @@ class _Plan:
         _ownership(entries)
         if rendered_root and not config.repository_path(rendered_root):
             raise PerimeterError("unsafe rendered-root prefix")
+        prefix = rendered_root + "/" if rendered_root else ""
+        absent_patterns = [entry["pattern"] for entry in entries if entry["kind"] == "absent-glob"]
+        for entry in entries:
+            if entry["kind"] == "whole-dir":
+                for source in expected.items:
+                    if _prefix(prefix + entry["path"], source):
+                        target = source[len(prefix):]
+                        if any(wildmatch(pattern, target) for pattern in absent_patterns):
+                            raise PerimeterError(f"conflicting ownership at {target}")
         indexes = list(range(len(entries))) if selected is None else list(selected)
         if any(type(index) is not int or not 0 <= index < len(entries) for index in indexes):
             raise PerimeterError("selected entry indexes must exist in the perimeter")
@@ -537,8 +546,6 @@ class _Plan:
                 if not sources:
                     raise PerimeterError(f"missing expected source: {prefix}{path}")
                 for target, item in sorted(sources.items()):
-                    if any(rule["kind"] == "absent-glob" and wildmatch(rule["pattern"], target) for rule in entries):
-                        raise PerimeterError(f"conflicting ownership at {target}")
                     if item.mode == "160000":
                         raise PerimeterError(f"expected whole source is not a blob: {prefix}{target}")
                     data = expected.read(prefix + target)
