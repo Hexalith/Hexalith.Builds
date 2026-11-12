@@ -42,6 +42,37 @@ public sealed class StartupReadinessTests
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable errorLifetime = error.ConfigureAwait(true);
         int exit = await ModuleCommandApplication.InvokeAsync(["test", "--manifest", "unused", "--profile", "verify", "--eventstore-port", port, "--output", "json"], output, error, TestContext.Current.CancellationToken).ConfigureAwait(true);
         exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
+        using JsonDocument refusal = JsonDocument.Parse(output.ToString());
+        refusal.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(value => value.GetProperty("ruleId").GetString() == "HXC001");
+    }
+
+    /// <summary>The service refuses explicit ports with down, existing runs and invalid port values before loading a manifest.</summary>
+    /// <param name="scenario">The unsupported service request.</param>
+    /// <returns>The stable usage refusal and absence of allocated state.</returns>
+    [Theory]
+    [InlineData("down")]
+    [InlineData("existing")]
+    [InlineData("zero")]
+    [InlineData("overflow")]
+    public async Task ExplicitPortServiceRequiresFreshOwnerAsync(string scenario)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            int port = scenario switch { "zero" => 0, "overflow" => 65536, _ => 18080 };
+            CompositionEngineOptions options = Options(root, Path.Combine(root, "unused")) with { EventStorePort = port };
+            StringWriter output = new();
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
+            int exit = await ModuleCommandExecutionService.ExecuteAsync(scenario == "down" ? ModuleInvocationCommand.Down : ModuleInvocationCommand.Test, "unused", null, null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, runId: scenario == "existing" ? CompositionRunPlanFactory.NewRunId() : null, compositionOptions: options).ConfigureAwait(true);
+            exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
+            using JsonDocument refusal = JsonDocument.Parse(output.ToString());
+            refusal.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(value => value.GetProperty("ruleId").GetString() == "HXC002");
+            Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics")).ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
     }
 
     /// <summary>The public command binds its exact requested endpoint and names a live managed blocker.</summary>

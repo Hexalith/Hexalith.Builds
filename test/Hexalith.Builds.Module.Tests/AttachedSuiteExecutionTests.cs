@@ -676,6 +676,7 @@ public sealed class AttachedSuiteExecutionTests
     /// <param name="reason">The stable reason, or null for usage refusals.</param>
     /// <returns>The no-admission assertions.</returns>
     [Theory]
+    [InlineData("eventstore-port", "HXC001", null)]
     [InlineData("filter", "HXC002", null)]
     [InlineData("evidence", "HXC002", null)]
     [InlineData("candidate", "HXC002", null)]
@@ -708,6 +709,7 @@ public sealed class AttachedSuiteExecutionTests
 
         string[] extra = scenario switch
         {
+            "eventstore-port" => ["--eventstore-port", "18080"],
             "filter" => ["--filter", "anything"],
             "evidence" => ["--evidence", "evidence.json"],
             "candidate" => ["--candidate-request", Path.Combine(workspace.Root, "request.json")],
@@ -717,7 +719,7 @@ public sealed class AttachedSuiteExecutionTests
         };
         int before = (await owner.AttachmentsAsync().ConfigureAwait(true)).Count;
         (int exit, JsonElement output) = await owner.AttachAsync(extra, TestContext.Current.CancellationToken, manifest, scenario == "gate" ? "gated" : "attached").ConfigureAwait(true);
-        exit.ShouldBe((int)(rule == "HXC002" ? ToolExitCode.UsageOrManifest : ToolExitCode.TopologyOrLifecycle), output.GetRawText());
+        exit.ShouldBe((int)(rule is "HXC001" or "HXC002" ? ToolExitCode.UsageOrManifest : ToolExitCode.TopologyOrLifecycle), output.GetRawText());
         AssertRefusal(output, rule, reason);
         (await owner.AttachmentsAsync().ConfigureAwait(true)).Count.ShouldBe(before);
         Directory.GetFiles(workspace.Root, "started-*").ShouldBeEmpty();
