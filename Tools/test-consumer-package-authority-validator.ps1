@@ -207,6 +207,22 @@ exit 0
     Test-Scenario -Name 'Valid version-free consumer' -RepositoryRoot $validRoot -ExpectedExitCode 0 `
         -ExpectedOutput 'consumer package authority validation passed'
 
+    $script:scenarioCount++
+    $callerPath = Join-Path $temporaryRoot 'exit-code-caller.ps1'
+    Write-Utf8File -Path $callerPath -Content @'
+param([string] $ValidatorPath, [string] $RepositoryRoot, [string] $CatalogPath)
+Set-Location -LiteralPath $RepositoryRoot
+& $ValidatorPath -RepositoryRoot $RepositoryRoot -CatalogPath $CatalogPath
+exit $LASTEXITCODE
+'@
+    $callerOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $callerPath `
+            -ValidatorPath $validatorPath -RepositoryRoot $validRoot -CatalogPath $catalogPath 2>&1)
+    $callerExitCode = $LASTEXITCODE
+    $callerOutputText = [string]::Join("`n", @($callerOutput | ForEach-Object { [string] $_ }))
+    if ($callerExitCode -ne 0 -or $callerOutputText -notlike '*consumer package authority validation passed*') {
+        $failures.Add("Valid non-Git consumer must return zero through a caller exiting LASTEXITCODE; received $callerExitCode. Output: $callerOutputText")
+    }
+
     $stableRoot = New-ConsumerFixture -Name 'central-stable-selection'
     Move-Item -LiteralPath (Join-Path $stableRoot 'Fixture.csproj') -Destination (Join-Path $stableRoot 'Stable.Consumer.csproj')
     Test-Scenario -Name 'Project-specific central stable selection' -RepositoryRoot $stableRoot -ExpectedExitCode 0 `

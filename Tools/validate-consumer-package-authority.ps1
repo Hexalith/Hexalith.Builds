@@ -529,3 +529,4 @@ else {
 [Console]::Out.WriteLine(
     "Consumer package authority validation passed for $($projectFiles.Count) projects in '$resolvedRepositoryRoot'.$excludedSummary"
 )
+exit 0
