@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "observedAtUtc": "2026-11-12T02:25:52.726761+00:00",
+  "catalogRevision": "e52937c596ed5573f893d4167301b2b11075d158",
+  "catalogRawSha256": "ac0c1a4acbd88f84a3400839f81818444985717c5404c9e53f4bf80bfe64eab4",
+  "selections": {
+    "Hexalith.Memories": "3.0.27",
+    "Hexalith.Folders": "1.4.0",
+    "AngleSharp": "1.10.2",
+    "NSwag.MSBuild": "14.8.0"
+  },
+  "consumerNativeUnitTotal": 12266,
+  "consumers": [
+    {
+      "name": "Projects",
+      "sourceRevision": "897ab885619c12470c4a3a450ac7c4e2f13753cd",
+      "target": "Hexalith.Projects.CI.slnx",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "86d92c203e24bdc5ce601692e3eac6a5bbf84c89201eccd7d8e9b372c7adf6f9",
+      "native": [
+        {
+          "suite": "Projects.test-UI.log",
+          "total": 211,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "aaf7aa89ed56d15459c6f425b4a4c9ae3f6f07e0140b2e8b632af56ad9595b3e"
+        },
+        {
+          "suite": "Projects.test-Mcp.log",
+          "total": 35,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "5557f93f1a34636865e772769a962af0769f7f12c0cd8ded2d710b9d317aae20"
+        },
+        {
+          "suite": "Projects.test-Client.log",
+          "total": 125,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "1ab538653dad2b4e3cfad0415c0d3394226f96ecd9f5f8930b21bd8a7ea887b6"
+        }
+      ]
+    },
+    {
+      "name": "Agents",
+      "sourceRevision": "d40641c6e550b96bb48c26e5cb932f623efce90e",
+      "target": "test/Hexalith.Agents.UI.Tests/Hexalith.Agents.UI.Tests.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "76550247d277cb239b49cbcb2f55ab9bc8a3c1fb0468871e7c18cbf04ebfb398",
+      "native": [
+        {
+          "suite": "Agents.test-Hexalith.Agents.UI.Tests.log",
+          "total": 1249,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "4b312ad1670c5927713132b0c5f85a994342522e40fb4369ddb64b5203ff4549"
+        }
+      ]
+    },
+    {
+      "name": "Folders",
+      "sourceRevision": "8063a0392789bd45a214c2c873298ef25d481bb9",
+      "target": "tests/Hexalith.Folders.UI.Tests/Hexalith.Folders.UI.Tests.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "693099fca39376496bd2ca304e8d32c185dc75c9556a7cfeddaffb50b989982b",
+      "native": [
+        {
+          "suite": "Folders.test-Hexalith.Folders.UI.Tests.log",
+          "total": 552,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "582dac466479c3b0cee81bf399b1e783857f798614cac844342b0f4afc895b75"
+        }
+      ]
+    },
+    {
+      "name": "Memories",
+      "sourceRevision": "ca3bcc981e8e3dd6be41f669587984225171f7ca",
+      "target": "tests/Hexalith.Memories.Web.Tests/Hexalith.Memories.Web.Tests.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "e61a916cdcbca89a8c8a2a975e2df58361f5e2e9374dbe46fb506bfed0b06cf8",
+      "native": [
+        {
+          "suite": "Memories.test-Hexalith.Memories.Web.Tests.log",
+          "total": 493,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "e1784c571b07cae917bb3d310270c635b05651843a3ccdd2c1b88b8c17066843"
+        }
+      ]
+    },
+    {
+      "name": "Tenants",
+      "sourceRevision": "6188ea48cab9fdf4207072135c66aab5a7b7fe32",
+      "target": "tests/Hexalith.Tenants.UI.Tests/Hexalith.Tenants.UI.Tests.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "d3e0a6a76eb7800414af81ab3c1edf92dc8154df203c238c1cf5841e145167d7",
+      "native": [
+        {
+          "suite": "Tenants.test-Hexalith.Tenants.UI.Tests.log",
+          "total": 8080,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "7d2090d5bd8d71555bb95541b490c78ae934bb7314f7de2f60ce4df63ecfd453"
+        }
+      ]
+    },
+    {
+      "name": "Parties",
+      "sourceRevision": "b6b4f8a5c83b77ab57a9b947436317162b4fb337",
+      "target": "tests/Hexalith.Parties.UI.Tests/Hexalith.Parties.UI.Tests.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "47b8dbe9adf8a59d507d58a8b6206f7b8eb3d4b19c2a16a620b596b724d62461",
+      "native": [
+        {
+          "suite": "Parties.test-Hexalith.Parties.UI.Tests.log",
+          "total": 459,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "17558d05968a2dc472173f75672816ada8f788ac8b780f5fd207fd738b76bacb"
+        }
+      ]
+    },
+    {
+      "name": "Parties.ConsumerPortal",
+      "sourceRevision": "b6b4f8a5c83b77ab57a9b947436317162b4fb337",
+      "target": "tests/Hexalith.Parties.ConsumerPortal.Tests/Hexalith.Parties.ConsumerPortal.Tests.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "6366e1e3e08468d14ff7f846321dfb2d0447358ce9df930abae2e69e673e8a71",
+      "native": [
+        {
+          "suite": "Parties.ConsumerPortal.test-Hexalith.Parties.ConsumerPortal.Tests.log",
+          "total": 97,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "5f013fab416a9d4fd1ce019ccb34d287e9d00d6b4aad643228c6426eb26d4cb0"
+        }
+      ]
+    },
+    {
+      "name": "Parties.AdminPortal",
+      "sourceRevision": "b6b4f8a5c83b77ab57a9b947436317162b4fb337",
+      "target": "tests/Hexalith.Parties.AdminPortal.Tests/Hexalith.Parties.AdminPortal.Tests.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "bae63700d64fce6c08757d9a23fa360adbff146890baee54a3a7390228baa80b",
+      "native": [
+        {
+          "suite": "Parties.AdminPortal.test-Hexalith.Parties.AdminPortal.Tests.log",
+          "total": 352,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "a40c8cfe511bc071144b0ac65ff64df441806da3fbbd77a585e06d830fae15fb"
+        }
+      ]
+    },
+    {
+      "name": "ChatBot",
+      "sourceRevision": "c901bab698f49363aa19747fab641716501e51de",
+      "target": "tests/Hexalith.ChatBot.UI.Tests/Hexalith.ChatBot.UI.Tests.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "70c5f2ba8a1d8ba75a03528a8603384c228d7d10a8a87c32d5a66f4fc4f4dc4e",
+      "native": [
+        {
+          "suite": "ChatBot.test-Hexalith.ChatBot.UI.Tests.log",
+          "total": 613,
+          "errors": 0,
+          "failed": 0,
+          "skipped": 0,
+          "logSha256": "0fa26b5241f458957ea5c1c7879f4bac70120158db1ed88dcc465be7589dc720"
+        }
+      ]
+    },
+    {
+      "name": "Builds.UiHost",
+      "sourceRevision": "733cf0ec3042c78d0d749a41f4b6b46bdd18be92",
+      "target": "src/hosts/Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "2513c69a7a44554e115f60c9d7dd61f93db49ad42c804b1aeb0676f000849f23",
+      "native": []
+    },
+    {
+      "name": "Builds.UiFixture",
+      "sourceRevision": "733cf0ec3042c78d0d749a41f4b6b46bdd18be92",
+      "target": "test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj",
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "buildLogSha256": "9e377b0de1b61ade0c7c406d4cabc58602c70d6cea3061cb0ad757bba66e748d",
+      "native": []
+    }
+  ],
+  "actualNswagGenerationAndCompile": [
+    {
+      "consumer": "Projects",
+      "generatorVersion": "14.8.0",
+      "configurationSha256": "57b05e6bb3aaec137283214dbc5e4b6fd19399a8f9b184745cfb5cbef1753548",
+      "outputSha256": "9f317abcaf0ab3c0df96f214a901cfd9a105d443d67a683baccbbb9b2ab78365",
+      "generatorExit": 0,
+      "generatedClientCompileExit": 0,
+      "generatorLog": "/tmp/latest-family-consumer-qualification/nswag148/Projects.generator.log",
+      "compileLog": "/tmp/latest-family-consumer-qualification/nswag148/Projects.compile.log"
+    },
+    {
+      "consumer": "ChatBot",
+      "generatorVersion": "14.8.0",
+      "configurationSha256": "f0e21380225bf5bb9155a185b3754e178af2b0387dee5eeaed30d8f67099cba4",
+      "outputSha256": "30d62d5bfc248970a782746df15a14d705323803951f2c530f5cfec0e0a10893",
+      "generatorExit": 0,
+      "generatedClientCompileExit": 0,
+      "generatorLog": "/tmp/latest-family-consumer-qualification/nswag148/ChatBot.generator.log",
+      "compileLog": "/tmp/latest-family-consumer-qualification/nswag148/ChatBot.compile.log"
+    },
+    {
+      "consumer": "Folders",
+      "generatorVersion": "14.8.0",
+      "configurationSha256": "3d5bfcdd90ad711647d76c0188e75f1dfa03aab99ad309041400af462fd9bf8d",
+      "outputSha256": "225f2c277d022cf2489d8b0e71b53ad0225feaa431652b46f016bdcb7e7081d0",
+      "generatorExit": 0,
+      "generatedClientCompileExit": 0,
+      "generatorLog": "/tmp/latest-family-consumer-qualification/nswag148/Folders.generator.log",
+      "compileLog": "/tmp/latest-family-consumer-qualification/nswag148/Folders.compile.log",
+      "productionShim": "src/Hexalith.Folders.Client/Compat/ChangedPathEvidenceShim.cs (existing production compilation input)"
+    }
+  ],
+  "unavailableCatalogIdentities": [
+    {
+      "id": "Microsoft.Extensions.Identity.Http",
+      "source": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.identity.http/index.json",
+      "status": 404,
+      "publicAvailability": "unavailable from configured public source",
+      "activeLiteralPackageReferenceConsumers": 0,
+      "declarationRetained": true,
+      "versionInvented": false
+    },
+    {
+      "id": "Serilog.Sinks.Browser",
+      "source": "https://api.nuget.org/v3-flatcontainer/serilog.sinks.browser/index.json",
+      "status": 404,
+      "publicAvailability": "unavailable from configured public source",
+      "activeLiteralPackageReferenceConsumers": 0,
+      "declarationRetained": true,
+      "versionInvented": false
+    }
+  ],
+  "qualificationLayout": "Exact candidate producer catalog selected with the normal resolver property; Projects test-only canonical Platform helper path supplied read-only; no consumer version overrides or nested Git initialization.",
+  "scope": "Package-only API compilation and native unit checks. Current source CI, package publication, source-qualified Platform and composed behavior remain required."
+}
