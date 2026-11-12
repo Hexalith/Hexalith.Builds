@@ -1,0 +1,141 @@
+{
+  "review_date": "2026-11-12",
+  "reviewed_source": "14bb22d9fb2124405ce23c22bd0d38ad55be7836",
+  "baseline_revision": "142690a268cec17275cccadc1132bb1f77eff7cd",
+  "hosted_final_integrated_source": {
+    "id": 43188274154,
+    "head_sha": "14bb22d9fb2124405ce23c22bd0d38ad55be7836",
+    "event": "push",
+    "path": ".github/workflows/builds-ci.yml",
+    "head_branch": "main",
+    "status": "completed",
+    "conclusion": "success",
+    "attempt": 1,
+    "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43188274154",
+    "jobs": [
+      {
+        "id": 131080847627,
+        "name": "Workflow lint and public API",
+        "conclusion": "success"
+      },
+      {
+        "id": 131080847923,
+        "name": "Python contract tests (3.12)",
+        "conclusion": "success"
+      },
+      {
+        "id": 131080847992,
+        "name": "Sample module / Build and tests",
+        "conclusion": "success"
+      },
+      {
+        "id": 131080848064,
+        "name": "Package catalog contracts",
+        "conclusion": "success"
+      },
+      {
+        "id": 131080848161,
+        "name": ".NET tests / Build and tests",
+        "conclusion": "success"
+      },
+      {
+        "id": 131080848168,
+        "name": "Python contract tests (runner)",
+        "conclusion": "success"
+      },
+      {
+        "id": 131081257879,
+        "name": "Sample Windows tests",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "fresh_local_checks": {
+    "source": "14bb22d9fb2124405ce23c22bd0d38ad55be7836",
+    "workflow_lint": {
+      "exit_code": 0,
+      "log": "/tmp/cicd-3-6-resumed-review-lint.log",
+      "new_zizmor_findings": 0
+    },
+    "public_api": {
+      "exit_code": 0,
+      "entries": 2565,
+      "removals": 0,
+      "log": "/tmp/cicd-3-6-resumed-review-api.log"
+    },
+    "release_outcome": {
+      "command": "python3 -m unittest discover -s Github/lib/tests -p test_release_outcome.py -v",
+      "passed": 35
+    },
+    "python_runner": {
+      "command": "python3 -m unittest discover -s Tools/ci/tests -p test_python_runner.py -v",
+      "passed": 4
+    },
+    "recorded_full_python_log_hashes_verified": true,
+    "recorded_full_python_groups_passed": {
+      "python312": "14/14",
+      "runner": "14/14"
+    },
+    "protected_files_verified": 118,
+    "protected_file_mismatches": 0
+  },
+  "upstream_preserved_for_documentation_commit": {
+    "source": "9f5d751f7ab0b7a621dcd18b589bf061fabac6ec",
+    "scope": "Separate .NET 11 migration; outside the 3-6 implementation review.",
+    "push_run": 43196500590,
+    "jobs": [
+      {
+        "id": 131108716325,
+        "name": "Python contract tests (runner)",
+        "conclusion": "success"
+      },
+      {
+        "id": 131108716784,
+        "name": "Sample module / Build and tests",
+        "conclusion": "success"
+      },
+      {
+        "id": 131108716798,
+        "name": "Python contract tests (3.12)",
+        "conclusion": "success"
+      },
+      {
+        "id": 131108717054,
+        "name": ".NET tests / Build and tests",
+        "conclusion": "success"
+      },
+      {
+        "id": 131108717084,
+        "name": "Workflow lint and public API",
+        "conclusion": "success"
+      },
+      {
+        "id": 131108717214,
+        "name": "Package catalog contracts",
+        "conclusion": "success"
+      },
+      {
+        "id": 131109114669,
+        "name": "Sample Windows tests",
+        "conclusion": "success"
+      }
+    ],
+    "runtime_changes_by_review_fix": false
+  },
+  "probe_marker_readback": {
+    "id": 441591623,
+    "tag_name": "v4.47.1",
+    "draft": true,
+    "updated_at": "2026-11-12T08:52:41Z",
+    "production_marker": false,
+    "qualification_marker": true,
+    "mutation_performed_by_this_session": false
+  },
+  "followups": [
+    "Real packaged CLI extension-closure product verification; G-4 qualification execution remains retired.",
+    "Consumer evaluator process/drain deadlines and bounded channel storage.",
+    "Central evaluator owned-descendant cleanup after parent exit.",
+    "Intermittent native cleanup observation; sanitized failure excerpt retained."
+  ],
+  "production_dispatch_or_mutation_performed": false
+}

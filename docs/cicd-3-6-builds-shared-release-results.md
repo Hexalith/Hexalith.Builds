@@ -3,9 +3,11 @@
 Story 3-6 implements the shared release caller and retires Builds' legacy
 qualification CI gates. Implementation starts from Builds
 `aca0183fdeb4a7fcd02546ff8f082acbf73a0585`; the enclosing CiCd baseline is
-`22387551f497bfef53af37c0c35d86b0d40c8d3f`. Production bootstrap remains a
+`142690a268cec17275cccadc1132bb1f77eff7cd`. Production bootstrap remains a
 separate operational step. No release dispatch, publication, retained-resource
 mutation, setting change or credential change was performed for this story.
+The source-bound implementation checks below precede the separate upstream
+.NET 11 migration recorded in Review completion.
 
 ## Implemented behavior
 
@@ -156,7 +158,63 @@ are in [hosted-success.json](../evidence/cicd-3-6/hosted-success.json).
 Hosted publication remains outside this implementation; these checks do not
 establish production package, artifact, outcome or final-tag publication.
 
-## AD-19 read-only preflight and bootstrap stops
+## Review completion (2026-11-12)
+
+Three independent review layers examined the expanded recorded-baseline diff.
+The reviewed implementation source is
+`14bb22d9fb2124405ce23c22bd0d38ad55be7836`. Its own exact-source
+[push run 43188274154](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43188274154)
+succeeded on attempt 1, with all seven retained jobs green, including both
+Python interpreters, all fifteen catalog checks and both sample platforms.
+This closes the final-integration hosted-evidence gap; the earlier run above
+remains evidence for the initial implementation and its failed-job retry.
+Job identities and the review observations are retained in
+[review-completion.json](../evidence/cicd-3-6/review-completion.json).
+
+Fresh checks at that reviewed source passed actionlint/authenticated zizmor
+(zero new findings), the committed-object API check (2,565 entries, no removals),
+35 release-outcome/caller tests and four runner process tests. The saved full
+Python logs' hashes match their records and both report 14/14 groups passed.
+All 118 protected files match the saved integrated-source comparison.
+
+The removed PowerShell wrappers for commitlint, container publishing and
+governed provenance delegate to Python groups which the retained runner still
+discovers; their underlying tests continue running. Frozen domain-workflow text
+checks and the old package-publisher regression no longer run with the retired
+legacy contracts job. Keeping their files pending final legacy cleanup does not
+make them current gates.
+
+The review recorded four follow-ups in CiCd's deferred-work ledger: focused
+real packaged-host extension-closure product verification, bounded consumer
+evaluator execution/capture, central-evaluator descendant cleanup after parent
+exit, and the intermittent native cleanup observation. The first three arise
+from independent upstream tooling changes; the fourth predates this caller
+rewrite. Retired G-4 qualification execution is not restored. The exact sanitized
+[first-attempt failure excerpt](../evidence/cicd-3-6/cleanup-first-attempt.log)
+remains inspectable; neither the successful retry nor focused passing cases
+establish its root cause.
+
+Before committing these documentation/evidence corrections, the clean Builds
+checkout fast-forwarded to independently published upstream
+`9f5d751f7ab0b7a621dcd18b589bf061fabac6ec`, preserving its separate .NET 11
+migration. Its [push run 43196500590](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43196500590)
+also has all seven jobs green. That migration is outside this story's reviewed
+implementation and the preservation comparison above. The review fixes change
+only this report and its evidence; no runtime, catalog or SDK edits are made.
+
+## Historical AD-19 preflight and bootstrap stops (07:11–07:12 UTC)
+
+This section preserves the implementation-time snapshot, not current release
+readiness. A read-only refresh during review found draft `441591623` externally
+updated at `2026-11-12T08:52:41Z`: its production marker is absent and its
+`hexalith-qualification-source:` marker is present. It is no longer a marked
+production-draft blocker. Its resources remain retained; no archival, deletion,
+publication or version reuse was performed or authorized by this review.
+CiCd's canonical story
+`_bmad-output/specs/spec-cicd/stories/3-7-bootstrap-the-first-builds-release.md`
+records the later operational reconciliation and requires a fresh full preflight.
+The old setting failures below remain historical observations; no current
+setting is inferred from them.
 
 Read-only checks at `2026-11-12T07:11:18Z` and inventory at
 `2026-11-12T07:12:03Z` used the configured CiCd-agent profile
@@ -173,7 +231,7 @@ bypass actors: Protect main (19196298) forbids deletion/non-fast-forward on the
 default branch; v tags (26812219) forbid update/deletion on `refs/tags/v*` and
 permit tag creation.
 
-The marked probe draft remains an explicit stop: release ID `441591623`,
+At the historical snapshot, the marked probe draft was an explicit stop: release ID `441591623`,
 `v4.47.1`, source `75e1d4a3809b30684e67c7e9b2c8043720b49c53`, package
 `Hexalith.Builds.PublishProbe.20261111`, container `cicd-publish-spike-3-1`.
 Its original [producer run 43010609603](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43010609603)
@@ -209,8 +267,8 @@ All endpoint paths are relative to the GitHub API.
 | Organization variables and repository access | `orgs/Hexalith/actions/variables` | `organization_actions_variables=read` |
 | Organization pull-secret names and repository access | `orgs/Hexalith/actions/secrets` | `organization_secrets=read` |
 
-No production bootstrap is permitted while the retained draft/tags or any
-unverified AD-19 precondition remains. A later explicitly authorized bootstrap
+The historical assessment did not authorize production bootstrap. A later
+explicitly authorized bootstrap
 must repeat the complete preflight and record its exact source, original
 artifact, package publication, sole outcome and final tag; `ready` requires
 AD-18 checks and separate maintainer publication. No positive hosted production

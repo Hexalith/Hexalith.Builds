@@ -1,0 +1,18 @@
+# Sanitized hosted test failure excerpt
+# Run 43174705780, attempt 1, job 131036024414
+# Source d8b2be323528e624316d4049b7c86d03ba0f74e0
+# Root cause unproven; successful retry is recorded separately.
+2026-11-12T07:31:29.8962019Z failed Hexalith.Builds.ModuleTool.Tests.NativeTestExecutorTests.ReviewDetachedNativeDescendantsAreVerifiedAsync(discoveryVerified: True) (460ms)
+2026-11-12T07:31:29.9026693Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+2026-11-12T07:31:29.9073113Z   Shouldly.ShouldAssertException : False
+2026-11-12T07:31:29.9077871Z       should be
+2026-11-12T07:31:29.9162579Z   True
+2026-11-12T07:31:29.9172765Z       but was not
+2026-11-12T07:31:29.9189114Z     at Hexalith.Builds.ModuleTool.Tests.NativeTestExecutorTests.ReviewDetachedNativeDescendantsAreVerifiedAsync(Boolean discoveryVerified) in /_/test/Hexalith.Builds.Module.Tests/NativeTestExecutorTests.cs:64
+2026-11-12T07:31:29.9192088Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+2026-11-12T07:31:29.9194806Z     at Hexalith.Builds.ModuleTool.Tests.NativeTestExecutorTests.ReviewDetachedNativeDescendantsAreVerifiedAsync(Boolean discoveryVerified) in /_/test/Hexalith.Builds.Module.Tests/NativeTestExecutorTests.cs:110
+2026-11-12T07:31:29.9198154Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+2026-11-12T07:31:29.9200537Z     at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+2026-11-12T07:31:29.9202409Z     --- End of stack trace from previous location ---
+2026-11-12T07:31:29.9203828Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+2026-11-12T07:31:29.9205931Z     at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
