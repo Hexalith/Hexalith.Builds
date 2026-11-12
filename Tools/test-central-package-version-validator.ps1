@@ -67,20 +67,29 @@ function New-EvaluatorScript {
         [AllowEmptyString()]
         [string] $Output,
 
-        [int] $ExitCode = 0
+        [int] $ExitCode = 0,
+
+        [string] $ErrorOutput = '',
+
+        [int] $SleepSeconds = 0
     )
 
     $path = Join-Path $temporaryRoot "$Name-evaluator.ps1"
     $outputBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Output))
+    $errorBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($ErrorOutput))
     $content = @'
 param([string] $CatalogPath)
 $null = $CatalogPath
 $output = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__OUTPUT_BASE64__'))
 [Console]::Out.Write($output)
+[Console]::Error.Write([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__ERROR_BASE64__')))
+if (__SLEEP_SECONDS__ -gt 0) { Start-Sleep -Seconds __SLEEP_SECONDS__ }
 exit __EXIT_CODE__
 '@
     $content = $content.Replace('__OUTPUT_BASE64__', $outputBase64)
     $content = $content.Replace('__EXIT_CODE__', [string] $ExitCode)
+    $content = $content.Replace('__ERROR_BASE64__', $errorBase64)
+    $content = $content.Replace('__SLEEP_SECONDS__', [string] $SleepSeconds)
     Write-Utf8File -Path $path -Content "$content`n"
     return $path
 }
@@ -91,7 +100,11 @@ function Invoke-Validator {
         [string] $CatalogPath,
 
         [AllowEmptyString()]
-        [string] $EvaluatorScriptPath = ''
+        [string] $EvaluatorScriptPath = '',
+
+        [int] $EvaluationTimeoutSeconds = 60,
+
+        [switch] $EmitEvaluation
     )
 
     $arguments = @(
@@ -106,6 +119,8 @@ function Invoke-Validator {
         $arguments += @('-EvaluatorScriptPath', $EvaluatorScriptPath)
     }
 
+    $arguments += @('-EvaluationTimeoutSeconds', [string] $EvaluationTimeoutSeconds)
+    if ($EmitEvaluation) { $arguments += '-EmitEvaluation' }
     $output = @(& $pwshExecutable @arguments 2>&1)
     return [pscustomobject] @{
         ExitCode = $LASTEXITCODE
@@ -128,11 +143,16 @@ function Test-Scenario {
         [string] $ExpectedOutput,
 
         [AllowEmptyString()]
-        [string] $EvaluatorScriptPath = ''
+        [string] $EvaluatorScriptPath = '',
+
+        [int] $EvaluationTimeoutSeconds = 60,
+
+        [switch] $EmitEvaluation
     )
 
     $script:scenarioCount++
-    $result = Invoke-Validator -CatalogPath $CatalogPath -EvaluatorScriptPath $EvaluatorScriptPath
+    $result = Invoke-Validator -CatalogPath $CatalogPath -EvaluatorScriptPath $EvaluatorScriptPath `
+        -EvaluationTimeoutSeconds $EvaluationTimeoutSeconds -EmitEvaluation:$EmitEvaluation
     if ($result.ExitCode -ne $ExpectedExitCode) {
         $script:failures.Add(
             "$Name expected exit code $ExpectedExitCode but received $($result.ExitCode). Output: $($result.Output)"
@@ -209,6 +229,52 @@ try {
     $failedEvaluator = New-EvaluatorScript -Name 'failed-evaluation' -Output 'fixture evaluation failed' -ExitCode 17
     Test-Scenario -Name 'Failed evaluator' -CatalogPath $stableCatalog -ExpectedExitCode 1 `
         -ExpectedOutput 'catalog evaluation exited with code 17' -EvaluatorScriptPath $failedEvaluator
+
+    $validJson = '{"Items":{"PackageVersion":[{"Identity":"Fixture.Package","Version":"1.2.3"}]}}'
+    $warningEvaluator = New-EvaluatorScript -Name 'stderr-warning' -Output $validJson `
+        -ErrorOutput 'MSBuild server fallback diagnostic'
+    Test-Scenario -Name 'Zero-exit stderr cannot contaminate structured stdout' -CatalogPath $stableCatalog `
+        -ExpectedExitCode 0 -ExpectedOutput 'Fixture.Package' -EvaluatorScriptPath $warningEvaluator -EmitEvaluation
+    $structured = Invoke-Validator -CatalogPath $stableCatalog -EvaluatorScriptPath $warningEvaluator -EmitEvaluation
+    try {
+        $null = $structured.Output | ConvertFrom-Json -ErrorAction Stop
+    }
+    catch {
+        $failures.Add('EmitEvaluation must remain JSON-only when a successful evaluator writes stderr.')
+    }
+
+    $failedValidEvaluator = New-EvaluatorScript -Name 'nonzero-valid-json' -Output $validJson `
+        -ErrorOutput 'STDERR-FAILURE-MARKER' -ExitCode 17
+    Test-Scenario -Name 'Valid stdout never hides nonzero exit' -CatalogPath $stableCatalog -ExpectedExitCode 1 `
+        -ExpectedOutput 'catalog evaluation exited with code 17' -EvaluatorScriptPath $failedValidEvaluator
+    Test-Scenario -Name 'Failed evaluator retains stderr diagnostics' -CatalogPath $stableCatalog -ExpectedExitCode 1 `
+        -ExpectedOutput 'STDERR-FAILURE-MARKER' -EvaluatorScriptPath $failedValidEvaluator
+
+    $misleadingEvaluator = New-EvaluatorScript -Name 'stderr-is-not-json' -Output '{not-json' -ErrorOutput $validJson
+    Test-Scenario -Name 'Stderr cannot supply missing valid stdout' -CatalogPath $stableCatalog -ExpectedExitCode 1 `
+        -ExpectedOutput 'returned malformed JSON' -EvaluatorScriptPath $misleadingEvaluator
+
+    $largeErrorEvaluator = New-EvaluatorScript -Name 'bounded-stderr' -Output $validJson `
+        -ErrorOutput (('x' * 65536) + 'STDERR-TAIL-MARKER') -ExitCode 19
+    $largeError = Invoke-Validator -CatalogPath $stableCatalog -EvaluatorScriptPath $largeErrorEvaluator
+    $scenarioCount++
+    if ($largeError.ExitCode -ne 1 -or $largeError.Output.Length -gt 20000 `
+        -or $largeError.Output -notlike '*STDERR-TAIL-MARKER*') {
+        $failures.Add('Failed evaluator stderr diagnostics must retain their bounded tail.')
+    }
+
+    $largeOutputEvaluator = Join-Path $temporaryRoot 'stdout-overflow-evaluator.ps1'
+    Write-Utf8File -Path $largeOutputEvaluator -Content "[Console]::Out.Write(('x' * (8 * 1024 * 1024 + 1)))"
+    Test-Scenario -Name 'Oversized stdout fails instead of being silently truncated' -CatalogPath $stableCatalog `
+        -ExpectedExitCode 1 -ExpectedOutput 'stdout exceeded the 8,388,608-character limit' -EvaluatorScriptPath $largeOutputEvaluator
+
+    $slowEvaluator = New-EvaluatorScript -Name 'process-deadline' -Output $validJson -SleepSeconds 10
+    $started = [Diagnostics.Stopwatch]::StartNew()
+    Test-Scenario -Name 'Valid JSON before a hung evaluator is not success' -CatalogPath $stableCatalog `
+        -ExpectedExitCode 1 -ExpectedOutput 'process deadline' -EvaluatorScriptPath $slowEvaluator -EvaluationTimeoutSeconds 1
+    if ($started.Elapsed.TotalSeconds -gt 9) {
+        $failures.Add('The evaluator deadline must terminate the process before its ten-second sleep completes.')
+    }
 
     $duplicateJson = @'
 {"Items":{"PackageVersion":[{"Identity":"Fixture.Package","Version":"1.2.3"},{"Identity":"fixture.package","Version":"1.2.3"}]}}

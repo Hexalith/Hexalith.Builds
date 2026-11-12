@@ -10,6 +10,10 @@ param(
     [switch] $EmitEvaluation,
 
     [Parameter(DontShow = $true)]
+    [ValidateRange(1, 300)]
+    [int] $EvaluationTimeoutSeconds = 60,
+
+    [Parameter(DontShow = $true)]
     [string] $EvaluatorScriptPath = ''
 )
 
@@ -105,38 +109,136 @@ function Invoke-CatalogEvaluation {
         [IO.File]::WriteAllText($evaluationPath, "<Project><Import Project=""$escapedCatalog"" /></Project>")
     }
 
+    # Keep the evaluator inside this authenticated script's source closure. Readers
+    # drain concurrently with fixed memory limits; diagnostics never become JSON.
+    Add-Type -TypeDefinition @'
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Hexalith.Builds.CentralCatalog
+{
+    /// <summary>Captures evaluator channels with bounded storage and deadlines.</summary>
+    public static class ProcessRunner
+    {
+        /// <summary>Runs one exact executable and returns exit status and separate channels.</summary>
+        public static string[] Run(string executable, string[] arguments, int timeoutMilliseconds)
+        {
+            using (var process = new Process())
+            {
+                process.StartInfo = new ProcessStartInfo(executable)
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = new UTF8Encoding(false, true),
+                    StandardErrorEncoding = new UTF8Encoding(false, true),
+                    CreateNoWindow = true,
+                };
+                foreach (string argument in arguments)
+                {
+                    process.StartInfo.ArgumentList.Add(argument);
+                }
+
+                if (!process.Start())
+                {
+                    throw new IOException("The evaluator did not start.");
+                }
+
+                try
+                {
+                    Task<Tuple<string, bool>> stdout = ReadAsync(process.StandardOutput, 8 * 1024 * 1024, false);
+                    Task<Tuple<string, bool>> stderr = ReadAsync(process.StandardError, 16 * 1024, true);
+                    if (!process.WaitForExit(timeoutMilliseconds))
+                    {
+                        throw new TimeoutException("The evaluator exceeded its process deadline.");
+                    }
+
+                    if (!Task.WhenAll(stdout, stderr).Wait(5000))
+                    {
+                        throw new TimeoutException("The evaluator streams did not drain within 5 seconds.");
+                    }
+
+                    if (stdout.Result.Item2)
+                    {
+                        throw new InvalidDataException("The evaluator stdout exceeded the 8,388,608-character limit.");
+                    }
+
+                    return new[] { process.ExitCode.ToString(), stdout.Result.Item1, stderr.Result.Item1 };
+                }
+                finally
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill(true);
+                        if (!process.WaitForExit(5000))
+                        {
+                            throw new IOException("Evaluator process-tree exit could not be confirmed within 5 seconds.");
+                        }
+                    }
+                }
+            }
+        }
+
+        private static async Task<Tuple<string, bool>> ReadAsync(StreamReader reader, int limit, bool tail)
+        {
+            var result = new StringBuilder();
+            var buffer = new char[4096];
+            bool truncated = false;
+            int count;
+            while ((count = await reader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) != 0)
+            {
+                if (tail)
+                {
+                    result.Append(buffer, 0, count);
+                    if (result.Length > limit)
+                    {
+                        result.Remove(0, result.Length - limit);
+                        truncated = true;
+                    }
+                }
+                else
+                {
+                    int retained = Math.Min(count, limit - result.Length);
+                    result.Append(buffer, 0, retained);
+                    truncated |= retained != count;
+                }
+            }
+
+            return Tuple.Create(result.ToString(), truncated);
+        }
+    }
+}
+'@
     try {
         if ([string]::IsNullOrWhiteSpace($ResolvedEvaluatorScriptPath)) {
-            $output = @(
-                & dotnet msbuild $evaluationPath -nologo -getItem:PackageVersion 2>&1
-            )
+            $executable = 'dotnet'
+            $arguments = @('msbuild', $evaluationPath, '-nologo', '-getItem:PackageVersion')
         }
         else {
-            $output = @(
-                & $pwshExecutable -NoLogo -NoProfile -File $ResolvedEvaluatorScriptPath $ResolvedCatalogPath 2>&1
-            )
+            $executable = $pwshExecutable
+            $arguments = @('-NoLogo', '-NoProfile', '-File', $ResolvedEvaluatorScriptPath, $ResolvedCatalogPath)
         }
+
+        $captured = [Hexalith.Builds.CentralCatalog.ProcessRunner]::Run(
+            $executable, [string[]] $arguments, $EvaluationTimeoutSeconds * 1000)
+        if ([int] $captured[0] -ne 0) {
+            $stdoutTail = $captured[1].Substring([Math]::Max(0, $captured[1].Length - 16384))
+            Stop-Validation "catalog evaluation exited with code $($captured[0]). stdout tail:`n$stdoutTail`nstderr tail:`n$($captured[2])"
+        }
+
+        return $captured[1]
     }
     catch {
-        Stop-Validation "catalog evaluation could not start. $($_.Exception.GetBaseException().Message)"
+        Stop-Validation "catalog evaluation could not complete. $($_.Exception.GetBaseException().Message)"
     }
-
     finally {
         if (-not [string]::IsNullOrWhiteSpace($probeDirectory)) {
             [IO.Directory]::Delete($probeDirectory, $true)
         }
     }
-
-    if ($LASTEXITCODE -ne 0) {
-        $diagnostics = [string]::Join("`n", @($output | ForEach-Object { [string] $_ })).Trim()
-        if ([string]::IsNullOrWhiteSpace($diagnostics)) {
-            $diagnostics = 'The evaluator produced no diagnostic output.'
-        }
-
-        Stop-Validation "catalog evaluation exited with code $LASTEXITCODE. $diagnostics"
-    }
-
-    return [string]::Join("`n", @($output | ForEach-Object { [string] $_ }))
 }
 
 if ([string]::IsNullOrWhiteSpace($CatalogPath)) {
