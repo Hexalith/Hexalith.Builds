@@ -7,6 +7,7 @@ import json
 import subprocess
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -17,6 +18,11 @@ PINS = {
     "Microsoft.Build.Locator": "1.11.2",
 }
 CATALOG = Path(__file__).resolve().parents[1] / "Props/Directory.Packages.props"
+CATALOG_PINS = {
+    item.attrib["Include"]: item.attrib["Version"]
+    for item in ET.parse(CATALOG).iter("PackageVersion")
+    if item.attrib.get("Include") in PINS
+}
 
 
 class WorksPackageVersionTests(unittest.TestCase):
@@ -86,7 +92,10 @@ class WorksPackageVersionTests(unittest.TestCase):
                     self.assertTrue(all(count == 1 for count in counts.values()), counts)
                     for package, pin in PINS.items():
                         item, = [item for item in items if item["Identity"] == package]
-                        self.assertEqual(item["Version"], pin)
+                        # The older Works wrapper owns its compatibility pins; unrelated
+                        # consumers receive the current shared catalog's versions.
+                        expected = CATALOG_PINS[package] if expected_owner == CATALOG else pin
+                        self.assertEqual(item["Version"], expected)
                         self.assertEqual(Path(item["DefiningProjectFullPath"]).resolve(), expected_owner)
                     if version:
                         self.assertEqual(evaluated["Properties"]["HexalithEventStoreVersion"], version)
