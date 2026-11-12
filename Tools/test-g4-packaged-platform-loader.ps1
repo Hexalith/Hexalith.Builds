@@ -208,34 +208,11 @@ try {
 
     # Runtime start: the packaged AppHost carries the build machine's AppHost, DCP and dashboard paths. Resolve this
     # machine's paths exactly as the runner does, with the packaged Tooling, and require the host to use them. The
-    # resolution runs in a child pwsh: callers run this gate in their own process and later load the SDK's
-    # NuGet.Versioning, which must not collide with the payload's copy.
-    $resolver = Join-Path $OutputDirectory 'resolve-aspire-paths.ps1'
-    [IO.File]::WriteAllText($resolver, @'
-param([Parameter(Mandatory = $true)] [string] $Payload, [Parameter(Mandatory = $true)] [string] $Workspace)
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
-$null = [Reflection.Assembly]::LoadFrom((Join-Path $Payload 'NuGet.Versioning.dll'))
-$tooling = [Reflection.Assembly]::LoadFrom((Join-Path $Payload 'Hexalith.Builds.Tooling.dll'))
-$pathsType = $tooling.GetType('Hexalith.Builds.Tooling.Runtime.CompositionAspireHostPaths', $true)
-$pinsType = $tooling.GetType('Hexalith.Builds.Tooling.Runtime.CompositionToolchainPins', $true)
-$resolved = $null
-$unavailable = $pathsType::TryResolve($pathsType::DefaultPackagesRoot(), $pinsType::AspireAppHostSdkVersion, $pathsType::CurrentRuntimeIdentifier(), [ref]$resolved)
-if ($null -ne $unavailable) {
-    [Console]::Error.WriteLine("$($unavailable.RuleId) $($unavailable.Message)")
-    exit 3
-}
-$created = $resolved.CreateEnvironment($Workspace)
-$environment = [ordered]@{}
-foreach ($key in $created.Keys) { $environment[$key] = $created[$key] }
-$environment | ConvertTo-Json -Compress
-'@)
+    # resolution runs in an independent .NET 11 process so neither PowerShell's
+    # bundled BCL nor the SDK's NuGet.Versioning can collide with the payload.
     $resolverErrors = Join-Path $OutputDirectory 'resolve-aspire-paths.stderr.log'
-    # Run PowerShell's managed entry point under the tool's .NET 11 runtime; a
-    # machine's standalone PowerShell can still be hosted by .NET 10.
-    $pwshAssembly = Join-Path $PSHOME 'pwsh.dll'
-    $toolRuntimeConfig = Join-Path $payload 'Hexalith.Builds.Module.Cli.runtimeconfig.json'
-    $resolverOutput = @(& dotnet exec --runtimeconfig $toolRuntimeConfig $pwshAssembly -NoProfile -File $resolver -Payload $payload -Workspace $workspace 2> $resolverErrors)
+    $probeConfiguration = if ($env:GITHUB_ACTIONS -ceq 'true') { 'Release' } else { 'Debug' }
+    $resolverOutput = @(& dotnet run --file (Join-Path $PSScriptRoot 'ToolingProbe.cs') -c $probeConfiguration --no-launch-profile --verbosity quiet -- aspire $rootTooling $workspace 2> $resolverErrors)
     if ($LASTEXITCODE -ne 0) {
         throw "Packaged runtime start cannot resolve local Aspire orchestration (exit $LASTEXITCODE): $(Get-Content -LiteralPath $resolverErrors -Raw)"
     }

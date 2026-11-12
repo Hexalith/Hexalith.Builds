@@ -23,29 +23,6 @@ param(
     [string] $PackageBuildScriptPath = ''
 )
 
-# Installed tooling requires .NET 11 even when the caller's PowerShell uses .NET 10.
-# Preserve every supplied parameter and perform reflection checks in that runtime.
-if ([Environment]::Version.Major -lt 11) {
-    $runtimeConfig = Join-Path ([IO.Path]::GetTempPath()) "hexalith-contract-runtime-$([Guid]::NewGuid().ToString('N')).json"
-    try {
-        [IO.File]::WriteAllText($runtimeConfig, '{"runtimeOptions":{"tfm":"net11.0","framework":{"name":"Microsoft.NETCore.App","version":"11.0.0"}}}')
-        $forwarded = [Collections.Generic.List[string]]::new()
-        foreach ($entry in $PSBoundParameters.GetEnumerator()) {
-            if ($entry.Value -is [Management.Automation.SwitchParameter]) {
-                $forwarded.Add("-$($entry.Key):$([bool]$entry.Value)")
-            }
-            else {
-                $forwarded.Add("-$($entry.Key)")
-                $forwarded.Add([string]$entry.Value)
-            }
-        }
-        & dotnet exec --runtimeconfig $runtimeConfig (Join-Path $PSHOME 'pwsh.dll') -NoProfile -File $PSCommandPath @forwarded
-        $contractExit = $LASTEXITCODE
-    }
-    finally { Remove-Item -LiteralPath $runtimeConfig -Force -ErrorAction SilentlyContinue }
-    exit $contractExit
-}
-
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -1076,26 +1053,20 @@ try {
         $toolingPath = Join-Path $consumerRoot 'catalog-probe/Hexalith.Builds.Tooling.dll'
         $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($toolingPath))
         [IO.Compression.ZipFileExtensions]::ExtractToFile($toolingEntry, $toolingPath)
-        $toolingAssembly = [Reflection.Assembly]::LoadFrom($toolingPath)
+        $versioningEntry = $archive.GetEntry('tools/net11.0/any/NuGet.Versioning.dll')
+        if ($null -eq $versioningEntry) { throw 'The installed tool omitted its offline NuGet version semantics.' }
+        [IO.Compression.ZipFileExtensions]::ExtractToFile($versioningEntry, (Join-Path ([IO.Path]::GetDirectoryName($toolingPath)) 'NuGet.Versioning.dll'))
+        $probeConfiguration = if ($env:GITHUB_ACTIONS -ceq 'true') { 'Release' } else { 'Debug' }
+        $probeOutput = @(& dotnet run --file (Join-Path $PSScriptRoot 'ToolingProbe.cs') -c $probeConfiguration --no-launch-profile --verbosity quiet -- inspect $toolingPath)
+        if ($LASTEXITCODE -ne 0) { throw 'The installed .NET 11 tooling reflection probe failed.' }
+        $inspection = ($probeOutput -join "`n") | ConvertFrom-Json
         foreach ($schemaName in @('hexalith.module-manifest.v2.json', 'hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
-            $schemaNamespace = if ($schemaName -ceq 'hexalith.module-manifest.v2.json') { 'Manifest' } else { 'TestEnvironment' }
-            $schemaStream = $toolingAssembly.GetManifestResourceStream("Hexalith.Builds.Tooling.$schemaNamespace.$schemaName")
-            if ($null -eq $schemaStream) { throw "The installed tooling omitted its embedded $schemaName schema." }
-            $schemaReader = [IO.StreamReader]::new($schemaStream)
-            try { $embeddedSchema = $schemaReader.ReadToEnd() }
-            finally { $schemaReader.Dispose() }
+            $embeddedSchema = $inspection.schemas.$schemaName
             $expectedSchema = [IO.File]::ReadAllText((Join-Path $repositoryRoot "schemas/$schemaName"))
             if ($embeddedSchema -cne $expectedSchema) { throw "The installed embedded $schemaName schema differs from its source contract." }
         }
-        $catalogStream = $toolingAssembly.GetManifestResourceStream('Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json')
-        if ($null -eq $catalogStream) { throw 'The installed tool omitted its embedded version catalog.' }
-        $catalogReader = [IO.StreamReader]::new($catalogStream)
-        try { $installedCatalog = $catalogReader.ReadToEnd() }
-        finally { $catalogReader.Dispose() }
-        if ($installedCatalog -cne $expectedCatalog) { throw 'The installed catalog differs from the evaluated Builds catalog.' }
-        $catalogRecord = $toolingAssembly.GetType('Hexalith.Builds.Tooling.Manifest.PlatformVersionCatalog').GetProperty('Current').GetValue($null)
-        $installedPins = $toolingAssembly.GetType('Hexalith.Builds.Tooling.Manifest.SupportedPlatformPins')
-        if ($installedPins.GetProperty('EventStoreVersion').GetValue($null) -cne $catalogRecord.EventStoreVersion) { throw 'The installed version facade does not consume its offline catalog.' }
+        if ($inspection.catalog -cne $expectedCatalog) { throw 'The installed catalog differs from the evaluated Builds catalog.' }
+        if ($inspection.facadeEventStoreVersion -cne $inspection.catalogEventStoreVersion) { throw 'The installed version facade does not consume its offline catalog.' }
         $qualificationLog.Add('Installed tooling catalog and pin facade verified offline outside the checkout; no acceptance granted.')
 
     }

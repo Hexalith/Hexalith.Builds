@@ -318,27 +318,10 @@ try {
         $log = @(& dotnet build $project -c Debug -m:1 2>&1) -join "`n"
         if ($LASTEXITCODE -ne 0) { throw "Restore of isolated catalog after conditional regression failed: $log" }
         $assemblyPath = Join-Path $tooling 'bin/Debug/net11.0/Hexalith.Builds.Tooling.dll'
-        # The tooling targets .NET 11; a standalone PowerShell may still run on
-        # .NET 10. Perform the unchanged reflection assertions under .NET 11.
-        $reflectionScript = Join-Path $temporaryRoot 'check-rebuilt-catalog.ps1'
-        $reflectionRuntime = Join-Path $temporaryRoot 'reflection.runtimeconfig.json'
-        [IO.File]::WriteAllText($reflectionRuntime, '{"runtimeOptions":{"tfm":"net11.0","framework":{"name":"Microsoft.NETCore.App","version":"11.0.0"}}}')
-        [IO.File]::WriteAllText($reflectionScript, @'
-param([string] $AssemblyPath, [string] $SnapshotsRoot)
-$ErrorActionPreference = 'Stop'
-        $null = [Reflection.Assembly]::LoadFrom((Join-Path ([IO.Path]::GetDirectoryName($AssemblyPath)) 'NuGet.Versioning.dll'))
-        $assembly = [Reflection.Assembly]::LoadFrom($AssemblyPath)
-        $pins = $assembly.GetType('Hexalith.Builds.Tooling.Manifest.SupportedPlatformPins')
-        if ($pins.GetProperty('DaprRuntimeVersion').GetValue($null) -cne '2.3.4' -or $pins.GetProperty('FrontComposerVersion').GetValue($null) -cne '4.6.9') { throw 'Rebuilt pin consumers did not reflect the catalog mutation.' }
-        $record = $assembly.GetType('Hexalith.Builds.Tooling.Manifest.PlatformVersionCatalog').GetProperty('Current').GetValue($null)
-        if ($record.DaprCliVersion -cne '2.3.5') { throw 'The rebuilt toolchain did not reflect the catalog mutation.' }
-        $snapshotType = $assembly.GetType('Hexalith.Builds.Tooling.Manifest.PlatformVersionCatalog')
-        foreach ($generated in Get-ChildItem -LiteralPath $SnapshotsRoot -Filter 'catalog.json' -Recurse) {
-            $null = $snapshotType.GetMethod('Parse').Invoke($null, @([IO.File]::ReadAllText($generated.FullName)))
-        }
-
-'@)
-        & dotnet exec --runtimeconfig $reflectionRuntime (Join-Path $PSHOME 'pwsh.dll') -NoProfile -File $reflectionScript -AssemblyPath $assemblyPath -SnapshotsRoot $temporaryRoot
+        # Use an independent .NET 11 process; standalone PowerShell bundles BCL
+        # assemblies that cannot safely be rehosted on a different runtime.
+        $probeConfiguration = if ($env:GITHUB_ACTIONS -ceq 'true') { 'Release' } else { 'Debug' }
+        & dotnet run --file (Join-Path $PSScriptRoot 'ToolingProbe.cs') -c $probeConfiguration --no-launch-profile --verbosity quiet -- catalog $assemblyPath $temporaryRoot
         if ($LASTEXITCODE -ne 0) { throw 'The rebuilt .NET 11 catalog reflection assertions failed.' }
         $count++
         Write-Output 'PASS: all successful generated snapshots load with offline NuGet semantics'
