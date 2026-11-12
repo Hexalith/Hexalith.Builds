@@ -1,0 +1,2212 @@
+[
+  {
+    "name": "AD-4 perimeter",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole-dir",
+          "path": ".github/workflows"
+        },
+        {
+          "kind": "whole",
+          "path": ".github/hexalith-ci.json"
+        },
+        {
+          "kind": "whole",
+          "path": ".github/dependabot.yml"
+        },
+        {
+          "kind": "gitlink",
+          "path": "references/Hexalith.Builds",
+          "buildsTag": "v1.2.3"
+        },
+        {
+          "kind": "gitmodules-section",
+          "path": ".gitmodules",
+          "submodulePath": "references/Hexalith.Builds",
+          "url": "https://github.com/Hexalith/Hexalith.Builds.git"
+        },
+        {
+          "kind": "json-superset",
+          "path": ".claude/settings.json",
+          "pointer": "/permissions/deny",
+          "values": [
+            "Edit(.github/workflows/**)",
+            "Write(.github/hexalith-ci.json)"
+          ]
+        },
+        {
+          "kind": "marker-block",
+          "path": "AGENTS.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        },
+        {
+          "kind": "marker-block",
+          "path": "CLAUDE.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        },
+        {
+          "kind": "marker-block",
+          "path": ".github/copilot-instructions.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": ".releaserc*"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": "release.config.*"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": "commitlint.config.*"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": ".commitlintrc*"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": "**/Directory.Build.rsp"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": "**/bmad-testarch-ci/**"
+        },
+        {
+          "kind": "absent-json",
+          "path": "package.json",
+          "selectors": [
+            [
+              "release"
+            ],
+            [
+              "commitlint"
+            ],
+            [
+              "dependencies",
+              "semantic-release"
+            ],
+            [
+              "dependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "dependencies",
+              "@commitlint/*"
+            ],
+            [
+              "devDependencies",
+              "semantic-release"
+            ],
+            [
+              "devDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "devDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "optionalDependencies",
+              "semantic-release"
+            ],
+            [
+              "optionalDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "optionalDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "peerDependencies",
+              "semantic-release"
+            ],
+            [
+              "peerDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "peerDependencies",
+              "@commitlint/*"
+            ]
+          ]
+        },
+        {
+          "kind": "absent-line",
+          "path": ".husky/commit-msg",
+          "pattern": "\\bcommitlint\\b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "zero owned paths",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": []
+    }
+  },
+  {
+    "name": "explicit 0 whole-dir",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole-dir",
+          "path": ".github/workflows"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 1 whole",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": ".github/hexalith-ci.json"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 2 whole",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": ".github/dependabot.yml"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 3 gitlink",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitlink",
+          "path": "references/Hexalith.Builds",
+          "buildsTag": "v1.2.3"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 4 gitmodules-section",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitmodules-section",
+          "path": ".gitmodules",
+          "submodulePath": "references/Hexalith.Builds",
+          "url": "https://github.com/Hexalith/Hexalith.Builds.git"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 5 json-superset",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": ".claude/settings.json",
+          "pointer": "/permissions/deny",
+          "values": [
+            "Edit(.github/workflows/**)",
+            "Write(.github/hexalith-ci.json)"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 6 marker-block",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": "AGENTS.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 7 marker-block",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": "CLAUDE.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 8 marker-block",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": ".github/copilot-instructions.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 9 absent-glob",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": ".releaserc*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 10 absent-glob",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": "release.config.*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 11 absent-glob",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": "commitlint.config.*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 12 absent-glob",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": ".commitlintrc*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 13 absent-glob",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": "**/Directory.Build.rsp"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 14 absent-glob",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": "**/bmad-testarch-ci/**"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 15 absent-json",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "path": "package.json",
+          "selectors": [
+            [
+              "release"
+            ],
+            [
+              "commitlint"
+            ],
+            [
+              "dependencies",
+              "semantic-release"
+            ],
+            [
+              "dependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "dependencies",
+              "@commitlint/*"
+            ],
+            [
+              "devDependencies",
+              "semantic-release"
+            ],
+            [
+              "devDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "devDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "optionalDependencies",
+              "semantic-release"
+            ],
+            [
+              "optionalDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "optionalDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "peerDependencies",
+              "semantic-release"
+            ],
+            [
+              "peerDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "peerDependencies",
+              "@commitlint/*"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit 16 absent-line",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-line",
+          "path": ".husky/commit-msg",
+          "pattern": "\\bcommitlint\\b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "empty",
+    "valid": false,
+    "document": {}
+  },
+  {
+    "name": "array",
+    "valid": false,
+    "document": []
+  },
+  {
+    "name": "null",
+    "valid": false,
+    "document": null
+  },
+  {
+    "name": "unknown schema",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v2",
+      "entries": []
+    }
+  },
+  {
+    "name": "unknown root field",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole-dir",
+          "path": ".github/workflows"
+        },
+        {
+          "kind": "whole",
+          "path": ".github/hexalith-ci.json"
+        },
+        {
+          "kind": "whole",
+          "path": ".github/dependabot.yml"
+        },
+        {
+          "kind": "gitlink",
+          "path": "references/Hexalith.Builds",
+          "buildsTag": "v1.2.3"
+        },
+        {
+          "kind": "gitmodules-section",
+          "path": ".gitmodules",
+          "submodulePath": "references/Hexalith.Builds",
+          "url": "https://github.com/Hexalith/Hexalith.Builds.git"
+        },
+        {
+          "kind": "json-superset",
+          "path": ".claude/settings.json",
+          "pointer": "/permissions/deny",
+          "values": [
+            "Edit(.github/workflows/**)",
+            "Write(.github/hexalith-ci.json)"
+          ]
+        },
+        {
+          "kind": "marker-block",
+          "path": "AGENTS.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        },
+        {
+          "kind": "marker-block",
+          "path": "CLAUDE.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        },
+        {
+          "kind": "marker-block",
+          "path": ".github/copilot-instructions.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": ".releaserc*"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": "release.config.*"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": "commitlint.config.*"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": ".commitlintrc*"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": "**/Directory.Build.rsp"
+        },
+        {
+          "kind": "absent-glob",
+          "pattern": "**/bmad-testarch-ci/**"
+        },
+        {
+          "kind": "absent-json",
+          "path": "package.json",
+          "selectors": [
+            [
+              "release"
+            ],
+            [
+              "commitlint"
+            ],
+            [
+              "dependencies",
+              "semantic-release"
+            ],
+            [
+              "dependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "dependencies",
+              "@commitlint/*"
+            ],
+            [
+              "devDependencies",
+              "semantic-release"
+            ],
+            [
+              "devDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "devDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "optionalDependencies",
+              "semantic-release"
+            ],
+            [
+              "optionalDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "optionalDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "peerDependencies",
+              "semantic-release"
+            ],
+            [
+              "peerDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "peerDependencies",
+              "@commitlint/*"
+            ]
+          ]
+        },
+        {
+          "kind": "absent-line",
+          "path": ".husky/commit-msg",
+          "pattern": "\\bcommitlint\\b"
+        }
+      ],
+      "extra": true
+    }
+  },
+  {
+    "name": "entries object",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": {}
+    }
+  },
+  {
+    "name": "entry missing kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {}
+      ]
+    }
+  },
+  {
+    "name": "unknown kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "future"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 0 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": ".github/workflows"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 0 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole-dir"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 0",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole-dir",
+          "path": ".github/workflows",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 1 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": ".github/hexalith-ci.json"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 1 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 1",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": ".github/hexalith-ci.json",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 2 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": ".github/dependabot.yml"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 2 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 2",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": ".github/dependabot.yml",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 3 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": "references/Hexalith.Builds",
+          "buildsTag": "v1.2.3"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 3 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitlink",
+          "buildsTag": "v1.2.3"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 3 buildsTag",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitlink",
+          "path": "references/Hexalith.Builds"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 3",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitlink",
+          "path": "references/Hexalith.Builds",
+          "buildsTag": "v1.2.3",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 4 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": ".gitmodules",
+          "submodulePath": "references/Hexalith.Builds",
+          "url": "https://github.com/Hexalith/Hexalith.Builds.git"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 4 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitmodules-section",
+          "submodulePath": "references/Hexalith.Builds",
+          "url": "https://github.com/Hexalith/Hexalith.Builds.git"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 4 submodulePath",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitmodules-section",
+          "path": ".gitmodules",
+          "url": "https://github.com/Hexalith/Hexalith.Builds.git"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 4 url",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitmodules-section",
+          "path": ".gitmodules",
+          "submodulePath": "references/Hexalith.Builds"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 4",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitmodules-section",
+          "path": ".gitmodules",
+          "submodulePath": "references/Hexalith.Builds",
+          "url": "https://github.com/Hexalith/Hexalith.Builds.git",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 5 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": ".claude/settings.json",
+          "pointer": "/permissions/deny",
+          "values": [
+            "Edit(.github/workflows/**)",
+            "Write(.github/hexalith-ci.json)"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 5 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "pointer": "/permissions/deny",
+          "values": [
+            "Edit(.github/workflows/**)",
+            "Write(.github/hexalith-ci.json)"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 5 pointer",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": ".claude/settings.json",
+          "values": [
+            "Edit(.github/workflows/**)",
+            "Write(.github/hexalith-ci.json)"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 5 values",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": ".claude/settings.json",
+          "pointer": "/permissions/deny"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 5",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": ".claude/settings.json",
+          "pointer": "/permissions/deny",
+          "values": [
+            "Edit(.github/workflows/**)",
+            "Write(.github/hexalith-ci.json)"
+          ],
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 6 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": "AGENTS.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 6 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 6 text",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": "AGENTS.md"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 6",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": "AGENTS.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline.",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 7 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": "CLAUDE.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 7 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 7 text",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": "CLAUDE.md"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 7",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": "CLAUDE.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline.",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 8 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": ".github/copilot-instructions.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 8 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline."
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 8 text",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": ".github/copilot-instructions.md"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 8",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": ".github/copilot-instructions.md",
+          "text": "CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline.",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 9 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "pattern": ".releaserc*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 9 pattern",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 9",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": ".releaserc*",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 10 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "pattern": "release.config.*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 10 pattern",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 10",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": "release.config.*",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 11 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "pattern": "commitlint.config.*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 11 pattern",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 11",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": "commitlint.config.*",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 12 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "pattern": ".commitlintrc*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 12 pattern",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 12",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": ".commitlintrc*",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 13 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "pattern": "**/Directory.Build.rsp"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 13 pattern",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 13",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": "**/Directory.Build.rsp",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 14 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "pattern": "**/bmad-testarch-ci/**"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 14 pattern",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 14",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-glob",
+          "pattern": "**/bmad-testarch-ci/**",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 15 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": "package.json",
+          "selectors": [
+            [
+              "release"
+            ],
+            [
+              "commitlint"
+            ],
+            [
+              "dependencies",
+              "semantic-release"
+            ],
+            [
+              "dependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "dependencies",
+              "@commitlint/*"
+            ],
+            [
+              "devDependencies",
+              "semantic-release"
+            ],
+            [
+              "devDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "devDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "optionalDependencies",
+              "semantic-release"
+            ],
+            [
+              "optionalDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "optionalDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "peerDependencies",
+              "semantic-release"
+            ],
+            [
+              "peerDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "peerDependencies",
+              "@commitlint/*"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 15 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "selectors": [
+            [
+              "release"
+            ],
+            [
+              "commitlint"
+            ],
+            [
+              "dependencies",
+              "semantic-release"
+            ],
+            [
+              "dependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "dependencies",
+              "@commitlint/*"
+            ],
+            [
+              "devDependencies",
+              "semantic-release"
+            ],
+            [
+              "devDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "devDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "optionalDependencies",
+              "semantic-release"
+            ],
+            [
+              "optionalDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "optionalDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "peerDependencies",
+              "semantic-release"
+            ],
+            [
+              "peerDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "peerDependencies",
+              "@commitlint/*"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 15 selectors",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "path": "package.json"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 15",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "path": "package.json",
+          "selectors": [
+            [
+              "release"
+            ],
+            [
+              "commitlint"
+            ],
+            [
+              "dependencies",
+              "semantic-release"
+            ],
+            [
+              "dependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "dependencies",
+              "@commitlint/*"
+            ],
+            [
+              "devDependencies",
+              "semantic-release"
+            ],
+            [
+              "devDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "devDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "optionalDependencies",
+              "semantic-release"
+            ],
+            [
+              "optionalDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "optionalDependencies",
+              "@commitlint/*"
+            ],
+            [
+              "peerDependencies",
+              "semantic-release"
+            ],
+            [
+              "peerDependencies",
+              "@semantic-release/*"
+            ],
+            [
+              "peerDependencies",
+              "@commitlint/*"
+            ]
+          ],
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 16 kind",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "path": ".husky/commit-msg",
+          "pattern": "\\bcommitlint\\b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 16 path",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-line",
+          "pattern": "\\bcommitlint\\b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing 16 pattern",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-line",
+          "path": ".husky/commit-msg"
+        }
+      ]
+    }
+  },
+  {
+    "name": "closed 16",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-line",
+          "path": ".husky/commit-msg",
+          "pattern": "\\bcommitlint\\b",
+          "extra": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 0",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "/etc/x"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 1",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "C:foo"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 2",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a\\b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 3",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a//b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 4",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a/./b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 5",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a/../b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 6",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 7",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a\nfile"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 8",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a\u007ffile"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 9",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "${{ a }}"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 10",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a*"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 11",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a?"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 12",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "a[bc]"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unsafe path 13",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "\ud800"
+        }
+      ]
+    }
+  },
+  {
+    "name": "literal path 0",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "name $ # : (x).txt"
+        }
+      ]
+    }
+  },
+  {
+    "name": "literal path 1",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "path/line\u2028separator"
+        }
+      ]
+    }
+  },
+  {
+    "name": "literal path 2",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "whole",
+          "path": "path/paragraph\u2029separator"
+        }
+      ]
+    }
+  },
+  {
+    "name": "tag 'v01.2.3'",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitlink",
+          "path": "references/Builds",
+          "buildsTag": "v01.2.3"
+        }
+      ]
+    }
+  },
+  {
+    "name": "tag 'v1.2.3-rc.1'",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitlink",
+          "path": "references/Builds",
+          "buildsTag": "v1.2.3-rc.1"
+        }
+      ]
+    }
+  },
+  {
+    "name": "tag 'v1.2.3\\n'",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitlink",
+          "path": "references/Builds",
+          "buildsTag": "v1.2.3\n"
+        }
+      ]
+    }
+  },
+  {
+    "name": "tag False",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "gitlink",
+          "path": "references/Builds",
+          "buildsTag": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "pointer 0",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "x",
+          "values": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "pointer 1",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "/~",
+          "values": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "pointer 2",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "/~2",
+          "values": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "pointer 3",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "/a~x",
+          "values": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "pointer 4",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": true,
+          "values": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "valid pointer 0",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "",
+          "values": [
+            "one",
+            "two"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "valid pointer 1",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "/a~1b/~0/",
+          "values": [
+            "one",
+            "two"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "valid pointer 2",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "/permissions/deny",
+          "values": [
+            "one",
+            "two"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "values 0",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "",
+          "values": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "values 1",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "",
+          "values": [
+            "one",
+            "one"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "values 2",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "",
+          "values": [
+            false
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "values 3",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "json-superset",
+          "path": "config",
+          "pointer": "",
+          "values": {}
+        }
+      ]
+    }
+  },
+  {
+    "name": "selectors 0",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "path": "config",
+          "selectors": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "selectors 1",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "path": "config",
+          "selectors": [
+            []
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "repeated selectors are harmless",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "path": "config",
+          "selectors": [
+            [
+              "x"
+            ],
+            [
+              "x"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "selectors 3",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "path": "config",
+          "selectors": [
+            [
+              false
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "selectors 4",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-json",
+          "path": "config",
+          "selectors": {}
+        }
+      ]
+    }
+  },
+  {
+    "name": "invalid regex",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "absent-line",
+          "path": "hook",
+          "pattern": "["
+        }
+      ]
+    }
+  },
+  {
+    "name": "inline marker",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.perimeter.v1",
+      "entries": [
+        {
+          "kind": "marker-block",
+          "path": "guide",
+          "text": "<!-- hexalith-cicd:begin -->"
+        }
+      ]
+    }
+  }
+]

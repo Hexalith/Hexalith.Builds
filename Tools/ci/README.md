@@ -91,6 +91,59 @@ RUNNER_PYTHON="$(command -v python3)"
 /tmp/hexalith-builds-ci-tools/uv run --no-cache --locked --script --python "$RUNNER_PYTHON" Tools/ci/run_python_tests.py
 ```
 
+The shared perimeter contract is `schemas/hexalith.perimeter.v1.json`.
+`Github/lib/perimeter_config.py` strictly loads files (`load_config`) or Git
+blob bytes (`load_bytes`), and `validate_config` checks an already parsed
+document without inserting defaults. Duplicate serialized keys, non-JSON
+constants, invalid UTF-8, unsafe paths and unknown keys fail. The trusted
+loader derives its schema identity beside its own code. The public schema
+uses the `regex` format for Python line expressions; schema consumers must
+enable format checking. `Github/lib/tests/fixtures/perimeter-contract.json`
+is the common positive/negative corpus for both validation engines and holds
+the executable AD-4 ownership manifest, including all nine entry kinds.
+
+`Github/lib/perimeter.py` supplies `Git`, `Snapshot`, `compare` and `apply`.
+A caller creates trusted Git handles, pins the expected Git snapshot, supplies
+the rendered-root prefix and tag-resolution repository, and optionally selects
+zero-based entry indexes. `compare` accepts `repository.snapshot("HEAD")`, a
+pinned tree, or `repository.snapshot("index")`; `apply` always derives repairs
+from the current selected index. Both return sorted `Drift(path, kind, reason)`
+records. Empty selections and empty manifests are valid. For example, after
+loading these modules from their trusted Builds location:
+
+```python
+module = perimeter.Git(module_repository, index_file=optional_index_path)
+expected = perimeter.Git(delivered_repository).snapshot(delivered_commit)
+rules = perimeter_config.load_bytes(perimeter_blob, source="delivered perimeter")
+drift = perimeter.compare(rules, module.snapshot("HEAD"), expected=expected,
+                          rendered_root=rendered_prefix, builds=trusted_builds)
+perimeter.apply(rules, module, expected=expected, rendered_root=rendered_prefix,
+                builds=trusted_builds, selected=allowed_entry_indexes)
+```
+
+The library enumerates paths and reads blobs through Git, including sparse
+paths. It never reads, writes or deletes module working-tree files, follows
+owned symlinks, or initializes a submodule. Whole entries compare blob bytes
+and expected modes before any partial parsing. Passing partial entries retain
+their blob identity, including CRLF; repairs preserve foreign JSON values,
+Gitmodules keys/sections, marker surroundings and unmatched hook lines.
+Gitlinks resolve exact stable tags with `^{}` and require a commit.
+
+All selected sources, selectors, ownership overlaps, index stages and path
+conflicts are checked before application. Application hashes with `--path`,
+stages cacheinfo and removes exact enumerated cached paths with NUL-delimited
+literal pathspecs. Attributes come from a Git tree built from the selected
+index's attribute blobs, so dirty working-tree attributes cannot steer hashing.
+A private candidate index and the real index lock make failures atomic and
+preserve unrelated staging and the caller's `GIT_INDEX_FILE`. Sparse candidates
+are expanded for safe cacheinfo updates. These APIs contain no caller restore
+policy, rendering, delivery, guard or release integration; story 5-1 owns the
+sample's enforcement seam. Focused real-repository controls run with:
+
+```bash
+python3 -m unittest discover -s Github/lib/tests -p 'test_perimeter*.py' -v
+```
+
 The policy regression tests require the verified actionlint/zizmor binaries and
 archives installed by `--install-only` in the default tool directory, plus the
 read-only GitHub token exported above. They invoke those binaries with the
@@ -402,7 +455,8 @@ Both sample verdicts directly contribute to the Builds workflow conclusion.
 The sample's expected-source fixture contains
 `rendered/Hexalith.Sample/.github/hexalith-ci.json` and a sibling
 `rendered/Hexalith.Sample.perimeter.json`. The latter is an empty placeholder;
-story 5-1 owns its schema and enforcement integration. The retained first CI
+story 4-1 supplies the shared schema/library and story 5-1 supplies the sample's
+valid manifest and enforcement integration. The retained first CI
 step remains a reserved slot and provides no guard/commit-format enforcement.
 
 Prepare tests execute real PowerShell and the actual composite metadata in a

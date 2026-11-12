@@ -20,5 +20,6 @@ imports the Builds checkout under test rather than that older release.
 The expected-source fixture has the delivered layout `rendered/Hexalith.Sample/`
 and a sibling `Hexalith.Sample.perimeter.json`. It currently contains the owned
 sample configuration. Its empty perimeter object reserves the filename only;
-story 5-1 owns the schema and enforcement integration. The reserved stage-1 step
+story 4-1 supplies the shared perimeter schema and library, and story 5-1 owns
+the sample's valid manifest and enforcement integration. The reserved stage-1 step
 performs no guard or commit-format enforcement today.
