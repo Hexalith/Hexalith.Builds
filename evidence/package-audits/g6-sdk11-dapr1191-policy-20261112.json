@@ -1,0 +1,99 @@
+{
+  "scope": "Bounded actual Dapr1.19.1 control-plane/native protocol compatibility, plus tuple authorization preparation; not aggregate qualification acceptance",
+  "nativeG6Acceptance": false,
+  "worksAcceptance": false,
+  "imageAcceptance": false,
+  "candidateAcceptance": false,
+  "officialArtifacts": [
+    {
+      "kind": "runtime",
+      "version": "1.19.1",
+      "officialArchive": "https://github.com/dapr/dapr/releases/download/v1.19.1/daprd_linux_amd64.tar.gz",
+      "archiveSha256": "93217800d5072cf1735ed89ec8a9cdeedfb9d235895fb9e0d864088bc5d9466c",
+      "binarySha256": "b1ece5da76674bf6e15126aeb019fa58e444b5b8edf4d0ac59e32df895ae8fd2",
+      "actualVersionOutput": "1.19.1"
+    },
+    {
+      "kind": "cli",
+      "version": "1.19.1",
+      "officialArchive": "https://github.com/dapr/cli/releases/download/v1.19.1/dapr_linux_amd64.tar.gz",
+      "archiveSha256": "6e9a339d261e430e5914909cc4443572573c197c174c3e14504c34116831de3b",
+      "binarySha256": "b651f5fcfe0b261ca6b26058dde31927efc8e17b12267d6743bdbeddca09bafd",
+      "actualVersionOutput": "CLI version: 1.19.1 \nRuntime version: 1.19.1"
+    }
+  ],
+  "officialControlPlane": {
+    "repository": "docker.io/daprio/dapr",
+    "tagObserved": "1.19.1",
+    "indexSha256": "801b920e02867addcd64f9a5792b8aadf015d6fc365f8b26a72415e2e01bcf98",
+    "linuxAmd64ManifestSha256": "19e777232b0e6e461d893a794d40e800447db75e657736e6341e80a5e4c84f3e",
+    "actualPlacementStartupVersion": "1.19.1 (actual server startup log)",
+    "actualSchedulerStartupVersion": "1.19.1 (actual server startup log)"
+  },
+  "actualNativeProbe": {
+    "daprdSha256": "b1ece5da76674bf6e15126aeb019fa58e444b5b8edf4d0ac59e32df895ae8fd2",
+    "actorInvocationPassed": true,
+    "reminderRegistrationStatus": 204,
+    "schedulerReminderCallbackPassed": true,
+    "nativeProcessStopped": true
+  },
+  "ownership": {
+    "actualContainers": [
+      {
+        "name": "dapr1191-24ea280d1bad4a98b3160d6ec7c25b1f-placement",
+        "role": "placement",
+        "id": "0ecb5c05e71ba00fe239ff83113cd306089d1db85ef6d75f5bb2d32d54cf25a3",
+        "image": "daprio/dapr@sha256:19e777232b0e6e461d893a794d40e800447db75e657736e6341e80a5e4c84f3e"
+      },
+      {
+        "name": "dapr1191-24ea280d1bad4a98b3160d6ec7c25b1f-scheduler",
+        "role": "scheduler",
+        "id": "7ed519ede5fb4c95108effb98f39805ab14b2bccc5e4311831ee4e87190a153d",
+        "image": "daprio/dapr@sha256:19e777232b0e6e461d893a794d40e800447db75e657736e6341e80a5e4c84f3e"
+      },
+      {
+        "name": "dapr1191-24ea280d1bad4a98b3160d6ec7c25b1f-redis",
+        "role": "redis",
+        "id": "1318b8c4240f48a8fd37441287adac0971ca59b060dd8249e5c890f9ea221792",
+        "image": "redis:7.4"
+      }
+    ],
+    "removedContainerIds": [
+      "1318b8c4240f48a8fd37441287adac0971ca59b060dd8249e5c890f9ea221792",
+      "7ed519ede5fb4c95108effb98f39805ab14b2bccc5e4311831ee4e87190a153d",
+      "0ecb5c05e71ba00fe239ff83113cd306089d1db85ef6d75f5bb2d32d54cf25a3"
+    ],
+    "standaloneCleanup": {
+      "ownedProcessesStopped": true,
+      "ownedContainersRemoved": true,
+      "scratchRemoved": true,
+      "sharedResourcesUnchanged": true
+    },
+    "aggregateHelperFlags": {
+      "ownedProcessesStopped": false,
+      "scratchRemoved": true,
+      "fixtureScratchRemoved": false
+    },
+    "aggregateHelperScope": "This standalone probe is not the full G6 harness; its raw aggregate helper flags are retained unchanged and do not establish full G6 cleanup acceptance."
+  },
+  "sourceHelper": {
+    "repository": "https://github.com/Hexalith/Hexalith.Projects",
+    "sourceRevision": "1beec1bf5108ede26fc009edd11e624fb20ec370",
+    "path": "tools/qualification/run_g6_qualification.py",
+    "sha256": "03758b4c8e73b4c74b18874e5f146160bbfb31f49c54ddcbefe7b164851dcc06"
+  },
+  "retainedEvidence": {
+    "summaryJsonSha256": "db3802f8947366e05f20b5724867a38101a0428116640b6fecbd932cf8775755",
+    "nativeResultJsonSha256": "32db45af5fbc1e4b317a900611e06454b231434b28805eed3854abf0ee885477"
+  },
+  "producerControls": {
+    "currentG6Tests": 9,
+    "evaluatedCatalogControls": 47,
+    "scope": "Synthetic refusal controls; full downstream fresh G6 native behavior and cleanup remain mandatory"
+  },
+  "historicalPolicy": {
+    "path": "Tools/g6-current-policy-2026-10-20.json",
+    "sha256": "580c381e62996e2e59e1b670604396e17fa0f2627cff26695c17288aff8127cf",
+    "unchanged": true
+  }
+}

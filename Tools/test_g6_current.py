@@ -104,6 +104,9 @@ class CurrentG6Tests(unittest.TestCase):
             (root / "obj").mkdir()
             assets = root / "obj/project.assets.json"
             for sdk, preview, allowed in (
+                ("13.6.5", "13.6.5-preview.1.26559.7", True),
+                ("13.6.5", "13.6.4-preview.1.26523.11", False),
+                ("13.6.5", "13.6.5-preview.1.26559.8", False),
                 ("13.6.4", "13.6.4-preview.1.26523.11", True),
                 ("13.6.1", "13.6.1-preview.1.26506.6", True),
                 ("13.6.0", "13.6.0-preview.1.26479.8", True),
@@ -119,6 +122,18 @@ class CurrentG6Tests(unittest.TestCase):
                     graph, issues = G6.resolved_graph(root, {"resolvedProjects": ["consumer.csproj"]}, {"aspireSdk": sdk})
                     self.assertEqual(2, len(graph[0]["packages"]))
                     self.assertEqual(0 if allowed else 2, len(issues))
+
+    def test_sdk11_tuple_authorization_still_requires_actual_behavior_and_source_evidence(self) -> None:
+        current_policy = TOOLS / "g6-current-policy-2026-11-12.json"
+        current = G6.policy_document(current_policy)
+        self.assertEqual("Current user authorization", current["approval"]["approvedBy"])
+        self.assertIn("not unseen qualification result acceptance", current["approval"]["reference"])
+        self.assertEqual("11.0.100", current["tuple"]["dotnetSdk"])
+        self.assertEqual("1.19.1", current["tuple"]["daprRuntime"])
+        with patch.dict(globals(), POLICY=current_policy):
+            # Exercise the same real validator refusals for failed/skipped live cases,
+            # stale source, retargeted/missing AppHost builds and failed cleanup.
+            self.test_recomputed_digest_cannot_turn_21_cases_or_stale_source_into_qualification()
 
     def test_sdk_scanner_recognizes_explicit_imports_and_property_selection(self) -> None:
         import xml.etree.ElementTree as ET
