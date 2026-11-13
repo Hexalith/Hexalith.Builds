@@ -6,6 +6,7 @@ implementation_baseline_revision: f01c3ab70f7e7401b3b73217983955f7771a1465
 implementation_integration_revision: 05a75b626fb73c6e386d16c41e885f193d3cff16
 implementation_revision: 0f97426edb6f88ee6e534d95ca9029f7e0b20311
 review_implementation_revision: e2bdaca58c95c52e05cb6db77d91ab7ae22ee4a0
+followup_implementation_revision: 185e3a4e695f392e114eacffbdecd2a23da32c9b
 ---
 
 # Guard and release drift-check results
@@ -209,5 +210,43 @@ JsonSchema.Net catalog/audit commits and changed none of the seven story files.
 Upstream's [completed CI at ae77d569](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43425958565)
 passed all seven jobs, including the catalog and .NET tests. The earlier
 exception evidence remains historical; this follow-up delivery requires all
-seven exact-source jobs to succeed. Hosted verification and the required
-independent review remain pending for this pass.
+seven exact-source jobs to succeed. Hosted verification completed as recorded
+below. The required independent review remains pending for this pass.
+
+## Follow-up exact-source verification
+
+The follow-up source is `185e3a4e695f392e114eacffbdecd2a23da32c9b`.
+Its normal [Builds push run](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43440467144)
+completed successfully, with every retained job passing:
+
+| Job | Result |
+|---|---|
+| Package catalog contracts | success |
+| Sample module / Build and tests | success |
+| Python contract tests (3.12) | success: Python 3.12.16, 14/14 groups, 824 test cases, no skips |
+| Workflow lint and public API | success |
+| .NET tests / Build and tests | success: Evidence 191, Module 3,086 and Tooling integration 13 tests; zero failures |
+| Python contract tests (runner) | success: Python 3.14.4, 14/14 groups, 824 test cases, no skips |
+| Sample Windows tests | success |
+
+The preserved separate [Commitlint workflow](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43440467014)
+also passed at that exact source. The catalog and Evidence.Tests failures from
+the earlier approved exception are absent after the separately authored upstream
+fixes. No exception was used for this follow-up verification, and the earlier
+failure signatures and results remain retained as historical evidence.
+
+After the upstream fast-forward, both complete local lanes were repeated at
+the committed follow-up source. Python 3.12.13 and runner Python 3.14.4 each
+passed all 14 groups and 824 test cases without skips. HEAD and the clean source
+tree remained unchanged throughout those runs. The committed-object public API
+check passed at that source: 2,589 entries, no removals against stable `v5.2.1`
+(`0e7424fdce6373920fb2019d1ad2a74d8fe5295c`). Whitespace and authored-scope checks
+passed; the follow-up source changes only the seven recorded story files over
+integration base `cae351e20093634483afad16aca3bfd90845eda8`.
+
+The verification JSON retains the complete seven-job/step results, the exact
+source and run identities, SHA-256 fingerprints of all seven downloaded hosted
+job logs, both repeated local-lane fingerprints, and commitlint/API evidence.
+Local transcript paths remain session-local and uncommitted. Independent review
+is the remaining workflow step before final completion; this evidence update
+does not claim that subsequent review has run.
