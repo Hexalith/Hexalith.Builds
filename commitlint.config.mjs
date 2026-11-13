@@ -1,13 +1,8 @@
-export default {
-  extends: ['@commitlint/config-conventional'],
-  defaultIgnores: false,
-  rules: {
-    'body-max-line-length': [2, 'always', 200],
-    'header-max-length': [2, 'always', 200],
-    'type-enum': [
-      2,
-      'always',
-      ['build', 'ci', 'docs', 'feat', 'fix', 'perf', 'refactor', 'revert', 'style', 'test'],
-    ],
-  },
-};
+import { createRequire } from 'node:module';
+import { policy } from './Github/guard/commitlint_bridge.mjs';
+
+const require = createRequire(import.meta.url);
+const preset = require('@commitlint/config-conventional').default;
+const { resolveFrom, loadParserPreset } = require('@commitlint/resolve-extends');
+const parser = await loadParserPreset(resolveFrom(preset.parserPreset, import.meta.filename));
+export default policy(preset, { name: preset.parserPreset, ...parser });

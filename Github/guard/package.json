@@ -1,0 +1,11 @@
+{
+  "name": "hexalith-guard-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "js-yaml": "4.3.2"
+  }
+}

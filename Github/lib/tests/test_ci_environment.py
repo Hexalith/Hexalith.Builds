@@ -30,6 +30,56 @@ ENV = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ENV)
 
 
+def install_guard_tool_doubles(directory, workspace):
+    """Control external tools while executing the real guard's tool orchestration.
+
+    These subprocess controls prove argv/stdin isolation and fail-fast wiring.
+    They do not claim npm signature, YAML-version, or conventional-policy evidence.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    ledger = workspace / "guard-tools.jsonl"
+    common = f"#!{sys.executable}\n" + f'''
+import json, os, pathlib, sys
+workspace=pathlib.Path({str(workspace)!r})
+ledger=pathlib.Path({str(ledger)!r})
+args=sys.argv[1:]
+name=pathlib.Path(sys.argv[0]).name
+cwd=pathlib.Path.cwd()
+assert not cwd.is_relative_to(workspace), "tools installed inside module"
+assert not any(k.upper().startswith(("GITHUB_", "GH_", "NODE_")) for k in os.environ)
+assert {{k for k in os.environ if k.upper().startswith("GIT_")}} <= {{"GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", "GIT_TERMINAL_PROMPT"}}
+assert not any("secret-marker" in value or "poison-marker" in value for value in os.environ.values())
+data=sys.stdin.read() if name=="node" else ""
+with ledger.open("a") as stream:
+    stream.write(json.dumps({{"tool":name,"args":args,"cwd":str(cwd),"stdin":data}})+"\\n")
+if name=="npm":
+    assert args in (["ci", "--ignore-scripts"], ["audit", "signatures"]), args
+    package=json.loads((cwd / "package.json").read_text())
+    assert package["dependencies"]=={{"@commitlint/cli":"21.2.4","@commitlint/config-conventional":"21.2.4","js-yaml":"4.3.2"}}
+    if args==["audit", "signatures"] and (workspace / "fail-guard-signatures").exists():
+        print("private-tool-error\\x1b[31m", file=sys.stderr)
+        sys.exit(31)
+elif args[0].endswith("js-yaml.js"):
+    import yaml
+    assert data.startswith("# guard YAML input\\n")
+    print(json.dumps(yaml.safe_load(data)))
+elif args[0].endswith("cli.js"):
+    assert "--config" in args and "--color=false" in args
+    config=pathlib.Path(args[args.index("--config")+1])
+    assert config.is_file() and not config.is_relative_to(workspace)
+    if (workspace / "fail-guard-commitlint").exists():
+        print("controlled failure [fixture-controlled-rule]", file=sys.stderr)
+        sys.exit(32)
+else:
+    raise AssertionError(args)
+'''
+    for name in ("npm", "node"):
+        executable = directory / name
+        executable.write_text(common)
+        executable.chmod(0o755)
+    return directory
+
+
 class CompositeHarness:
     """Run the real shared job/composites in a disposable workspace.
 
@@ -39,14 +89,20 @@ class CompositeHarness:
     """
 
     def __init__(self, root, environment, *, module_root="", expected_source="", secrets=None,
-                 dapr_archive=None, mutate_workflow=None, runner_os="Linux", external_action=None):
+                 dapr_archive=None, mutate_workflow=None, runner_os="Linux", external_action=None,
+                 event_name="workflow_dispatch", event=None, repository=FIXTURE.BUILDS):
         self.root = root
         self.environment = dict(environment, GITHUB_WORKSPACE=str(root))
+        self.environment.pop("CI_EVENT_NAME", None)
+        self.environment.pop("CI_EVENT_PATH", None)
         self.path = self.environment["PATH"]
         self.stdout = []
         self.stderr = []
         self.mutate_workflow = mutate_workflow
         self.external_action = external_action
+        self.external_calls = []
+        tools = install_guard_tool_doubles(root / "guard-tool-controls", root)
+        self.path = str(tools) + os.pathsep + self.path
         runner_temp = root / "runner-temp"
         runner_temp.mkdir(exist_ok=True)
         self.environment["RUNNER_TEMP"] = str(runner_temp)
@@ -74,7 +130,11 @@ os.execv(sys.executable, [sys.executable, *args])
             shim.chmod(0o755)
             self.path = str(shim.parent) + os.pathsep + self.path
             self.environment["HARNESS_DAPR_ARCHIVE"] = str(archive)
-        self.context = {"github": {"repository": FIXTURE.BUILDS},
+        event_path = runner_temp / "event.json"
+        event_path.write_text(json.dumps({} if event is None else event))
+        self.environment.update(GITHUB_EVENT_NAME=event_name, GITHUB_EVENT_PATH=str(event_path))
+        self.context = {"github": {"repository": repository, "event_name": event_name, "event_path": str(event_path),
+                                    "event": {} if event is None else event},
                         "runner": {"temp": str(runner_temp), "os": runner_os},
                         "inputs": {"module-root": module_root, "expected-source": expected_source},
                         "secrets": secrets or {"registry-pull-username": "", "registry-pull-password": ""},
@@ -98,6 +158,11 @@ os.execv(sys.executable, [sys.executable, *args])
                       str(value), flags=re.DOTALL)
 
     def enabled(self, expression, context):
+        expression = expression.strip()
+        if expression.startswith("${{") and expression.endswith("}}"):
+            expression = expression[3:-2].strip()
+        if " || " in expression:
+            return any(self.enabled(part, context) for part in expression.split(" || "))
         if " && " in expression:
             return all(self.enabled(part, context) for part in expression.split(" && "))
         match = re.fullmatch(r"(.*?) (==|!=) '([^']*)'", expression)
@@ -108,6 +173,7 @@ os.execv(sys.executable, [sys.executable, *args])
 
     def steps(self, steps, context, environment):
         for step in steps:
+            context["env"] = environment
             if "if" in step and not self.enabled(step["if"], context):
                 continue
             env = dict(environment)
@@ -123,8 +189,14 @@ os.execv(sys.executable, [sys.executable, *args])
                 else:
                     # Hosted implementations remain external controls, distinct
                     # from the local composite/script execution evidence.
+                    inputs = {name: self.expand(value, context) for name, value in step.get("with", {}).items()}
+                    self.external_calls.append((reference, inputs, dict(env)))
+                    if reference.startswith("actions/setup-node@"):
+                        assert reference == "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1", reference
+                        assert inputs.get("node-version") == "24", inputs
+                        assert inputs.get("package-manager-cache") == "False" or inputs.get("package-manager-cache") == "false", inputs
+                        assert not inputs.get("cache"), inputs
                     if self.external_action:
-                        inputs = {name: self.expand(value, context) for name, value in step.get("with", {}).items()}
                         code = self.external_action(reference, inputs, env)
                         if code:
                             return self.result(code)
@@ -136,10 +208,12 @@ os.execv(sys.executable, [sys.executable, *args])
                 inputs.update({name: self.expand(value, context) for name, value in step.get("with", {}).items()})
                 child = dict(context, inputs=inputs, steps={})
                 result = self.steps(document["runs"]["steps"], child, dict(env, GITHUB_ACTION_PATH=str(action)))
-                if result.returncode:
-                    return result
                 outputs = {name: self.expand(entry["value"], child)
                            for name, entry in document.get("outputs", {}).items()}
+                if "id" in step:
+                    context["steps"][step["id"]] = {"outputs": outputs}
+                if result.returncode:
+                    return result
             else:
                 self.counter += 1
                 output = self.root / f"action-output-{self.counter}"
@@ -163,12 +237,14 @@ os.execv(sys.executable, [sys.executable, *args])
                                         text=True, capture_output=True, check=False)
                 self.stdout.append(result.stdout)
                 self.stderr.append(result.stderr)
-                if result.returncode:
-                    return self.result(result.returncode)
                 if output.exists():
                     outputs = dict(line.split("=", 1) for line in output.read_text().splitlines())
                 if path.exists():
                     self.path = os.pathsep.join(path.read_text().splitlines()) + os.pathsep + self.path
+                if "id" in step:
+                    context["steps"][step["id"]] = {"outputs": outputs}
+                if result.returncode:
+                    return self.result(result.returncode)
             if "id" in step:
                 context["steps"][step["id"]] = {"outputs": outputs}
         return self.result(0)
@@ -200,8 +276,11 @@ os.execv(sys.executable, [sys.executable, *args])
         values = {name: entry.get("default", "") for name, entry in document.get("inputs", {}).items()}
         values.update(inputs or {})
         context = dict(self.context, inputs=values, steps={})
-        return self.steps(document["runs"]["steps"], context,
-                          dict(self.environment, GITHUB_ACTION_PATH=str(action)))
+        result = self.steps(document["runs"]["steps"], context,
+                            dict(self.environment, GITHUB_ACTION_PATH=str(action)))
+        self.action_outputs = {name: self.expand(entry["value"], context)
+                               for name, entry in document.get("outputs", {}).items()}
+        return result
 
 
 class EnvironmentTests(unittest.TestCase):
@@ -681,9 +760,98 @@ else:
         self.assertEqual(1, result.returncode, result.stdout + result.stderr)
         self.assertIn("CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline.", result.stderr)
         self.assertIn(".github/hexalith-ci.json", result.stderr)
+        self.assertEqual("true", harness.context["steps"]["guard"]["outputs"]["drift"])
         self.assertNotIn("prepare", harness.context["steps"])
         self.assertFalse((fixture / "commands.jsonl").exists())
         self.assertFalse((fixture / "build-completed").exists())
+        self.assertFalse((self.root / "hook-after-unit-tests").exists())
+        self.assertFalse(self.effects.exists())
+
+    def test_sample_lint_failures_stop_actual_job_before_prepare_sdk_build_tests_and_hooks(self):
+        fixture = self.sample_fixture()
+        for failure in ("action", "audit", "commitlint", "signatures"):
+            with self.subTest(failure=failure):
+                for name in ("extensionless",):
+                    (fixture / name).unlink(missing_ok=True)
+                for name in ("fail-guard-commitlint", "fail-guard-signatures", "guard-tools.jsonl"):
+                    (self.root / name).unlink(missing_ok=True)
+                shutil.rmtree(self.root / ".github/actions/dormant", ignore_errors=True)
+                if failure == "action":
+                    action = self.root / ".github/actions/dormant"
+                    action.mkdir(parents=True)
+                    (action / "action.yaml").write_text("runs: {using: node24}\n")
+                elif failure == "audit":
+                    (fixture / "extensionless").write_text("<Project><NuGetAuditSuppress Include='fixture'/></Project>")
+                else:
+                    (self.root / ("fail-guard-" + failure)).touch()
+                harness = CompositeHarness(self.root, self.fixture.environment,
+                                           module_root="Samples/Hexalith.Sample",
+                                           expected_source="Samples/Hexalith.Sample/expected-source")
+                result = harness.run()
+                self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+                self.assertIn("CI/CD is owned by Hexalith.CiCd.", result.stderr)
+                expected = {"action": ".github/actions/dormant/action.yaml", "audit": "extensionless",
+                            "signatures": "npm signature verification", "commitlint": "fixture-controlled-rule"}[failure]
+                self.assertIn(expected, result.stderr)
+                self.assertEqual("false", harness.context["steps"]["guard"]["outputs"]["drift"])
+                self.assertNotIn("prepare", harness.context["steps"])
+                self.assertFalse(any(reference.startswith("actions/setup-dotnet@")
+                                     for reference, _, _ in harness.external_calls))
+                self.assertFalse((fixture / "commands.jsonl").exists())
+                self.assertFalse((fixture / "build-completed").exists())
+                self.assertFalse((self.root / "hook-after-unit-tests").exists())
+                self.assertFalse(self.effects.exists())
+
+    def test_shared_sample_job_maps_pr_base_head_and_title_from_real_event_payload(self):
+        fixture = self.sample_fixture()
+
+        def git(*arguments):
+            result = subprocess.run([shutil.which("git"), "-c", "core.hooksPath=" + os.devnull,
+                                     "-c", "user.name=Event fixture", "-c", "user.email=fixture@example.invalid",
+                                     "-c", "commit.gpgsign=false", "-C", str(self.root), *arguments],
+                                    env=self.fixture.environment, text=True, capture_output=True, check=True)
+            return result.stdout.strip()
+
+        git("init", "-q", "-b", "main")
+        git("add", "--all", ".github", "Samples")
+        git("commit", "-qm", "test: event base")
+        base = git("rev-parse", "HEAD")
+        (self.root / "outside-sample.txt").write_text("repository-wide PR change")
+        git("add", "outside-sample.txt")
+        git("commit", "-qm", "fix: range change outside sample")
+        head = git("rev-parse", "HEAD")
+        merge = git("commit-tree", "HEAD^{tree}", "-p", base, "-p", head,
+                    "-m", "synthetic checkout must not be linted")
+        git("update-ref", "refs/heads/main", merge)
+        event = {"pull_request": {"base": {"sha": base}, "head": {"sha": head},
+                                  "title": "fix: shared sample PR title"}}
+        harness = CompositeHarness(self.root, self.fixture.environment, module_root="Samples/Hexalith.Sample",
+                                   expected_source="Samples/Hexalith.Sample/expected-source",
+                                   event_name="pull_request", event=event)
+        result = harness.run()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        calls = [json.loads(line) for line in (self.root / "guard-tools.jsonl").read_text().splitlines()]
+        selected = [call["stdin"].strip() for call in calls
+                    if call["tool"] == "node" and call["args"][0].endswith("cli.js")]
+        self.assertEqual(["fix: range change outside sample", "fix: shared sample PR title"], selected)
+        self.assertTrue((fixture / "build-completed").is_file())
+        self.assertTrue((self.root / "hook-after-unit-tests").is_file())
+
+    def test_no_solution_sample_executes_guard_tools_and_event_policy_without_product_work(self):
+        fixture = self.sample_fixture()
+        document = FIXTURE.configuration("none")
+        document["buildsTag"] = "v1.0.0"
+        for path in (fixture / ".github/hexalith-ci.json",
+                     fixture / "expected-source/rendered/Hexalith.Sample/.github/hexalith-ci.json"):
+            path.write_text(json.dumps(document))
+        harness = CompositeHarness(self.root, self.fixture.environment, module_root="Samples/Hexalith.Sample",
+                                   expected_source="Samples/Hexalith.Sample/expected-source")
+        result = harness.run()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        calls = [json.loads(line) for line in (self.root / "guard-tools.jsonl").read_text().splitlines()]
+        self.assertEqual(2, sum(call["tool"] == "npm" for call in calls))
+        self.assertEqual(1, sum(call["tool"] == "node" and call["args"][0].endswith("cli.js") for call in calls))
+        self.assertFalse((fixture / "commands.jsonl").exists())
         self.assertFalse((self.root / "hook-after-unit-tests").exists())
         self.assertFalse(self.effects.exists())
 

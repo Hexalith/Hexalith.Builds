@@ -20,7 +20,6 @@
     <File Path=".github/workflows/builds-release.yml" />
     <File Path=".github/workflows/ci-cd-standards.md" />
     <File Path=".github/workflows/codeql.yml" />
-    <File Path=".github/workflows/commitlint-caller.yml" />
     <File Path=".github/workflows/commitlint.yml" />
     <File Path=".github/workflows/dependency-review.yml" />
     <File Path=".github/workflows/domain-ci.md" />

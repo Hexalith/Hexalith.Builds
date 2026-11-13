@@ -33,4 +33,11 @@ without authorizing future restore. Both fixture inputs are required together,
 and fixture controls are rejected outside Builds. Builds' separate root call
 skips delivered-state lookup entirely. Create-mode sample release checks use
 the same paired fixture controls; complete mode skips expected-state reads.
-Commit format remains covered by the separate Builds commitlint caller.
+The sample guard audits only this subtree, lints all committed workspace-root
+custom actions (including dormant metadata), and validates Builds-wide event
+commit messages plus PR titles. It installs trusted locked parser/commitlint
+tools once after ownership succeeds. Builds' root call bypasses these lints,
+so commit policy runs once even when only a root file changes. PR title edits
+also trigger validation. Lint failures emit no repair authorization and stop
+preparation, tests and hooks. The former independent Builds caller is retired;
+legacy consumers keep their frozen reusable commitlint workflow.

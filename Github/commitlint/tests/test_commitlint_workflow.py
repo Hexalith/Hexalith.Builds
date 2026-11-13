@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess  # nosec B404 -- tests execute only a repository-owned workflow block.
 import tempfile
@@ -7,8 +8,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / ".github" / "workflows" / "commitlint.yml"
-CALLER = ROOT / ".github" / "workflows" / "commitlint-caller.yml"
 STANDARDS = ROOT / ".github" / "workflows" / "ci-cd-standards.md"
+
+
+def legacy_consumer(root):
+    """The frozen workflow runs legacy module policy; Builds uses its guard now."""
+    (root / "node_modules").symlink_to(ROOT / "node_modules", target_is_directory=True)
+    (root / "package.json").write_text('{"private":true,"type":"module"}\n', encoding="utf-8")
+    policy = {"extends": ["@commitlint/config-conventional"], "defaultIgnores": False,
+              "rules": {"body-max-line-length": [2, "always", 200], "header-max-length": [2, "always", 200],
+                        "type-enum": [2, "always", ["build", "ci", "docs", "feat", "fix", "perf", "refactor", "revert", "style", "test"]]}}
+    (root / "commitlint.config.mjs").write_text("export default " + json.dumps(policy) + ";\n", encoding="utf-8")
 
 
 def extract_run_block(path, step_name):
@@ -33,6 +43,7 @@ class CommitlintWorkflowTests(unittest.TestCase):
         script = extract_run_block(WORKFLOW, "Validate commit messages")
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
+            legacy_consumer(root)
             fake_bin = root / "bin"
             fake_bin.mkdir()
             marker = root / "injected"
@@ -66,7 +77,7 @@ class CommitlintWorkflowTests(unittest.TestCase):
 
             result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned fixture script.
                 ["bash", "-c", script],
-                cwd=ROOT,
+                cwd=root,
                 env=environment,
                 capture_output=True,
                 text=True,
@@ -101,6 +112,7 @@ class CommitlintWorkflowTests(unittest.TestCase):
         for title, expected in cases.items():
             with self.subTest(title=title), tempfile.TemporaryDirectory() as temporary_directory:
                 root = Path(temporary_directory)
+                legacy_consumer(root)
                 fake_bin = root / "bin"
                 fake_bin.mkdir()
                 npx = fake_bin / "npx"
@@ -120,7 +132,7 @@ class CommitlintWorkflowTests(unittest.TestCase):
                 )
                 result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned workflow script.
                     ["bash", "-c", extract_run_block(WORKFLOW, "Validate commit messages")],
-                    cwd=ROOT,
+                    cwd=root,
                     env=environment,
                     capture_output=True,
                     text=True,

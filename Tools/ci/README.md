@@ -406,9 +406,9 @@ scripts through `GITHUB_ACTION_PATH`, independently of the module's Builds
 gitlink. Checkout acquires the module objects without stored credentials or
 recursive submodules, then `$/Github/guard` is stage 1 before prepare reads
 configuration or initializes dependencies. The guard is enforced for
-`solution: none` too. Commit format remains enforced by the separate
-`commitlint-caller.yml` until its later migration. Builds' root call runs no
-delivered-ref guard. A manual `workflow_dispatch` of
+`solution: none` too. The sample guard enforces Builds' entire event commit range;
+Builds' root call performs no delivered lookup or module lint/tool installation.
+A manual `workflow_dispatch` of
 `builds-ci.yml` runs every retained lane. Its concurrency group includes the
 event and source SHA; dispatch and push runs never cancel one another.
 
@@ -487,17 +487,54 @@ or staged changes and sparse working-tree omissions do not change the verdict.
 Only after a match does guard materialize the committed CI JSON into a private
 temporary file for `ci_config.load_config`, then check every enabled hook/job
 action's committed regular `action.yml`. Missing files, symlinks and gitlinks
-are unavailable; action code is neither executed nor YAML-parsed by guard.
+are unavailable. Guard parses every committed workspace-root custom-action
+`action.yml` and `action.yaml`, including nested dormant actions. Each must be a
+single composite mapping with valid steps; actual `uses` references must name a
+normalized local `.github/actions/<directory>` with regular committed metadata,
+or a third-party action at a full 40-hex commit SHA. Builds references are
+forbidden. The deny list rejects checkout, SDK/cache setup, Dapr initialization,
+solution-wide dotnet build/test, package push, registry login and semantic-release.
+Explicit-project test commands, including the sample actions, remain allowed.
+
+Audit lint reads every module snapshot blob (only the sample subtree in Builds).
+It identifies MSBuild Project roots regardless of filename/namespace and inspects
+descendants and attributes, plus response files and canonical or structurally
+identified NuGet configurations. It rejects blocking NoWarn tokens NU1900/3/4/5,
+NuGetAuditSuppress, MSBuildWarningsAsMessages, NuGetAudit-prefixed
+TreatAsLocalProperty tokens, auditSources and the prohibited test-filter
+properties. NU1901/2, unrelated local properties and ordinary source/binary files
+remain accepted. No imports, expressions or indirect scripts are evaluated;
+literal text matching can report false positives and obfuscation remains outside
+this lint's scope. Release's existing real NuGet audit remains authoritative.
+
+The guard installs only its action-sourced exact CLI/preset 21.2.4 and js-yaml
+4.3.2 manifests/lock in a private temporary directory after ownership succeeds,
+using `npm ci --ignore-scripts` followed by `npm audit signatures`. Parser and
+commitlint share that installation. A sanitized process environment and explicit
+action-sourced `--config` prevent module npm configuration, hooks, plugins or
+Node injection from steering policy. Runtime policy is stdlib Python; YAML is
+parsed as data by the pinned external CLI. Tool/signature failures fail closed.
+
+Complete checkout history supports PR event `base..head` and title validation,
+push `before..after` (zero-before means all reachable after commits), and dispatch
+exactly frozen HEAD. Missing endpoints and unknown events fail; synthetic PR
+merge checkouts never replace event endpoints. A trusted explicit local full-SHA
+range API supports the later local check. The full conventional preset remains
+effective: ten existing types, header/body 200, footer 100, its URL behavior and
+merge linting. Python additionally rejects all five GitHub skip-marker forms
+and every skip-checks trailer key anywhere in the complete raw message.
 
 Owned differences print deterministic escaped diagnostics and
 `CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline.`
 Missing branches, malformed perimeters, unreadable expected blobs or failed tag
 resolution fail closed before config parsing. The guard's internal `drift`
 output is `true` only for completed perimeter comparisons with owned drift;
-missing expected state and unavailable actions emit `false`. The CI job keeps
+missing expected state, unavailable actions and lint-only failures emit `false`. The CI job keeps
 that flag for a later restore implementation, without adding a public workflow
-output or write permission. This guard performs no repair, custom-action deny
-lint, audit lint, dormant-action lint or commitlint migration.
+output or write permission. Lint failures stop prepare, SDK, build, tests and
+hooks. The retired Builds commitlint caller is replaced by this sample guard;
+PR title edits trigger the same validation. Frozen reusable commitlint remains
+available to legacy module callers.
 
 Prepare tests execute real PowerShell and the actual composite metadata in a
 temporary workspace. External checkout/SDK actions and command doubles are

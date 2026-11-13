@@ -46,6 +46,8 @@ jobs:
       CI_REPOSITORY: ${{ github.repository }}
       CI_MODULE_ROOT: ${{ inputs.module-root }}
       CI_EXPECTED_SOURCE: ${{ inputs.expected-source }}
+      CI_EVENT_NAME: ${{ github.event_name }}
+      CI_EVENT_PATH: ${{ github.event_path }}
     outputs:
       drift: ${{ steps.guard.outputs.drift }}
       solution: ${{ steps.prepare.outputs.solution }}
@@ -55,6 +57,7 @@ jobs:
       - name: Checkout module
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           submodules: false
           persist-credentials: false
 
@@ -62,7 +65,7 @@ jobs:
       # gitlink. Each composite locates scripts using GITHUB_ACTION_PATH.
       # Checkout acquires objects; guard is the first validation stage.
       # Builds root skips delivered lookup; its sample compares the fixture.
-      # Commit format remains in commitlint-caller until its later migration.
+      # Sample guard covers the full Builds commit event range exactly once.
       - name: Stage 1 guard owned CI/CD content
         id: guard
         uses: $/Github/guard
