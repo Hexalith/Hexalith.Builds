@@ -114,6 +114,21 @@ class ActionLintTests(unittest.TestCase):
             self.lint()
         self.assertEqual(0, self.parser.calls)
 
+    def test_whole_map_expressions_are_accepted_without_evaluation(self):
+        expressions = ["${{ inputs.environment }}", "${{ fromJSON('{\"FOO\":\"bar\"}') }}",
+                       "${{ fromJSON('{\"FOO\":{\"BAR\":\"it''s literal\"}}') }}"]
+        for expression in expressions:
+            with self.subTest(expression=expression):
+                self.write(json.dumps({"runs": {"using": "composite", "steps": [
+                    {"shell": "bash", "run": "echo safe", "env": expression},
+                    {"uses": "third/party@" + PIN, "with": expression}]}}), name="expression")
+                self.lint()
+        for value in ("${{ }}", "prefix ${{ inputs.environment }}", "${{ inputs.environment }} suffix",
+                      "${{ inputs.first }} ${{ inputs.second }}"):
+            with self.subTest(literal=value):
+                self.reject(json.dumps({"runs": {"using": "composite", "steps": [
+                    {"shell": "bash", "run": "echo safe", "env": value}]}}), "env must be a mapping", name="expression")
+
     def test_remote_reference_policy_validates_actual_resolved_uses(self):
         invalid = ["third/party@main", "third/party@v1", "third/party@" + "a" * 39,
                    "../party@" + PIN, "third/..@" + PIN,
@@ -182,6 +197,27 @@ class ActionLintTests(unittest.TestCase):
                     with self.subTest(command=command):
                         self.reject(json.dumps({"runs": {"using": "composite", "steps": [
                             {"shell": "bash", "run": command}]}}), "deny-list", name="quoted-primitive")
+
+    def test_primitive_executable_paths_are_matched_by_their_literal_basename(self):
+        forbidden = ['"/usr/bin/docker" login registry.example', '/usr/bin/docker login registry.example',
+                     '"/usr/local/bin/dapr" init', '/usr/local/bin/dapr init',
+                     r"& 'C:\Program Files\Docker\docker.exe' 'login' registry.example",
+                     r"C:\tools\dapr.exe init", '"/opt/bin/nuget.exe" "push" package.nupkg',
+                     '"/usr/bin/helm" registry login registry.example',
+                     r"& 'C:\Program Files\Crane\crane.exe' auth login registry.example"]
+        for command in forbidden:
+            with self.subTest(forbidden=command):
+                self.reject(json.dumps({"runs": {"using": "composite", "steps": [
+                    {"shell": "bash", "run": command}]}}), "deny-list", name="path-primitive")
+        self.write(name="path-primitive")
+        allowed = ['"/usr/bin/docker" inspect image', '"/usr/local/bin/dapr" run --app-id example',
+                   '/usr/bin/nuget list', '/usr/bin/dockerd login registry.example',
+                   r"& 'C:\Program Files\Docker\docker-helper.exe' 'login' registry.example"]
+        for command in allowed:
+            with self.subTest(allowed=command):
+                self.write(json.dumps({"runs": {"using": "composite", "steps": [
+                    {"shell": "bash", "run": command}]}}), name="allowed-path")
+                self.lint()
 
     def test_solution_wide_commands_reject_absent_directory_and_solution_targets(self):
         commands = ["dotnet test", "dotnet build --configuration Release", "dotnet test ./tests", "dotnet test Foo.slnx",

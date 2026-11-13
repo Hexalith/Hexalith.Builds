@@ -160,3 +160,16 @@ backtracking; atomic alternatives and subprocess-bounded 20/25/1,000-comment
 regressions now prevent it. The parser still does not evaluate shell/MSBuild
 expressions or load external entities. Targeted tests passed: actions 16,
 audit 18. Post-review full qualification will be recorded below when complete.
+
+
+Focused post-fix review reproduced two further cases: quoted absolute primitive
+paths and valid whole-map env/with expressions. Primitive matching now shares
+Unix/Windows basename recognition with dotnet, and whole-map expression tokens
+remain unevaluated data. Nonmapping literals and mixed expression/text values
+still fail. The runner's expression acceptance was checked against its
+[step converter](https://github.com/actions/runner/blob/v2.331.0/src/Sdk/DTPipelines/Pipelines/ObjectTemplating/PipelineTemplateConverter.cs#L106-L181)
+and allowExpressions call sites. Final action tests passed 18/18. The preceding
+source `fe03043ab126a8c27fc3e4f799d4714dda7e73d2` passed both full local lanes,
+14/14 groups and 885 tests per lane; complete logs and command/exit manifests
+are retained at `/tmp/cicd-5-2-postreview-{312,runner}.{log,json}`. The final
+source receives fresh full qualification below.

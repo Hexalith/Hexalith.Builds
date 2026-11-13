@@ -22,16 +22,21 @@ def _quoted(pattern: str) -> str:
     return f"(?:{pattern}|\"{pattern}\"|'{pattern}')"
 
 
-def _primitive(*tokens: str) -> str:
-    return r"(?<![\w.-])" + r"[ \t]+".join(_quoted(token) for token in tokens) + r"(?=\s|$|[;&|<>])"
+def _executable(basename: str) -> str:
+    name = "(?:" + basename + r")(?:\.exe)?"
+    return (r'''(?:(?:[^\s"';&|<>]*[/\\])?''' + name
+            + r'''|"(?:[^"\r\n]*[/\\])?''' + name + '"'
+            + r'''|'(?:[^'\r\n]*[/\\])?''' + name + "')")
+
+
+def _primitive(executable: str, *verbs: str) -> str:
+    return (r"(?<![\w.-])" + _executable(executable)
+            + "".join(r"[ \t]+" + _quoted(verb) for verb in verbs) + r"(?=\s|$|[;&|<>])")
 
 
 # Match only the invocation prefix: consuming its arguments would hide a second
 # literal dotnet command on the same line. Paths are text, never resolved/run.
-DOTNET = r'''(?:[^\s"';&|<>]*[/\\])?dotnet(?:\.exe)?'''
-COMMAND = re.compile(r'''(?<![\w.-])(?:''' + DOTNET
-                     + r'''|"(?:[^"\r\n]*[/\\])?dotnet(?:\.exe)?"|'(?:[^'\r\n]*[/\\])?dotnet(?:\.exe)?')'''
-                     + r"[ \t]+" + _quoted("(?:build|test)") + r"(?=\s|$|[;&|<>])", re.IGNORECASE)
+COMMAND = re.compile(_primitive("dotnet", "(?:build|test)"), re.IGNORECASE)
 REDIRECTION = re.compile(r"(?:&?>{1,2}|<{1,2}|[<>]&)$")
 # These options consume the following token, so a logger/settings/output file
 # ending in .csproj cannot masquerade as an explicit project argument.
@@ -46,12 +51,12 @@ DENY = (
     ("actions/checkout", r"(?<![\w.-])actions/checkout\b"),
     ("actions/setup-dotnet", r"(?<![\w.-])actions/setup-dotnet\b"),
     ("actions/cache", r"(?<![\w.-])actions/cache\b"),
-    ("dapr init", _primitive(r"dapr(?:\.exe)?", "init")),
-    ("nuget push", _primitive(r"nuget(?:\.exe)?", "push")),
-    ("registry login", _primitive(r"(?:docker|podman|helm|oras|crane|skopeo)(?:\.exe)?", "login")
-                       + "|" + _primitive(r"helm(?:\.exe)?", "registry", "login")
-                       + "|" + _primitive(r"crane(?:\.exe)?", "auth", "login")
-                       + "|" + _primitive(r"az(?:\.exe)?", "acr", "login")
+    ("dapr init", _primitive("dapr", "init")),
+    ("nuget push", _primitive("nuget", "push")),
+    ("registry login", _primitive("docker|podman|helm|oras|crane|skopeo", "login")
+                       + "|" + _primitive("helm", "registry", "login")
+                       + "|" + _primitive("crane", "auth", "login")
+                       + "|" + _primitive("az", "acr", "login")
                        + r"|(?<![\w.-])(?:docker/login-action|azure/docker-login|aws-actions/amazon-ecr-login)\b"),
     ("semantic-release", r"(?<![\w.-])semantic-release\b"),
 )
@@ -83,6 +88,24 @@ def _reference(value: object, snapshot) -> str | None:
     return None
 
 
+def _whole_map_expression(value: object) -> bool:
+    """Recognize one expression token; never evaluate its result or contents."""
+    if not isinstance(value, str) or not (text := value.strip()).startswith("${{"):
+        return False
+    quoted = False
+    index = 3
+    while index < len(text):
+        if text[index] == "'":
+            if quoted and text[index:index + 2] == "''":
+                index += 2
+                continue
+            quoted = not quoted
+        elif not quoted and text[index:index + 2] == "}}":
+            return index == len(text) - 2 and bool(text[3:index].strip())
+        index += 1
+    return False
+
+
 def _structure(document: object, snapshot) -> list[str]:
     if not isinstance(document, dict):
         return ["action must be a single mapping document"]
@@ -99,7 +122,7 @@ def _structure(document: object, snapshot) -> list[str]:
             findings.append(label + " must be a mapping")
             continue
         for field in ("env", "with"):
-            if field in step and not isinstance(step[field], dict):
+            if field in step and not isinstance(step[field], dict) and not _whole_map_expression(step[field]):
                 findings.append(label + " " + field + " must be a mapping")
         if ("uses" in step) == ("run" in step):
             findings.append(label + " must declare exactly one of uses or run")
