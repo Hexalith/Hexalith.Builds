@@ -1,10 +1,11 @@
 ---
 story: '5-1'
 created: '2026-11-13'
-status: ready-for-review
+status: done
 implementation_baseline_revision: f01c3ab70f7e7401b3b73217983955f7771a1465
 implementation_integration_revision: 05a75b626fb73c6e386d16c41e885f193d3cff16
 implementation_revision: 0f97426edb6f88ee6e534d95ca9029f7e0b20311
+review_implementation_revision: e2bdaca58c95c52e05cb6db77d91ab7ae22ee4a0
 ---
 
 # Guard and release drift-check results
@@ -144,20 +145,35 @@ of the two release input mappings. Each mutation was caught by an assertion in
 its new behavioral regression; the repository files were not mutated.
 Complete post-review verification is recorded in the following update.
 
+## Post-review verification
+
+The corrected source is e2bdaca58c95c52e05cb6db77d91ab7ae22ee4a0. Its normal
+[push run](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322)
+completed all seven jobs. Both hosted Python lanes, guarded sample Linux,
+dependent Windows and workflow lint/API succeeded. The catalog and Evidence.Tests
+jobs retain precisely the same 14 assertion messages and 44 failing identities
+as the approved integration baseline, with exits 1 and 2. Full current arrays,
+job results and log fingerprints are retained in the verification JSON.
+
+Both complete local lanes passed all 14 groups and 822 test cases each without
+skips (Python 3.12.13 and runner Python 3.14.4). All new review regressions ran.
+The 58 perimeter tests, authenticated pinned workflow lint (10 exact frozen
+findings, zero new), committed-object API (2,581 entries, no removals), whitespace
+and source-scope checks passed. Four independent behavioral mutation checks
+caught removing the filter, shared guard and each release input mapping.
+The exact review-source commit message passed pinned commitlint 21.2.4.
+
 ## Terminal result
 
-Status: ready for independent review under the story-specific verification
-exception approved by the human on 2026-11-13.
+Status: done under the human-approved story-specific verification exception.
 
-The original implementation run halted while the hosted Python lanes were
-unfinished because the two product jobs had already failed. The approved
-exception now permits those two failures only when their actual signatures
-match the recorded integration baseline. Resumed verification established that
-exact match, and both hosted Python lanes subsequently completed successfully.
-All other required local and exact-source hosted checks passed. No assertion,
-dependency pin or runtime release-green requirement was changed.
+Independent review completed and its six correction groups were applied and
+verified. No work was deferred. Follow-up review is recommended for the final
+filtered-history and caller/input-mapping corrections because three medium
+groups were patched; a separate subsequent independent pass has not run.
+The hosted Builds sample uses its committed fixture and does not establish
+an adopted module's live delivered branch.
 
-The implementation-verification gate is satisfied under that exception.
-Independent review remains outstanding and must pass before story completion;
-this handoff does not claim that the story is done. The exception does not make
-this failed Builds run green for release purposes.
+The overall hosted conclusion remains failure. No check, assertion, dependency
+pin, frozen runtime, production release setting or release green-CI requirement
+was weakened. This run performed no adoption, publication or administration.

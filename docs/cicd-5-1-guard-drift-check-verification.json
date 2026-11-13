@@ -798,5 +798,1110 @@
       "decodedLogSha256": "46b6281ba5d26070313b3134dadb5d7f1b01043940d952d8092493a2afd8598b"
     }
   ],
-  "verificationGate": "satisfied under the human-approved story-specific exception; independent review remains required"
+  "verificationGate": "satisfied under the human-approved story-specific exception; independent review completed, six correction groups applied, and all post-review checks satisfied",
+  "postReview": {
+    "revision": "e2bdaca58c95c52e05cb6db77d91ab7ae22ee4a0",
+    "runId": 43395942322,
+    "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322",
+    "status": "completed",
+    "conclusion": "failure",
+    "observedAt": "2026-11-13T08:57:01.784425+00:00",
+    "review": {
+      "findings": [
+        {
+          "key": "V1",
+          "verdict": "medium",
+          "route": "patch",
+          "group": "ci-boundary",
+          "summary": "Shared CI enforcement can be removed without the shared-job tests failing.",
+          "evidence": "The verification reviewer removed the guard through an in-memory workflow mutation and all 20 CompositeHarness tests still passed. Add committed sample drift at the real job boundary and assert ownership failure before prepare/build/hooks."
+        },
+        {
+          "key": "V2",
+          "verdict": "medium",
+          "route": "patch",
+          "group": "release-mapping",
+          "summary": "Release adapter tests bypass actual delivered-sha and expected-source environment mappings.",
+          "evidence": "The verification reviewer removed both composite mappings and all 12 adapter tests still passed because they injected RELEASE_* variables directly. Evaluate metadata defaults/mappings and execute paired sample and ancestor cases."
+        },
+        {
+          "key": "I1",
+          "verdict": "false",
+          "route": "reject",
+          "summary": "Committed-tree and execution-workspace surfaces differ.",
+          "evidence": "The intent contract explicitly requires pinned Git objects and dirty/staged/sparse independence. Comparing committed state is the requested behavior, and checkout precedes guard in the deployed job."
+        },
+        {
+          "key": "I2",
+          "verdict": "false",
+          "route": "reject",
+          "summary": "Hosted sample coverage has one owned file rather than all nine perimeter kinds.",
+          "evidence": "The story explicitly defines a one-whole-entry sample perimeter and assigns nine-kind coverage to disposable real repositories. Both surfaces are exercised as requested."
+        },
+        {
+          "key": "I3",
+          "verdict": "false",
+          "route": "reject",
+          "summary": "Fixture adapters do not prove an adopted module's live delivered branch.",
+          "evidence": "The dispatched story excludes module onboarding and production release. Actual composites plus hosted Builds/sample verification satisfy its stated integration surface; adoption is not claimed."
+        },
+        {
+          "key": "I4",
+          "verdict": "false",
+          "route": "reject",
+          "summary": "Aggregate diff includes unrelated package pins and superproject gitlinks.",
+          "evidence": "The two package changes are already present in integration revision 05a75b626fb73c6e386d16c41e885f193d3cff16 and unchanged by source 0f97426edb6f88ee6e534d95ca9029f7e0b20311. A concurrent superproject /pushall advanced the other gitlinks; this run did not author them."
+        },
+        {
+          "key": "I5",
+          "verdict": "false",
+          "route": "reject",
+          "summary": "The review diff alone cannot establish current remote delivery or final completion.",
+          "evidence": "Pushed implementation/evidence are verified by Git remote reads and the completed exact-source GitHub run. The review handoff correctly does not claim completion; finalization follows triage and validation."
+        },
+        {
+          "key": "B1",
+          "verdict": "medium",
+          "route": "patch",
+          "group": "filtered-history",
+          "summary": "Deepening through the raw remote loses the blob filter.",
+          "evidence": "A filtering-enabled local Git reproduction fetched the unrelated historical blob with unfiltered --unshallow; adding --filter=blob:none kept that blob absent. Retain filtering on deepening."
+        },
+        {
+          "key": "B2",
+          "verdict": "low",
+          "route": "patch",
+          "group": "expired-snapshot",
+          "summary": "Comparison.expected exposes a snapshot after its temporary repository has been removed.",
+          "evidence": "Reading an uncached expected blob after compare_repository returned raised ExpectedStateError. No production caller uses this field; delete the unused field/argument and retain durable actual/workspace snapshots plus materialized diagnostics."
+        },
+        {
+          "key": "B3",
+          "verdict": "low",
+          "route": "reject",
+          "summary": "Multiple partial entries at one path can have indistinguishable explanations.",
+          "evidence": "Two legal absent-line patterns produced the same path/kind/partial diagnostic. The fixed ownership error and violated path remain correct; entry disambiguation would add matching/association logic for an uncommon diagnostic case, so the cosmetic extension is rejected."
+        },
+        {
+          "key": "B4",
+          "verdict": "low",
+          "route": "reject",
+          "summary": "Whole-file symlink drift omits the two target strings.",
+          "evidence": "A real Git symlink mismatch reports the owned path and content reason correctly. The module perimeter uses ordinary managed configuration/workflow files; extra symlink-specific report branches are not justified for this rare cosmetic case."
+        },
+        {
+          "key": "B5",
+          "verdict": "low",
+          "route": "reject",
+          "summary": "Individual Git subprocesses do not have a separate deadline.",
+          "evidence": "Git.run does not set a subprocess timeout; hosted CI/release jobs already have 30/40-minute bounds and fail closed. An additional timeout policy and exception branches for the rare transport stall would add complexity beyond a direct correction."
+        },
+        {
+          "key": "B6",
+          "verdict": "low",
+          "route": "patch",
+          "group": "logical-source",
+          "summary": "Configuration diagnostics expose a random temporary materialization path.",
+          "evidence": "A matching unsupported-schema fixture emitted /tmp/hexalith-guard-config-<random>/hexalith-ci.json. Preserve loader wording while reporting the committed logical path and verify repeated failures are identical."
+        },
+        {
+          "key": "B7",
+          "verdict": "false",
+          "route": "reject",
+          "summary": "Repository-local URL/header config can steer production anonymous acquisition.",
+          "evidence": "The demonstrated settings remain active only in an existing repository. Production accepted-state and Builds-tag acquisition use fresh private repositories with fixed remotes and stripped global/environment configuration. Actions checkout supplies an unfiltered module tree with persist-credentials=false; no actual-workspace lazy-fetch path carrying those settings is used by these callers."
+        },
+        {
+          "key": "B8",
+          "verdict": "medium",
+          "route": "patch",
+          "group": "filtered-history",
+          "summary": "Existing transports do not exercise genuine filtered clone/lazy blob retrieval.",
+          "evidence": "LocalTransport omits filtering and the adapter's file transport has filtering disabled by default. Add a filtering-enabled executed transport regression covering owned lazy reads, deepening and continued absence of unrelated historical blobs; this accompanies B1."
+        },
+        {
+          "key": "B9",
+          "verdict": "low",
+          "route": "patch",
+          "group": "pinned-race",
+          "summary": "Pinned delivered-tip behavior during branch advancement lacks a controlled race regression.",
+          "evidence": "The code freezes tip before deepening and enumerates its ancestors, but existing tests never advance the branch between those operations. Add a direct branch-advance control asserting comparison remains tied to the original tip."
+        },
+        {
+          "key": "B10",
+          "verdict": "false",
+          "route": "reject",
+          "summary": "Early invalid source selection should still recover ordinary-module dispatch security settings.",
+          "evidence": "The spec prohibits parsing ordinary-module config before a completed create comparison, and prohibits expected-state acquisition in complete mode. Ambiguous/invalid draft selection establishes neither mode safely, so fail-closed output suppression is intentional. Builds root alone has no comparison prerequisite and retains its prior recovery."
+        }
+      ],
+      "patchActions": {
+        "V1": "Added committed sample drift through the actual shared workflow and assertions that prepare/build/hooks do not run.",
+        "V2": "The release adapter now evaluates real composite defaults/environment mappings and executes paired-sample and exact-ancestor cases.",
+        "B1": "Deepening now retains --filter=blob:none.",
+        "B2": "Deleted the unused expected snapshot field and constructor argument.",
+        "B6": "Loader diagnostics now name .github/hexalith-ci.json; repeated malformed/unknown-schema runs assert stable wording.",
+        "B8": "Added a filtering-enabled Git transport regression proving lazy owned reads and absence of unrelated historical blobs.",
+        "B9": "Added a controlled delivered-branch advance during deepening, testing both the pinned ancestor and rejection of the newly advanced commit."
+      },
+      "patchGroups": {
+        "medium": 3,
+        "low": 3
+      },
+      "deferred": [],
+      "followupReviewRecommended": true,
+      "followupRisk": "The corrected filtered-history acquisition and release input-mapping paths have behavioral verification but have not had a separate subsequent independent review. Hosted Builds/sample validation does not exercise an adopted module's live delivered branch."
+    },
+    "localVerification": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-cache",
+          "--locked",
+          "--script",
+          "--python",
+          "3.12",
+          "Tools/ci/run_python_tests.py"
+        ],
+        "exitCode": 0,
+        "startedAt": "2026-11-13T08:43:48.665315+00:00",
+        "completedAt": "2026-11-13T08:52:48.155897+00:00",
+        "transcript": "/tmp/cicd-5-1-review-python312.log",
+        "sha256": "a689eeef711f46ec252c8e18dd2f835c4e6033ad4e52e8365ecf6873c23c553d",
+        "testCases": 822
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-cache",
+          "--locked",
+          "--script",
+          "--python",
+          "/usr/bin/python3",
+          "Tools/ci/run_python_tests.py"
+        ],
+        "exitCode": 0,
+        "startedAt": "2026-11-13T08:43:48.429584+00:00",
+        "completedAt": "2026-11-13T08:52:47.436921+00:00",
+        "transcript": "/tmp/cicd-5-1-review-runner.log",
+        "sha256": "c26e78e8dae9c7667ad08f15ab2707a9afca0ba4a210f825b34922925995c6bc",
+        "testCases": 822
+      },
+      {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "Github/lib/tests",
+          "-p",
+          "test_perimeter*.py",
+          "-v"
+        ],
+        "exitCode": 0,
+        "startedAt": "2026-11-13T08:43:48.429140+00:00",
+        "completedAt": "2026-11-13T08:43:55.755477+00:00",
+        "transcript": "/tmp/cicd-5-1-review-quality-0.log",
+        "sha256": "0ed2c350cd599a7727499bd451ffdf5b55c200e6547d35fa80c34adf262a5e25"
+      },
+      {
+        "command": [
+          "python3",
+          "Tools/ci/lint_workflows.py"
+        ],
+        "exitCode": 0,
+        "startedAt": "2026-11-13T08:43:55.755586+00:00",
+        "completedAt": "2026-11-13T08:44:04.406386+00:00",
+        "transcript": "/tmp/cicd-5-1-review-quality-1.log",
+        "sha256": "567dfb1b8ac59d2dfef7090c62ac42c0e90a2126cd701f18c98a0397a27bd16d"
+      },
+      {
+        "check": "public API",
+        "exitCode": 0,
+        "transcript": "/tmp/cicd-5-1-review-public-api.log",
+        "sha256": "5cd6f2796b1d22644f16b916890b1a16aeab2c621e6912ca46f93e26deec2404"
+      },
+      {
+        "check": "review source commitlint",
+        "exitCode": 0,
+        "transcript": "/tmp/cicd-5-1-review-commitlint.log",
+        "sha256": "55d22dc78386e39c0d8341ac1d64bce7eb8985a1e245d60ecffe8126df160513"
+      },
+      {
+        "check": "four behavioral mutation checks",
+        "exitCode": 0,
+        "transcript": "/tmp/cicd-5-1-review-mutations.log",
+        "sha256": "4e0a0e6fa56389ab76d22f91b5069e985386802148b5ec5bc9abefbdb842a05d"
+      }
+    ],
+    "matrixTestAudit": {
+      "runtimeRows": 10,
+      "coveringTests": [
+        "test_guard_adapter.GuardAdapterTests.test_matching_none_module_executes_successor_through_anonymous_branch_clone",
+        "test_guard.GuardTests.test_owned_malformed_or_unknown_schema_fails_before_ci_loader_and_emits_drift",
+        "test_expected_state.ExpectedStateTests.test_all_nine_kinds_use_the_existing_perimeter_contract_and_tag_repository",
+        "test_expected_state.ExpectedStateTests.test_missing_branch_manifest_blob_and_invalid_manifest_fail_closed",
+        "test_expected_state.ExpectedStateTests.test_corrupt_manifest_bytes_and_missing_expected_blob_fail_closed",
+        "test_guard.GuardTests.test_missing_expected_state_never_parses_config_or_authorizes_restore",
+        "test_guard_adapter.GuardAdapterTests.test_symlink_and_gitlink_action_metadata_are_unavailable_without_execution",
+        "test_expected_state.ExpectedStateTests.test_pinned_head_ignores_dirty_staged_and_sparse_worktree_content",
+        "test_guard_adapter.GuardAdapterTests.test_head_verdict_ignores_staged_dirty_and_omitted_worktree_files",
+        "test_guard_adapter.GuardAdapterTests.test_builds_root_does_no_expected_acquisition_and_sample_reads_root_actions",
+        "test_guard.GuardTests.test_sample_compares_committed_subtrees_and_resolves_actions_from_workspace_root",
+        "test_release_state.ReleaseStateTests.test_explicit_delivered_ancestor_uses_exact_tree_and_deepens_by_branch",
+        "test_release_adapters.ResolveAdapterTests.test_module_explicit_ancestor_is_compared_exactly_after_branch_history_acquisition",
+        "test_expected_state.ExpectedStateTests.test_sibling_and_future_commits_are_rejected_using_only_delivered_branch_history",
+        "test_release_state.ReleaseStateTests.test_missing_or_unrelated_delivered_sha_never_falls_back_to_tip",
+        "test_release_state.ReleaseStateTests.test_create_drift_fails_before_switch_or_ci_with_dispatch_security_settings",
+        "test_release_outcome.OutcomeAdapterTests.test_real_drifted_resolve_retains_reporter_ownership_and_reports_failed",
+        "test_release_state.ReleaseStateTests.test_complete_mode_never_acquires_expected_state_even_with_changed_accepted_branch",
+        "test_release_adapters.ResolveAdapterTests.test_module_complete_uses_current_security_settings_without_delivered_lookup"
+      ],
+      "lanes": [
+        "Python 3.12.13",
+        "Python 3.14.4"
+      ],
+      "allExecutedAndPassed": true,
+      "skips": 0
+    },
+    "allowedFailures": {
+      "catalog": {
+        "equal": true,
+        "baseline": {
+          "logSha256": "04725bcae4b6694ebe5d2613be24d194fda7ad2b048c1ea3db365efda4be4032",
+          "exitCode": 1,
+          "signature": [
+            "Canonical family 'Hexalith.EventStore.' must default to '4.2.0'.",
+            "Package 'Hexalith.EventStore.Admin.Abstractions' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Admin.Server' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Aspire' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Client' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Contracts' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.DomainService' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Gateway' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.RestApi.Generators' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Server' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.ServiceDefaults' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.SignalR' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Testing' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Testing.Integration' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'."
+          ],
+          "jobId": 131757926298,
+          "jobUrl": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43387068103/job/131757926298",
+          "conclusion": "failure",
+          "signatureCount": 14
+        },
+        "implementation": {
+          "revision": "e2bdaca58c95c52e05cb6db77d91ab7ae22ee4a0",
+          "runId": 43395942322,
+          "jobId": 131786732751,
+          "jobUrl": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131786732751",
+          "conclusion": "failure",
+          "exitCode": 1,
+          "signatureCount": 14,
+          "signature": [
+            "Canonical family 'Hexalith.EventStore.' must default to '4.2.0'.",
+            "Package 'Hexalith.EventStore.Admin.Abstractions' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Admin.Server' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Aspire' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Client' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Contracts' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.DomainService' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Gateway' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.RestApi.Generators' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Server' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.ServiceDefaults' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.SignalR' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Testing' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'.",
+            "Package 'Hexalith.EventStore.Testing.Integration' must bind directly to 'HexalithEventStoreVersion' at '4.2.0'."
+          ],
+          "logSha256": "9a36aa378a58a387b9c14ca41336233b70bac4b2b57c881bfc2f7bac7fd3c78f",
+          "transcript": "/tmp/cicd-5-1-review-catalog-current.log"
+        }
+      },
+      "evidenceTests": {
+        "equal": true,
+        "baseline": {
+          "logSha256": "a61a1c26d99fdcab349fcfd7ab6975e0817c22bd15ff8809926f76dc723eb039",
+          "exitCode": 2,
+          "signature": [
+            "Hexalith.Builds.Evidence.Tests.EvidenceCommandApplicationTests.ValidatePositiveFixtureWritesPassedJsonAsync",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"all-skipped-report.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"approval-before-runs.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"approval-in-future.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"approval-revision-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"cancelled-without-profile.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"cleanup-foreign-run.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"cleanup-not-down-evidence.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"command-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"control-run-with-report.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"dirty-evidence.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"duplicate-run-key.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"evidence-other-revision.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"failed-native-report.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"manifest-hash-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"missing-approval.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"missing-mtp-run.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"missing-package.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"missing-rollback.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"mtp-run-cites-vstest-evidence.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"package-identity-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"package-version-not-lockstep.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"partial-persisted-assertions.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"prerequisite-is-passing-run.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"report-count-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"report-not-bound.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"report-platform-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"tampered-evidence-hash.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"unavailable-claimed-passing.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"unsupported-profile-as-unavailable.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"wrong-feed.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.PositiveRecordMatchesItsExpectationAsync",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.PassedRowBackedByZeroTestsFailsClosedAsync",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.PositiveFixturePassesAsync",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/artifact-hash-mismatch.yaml\", expectedSnapshot: \"negative/artifact-hash-mismatch.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/coverage-shortfall.yaml\", expectedSnapshot: \"negative/coverage-shortfall.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/no-executed-tests.yaml\", expectedSnapshot: \"negative/no-executed-tests.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/outcome-mismatch.yaml\", expectedSnapshot: \"negative/outcome-mismatch.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/policy-controls.yaml\", expectedSnapshot: \"negative/policy-controls.yaml.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"positive/readiness.yaml\", expectedSnapshot: \"positive/readiness.yaml.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.SelectedCleanupAcceptanceTests.CompletedSelectedEvidenceRequiresVerifiedCleanupAsync(scenario: \"removed\")",
+            "Hexalith.Builds.Evidence.Tests.SelectedCleanupAcceptanceTests.CompletedSelectedEvidenceRequiresVerifiedCleanupAsync(scenario: \"unknown\")",
+            "Hexalith.Builds.Evidence.Tests.SelectedCleanupAcceptanceTests.CompletedSelectedEvidenceRequiresVerifiedCleanupAsync(scenario: \"unverified\")",
+            "Hexalith.Builds.Evidence.Tests.SelectedCleanupAcceptanceTests.CompletedSelectedEvidenceRequiresVerifiedCleanupAsync(scenario: \"workspace\")"
+          ],
+          "jobId": 131757926537,
+          "jobUrl": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43387068103/job/131757926537",
+          "conclusion": "failure",
+          "signatureCount": 44
+        },
+        "implementation": {
+          "revision": "e2bdaca58c95c52e05cb6db77d91ab7ae22ee4a0",
+          "runId": 43395942322,
+          "jobId": 131786732892,
+          "jobUrl": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131786732892",
+          "conclusion": "failure",
+          "exitCode": 2,
+          "signatureCount": 44,
+          "signature": [
+            "Hexalith.Builds.Evidence.Tests.EvidenceCommandApplicationTests.ValidatePositiveFixtureWritesPassedJsonAsync",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"all-skipped-report.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"approval-before-runs.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"approval-in-future.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"approval-revision-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"cancelled-without-profile.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"cleanup-foreign-run.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"cleanup-not-down-evidence.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"command-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"control-run-with-report.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"dirty-evidence.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"duplicate-run-key.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"evidence-other-revision.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"failed-native-report.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"manifest-hash-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"missing-approval.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"missing-mtp-run.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"missing-package.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"missing-rollback.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"mtp-run-cites-vstest-evidence.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"package-identity-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"package-version-not-lockstep.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"partial-persisted-assertions.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"prerequisite-is-passing-run.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"report-count-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"report-not-bound.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"report-platform-mismatch.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"tampered-evidence-hash.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"unavailable-claimed-passing.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"unsupported-profile-as-unavailable.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: \"wrong-feed.json\")",
+            "Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.PositiveRecordMatchesItsExpectationAsync",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.PassedRowBackedByZeroTestsFailsClosedAsync",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.PositiveFixturePassesAsync",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/artifact-hash-mismatch.yaml\", expectedSnapshot: \"negative/artifact-hash-mismatch.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/coverage-shortfall.yaml\", expectedSnapshot: \"negative/coverage-shortfall.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/no-executed-tests.yaml\", expectedSnapshot: \"negative/no-executed-tests.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/outcome-mismatch.yaml\", expectedSnapshot: \"negative/outcome-mismatch.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"negative/policy-controls.yaml\", expectedSnapshot: \"negative/policy-controls.yaml.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.ReadinessEvidenceValidatorTests.ValidatorMatchesExpectedSnapshotAsync(fixture: \"positive/readiness.yaml\", expectedSnapshot: \"positive/readiness.yaml.expected.json\")",
+            "Hexalith.Builds.Evidence.Tests.SelectedCleanupAcceptanceTests.CompletedSelectedEvidenceRequiresVerifiedCleanupAsync(scenario: \"removed\")",
+            "Hexalith.Builds.Evidence.Tests.SelectedCleanupAcceptanceTests.CompletedSelectedEvidenceRequiresVerifiedCleanupAsync(scenario: \"unknown\")",
+            "Hexalith.Builds.Evidence.Tests.SelectedCleanupAcceptanceTests.CompletedSelectedEvidenceRequiresVerifiedCleanupAsync(scenario: \"unverified\")",
+            "Hexalith.Builds.Evidence.Tests.SelectedCleanupAcceptanceTests.CompletedSelectedEvidenceRequiresVerifiedCleanupAsync(scenario: \"workspace\")"
+          ],
+          "logSha256": "31bf8c7b8bc0c19f2a1d7a4fcaa249cb1247fb3ea9d01c319593fcb2d6a79e94",
+          "transcript": "/tmp/cicd-5-1-review-evidence-current.log"
+        }
+      }
+    },
+    "exactSourceJobs": [
+      {
+        "completedAt": "2026-11-13T08:55:36Z",
+        "conclusion": "success",
+        "databaseId": 131786732439,
+        "name": "Python contract tests (runner)",
+        "startedAt": "2026-11-13T08:47:11Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Capture runner Python before setup",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Setup Python 3.12",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Initialize .NET SDK",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Setup Node.js",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install Node.js dependencies",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify npm dependency provenance and signatures",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install integrity-checked CI tools",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run the shared Python suite and CI and perimeter contract validators",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Setup Node.js",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Initialize .NET SDK",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Setup Python 3.12",
+            "number": 19,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "number": 20,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 21,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131786732439",
+        "decodedLogSha256": "de6e98a5acaa83c832fdbba5f9a2699a36c5351367a8c044ef70aca289222309",
+        "suiteSummary": [
+          "Python suite: /tmp/.tmpVBYrQy/environments-v2/run-python-tests-757331707f4a72fc/bin/python (3.14.4), 14 groups",
+          "Python suite: 14/14 groups passed"
+        ]
+      },
+      {
+        "completedAt": "2026-11-13T08:47:44Z",
+        "conclusion": "failure",
+        "databaseId": 131786732751,
+        "name": "Package catalog contracts",
+        "startedAt": "2026-11-13T08:47:10Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Initialize .NET",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install .NET 10 targeting packs for offline catalog fixtures",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Validate central package versions",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "failure",
+            "name": "Test authoritative package catalog",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Test logging generator selection",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Test central package version validator",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Validate package version audit",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Test package version audit generator",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Test package version audit validator",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Validate Builds consumer package authority",
+            "number": 12,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Test consumer package authority validator",
+            "number": 13,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Validate package version exception inventory",
+            "number": 14,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Test package version exception validator",
+            "number": 15,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Validate Platform version catalog and hosting compatibility",
+            "number": 16,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Test Platform version catalog contracts",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Validate Dapr package versions",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Test Dapr package validator",
+            "number": 19,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Post Install .NET 10 targeting packs for offline catalog fixtures",
+            "number": 36,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Initialize .NET",
+            "number": 37,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "number": 38,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 39,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131786732751"
+      },
+      {
+        "completedAt": "2026-11-13T08:54:04Z",
+        "conclusion": "success",
+        "databaseId": 131786732782,
+        "name": "Python contract tests (3.12)",
+        "startedAt": "2026-11-13T08:47:10Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Capture runner Python before setup",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Setup Python 3.12",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Initialize .NET SDK",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Setup Node.js",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install Node.js dependencies",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify npm dependency provenance and signatures",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Install integrity-checked CI tools",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run the shared Python suite and CI and perimeter contract validators",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Setup Node.js",
+            "number": 17,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Initialize .NET SDK",
+            "number": 18,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Setup Python 3.12",
+            "number": 19,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "number": 20,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 21,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131786732782",
+        "decodedLogSha256": "d6e7ee1b5ce08925b5ffd058b39efbbc25d9585c9057ec44bc2195c48ee4be86",
+        "suiteSummary": [
+          "Python suite: /tmp/.tmpL3PpWQ/environments-v2/run-python-tests-757331707f4a72fc/bin/python (3.12.16), 14 groups",
+          "Python suite: 14/14 groups passed"
+        ]
+      },
+      {
+        "completedAt": "2026-11-13T08:47:37Z",
+        "conclusion": "success",
+        "databaseId": 131786732869,
+        "name": "Workflow lint and public API",
+        "startedAt": "2026-11-13T08:47:11Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Setup Python 3.12",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Lint workflows and composite actions with online audits",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Check public API against the reachable stable release",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Setup Python 3.12",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 11,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131786732869"
+      },
+      {
+        "completedAt": "2026-11-13T08:49:47Z",
+        "conclusion": "failure",
+        "databaseId": 131786732892,
+        "name": ".NET tests / Build and tests",
+        "startedAt": "2026-11-13T08:47:11Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Checkout module",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Stage 1 guard owned CI/CD content",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Validate and prepare module",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Setup module SDK",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Stage 2 restore and Release build",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "failure",
+            "name": "Stage 3 unit tests",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Stage 4 environment setup",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "After unit tests hook",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Stage 4 integration tests",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "After integration tests hook",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "Post Setup module SDK",
+            "number": 21,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Checkout module",
+            "number": 22,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 23,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131786732892"
+      },
+      {
+        "completedAt": "2026-11-13T08:47:56Z",
+        "conclusion": "success",
+        "databaseId": 131786733065,
+        "name": "Sample module / Build and tests",
+        "startedAt": "2026-11-13T08:47:10Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Checkout module",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Stage 1 guard owned CI/CD content",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Validate and prepare module",
+            "number": 4,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Setup module SDK",
+            "number": 5,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Stage 2 restore and Release build",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Stage 3 unit tests",
+            "number": 7,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Stage 4 environment setup",
+            "number": 8,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "After unit tests hook",
+            "number": 9,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Stage 4 integration tests",
+            "number": 10,
+            "status": "completed"
+          },
+          {
+            "conclusion": "skipped",
+            "name": "After integration tests hook",
+            "number": 11,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Setup module SDK",
+            "number": 21,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Checkout module",
+            "number": 22,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 23,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131786733065"
+      },
+      {
+        "completedAt": "2026-11-13T08:49:02Z",
+        "conclusion": "success",
+        "databaseId": 131787078845,
+        "name": "Sample Windows tests",
+        "startedAt": "2026-11-13T08:47:58Z",
+        "status": "completed",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Prepare module",
+            "number": 2,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run module action",
+            "number": 3,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Prepare module",
+            "number": 6,
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 7,
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43395942322/job/131787078845"
+      }
+    ],
+    "logFingerprintFormat": "SHA-256 of the complete downloaded job-log bytes for this post-review record.",
+    "sourceIntegrity": {
+      "command": "git diff --exit-code 05a75b626fb73c6e386d16c41e885f193d3cff16..e2bdaca58c95c52e05cb6db77d91ab7ae22ee4a0 -- Props/Directory.Packages.props Tools/test-authoritative-package-catalog.ps1 test/Hexalith.Builds.Evidence.Tests",
+      "exitCode": 0
+    },
+    "completionCommitlint": {
+      "command": "node_modules/.bin/commitlint --edit /tmp/cicd-5-1-final-commit-message.txt --verbose",
+      "version": "21.2.4",
+      "message": "docs(cicd): record reviewed guard completion and verification\n",
+      "exitCode": 0,
+      "transcript": "/tmp/cicd-5-1-final-commitlint.log",
+      "sha256": "23da733a5485ed41d490be1f480e123bd51b86b81770ade31d6ccbe230c5b786"
+    }
+  }
 }
