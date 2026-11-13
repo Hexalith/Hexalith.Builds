@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       delivered-sha:
-        description: Delivered-state commit for the story 5-1 drift check integration.
+        description: Exact live delivered commit or ancestor; omitted uses the live delivered branch tip.
         type: string
         default: ''
       ci-workflow:
@@ -17,6 +17,10 @@ on:
         default: module
       module-root:
         description: Test-only Builds sample module root.
+        type: string
+        default: ''
+      expected-source:
+        description: Test-only Builds sample delivered-layout fixture, paired with module-root.
         type: string
         default: ''
     secrets:
@@ -84,6 +88,7 @@ jobs:
           delivered-sha: ${{ inputs.delivered-sha }}
           ci-workflow: ${{ inputs.ci-workflow }}
           module-root: ${{ inputs.module-root }}
+          expected-source: ${{ inputs.expected-source }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
           RELEASE_SWITCH: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}

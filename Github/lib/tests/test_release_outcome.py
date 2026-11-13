@@ -378,6 +378,30 @@ class OutcomeAdapterTests(unittest.TestCase):
             self.assertEqual(1, result.returncode, result.stdout + result.stderr)
             self.assertEqual("failed", self.document()["outcome"])
 
+    def test_real_drifted_resolve_retains_reporter_ownership_and_reports_failed(self):
+        from test_release_adapters import ResolveAdapterTests
+        resolver = ResolveAdapterTests()
+        resolver.setUp()
+        self.addCleanup(resolver.doCleanups)
+        resolver.normal_module()
+        resolver.config["codeql"] = ["ruby"]
+        resolver.commit_config()
+        failed, selected = resolver.invoke(repository="Example/ReleaseFixture", switch="false")
+        self.assertEqual(1, failed.returncode, failed.stderr)
+        self.assertIn("CI/CD is owned by Hexalith.CiCd.", failed.stderr)
+        self.assertNotIn("enabled", selected)
+        needs = prerequisites(resolve="failure", codeql="skipped", hook="skipped")
+        result = self.adapter(RELEASE_DISPATCH_SHA=resolver.sha, RELEASE_SHA=selected["sha"],
+                              RELEASE_MODE=selected["mode"], RELEASE_ENABLED=selected.get("enabled", ""),
+                              RELEASE_CODEQL=selected.get("codeql", ""),
+                              RELEASE_NIGHTLY_HOOK=selected.get("nightly-hook", ""),
+                              RELEASE_NEEDS=json.dumps(needs))
+        self.assertEqual(1, result.returncode, result.stderr)
+        self.assertEqual({"schema": "hexalith.release-outcome.v1", "sha": resolver.sha,
+                          "outcome": "failed"}, self.document())
+        self.assertEqual("false", self.recorded_outputs()["publish"])
+        self.assertEqual("true", self.recorded_outputs()["upload"])
+
     def test_reexecution_replaces_the_one_document_without_leaving_temporary_files(self):
         self.assertEqual(0, self.adapter().returncode)
         self.assertEqual("disabled", self.document()["outcome"])
@@ -400,12 +424,12 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
         self.workflow = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
 
     def run_graph(self, *, resolve=None, stages=None, inputs=None, codeql="skipped", hook="skipped",
-                  cancelled=False, workflow_ref=None):
+                  cancelled=False, workflow_ref=None, resolve_result="success"):
         stages = stages or {}
         trigger = self.workflow.get("on", self.workflow.get(True))["workflow_call"]
         values = {name: str(entry.get("default", "")) for name, entry in trigger["inputs"].items()}
         values.update(inputs or {})
-        needs = {"resolve": {"result": "success", "outputs": {
+        needs = {"resolve": {"result": resolve_result, "outputs": {
                      "sha": SELECTED_SHA, "mode": "create", "enabled": "true", "codeql": "[]",
                      "nightly-hook": "false", "config-valid": "true", **(resolve or {})}},
                  "codeql": {"result": codeql, "outputs": {}},
@@ -476,6 +500,14 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
                     {key: evaluator.template(value) for key, value in step.get("with", {}).items()}))
         graph["caller_pull"] = {key: evaluator.template(value) for key, value in release["secrets"].items()}
         return graph
+
+    def test_failed_resolve_cannot_run_publication_stages_or_transfer_outcome_ownership(self):
+        graph = self.run_graph(resolve_result="failure", resolve={"enabled": "", "config-valid": "true"})
+        self.assertEqual({}, graph["executed"])
+        self.assertEqual(1, graph["process"].returncode)
+        self.assertEqual("failed", graph["recorded"]["outcome"])
+        self.assertEqual("false", graph["outputs"]["publish"])
+        self.assertTrue(graph["uploaded"])
 
     def test_builds_caller_forwards_original_complete_identity_to_the_publisher(self):
         expected = handoff()["draft"]["outputs"]

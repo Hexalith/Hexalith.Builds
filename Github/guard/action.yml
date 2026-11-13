@@ -1,0 +1,13 @@
+name: Guard owned CI/CD content
+description: Compare committed module content with its accepted perimeter before parsing configuration.
+outputs:
+  drift:
+    description: Internal perimeter drift flag; unavailable expected state and missing actions report false.
+    value: ${{ steps.guard.outputs.drift }}
+runs:
+  using: composite
+  steps:
+    - name: Compare owned CI/CD content
+      id: guard
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/guard.py"

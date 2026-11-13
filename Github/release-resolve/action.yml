@@ -1,14 +1,17 @@
 name: Resolve release state
-description: Read dispatch configuration and freeze marked-draft or event source using trusted stdlib only.
+description: Freeze release source, compare create-mode owned content, and read dispatch settings using trusted stdlib only.
 inputs:
   ci-workflow:
     description: Exact CI filename; only Builds may use builds-ci.yml.
     default: ci.yml
   delivered-sha:
-    description: Delivered-state integration input; drift checking ships in story 5-1.
+    description: Exact live delivered commit or ancestor; omitted uses the live delivered branch tip.
     default: ''
   module-root:
     description: Test-only Builds sample module root.
+    default: ''
+  expected-source:
+    description: Test-only Builds sample delivered-layout fixture, paired with module-root.
     default: ''
 outputs:
   sha:
@@ -48,4 +51,5 @@ runs:
         RELEASE_CI_WORKFLOW: ${{ inputs.ci-workflow }}
         RELEASE_DELIVERED_SHA: ${{ inputs.delivered-sha }}
         RELEASE_MODULE_ROOT: ${{ inputs.module-root }}
+        RELEASE_EXPECTED_SOURCE: ${{ inputs.expected-source }}
       run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_state.py"

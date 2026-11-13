@@ -47,15 +47,11 @@ jobs:
       CI_MODULE_ROOT: ${{ inputs.module-root }}
       CI_EXPECTED_SOURCE: ${{ inputs.expected-source }}
     outputs:
+      drift: ${{ steps.guard.outputs.drift }}
       solution: ${{ steps.prepare.outputs.solution }}
       submodules: ${{ steps.prepare.outputs.submodules }}
       global-json: ${{ steps.prepare.outputs.global-json }}
     steps:
-      # Stage 1 must stay first. Story 5-1 supplies the guard and commitlint.
-      # Builds' own call never runs a delivered-ref guard (AD-19).
-      - name: Stage 1 reserved for guard and commit format
-        run: ':'
-
       - name: Checkout module
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -64,6 +60,13 @@ jobs:
 
       # $/ resolves the running workflow's commit, independently of the module
       # gitlink. Each composite locates scripts using GITHUB_ACTION_PATH.
+      # Checkout acquires objects; guard is the first validation stage.
+      # Builds root skips delivered lookup; its sample compares the fixture.
+      # Commit format remains in commitlint-caller until its later migration.
+      - name: Stage 1 guard owned CI/CD content
+        id: guard
+        uses: $/Github/guard
+
       - name: Validate and prepare module
         id: prepare
         uses: $/Github/ci-prepare

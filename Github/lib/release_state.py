@@ -23,6 +23,7 @@ import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ci_config import BUILDS_REPOSITORY, ConfigError, load_config
+import expected_state
 
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 STABLE = re.compile(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
@@ -35,6 +36,13 @@ class ReleaseError(ValueError):
     def __init__(self, message):
         super().__init__("".join(f"\\u{ord(c):04x}" if ord(c) < 32 or 127 <= ord(c) <= 159
                                  or c in "\u2028\u2029" else c for c in str(message)))
+
+
+class _ExpectedReleaseError(ReleaseError):
+    """Retain already escaped, line-oriented shared ownership diagnostics."""
+
+    def __init__(self, error):
+        ValueError.__init__(self, str(error))
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -163,14 +171,17 @@ class Git:
     def __init__(self, directory):
         self.directory = Path(directory)
 
-    def run(self, *args, allowed=(0,)):
+    def _environment(self):
         environment = {key: value for key, value in os.environ.items()
                        if not key.startswith(("GIT_", "GH_", "GITHUB_"))}
         environment.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
                            GIT_TERMINAL_PROMPT="0", GIT_NO_REPLACE_OBJECTS="1")
+        return environment
+
+    def run(self, *args, allowed=(0,)):
         result = subprocess.run(["git", "-c", "core.hooksPath=" + os.devnull,
             "-c", "protocol.ext.allow=never", "-c", "protocol.file.allow=never",
-            "-C", str(self.directory), *args], env=environment, capture_output=True, check=False)
+            "-C", str(self.directory), *args], env=self._environment(), capture_output=True, check=False)
         if result.returncode not in allowed:
             # Never forward remote/config-controlled diagnostics or credentials.
             raise ReleaseError("Git object operation failed: " + args[0])
@@ -192,6 +203,17 @@ class Git:
                 "https://github.com/" + repository + ".git",
                 "+refs/heads/main:refs/heads/main", "+refs/tags/*:refs/tags/*")
         return git
+
+
+class ResolverGit(Git):
+    """Resolve acquisition uses the strict anonymous transport environment.
+
+    Other original-artifact consumers retain the existing Git interface and
+    behavior; their transport and publication handling are outside this story.
+    """
+
+    def _environment(self):
+        return expected_state.Git(self.directory).environment
 
 
 def highest_reachable_stable_tag(git, sha, *, exclude=""):
@@ -304,19 +326,53 @@ def dispatch_settings(git, sha, repository, module_root=""):
             "nightly-hook": str("nightly" in config["hooks"]).lower(), "config-valid": "true"}
 
 
-def resolve(git, api, *, sha, ref, switch, workflow="ci.yml", module_root="", delivered_sha="", emit=outputs):
+def resolve(git, api, *, sha, ref, switch, workflow="ci.yml", module_root="", delivered_sha="",
+            expected_source="", transport=None, emit=outputs):
     if not SHA.fullmatch(sha):
         raise ReleaseError("dispatch SHA must be a full commit")
-    emit(dispatch_settings(git, sha, api.repository, module_root))
-    if ref != "refs/heads/main":
-        raise ReleaseError("release requires refs/heads/main")
-    ci_workflow(api.repository, workflow)
-    if delivered_sha and not SHA.fullmatch(delivered_sha):
-        raise ReleaseError("delivered-sha must be a full commit SHA")
-    selected = select_release(git, api.pages(f"/repos/{api.repository}/releases?per_page=100"), sha)
+    try:
+        expected_state.validate_context(api.repository, module_root, expected_source)
+    except expected_state.ExpectedStateError as error:
+        raise _ExpectedReleaseError(error) from error
+    try:
+        if ref != "refs/heads/main":
+            raise ReleaseError("release requires refs/heads/main")
+        ci_workflow(api.repository, workflow)
+        selected = select_release(git, api.pages(f"/repos/{api.repository}/releases?per_page=100"), sha)
+    except ReleaseError:
+        # Builds root has no comparison prerequisite. Preserve its current
+        # security settings on early selection failures where possible.
+        if api.repository == BUILDS_REPOSITORY and not module_root:
+            try:
+                emit(dispatch_settings(git, sha, api.repository))
+            except (ConfigError, ReleaseError):
+                pass
+        raise
     emit(selected)
-    # Story 5-1 installs the perimeter comparison here, after source selection.
-    # Accepting delivered-sha does not assert or implement drift protection.
+    comparison = None
+    if selected["mode"] == "create":
+        if delivered_sha and not SHA.fullmatch(delivered_sha):
+            raise ReleaseError("delivered-sha must be a full commit SHA")
+        try:
+            comparison = expected_state.compare_repository(expected_state.Git(git.directory), repository=api.repository,
+                ref=selected["sha"], module_root=module_root, expected_source=expected_source,
+                delivered_sha=delivered_sha, transport=transport)
+        except expected_state.ExpectedStateError as error:
+            raise _ExpectedReleaseError(error) from error
+    try:
+        emit(dispatch_settings(git, sha, api.repository, module_root))
+    except (ConfigError, ReleaseError):
+        if comparison is not None and comparison.drift:
+            try:
+                comparison.require_clean()
+            except expected_state.ExpectedStateError as error:
+                raise _ExpectedReleaseError(error) from error
+        raise
+    if comparison is not None:
+        try:
+            comparison.require_clean()
+        except expected_state.ExpectedStateError as error:
+            raise _ExpectedReleaseError(error) from error
     if switch not in ("true", "false"):
         raise ReleaseError("HEXALITH_RELEASE_PUBLISH_ENABLED must be exactly true or false")
     emit({"enabled": switch})
@@ -336,10 +392,11 @@ def main():
         repository = os.environ.get("GITHUB_REPOSITORY", "")
         api = Api(repository, os.environ.get("GITHUB_TOKEN", ""), os.environ.get("GITHUB_API_URL", "https://api.github.com"))
         with tempfile.TemporaryDirectory(prefix="hexalith-release-git-") as directory:
-            git = Git.fetch(directory, repository)
+            git = ResolverGit.fetch(directory, repository)
             resolve(git, api, sha=os.environ.get("GITHUB_SHA", ""), ref=os.environ.get("GITHUB_REF", ""),
                     switch=os.environ.get("RELEASE_SWITCH", ""), workflow=os.environ.get("RELEASE_CI_WORKFLOW", "ci.yml"),
-                    module_root=os.environ.get("RELEASE_MODULE_ROOT", ""), delivered_sha=os.environ.get("RELEASE_DELIVERED_SHA", ""))
+                    module_root=os.environ.get("RELEASE_MODULE_ROOT", ""), delivered_sha=os.environ.get("RELEASE_DELIVERED_SHA", ""),
+                    expected_source=os.environ.get("RELEASE_EXPECTED_SOURCE", ""))
         return 0
     except (ConfigError, ReleaseError, OSError, UnicodeError) as error:
         print(error, file=sys.stderr)

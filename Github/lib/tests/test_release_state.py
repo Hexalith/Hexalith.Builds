@@ -18,8 +18,8 @@ from contextlib import contextmanager, redirect_stdout
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from ci_config import ConfigError
 import release_state as state
+import expected_state as expected
 
 
 REPOSITORY = "Example/ReleaseFixture"
@@ -231,6 +231,32 @@ class RealApiCiGateTests(unittest.TestCase):
                     list(api.pages(f"/repos/{REPOSITORY}/releases", deadline=deadline))
 
 
+class DeliveredTransport:
+    """Local branch acquisition; production still chooses its own HTTPS remote."""
+
+    def __init__(self, source):
+        self.source = Path(source)
+        self.calls = []
+
+    def clone(self, directory, branch):
+        self.calls.append(("clone", branch))
+        subprocess.run(["git", "-c", "core.hooksPath=" + os.devnull,
+                        "-c", "protocol.file.allow=always", "clone", "--no-checkout",
+                        "--no-local", "--depth=1", "--single-branch", "--branch", branch,
+                        self.source.as_uri(), str(directory)], check=True, capture_output=True)
+        return expected.Git(directory)
+
+    def deepen(self, git, branch):
+        self.calls.append(("deepen", branch))
+        subprocess.run(["git", "-c", "core.hooksPath=" + os.devnull,
+                        "-c", "protocol.file.allow=always", "-C", str(git.root),
+                        "fetch", "--unshallow", "--no-tags", "origin", branch],
+                       check=True, capture_output=True)
+
+    def builds(self, directory, tags):
+        raise AssertionError("a config-only perimeter does not need Builds tags")
+
+
 class ReleaseStateTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -243,6 +269,28 @@ class ReleaseStateTests(unittest.TestCase):
         self.command("tag", "-a", "v1.0.0", "-m", "stable baseline", self.first)
         self.dispatch = self.commit(configuration(nightly=True), "dispatch")
         self.git = state.Git(self.root)
+        self.delivered = self.root / "accepted-state"
+        self.delivered.mkdir()
+        self.delivered_command("init", "--initial-branch=delivered/ReleaseFixture")
+        self.delivered_command("config", "user.name", "Delivered Test")
+        self.delivered_command("config", "user.email", "delivered-test@example.invalid")
+        self.delivered_tip = self.accept(configuration(nightly=True))
+        self.transport = DeliveredTransport(self.delivered)
+
+    def delivered_command(self, *arguments):
+        return subprocess.check_output(["git", "-c", "core.hooksPath=" + os.devnull,
+                                        "-C", str(self.delivered), *arguments],
+                                       text=True, stderr=subprocess.DEVNULL).strip()
+
+    def accept(self, document):
+        target = self.delivered / "rendered/ReleaseFixture/.github/hexalith-ci.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(document))
+        (self.delivered / "rendered/ReleaseFixture.perimeter.json").write_text(json.dumps({
+            "schema": "hexalith.perimeter.v1", "entries": [{"kind": "whole", "path": ".github/hexalith-ci.json"}]}))
+        self.delivered_command("add", "rendered")
+        self.delivered_command("commit", "--allow-empty", "-m", "test: accepted delivered fixture")
+        return self.delivered_command("rev-parse", "HEAD")
 
     def command(self, *arguments, input_text=None):
         environment = dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
@@ -270,7 +318,8 @@ class ReleaseStateTests(unittest.TestCase):
 
     def resolve(self, api, **options):
         emitted = {}
-        options = {"sha": self.dispatch, "ref": "refs/heads/main", "switch": "false", **options}
+        options = {"sha": self.dispatch, "ref": "refs/heads/main", "switch": "false",
+                   "transport": self.transport, **options}
         result = state.resolve(self.git, api, emit=emitted.update, **options)
         return result, emitted
 
@@ -360,21 +409,21 @@ class ReleaseStateTests(unittest.TestCase):
                 emitted = {}
                 with self.assertRaisesRegex(state.ReleaseError, "must be exactly true or false"):
                     state.resolve(self.git, api, sha=self.dispatch, ref="refs/heads/main", switch=switch,
-                                  emit=emitted.update)
+                                  emit=emitted.update, transport=self.transport)
                 self.assertEqual(self.dispatch, emitted["sha"])
                 self.assertEqual('["csharp"]', emitted["codeql"])
                 self.assertEqual("true", emitted["nightly-hook"])
                 self.assertNotIn("enabled", emitted)
 
-    def test_wrong_ref_and_ambiguous_drafts_leave_current_settings_available(self):
+    def test_module_wrong_ref_and_ambiguous_drafts_do_not_parse_before_comparison(self):
         for options, api in [({"ref": "refs/heads/feature"}, ApiControl()),
                              ({}, ApiControl(drafts=[self.draft(), self.draft(identifier=12)]))]:
             with self.subTest(options=options):
                 emitted = {}
                 with self.assertRaises(state.ReleaseError):
                     state.resolve(self.git, api, sha=self.dispatch, ref=options.get("ref", "refs/heads/main"),
-                                  switch="false", emit=emitted.update)
-                self.assertEqual("true", emitted["config-valid"])
+                                  switch="false", emit=emitted.update, transport=self.transport)
+                self.assertNotIn("config-valid", emitted)
                 self.assertNotIn("sha", emitted)
 
     def test_invalid_dispatch_configuration_emits_no_fabricated_gate_settings(self):
@@ -382,9 +431,9 @@ class ReleaseStateTests(unittest.TestCase):
         del invalid["hooks"]
         sha = self.commit(invalid, "bad configuration")
         emitted = {}
-        with self.assertRaises(ConfigError):
-            state.resolve(self.git, ApiControl(), sha=sha, ref="refs/heads/main", switch="false", emit=emitted.update)
-        self.assertEqual({}, emitted)
+        with self.assertRaisesRegex(state.ReleaseError, "CI/CD is owned by Hexalith.CiCd"):
+            state.resolve(self.git, ApiControl(), sha=sha, ref="refs/heads/main", switch="false", emit=emitted.update, transport=self.transport)
+        self.assertEqual({"sha": sha, "mode": "create"}, emitted)
 
     def test_git_object_reads_ignore_worktree_filters_hooks_and_submodules(self):
         marker = self.root / "executed-module-code"
@@ -432,11 +481,103 @@ class ReleaseStateTests(unittest.TestCase):
                 api = ApiControl()
                 with self.assertRaisesRegex(state.ReleaseError, diagnostic):
                     self.resolve(api, **options)
-                self.assertEqual([], api.requests)
+                if "delivered_sha" in options:
+                    self.assertEqual(1, len(api.requests), "mode selection precedes create-only source validation")
+                else:
+                    self.assertEqual([], api.requests)
+                self.assertEqual([], self.transport.calls)
         with redirect_stdout(io.StringIO()):
-            selected, emitted = self.resolve(ApiControl(), delivered_sha=self.first)
+            selected, emitted = self.resolve(ApiControl(), delivered_sha=self.delivered_tip)
         self.assertEqual(self.dispatch, selected["sha"])
         self.assertEqual("false", emitted["enabled"])
+
+    def test_create_drift_fails_before_switch_or_ci_with_dispatch_security_settings(self):
+        self.accept(configuration(codeql=["ruby"]))
+        for switch in ("true", "false", "invalid"):
+            with self.subTest(switch=switch):
+                api, emitted = ApiControl(runs=[[ci_run(self.dispatch)]]), {}
+                with self.assertRaisesRegex(state.ReleaseError, "CI/CD is owned by Hexalith.CiCd"):
+                    state.resolve(self.git, api, sha=self.dispatch, ref="refs/heads/main", switch=switch,
+                                  emit=emitted.update, transport=self.transport)
+                self.assertEqual(self.dispatch, emitted["sha"])
+                self.assertEqual("create", emitted["mode"])
+                self.assertEqual('["csharp"]', emitted["codeql"])
+                self.assertEqual("true", emitted["nightly-hook"])
+                self.assertEqual("true", emitted["config-valid"])
+                self.assertNotIn("enabled", emitted)
+                self.assertEqual(0, api.ci_reads)
+
+    def test_explicit_delivered_ancestor_uses_exact_tree_and_deepens_by_branch(self):
+        accepted = self.delivered_tip
+        live = self.accept(configuration(codeql=["ruby"]))
+        self.assertNotEqual(accepted, live)
+        selected, emitted = self.resolve(ApiControl(), delivered_sha=accepted)
+        self.assertEqual(self.dispatch, selected["sha"])
+        self.assertEqual("false", emitted["enabled"])
+        self.assertIn(("deepen", "delivered/ReleaseFixture"), self.transport.calls)
+        for delivered_sha in ("", live):
+            with self.subTest(delivered_sha=delivered_sha), self.assertRaisesRegex(
+                    state.ReleaseError, "CI/CD is owned by Hexalith.CiCd"):
+                self.resolve(ApiControl(), delivered_sha=delivered_sha)
+
+    def test_missing_or_unrelated_delivered_sha_never_falls_back_to_tip(self):
+        tree = self.delivered_command("rev-parse", "HEAD^{tree}")
+        unrelated = self.delivered_command("commit-tree", tree, "-m", "test: unrelated accepted source")
+        for delivered_sha in ("f" * 40, unrelated, self.first):
+            with self.subTest(delivered_sha=delivered_sha):
+                emitted, api = {}, ApiControl()
+                with self.assertRaises(state.ReleaseError):
+                    state.resolve(self.git, api, sha=self.dispatch, ref="refs/heads/main", switch="false",
+                                  delivered_sha=delivered_sha, transport=self.transport, emit=emitted.update)
+                self.assertNotIn("config-valid", emitted)
+                self.assertNotIn("enabled", emitted)
+                self.assertEqual(0, api.ci_reads)
+        self.assertTrue(all(len(call) == 2 and call[1] == "delivered/ReleaseFixture"
+                            for call in self.transport.calls))
+
+    def test_unavailable_expected_state_does_not_parse_config_or_fabricate_security_outputs(self):
+        manifest = self.delivered / "rendered/ReleaseFixture.perimeter.json"
+        for content in (None, '{"schema":"hexalith.perimeter.v999","entries":[]}'):
+            if content is None:
+                manifest.unlink()
+            else:
+                manifest.write_text(content)
+            self.delivered_command("add", "rendered")
+            self.delivered_command("commit", "-m", "test: unreadable delivered source")
+            emitted = {}
+            with patch.object(state, "dispatch_settings", side_effect=AssertionError("premature config read")):
+                with self.assertRaisesRegex(state.ReleaseError, "CI/CD is owned by Hexalith.CiCd"):
+                    state.resolve(self.git, ApiControl(), sha=self.dispatch, ref="refs/heads/main", switch="false",
+                                  transport=self.transport, emit=emitted.update)
+            self.assertEqual({"sha": self.dispatch, "mode": "create"}, emitted)
+
+    def test_ownership_diagnostic_wins_when_drift_and_actual_decoding_both_fail(self):
+        bad = self.commit({"schema": "hexalith.ci.v999"}, "invalid owned JSON")
+        emitted = {}
+        with self.assertRaisesRegex(state.ReleaseError, "CI/CD is owned by Hexalith.CiCd") as caught:
+            state.resolve(self.git, ApiControl(), sha=bad, ref="refs/heads/main", switch="false",
+                          transport=self.transport, emit=emitted.update)
+        self.assertNotIn("unsupported schema", str(caught.exception))
+        self.assertNotIn("enabled", emitted)
+        self.assertNotIn("config-valid", emitted)
+
+    def test_complete_mode_never_acquires_expected_state_even_with_changed_accepted_branch(self):
+        self.accept(configuration(codeql=["ruby"]))
+        with patch.object(self.transport, "clone", side_effect=AssertionError("complete fetched delivered state")):
+            selected, emitted = self.resolve(ApiControl(drafts=[self.draft()]), switch="true",
+                                             delivered_sha="f" * 40)
+        self.assertEqual("complete", selected["mode"])
+        self.assertEqual(self.first, selected["sha"])
+        self.assertEqual('["csharp"]', emitted["codeql"])
+
+    def test_fixture_controls_are_rejected_before_complete_mode_selection(self):
+        for module_root, expected_source in (("Samples/Hexalith.Sample", "Samples/Hexalith.Sample/expected-source"),
+                                              ("", "Samples/Hexalith.Sample/expected-source")):
+            api = ApiControl(drafts=[self.draft()])
+            with self.subTest(module_root=module_root), self.assertRaises(state.ReleaseError):
+                self.resolve(api, module_root=module_root, expected_source=expected_source)
+            self.assertEqual([], api.requests)
+            self.assertEqual([], self.transport.calls)
 
     def test_latest_exact_sha_push_or_manual_ci_governs(self):
         for event in ("push", "workflow_dispatch"):
@@ -515,7 +656,7 @@ class ReleaseStateTests(unittest.TestCase):
         emitted = {}
         api = ApiControl(runs=[[ci_run(self.dispatch, conclusion="failure")]])
         with self.assertRaisesRegex(state.ReleaseError, "main is red, nothing released"):
-            state.resolve(self.git, api, sha=self.dispatch, ref="refs/heads/main", switch="true", emit=emitted.update)
+            state.resolve(self.git, api, sha=self.dispatch, ref="refs/heads/main", switch="true", emit=emitted.update, transport=self.transport)
         self.assertEqual(self.dispatch, emitted["sha"])
         self.assertEqual("create", emitted["mode"])
         self.assertEqual("true", emitted["enabled"])

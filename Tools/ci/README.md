@@ -142,8 +142,9 @@ index's attribute blobs, so dirty working-tree attributes cannot steer hashing.
 A private candidate index and the real index lock make failures atomic and
 preserve unrelated staging and the caller's `GIT_INDEX_FILE`. Sparse candidates
 are expanded for safe cacheinfo updates. These APIs contain no caller restore
-policy, rendering, delivery, guard or release integration; story 5-1 owns the
-sample's enforcement seam. Focused real-repository controls run with:
+policy, rendering or delivery. `Github/lib/expected_state.py` supplies the
+read-only acquisition and comparison shared by guard and release resolve.
+Focused real-repository engine controls run with:
 
 ```bash
 python3 -m unittest discover -s Github/lib/tests -p 'test_perimeter*.py' -v
@@ -402,8 +403,12 @@ passed at `f2f0a08d8c38d34b390dc937659d2067c8a09cce` on runner 2.338.2.
 The temporary probe files have been removed. Native `$/` works, so AD-9's pinned
 own-code-checkout fallback is unnecessary. All new composites locate their
 scripts through `GITHUB_ACTION_PATH`, independently of the module's Builds
-gitlink. The first CI step reserves stage 1 for story 5-1's guard and commitlint;
-Builds' own call runs no delivered-ref guard. A manual `workflow_dispatch` of
+gitlink. Checkout acquires the module objects without stored credentials or
+recursive submodules, then `$/Github/guard` is stage 1 before prepare reads
+configuration or initializes dependencies. The guard is enforced for
+`solution: none` too. Commit format remains enforced by the separate
+`commitlint-caller.yml` until its later migration. Builds' root call runs no
+delivered-ref guard. A manual `workflow_dispatch` of
 `builds-ci.yml` runs every retained lane. Its concurrency group includes the
 event and source SHA; dispatch and push runs never cancel one another.
 
@@ -459,10 +464,40 @@ Both sample verdicts directly contribute to the Builds workflow conclusion.
 
 The sample's expected-source fixture contains
 `rendered/Hexalith.Sample/.github/hexalith-ci.json` and a sibling
-`rendered/Hexalith.Sample.perimeter.json`. The latter is an empty placeholder;
-story 4-1 supplies the shared schema/library and story 5-1 supplies the sample's
-valid manifest and enforcement integration. The retained first CI
-step remains a reserved slot and provides no guard/commit-format enforcement.
+`rendered/Hexalith.Sample.perimeter.json`. Its v1 perimeter owns the complete
+sample configuration through one `whole` entry. Guard compares committed
+`HEAD` content under `Samples/Hexalith.Sample` with the committed fixture,
+then checks enabled actions at workspace-root `.github/actions/<name>/action.yml`.
+Changing only the owned sample configuration fails before prepare; root
+actions remain available to the unchanged Linux and dependent Windows lanes.
+Both fixture inputs are required together and are accepted only in Builds.
+
+For ordinary modules, guard anonymously shallow-sparse-clones only
+`https://github.com/Hexalith/Hexalith.CiCd.git`, selecting
+`delivered/<repository basename>` from trusted workflow repository context.
+It pins that accepted tree and loads perimeter bytes through
+`perimeter_config.load_bytes`, then delegates comparison to `perimeter.compare`.
+Gitlink tags are peeled in a separate trusted Builds object repository, so
+downloaded workflow actions need no `.git` directory. Anonymous Git receives
+no token, inherited credential helper/header or URL rewrite; hooks, recursive
+submodules and smudge/LFS execution are disabled.
+
+Actual and expected enumeration and blob reads use pinned Git objects. Dirty
+or staged changes and sparse working-tree omissions do not change the verdict.
+Only after a match does guard materialize the committed CI JSON into a private
+temporary file for `ci_config.load_config`, then check every enabled hook/job
+action's committed regular `action.yml`. Missing files, symlinks and gitlinks
+are unavailable; action code is neither executed nor YAML-parsed by guard.
+
+Owned differences print deterministic escaped diagnostics and
+`CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline.`
+Missing branches, malformed perimeters, unreadable expected blobs or failed tag
+resolution fail closed before config parsing. The guard's internal `drift`
+output is `true` only for completed perimeter comparisons with owned drift;
+missing expected state and unavailable actions emit `false`. The CI job keeps
+that flag for a later restore implementation, without adding a public workflow
+output or write permission. This guard performs no repair, custom-action deny
+lint, audit lint, dormant-action lint or commitlint migration.
 
 Prepare tests execute real PowerShell and the actual composite metadata in a
 temporary workspace. External checkout/SDK actions and command doubles are
@@ -485,16 +520,31 @@ secrets are `registry-pull-username` and `registry-pull-password`, passed to
 prepare in the hook job and to recovery in the draft job as
 `REGISTRY_PULL_USERNAME` and `REGISTRY_PULL_PASSWORD`.
 
-Resolve reads dispatch-commit configuration through `ci_config`, then freezes
-the release SHA once. A valid marked draft selects complete mode; otherwise
-the dispatch SHA selects create mode. The default qualifying CI is `ci.yml`;
+Resolve freezes the release SHA and mode once. A valid marked draft selects
+complete mode; otherwise the dispatch SHA selects create mode. Create mode
+first runs the same read-only perimeter comparison as guard against the live
+accepted delivered branch. An omitted `delivered-sha` selects its pinned live
+tip; a supplied full commit SHA must equal that tip or be its ancestor. History
+is deepened or unshallowed through the branch to prove ancestry. Resolve never
+fetches the supplied bare SHA or falls back to the tip for an invalid input.
+Builds root skips this lookup; its paired sample inputs compare the committed
+fixture instead.
+
+After a completed comparison, resolve loads dispatch-commit configuration
+through `ci_config` and emits valid current-dispatch security settings. It then
+rejects drift before checking the publishing switch or green CI. An ownership
+failure wins if drift and configuration decoding both fail; unavailable
+expected state fails before config parsing and emits no fabricated settings.
+The default qualifying CI is `ci.yml`;
 only the Builds repository may pass `ci-workflow: builds-ci.yml`. The exact
 switch `HEXALITH_RELEASE_PUBLISH_ENABLED=false` disables publishing while
 current-dispatch CodeQL and nightly preparation/hook still run. Invalid switch
 values and red exact-source CI fail without suppressing validated nightly
 settings. Complete mode selects the older draft's SHA and known version but
-never reads its old configuration or checks its CI again. Both nightly jobs
-always use the dispatch SHA.
+never fetches expected state, reads its old configuration or checks its CI
+again. It reads only dispatch settings, and both nightly jobs always use the
+dispatch SHA. Fixture controls are validated even in complete mode and cannot
+enable a normal module to bypass comparison.
 
 The final always-scheduled reporter writes only `outcome.json` in artifact
 `hexalith-release-outcome`, with overwrite enabled for reruns. Its closed v1
@@ -641,11 +691,11 @@ the reusable reporter uploads nothing. Failed/cancelled gates and unexpected
 recovery skips remain failures. Builds uses the original-artifact caller
 handoff; module caller integration remains downstream work.
 
-Module production callers remain on their existing workflows. `delivered-sha` is the
-integration slot for story 5-1;
-its presence currently provides no drift protection. The test-only
-`module-root` is guarded to the Builds sample and excluded from the public
-module API. Reusable build/draft jobs use no publisher secret, OIDC or
+Module production callers remain on their existing workflows until adoption.
+Shared create-mode release resolve now enforces `delivered-sha` ancestry and
+owned-content drift. The paired test-only `module-root` and `expected-source`
+inputs are guarded to Builds and excluded from the public module workflow API.
+Reusable build/draft jobs use no publisher secret, OIDC or
 attestation permission; the separate caller publisher uses the permissions above.
 
 CodeQL and nightly-hook run after resolve failures but honor run

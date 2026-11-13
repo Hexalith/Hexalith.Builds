@@ -27,6 +27,7 @@ class ResolveAdapterTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.source = self.root / 'source'
         self.source.mkdir()
+        self.delivered = self.root / 'delivered'
         self.git('init', '-b', 'main')
         self.git('config', 'user.name', 'Fixture')
         self.git('config', 'user.email', 'fixture@example.com')
@@ -46,11 +47,13 @@ class ResolveAdapterTests(unittest.TestCase):
         # operations still run against real Git histories. Forbid tools in resolve.
         (self.bin / 'git').write_text(f'''#!{sys.executable}
 import json, os, subprocess, sys
-assert not any(k in os.environ for k in ('GITHUB_TOKEN','GH_TOKEN','GITHUB_SHA'))
+assert not any(k in os.environ for k in ('GITHUB_TOKEN','GH_TOKEN','GITHUB_SHA','GIT_CONFIG_COUNT',
+    'GIT_CONFIG_PARAMETERS','GIT_CONFIG_KEY_0','GIT_CONFIG_VALUE_0'))
 a=sys.argv[1:]
-with open(os.environ['TEST_LEDGER'],'a') as f: f.write(json.dumps(a)+'\\n')
-if 'fetch' in a:
-    a=[os.environ['TEST_REMOTE'] if x.startswith('https://github.com/') else x for x in a]
+with open({str(self.root / 'ledger')!r},'a') as f: f.write(json.dumps(a)+'\\n')
+if 'fetch' in a or 'clone' in a:
+    a=[{self.delivered.as_uri()!r} if x=='https://github.com/Hexalith/Hexalith.CiCd.git'
+       else {self.source.as_uri()!r} if x.startswith('https://github.com/') else x for x in a]
     a=[x.replace('protocol.file.allow=never','protocol.file.allow=always') for x in a]
 raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
 ''')
@@ -72,6 +75,25 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.git('add', '.')
         self.git('commit', '-m', 'fixture')
         self.sha = self.git('rev-parse', 'HEAD')
+
+    def normal_module(self):
+        self.config['buildsTag'] = 'v1.0.0'
+        self.commit_config()
+        self.delivered.mkdir()
+        for args in (('init', '-b', 'delivered/ReleaseFixture'), ('config', 'user.name', 'Fixture'),
+                     ('config', 'user.email', 'fixture@example.invalid')):
+            subprocess.check_output([REAL_GIT, '-C', str(self.delivered), *args], stderr=subprocess.DEVNULL)
+        self.delivered_sha = self.accept_module()
+
+    def accept_module(self):
+        target = self.delivered / 'rendered/ReleaseFixture/.github/hexalith-ci.json'
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(self.config))
+        (self.delivered / 'rendered/ReleaseFixture.perimeter.json').write_text(json.dumps({
+            'schema': 'hexalith.perimeter.v1', 'entries': [{'kind': 'whole', 'path': '.github/hexalith-ci.json'}]}))
+        subprocess.check_output([REAL_GIT, '-C', str(self.delivered), 'add', '.'], stderr=subprocess.DEVNULL)
+        subprocess.check_output([REAL_GIT, '-C', str(self.delivered), 'commit', '-m', 'fixture'], stderr=subprocess.DEVNULL)
+        return subprocess.check_output([REAL_GIT, '-C', str(self.delivered), 'rev-parse', 'HEAD'], text=True).strip()
 
     @contextmanager
     def server(self):
@@ -105,14 +127,16 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
             server.server_close()
             thread.join()
 
-    def invoke(self, *, switch='false', ref='refs/heads/main', workflow='ci.yml', module_root=''):
+    def invoke(self, *, switch='false', ref='refs/heads/main', workflow='ci.yml', module_root='',
+               expected_source='', delivered_sha='', repository='Hexalith/Hexalith.Builds'):
         output = self.root / 'output'
         output.write_text('')
         ledger = self.root / 'ledger'
         environment = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ['PATH'],
-            GITHUB_ACTION_PATH=str(ACTION), GITHUB_TOKEN='adapter-secret-marker', GITHUB_REPOSITORY='Hexalith/Hexalith.Builds',
+            GITHUB_ACTION_PATH=str(ACTION), GITHUB_TOKEN='adapter-secret-marker', GITHUB_REPOSITORY=repository,
             GITHUB_SHA=self.sha, GITHUB_REF=ref, GITHUB_OUTPUT=str(output), RELEASE_SWITCH=switch,
             RELEASE_CI_WORKFLOW=workflow, RELEASE_MODULE_ROOT=module_root,
+            RELEASE_EXPECTED_SOURCE=expected_source, RELEASE_DELIVERED_SHA=delivered_sha,
             TEST_REMOTE=str(self.source), TEST_LEDGER=str(ledger))
         action = yaml.safe_load((ACTION / 'action.yml').read_text())
         script = action['runs']['steps'][0]['run']
@@ -172,9 +196,8 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.assertEqual('["csharp"]', values['codeql'])
         self.assertEqual('true', values['nightly-hook'])
         self.assertFalse(any('/actions/' in request for request in self.requests))
-        commands = (self.root / 'ledger').read_text()
-        self.assertNotIn('checkout', commands)
-        self.assertNotIn('submodule', commands.replace('--no-recurse-submodules', ''))
+        commands = [json.loads(line) for line in (self.root / 'ledger').read_text().splitlines()]
+        self.assertFalse(any('checkout' in command or 'submodule' in command for command in commands))
 
     def test_malformed_draft_fails_by_identity_and_unmarked_draft_is_ignored(self):
         self.drafts = [self.draft(body='ordinary manual notes')]
@@ -192,12 +215,98 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.commit_config()
         result, values = self.invoke()
         self.assertEqual(1, result.returncode)
-        self.assertEqual({}, values)
+        self.assertNotIn('config-valid', values)
         self.assertIn('unknown keys', result.stderr)
         result, values = self.invoke(module_root='../escape')
         self.assertEqual(1, result.returncode)
         self.assertEqual({}, values)
-        self.assertIn('test-only Builds sample', result.stderr)
+        self.assertIn('both module-root and expected-source', result.stderr)
+
+
+    def test_module_create_matches_accepted_state_and_blocks_drift_before_false_switch(self):
+        self.normal_module()
+        result, values = self.invoke(repository='Example/ReleaseFixture')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual('false', values['enabled'])
+        self.config['codeql'] = ['ruby']
+        self.commit_config()
+        self.requests.clear()
+        result, values = self.invoke(repository='Example/ReleaseFixture', switch='false')
+        self.assertEqual(1, result.returncode)
+        self.assertIn('CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline.', result.stderr)
+        self.assertEqual(self.sha, values['sha'])
+        self.assertEqual('["ruby"]', values['codeql'])
+        self.assertEqual('true', values['config-valid'])
+        self.assertNotIn('enabled', values)
+        self.assertNotIn('publishing disabled', result.stdout)
+        self.assertFalse(any('/actions/' in request for request in self.requests))
+
+    def test_module_explicit_ancestor_is_compared_exactly_after_branch_history_acquisition(self):
+        self.normal_module()
+        accepted = self.delivered_sha
+        self.config['codeql'] = ['ruby']
+        live = self.accept_module()
+        self.assertNotEqual(accepted, live)
+        result, values = self.invoke(repository='Example/ReleaseFixture', delivered_sha=accepted)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual('false', values['enabled'])
+        commands = [json.loads(line) for line in (self.root / 'ledger').read_text().splitlines()]
+        fetches = [command for command in commands if 'fetch' in command]
+        self.assertTrue(any('--unshallow' in command for command in fetches))
+        self.assertFalse(any(accepted in command or live in command for command in fetches))
+        result, values = self.invoke(repository='Example/ReleaseFixture')
+        self.assertEqual(1, result.returncode)
+        self.assertIn('CI/CD is owned by Hexalith.CiCd.', result.stderr)
+        self.assertNotIn('enabled', values)
+        for invalid in ('f' * 40, self.sha):
+            result, values = self.invoke(repository='Example/ReleaseFixture', delivered_sha=invalid)
+            self.assertEqual(1, result.returncode)
+            self.assertNotIn('config-valid', values)
+            self.assertNotIn('enabled', values)
+
+    def test_module_unavailable_expected_source_fails_without_security_settings(self):
+        self.normal_module()
+        (self.delivered / 'rendered/ReleaseFixture.perimeter.json').unlink()
+        subprocess.check_output([REAL_GIT, '-C', str(self.delivered), 'add', '.'], stderr=subprocess.DEVNULL)
+        subprocess.check_output([REAL_GIT, '-C', str(self.delivered), 'commit', '-m', 'fixture'], stderr=subprocess.DEVNULL)
+        result, values = self.invoke(repository='Example/ReleaseFixture', switch='false')
+        self.assertEqual(1, result.returncode)
+        self.assertIn('CI/CD is owned by Hexalith.CiCd.', result.stderr)
+        self.assertEqual({'sha': self.sha, 'mode': 'create'}, values)
+
+    def test_module_complete_uses_current_security_settings_without_delivered_lookup(self):
+        self.normal_module()
+        self.drafts = [self.draft()]
+        shutil.rmtree(self.delivered)
+        result, values = self.invoke(repository='Example/ReleaseFixture', switch='true', delivered_sha='f' * 40)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual('complete', values['mode'])
+        self.assertEqual(self.old_sha, values['sha'])
+        self.assertEqual('["csharp"]', values['codeql'])
+        commands = [json.loads(line) for line in (self.root / 'ledger').read_text().splitlines()]
+        self.assertFalse(any('https://github.com/Hexalith/Hexalith.CiCd.git' in command for command in commands))
+        self.assertFalse(any('/actions/' in request for request in self.requests))
+
+    def test_fixture_controls_cannot_bypass_complete_mode(self):
+        self.normal_module()
+        self.drafts = [self.draft()]
+        result, values = self.invoke(repository='Example/ReleaseFixture', module_root='Samples/Hexalith.Sample',
+                                     expected_source='Samples/Hexalith.Sample/expected-source')
+        self.assertEqual(1, result.returncode)
+        self.assertIn('test-only Builds', result.stderr)
+        self.assertNotIn('sha', values)
+        self.assertFalse(any('/releases?' in request for request in self.requests))
+
+    def test_module_drift_beats_malformed_dispatch_config_without_running_module_code(self):
+        self.normal_module()
+        self.config = {'schema': 'hexalith.ci.v999'}
+        self.commit_config()
+        result, values = self.invoke(repository='Example/ReleaseFixture', switch='false')
+        self.assertEqual(1, result.returncode)
+        self.assertIn('CI/CD is owned by Hexalith.CiCd.', result.stderr)
+        self.assertNotIn('unsupported schema', result.stderr)
+        self.assertNotIn('config-valid', values)
+        self.assertNotIn('enabled', values)
 
 
 if __name__ == '__main__':

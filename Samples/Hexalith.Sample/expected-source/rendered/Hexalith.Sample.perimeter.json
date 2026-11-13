@@ -1,1 +1,9 @@
-{}
+{
+  "schema": "hexalith.perimeter.v1",
+  "entries": [
+    {
+      "kind": "whole",
+      "path": ".github/hexalith-ci.json"
+    }
+  ]
+}

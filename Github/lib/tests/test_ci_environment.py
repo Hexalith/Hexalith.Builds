@@ -38,7 +38,7 @@ class CompositeHarness:
     composite and enabled hook is actually executed with its own action path.
     """
 
-    def __init__(self, root, environment, *, module_root="", secrets=None,
+    def __init__(self, root, environment, *, module_root="", expected_source="", secrets=None,
                  dapr_archive=None, mutate_workflow=None, runner_os="Linux", external_action=None):
         self.root = root
         self.environment = dict(environment, GITHUB_WORKSPACE=str(root))
@@ -76,7 +76,7 @@ os.execv(sys.executable, [sys.executable, *args])
             self.environment["HARNESS_DAPR_ARCHIVE"] = str(archive)
         self.context = {"github": {"repository": FIXTURE.BUILDS},
                         "runner": {"temp": str(runner_temp), "os": runner_os},
-                        "inputs": {"module-root": module_root, "expected-source": ""},
+                        "inputs": {"module-root": module_root, "expected-source": expected_source},
                         "secrets": secrets or {"registry-pull-username": "", "registry-pull-password": ""},
                         "steps": {}}
         self.counter = 0
@@ -174,6 +174,19 @@ os.execv(sys.executable, [sys.executable, *args])
         return self.result(0)
 
     def run(self):
+        # The real guard reads committed objects. Publish the fixture inputs
+        # before executing this job, just as checkout supplies a committed SHA.
+        # Repeated harness calls intentionally test freshly changed inputs.
+        def git(*arguments):
+            subprocess.run([shutil.which("git"), "-c", "core.hooksPath=" + os.devnull,
+                            "-c", "user.name=Composite fixture", "-c", "user.email=fixture@example.invalid",
+                            "-c", "commit.gpgsign=false", "-C", str(self.root), *arguments],
+                           env=self.environment, capture_output=True, check=True)
+
+        git("init", "-q", "-b", "main")
+        inputs = [name for name in (".github", "Samples") if (self.root / name).exists()]
+        git("add", "--all", "--", *inputs)
+        git("commit", "-qm", "test: commit composite fixture inputs", "--allow-empty")
         document = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
         if self.mutate_workflow:
             self.mutate_workflow(document)
@@ -623,7 +636,7 @@ else:
         self.assertTrue((self.root / "pwsh-ready").exists())
 
     def test_module_root_hooks_resolve_from_workspace_root(self):
-        fixture = self.root / "Samples/Fixture"
+        fixture = self.root / "Samples/Hexalith.Sample"
         fixture.mkdir(parents=True)
         # Move only module inputs/outputs; actions intentionally stay at workspace root.
         self.fixture.document.update(buildsTag="v1.0.0", hooks=["after-unit-tests"])
@@ -640,8 +653,15 @@ else:
         action = self.root / ".github/actions/after-unit-tests"
         action.mkdir(parents=True)
         (action / "action.yml").write_text(yaml.safe_dump({"runs": {"using": "composite", "steps": [
-            {"shell": "bash", "run": "test -f Samples/Fixture/build-completed && touch hook-after-unit-tests"}]}}))
-        result = CompositeHarness(self.root, self.fixture.environment, module_root="Samples/Fixture").run()
+            {"shell": "bash", "run": "test -f Samples/Hexalith.Sample/build-completed && touch hook-after-unit-tests"}]}}))
+        expected = fixture / "expected-source/rendered"
+        (expected / "Hexalith.Sample/.github").mkdir(parents=True)
+        (expected / "Hexalith.Sample/.github/hexalith-ci.json").write_bytes(
+            (fixture / ".github/hexalith-ci.json").read_bytes())
+        (expected / "Hexalith.Sample.perimeter.json").write_text(json.dumps({
+            "schema": "hexalith.perimeter.v1", "entries": [{"kind": "whole", "path": ".github/hexalith-ci.json"}]}))
+        result = CompositeHarness(self.root, self.fixture.environment, module_root="Samples/Hexalith.Sample",
+                                  expected_source="Samples/Hexalith.Sample/expected-source").run()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertTrue((self.root / "hook-after-unit-tests").is_file())
 
