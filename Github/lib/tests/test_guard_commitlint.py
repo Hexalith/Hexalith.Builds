@@ -55,8 +55,12 @@ class CommitRangeTests(unittest.TestCase):
         self.assertFalse(any(other in c[1] or c[0].startswith("Merge") for c in self.tools.calls))
 
     def test_zero_before_lints_all_history_and_empty_range_passes(self):
+        self.repository.command("switch", "-qc", "unrelated", self.base)
+        unrelated = self.commit("chore: unrelated branch must remain excluded")
         self.lint(event={"before": policy.ZERO, "after": self.second})
-        self.assertEqual(3, len(self.tools.calls))
+        self.assertEqual(["commit " + sha for sha in (self.base, self.first, self.second)],
+                         [call[1] for call in self.tools.calls])
+        self.assertFalse(any(unrelated in call[1] for call in self.tools.calls))
         self.tools.calls.clear()
         self.lint(event={"before": self.second, "after": self.second})
         self.assertEqual([], self.tools.calls)

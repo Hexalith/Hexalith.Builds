@@ -173,3 +173,71 @@ source `fe03043ab126a8c27fc3e4f799d4714dda7e73d2` passed both full local lanes,
 14/14 groups and 885 tests per lane; complete logs and command/exit manifests
 are retained at `/tmp/cicd-5-2-postreview-{312,runner}.{log,json}`. The final
 source receives fresh full qualification below.
+
+
+## Final-source qualification before the resumed review
+
+The normal push [run 43473365060](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43473365060)
+passed for `9ca3ffd520510567cd2af4c7db0a3d5db299c7be`. The parent independently
+read all job results and the downloaded log archive. All seven retained jobs
+passed, including root/sample/Linux/hooks and dependent Windows. Both locked
+Python lanes passed 14/14 groups and 887 tests, including 471 lib tests, under
+Python 3.12.16 and 3.14.4. The sample used Node 24.22.2. Online workflow lint
+reported zero new findings; the public API check against v5.2.2 retained 2,589
+entries with no removals. No new guard/audit/policy test was skipped, and the
+source run listing contained only builds-ci.yml.
+
+## Resumed review corrections
+
+The resumed bmad-build review ran three independent layers against the full
+implementation diff. Parent probes reproduced the accepted findings before
+patching. The canonical CiCd story records every verdict, including rejection
+of persistent per-commit batching because it adds runtime complexity for an
+unusual creation-history case without changing range correctness.
+
+The corrections recognize standard -nowarn response switches, registry-login
+global options and additional ordinary explicit-project options; reject nested
+env/with collections and control characters in remote action references; and
+keep explicit trusted local ranges independent of inherited event files. The
+literal option scanner uses atomic option tokens to avoid combinatorial
+backtracking. XML prolog scanning advances a cursor and descendant text is
+collected only for value-dependent declarations. Subprocess-bounded regressions
+cover 500,000 prolog comments and 100,000 nested Project elements while retaining
+blocking-warning diagnostics.
+
+Pinned YAML parser output is spooled to a disposable file outside the module;
+Python reads at most 4 MiB plus one overflow-detection byte and fails closed on
+larger expansion. The external subprocess retains its existing timeout. A real
+230-byte alias fixture expands to 15,136,755 JSON bytes and now fails safely;
+ordinary aliases still pass. Zero-before tests now assert the exact reachable
+commit identities, and real guard/commitlint execution accepts valid reachable
+history despite an invalid unrelated branch, then rejects an invalid reachable
+ancestor.
+
+Before integration, remote main independently advanced to
+`4c1bf138368968cb4565a3aaef894353ffcf6038` (catalog pins and matching tests).
+The parent fast-forwarded that pre-existing commit without changing its files;
+these review corrections do not author catalog changes.
+
+
+Local resumed verification passed both locked interpreter lanes: 14/14 groups
+and 892 tests per lane (476 lib tests), Python 3.12.13 and 3.14.4, Node 24.22.1.
+The final quoted-assignment correction was made after the broad processes
+imported the lib tests; the final action suite passed 20/20 afterward. Focused
+guard/audit/raw-policy discovery passed 65/19/3 tests. Online workflow lint
+passed with zero new findings and the unchanged exact frozen-composite
+baseline. The exact commit message passed pinned commitlint with zero problems
+or warnings. Logs and command/exit manifests are retained under
+`/tmp/bmad-5-2-resume-*`; source CI supplies the final committed-source lanes.
+
+An independent upstream gate failure prevents claiming completed acceptance.
+Before these corrections, [run 43506256176](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43506256176)
+failed on the catalog commit above. Package catalog job 132164596242 failed
+`Test authoritative package catalog` with canonical EventStore family and SDK
+owner-tuple mismatches. .NET job 132164596764 failed `Stage 3 unit tests`,
+including stale expectations of version 4.2.0 where the new catalog returns
+5.0.1. Both Python lanes, workflow/API quality, sample and Windows jobs passed.
+Story 5.2 forbids changing catalog pins outside the guard tools, so that
+independent failure requires a separately authorized correction. The canonical
+story remains in-review until its all-retained-jobs qualification gate passes;
+its final source/run identities and gate verdict are recorded there after push.

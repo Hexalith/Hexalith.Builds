@@ -143,6 +143,19 @@ class GuardTests(unittest.TestCase):
         self.assertEqual(index, (self.workspace.root / ".git/index").read_bytes())
         self.assertEqual("dirty config", (self.workspace.root / ".github/hexalith-ci.json").read_text())
 
+    def test_explicit_local_range_ignores_unrelated_inherited_event_files(self):
+        self.actions()
+        head = self.workspace.command("rev-parse", "HEAD")
+        event_path = self.root / "event.json"
+        for payload in (None, "not JSON", "[]"):
+            if payload is not None:
+                event_path.write_text(payload)
+            with self.subTest(payload=payload):
+                self.tool_calls.clear()
+                self.run_guard(event_name="local", event_path=str(event_path), commit_range=(head, head))
+                self.assertFalse(any(call[0] == "commitlint" for call in self.tool_calls))
+                self.assertEqual({"drift": "false"}, self.outputs)
+
     def sample(self):
         prefix = state.SAMPLE_ROOT
         self.workspace.write(prefix + "/.github/hexalith-ci.json", json.dumps(self.config))

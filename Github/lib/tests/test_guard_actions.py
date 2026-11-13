@@ -219,6 +219,44 @@ class ActionLintTests(unittest.TestCase):
                     {"shell": "bash", "run": command}]}}), name="allowed-path")
                 self.lint()
 
+    def test_primitive_global_options_do_not_hide_literal_verbs(self):
+        for command in ['docker --debug login registry.example',
+                        'docker --config "$HOME/.docker" login registry.example',
+                        'docker --debug --config settings login registry.example',
+                        'helm --debug registry login registry.example',
+                        'helm registry --debug login registry.example',
+                        'docker --config="/tmp/config" login registry.example',
+                        "docker --config='/tmp/config' login registry.example",
+                        'helm --registry-config="/tmp/config" registry login registry.example',
+                        'nuget -ConfigFile="/tmp/NuGet.Config" push package.nupkg',
+                        '"/usr/bin/docker" --context local "login" registry.example',
+                        'crane --verbose auth login registry.example']:
+            with self.subTest(command=command):
+                self.reject(json.dumps({"runs": {"using": "composite", "steps": [
+                    {"shell": "bash", "run": command}]}}),
+                    "nuget push" if command.startswith("nuget") else "registry login", name="global-options")
+        self.write(name="global-options")
+        for command in ['docker --config settings inspect image', 'helm --debug registry logout registry.example',
+                        'docker ' + '--debug ' * 200 + 'inspect image']:
+            with self.subTest(command=command):
+                self.write(json.dumps({"runs": {"using": "composite", "steps": [
+                    {"shell": "bash", "run": command}]}}), name="allowed-global-options")
+                self.lint()
+
+    def test_collection_valued_step_fields_and_remote_control_characters_fail(self):
+        for field in ("env", "with"):
+            for value in ({"nested": "mapping"}, ["nested-sequence"]):
+                with self.subTest(field=field, value=value):
+                    self.reject(json.dumps({"runs": {"using": "composite", "steps": [
+                        {"run": "echo ok", "shell": "bash", field: {"key": value}}]}}),
+                        "scalar values", name="nested-field")
+        self.write(name="nested-field")
+        for char in ("\x00", "\x1b", "\x7f"):
+            with self.subTest(char=repr(char)):
+                self.reject(json.dumps({"runs": {"using": "composite", "steps": [
+                    {"uses": "third/party/sub" + char + "dir@" + PIN}]}}),
+                    "step uses must be a literal", name="remote-controls")
+
     def test_solution_wide_commands_reject_absent_directory_and_solution_targets(self):
         commands = ["dotnet test", "dotnet build --configuration Release", "dotnet test ./tests", "dotnet test Foo.slnx",
                     "dotnet build Foo.sln", "dotnet test --logger impostor.csproj", "dotnet test --project .",
@@ -226,6 +264,7 @@ class ActionLintTests(unittest.TestCase):
                     "& dotnet test", 'dotnet "test"', '& "dotnet" "test"', "dotnet.exe test", "dotnet test -- --project Fake.csproj",
                     '"/usr/bin/dotnet" test', "/usr/bin/dotnet build", r'"C:\Program Files\dotnet\dotnet.exe" test',
                     r"C:\tools\dotnet.exe build", "dotnet test > Fake.csproj"]
+        commands.append('dotnet --roll-forward="Major" test')
         for number, command in enumerate(commands):
             with self.subTest(command=command):
                 self.reject(json.dumps({"runs": {"using": "composite", "steps": [{"shell": "bash", "run": command}]}}),
@@ -250,7 +289,11 @@ class ActionLintTests(unittest.TestCase):
                     "dotnet test Tests.csproj > results.log", "dotnet test Tests.csproj 2>&1",
                     "dotnet test Tests.csproj 2>> errors.log", "dotnet test Tests.csproj &> results.log",
                     "dotnet test Tests.csproj > results.log && dotnet build Other.csproj",
-                    "dotnet test Tests.csproj 2>&1; dotnet test Other.csproj || dotnet test Last.csproj"]
+                    "dotnet test Tests.csproj 2>&1; dotnet test Other.csproj || dotnet test Last.csproj",
+                    "dotnet build Foo.csproj /t:Build", "dotnet build /target:Build Foo.csproj",
+                    "dotnet test Foo.csproj --blame-hang-dump-type full",
+                    "dotnet test --blame-crash-dump-type mini Foo.csproj",
+                    "dotnet test --blame-crash-collect-always Foo.csproj"]
         for number, command in enumerate(commands):
             self.write(json.dumps({"runs": {"using": "composite", "steps": [{"shell": "bash", "run": command}]}}),
                        name="explicit-" + str(number))

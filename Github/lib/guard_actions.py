@@ -30,8 +30,17 @@ def _executable(basename: str) -> str:
 
 
 def _primitive(executable: str, *verbs: str) -> str:
+    # Recognize literal global options, including quoted operands. This remains
+    # a conservative text match, without interpreting shell variables or scripts.
+    token = r'''(?:(?>"[^"\r\n]*"|'[^'\r\n]*'|[^\s;&|<>"']+))+'''
+    option = (r'''(?:--?[^=\s;&|<>"']+(?:=''' + token + r''')?'''
+              + r'''|"--?[^"\r\n]*"|'--?[^'\r\n]*')''')
+    def before(verb):
+        operand = r"(?!(?:--?|" + _quoted(verb) + r"(?=\s|$|[;&|<>])))" + token
+        options = r"(?:[ \t]+(?>" + option + r"(?:[ \t]+" + operand + r")?))*"
+        return options + r"[ \t]+" + _quoted(verb)
     return (r"(?<![\w.-])" + _executable(executable)
-            + "".join(r"[ \t]+" + _quoted(verb) for verb in verbs) + r"(?=\s|$|[;&|<>])")
+            + "".join(before(verb) for verb in verbs) + r"(?=\s|$|[;&|<>])")
 
 
 # Match only the invocation prefix: consuming its arguments would hide a second
@@ -46,6 +55,7 @@ VALUE_OPTIONS = {
     "--filter", "--results-directory", "--diag", "-d", "--test-adapter-path", "--environment",
     "-e", "--collect", "--artifacts-path", "--tl", "--property", "-p", "--blame-hang-timeout",
     "--stop-on-fail",
+    "--blame-hang-dump-type", "--blame-crash-dump-type",
 }
 DENY = (
     ("actions/checkout", r"(?<![\w.-])actions/checkout\b"),
@@ -67,7 +77,8 @@ def _parts(path: str) -> bool:
 
 
 def _reference(value: object, snapshot) -> str | None:
-    if not isinstance(value, str) or not value or "${{" in value or "\\" in value:
+    if (not isinstance(value, str) or not value or "${{" in value or "\\" in value
+            or any(ord(char) < 32 or ord(char) == 127 for char in value)):
         return "step uses must be a literal local action or a full-SHA third-party action"
     # Identify Builds before checking its pin so a tag or malformed pin receives
     # the same explicit prohibition as an otherwise valid full-SHA reference.
@@ -124,6 +135,8 @@ def _structure(document: object, snapshot) -> list[str]:
         for field in ("env", "with"):
             if field in step and not isinstance(step[field], dict) and not _whole_map_expression(step[field]):
                 findings.append(label + " " + field + " must be a mapping")
+            elif isinstance(step.get(field), dict) and any(isinstance(value, (dict, list)) for value in step[field].values()):
+                findings.append(label + " " + field + " entries must be scalar values")
         if ("uses" in step) == ("run" in step):
             findings.append(label + " must declare exactly one of uses or run")
         elif "uses" in step:
@@ -174,7 +187,7 @@ def _explicit_project(arguments: str) -> bool:
             index += 1
             if index >= len(tokens):
                 return False
-        elif token.startswith(("-", "/p:", "/property:", "/m:", "/v:", "/bl")):
+        elif token.startswith("-") or re.match(r"/[A-Za-z][A-Za-z-]*(?::|$)", token):
             pass
         else:
             positional.append(token)

@@ -140,13 +140,30 @@ assert findings and 'malformed' in findings[0], findings
                     str(Path(audit_lint.__file__).parent)], input=payload, capture_output=True, timeout=2, check=False)
                 self.assertEqual(0, result.returncode, result.stderr.decode("utf-8", "replace"))
 
+    def test_large_prolog_and_deep_project_keep_audit_findings_bounded(self):
+        script = """import sys
+sys.path.insert(0, sys.argv[1])
+import audit_lint
+findings = audit_lint._xml(sys.stdin.buffer.read(), canonical=False)
+assert findings and any('malformed' in f or 'NU1903' in f for f in findings), findings
+"""
+        payloads = [('<!--x-->' * 500_000 + '<Project NoWarn="NU1903>').encode(),
+                    ('<Project>' + '<Group>' * 100_000 + '<NoWarn>NU1903</NoWarn>'
+                     + '</Group>' * 100_000 + '</Project>').encode()]
+        for payload in payloads:
+            with self.subTest(size=len(payload)):
+                result = subprocess.run([sys.executable, "-I", "-c", script,
+                    str(Path(audit_lint.__file__).parent)], input=payload, capture_output=True, timeout=3, check=False)
+                self.assertEqual(0, result.returncode, result.stderr.decode("utf-8", "replace"))
+
     def test_response_files_match_warning_and_property_lists_with_common_quotes(self):
         values = ['/p:NoWarn="NU1901;NU1903"', '"/p:NoWarn=NU1901, NU1904"',
                   "'-p:NoWarn=NU1902 NU1905'", "/p:NoWarn=NU1900", "-p:TreatAsLocalProperty='Other;NuGetAuditMode'",
                   '"/p:TreatAsLocalProperty=Other, nugetauditLevel"', '/p:NoWarn="NU1901;\nNU1903"',
                   "/p:NoWarn=NU1901 /p:NoWarn=NU1903", '/p:TreatAsLocalProperty="Other;\nNuGetAudit"',
                   '/p:"NoWarn"=NU1903', "/p:'NoWarn'=NU1904", '/p:"TreatAsLocalProperty"=NuGetAuditMode',
-                  '/p:NoWarn="NU1901;<unrelated>;NU1903"']
+                  '/p:NoWarn="NU1901;<unrelated>;NU1903"', '-nowarn:NU1903', '-NoWarn:NU1904',
+                  '-NoWarn:"NU1901;NU1905"', '-TreatAsLocalProperty:NuGetAuditMode']
         for number, data in enumerate(values):
             with self.subTest(data=data):
                 self.reject("flags-" + str(number) + ".RSP", data, "audit-lint")

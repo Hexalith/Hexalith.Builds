@@ -89,6 +89,13 @@ class RealPinnedToolsTests(unittest.TestCase):
             with self.assertRaises(state.ExpectedStateError):
                 self.tools.parse_yaml(text)
 
+    def test_yaml_alias_expansion_fails_closed_before_unbounded_python_capture(self):
+        text = "a0: &a0 [x,x,x,x,x]\n"
+        for number in range(1, 8):
+            text += f"a{number}: &a{number} [" + ",".join([f"*a{number - 1}"] * 5) + "]\n"
+        with self.assertRaisesRegex(state.ExpectedStateError, "parser output exceeds size limit"):
+            self.tools.parse_yaml(text)
+
     def test_real_effective_conventional_rules_and_length_boundaries(self):
         good = [f"{kind}: subject\n" for kind in ("build", "ci", "docs", "feat", "fix", "perf", "refactor", "revert", "style", "test")]
         good += ["fix: " + "x" * 195, "fix: subject\n\n" + "x" * 200,
@@ -160,6 +167,10 @@ class RealPinnedToolsTests(unittest.TestCase):
             first = commit(repository, "fix: earlier event change\n\ncomplete body\n")
             head = commit(repository, "feat: later event change\n")
             run(repository, "push", {"before": base, "after": head})
+            repository.command("switch", "-qc", "unrelated", base)
+            commit(repository, "chore: unrelated creation-push history")
+            repository.command("switch", "main")
+            run(repository, "push", {"before": "0" * 40, "after": head})
             repository.command("switch", "-qc", "target", base)
             commit(repository, "fix: target advance")
             repository.command("merge", "--no-ff", head, "-m", "Merge pull request #123 [skip ci]")
@@ -177,6 +188,8 @@ class RealPinnedToolsTests(unittest.TestCase):
             head = commit(repository, "fix: valid latest commit")
             with self.assertRaisesRegex(state.ExpectedStateError, "commit " + earlier + ": commitlint type-enum"):
                 run(repository, "push", {"before": base, "after": head})
+            with self.assertRaisesRegex(state.ExpectedStateError, "commit " + earlier + ": commitlint type-enum"):
+                run(repository, "push", {"before": "0" * 40, "after": head})
 
     def test_real_skip_rule_uses_raw_message_and_root_uses_same_policy(self):
         for marker in ("[skip ci]", "[ci skip]", "[no ci]", "[skip actions]", "[actions skip]", "skip-checks: false"):

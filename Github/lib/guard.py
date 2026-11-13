@@ -57,7 +57,9 @@ def run(workspace: str | Path, *, repository: str, module_root: str = "",
     if missing:
         raise expected_state.ExpectedStateError(*missing)
     if comparison is not None:
-        payload = guard_commitlint.load_event(event_path) if event_path else ({} if event is None else event)
+        payload = {}
+        if commit_range is None:
+            payload = guard_commitlint.load_event(event_path) if event_path else ({} if event is None else event)
         # Validate event endpoints before a network install. A malformed event
         # never silently becomes dispatch/HEAD or a one-commit range.
         guard_commitlint.select(git, event_name=event_name, event=payload,

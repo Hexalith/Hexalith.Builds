@@ -9,12 +9,14 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 from expected_state import ExpectedStateError
 
 
 SOURCE = Path(__file__).resolve().parents[1] / "guard"
 TIMEOUT = 180
+MAX_YAML_OUTPUT = 4 * 1024 * 1024
 
 
 def tool_environment(directory: Path) -> dict[str, str]:
@@ -50,23 +52,36 @@ class Tools:
         self._run(["npm", "ci", "--ignore-scripts"], "npm locked installation")
         self._run(["npm", "audit", "signatures"], "npm signature verification")
 
-    def _process(self, arguments, operation, payload=None):
+    def _process(self, arguments, operation, payload=None, *, output_limit=None):
         try:
+            if output_limit is not None:
+                # Alias expansion must not become an unbounded Python capture.
+                # Spool output outside the module, then read only the allowed bytes.
+                with tempfile.TemporaryFile(dir=self.directory) as output:
+                    result = subprocess.run(arguments, cwd=self.directory, env=self.environment,
+                        input=payload, text=True, encoding="utf-8", errors="strict",
+                        stdout=output, stderr=subprocess.PIPE, check=False, timeout=TIMEOUT)
+                    output.seek(0)
+                    data = output.read(output_limit + 1)
+                if len(data) > output_limit:
+                    raise ExpectedStateError("trusted guard YAML parser output exceeds size limit")
+                result.stdout = data.decode("utf-8")
+                return result
             return subprocess.run(arguments, cwd=self.directory, env=self.environment,
                 input=payload, text=True, encoding="utf-8", errors="strict",
                 capture_output=True, check=False, timeout=TIMEOUT)
         except (OSError, UnicodeError, subprocess.TimeoutExpired) as error:
             raise ExpectedStateError("trusted guard tool failed: " + operation) from error
 
-    def _run(self, arguments, operation, payload=None):
-        result = self._process(arguments, operation, payload)
+    def _run(self, arguments, operation, payload=None, **limits):
+        result = self._process(arguments, operation, payload, **limits)
         if result.returncode:
             raise ExpectedStateError("trusted guard tool failed: " + operation)
         return result.stdout
 
     def parse_yaml(self, text: str):
         output = self._run(["node", str(self.directory / "node_modules/js-yaml/bin/js-yaml.js")],
-                           "YAML parser", "# guard YAML input\n" + text)
+                           "YAML parser", "# guard YAML input\n" + text, output_limit=MAX_YAML_OUTPUT)
         try:
             document = json.loads(output)
         except ValueError as error:

@@ -96,17 +96,14 @@ def _xml_probe(data: bytes) -> tuple[str, set[str]]:
         else:
             encoding = "utf-8-sig"
         text = data.decode(encoding, errors="replace")
-        while True:
-            # Skip the prolog lexically, including a DTD's quoted declarations
-            # and internal subset. No entity is loaded, expanded or evaluated.
-            # Commit each subset token so a missing ']' cannot repartition
-            # every complete comment into individual characters exponentially.
-            doctype = r'''<!DOCTYPE\b(?:[^>"'\[]|"[^"]*"|'[^']*'|\[(?><!--.*?-->|[^\]"']|"[^"]*"|'[^']*')*\])*>'''
-            stripped = re.sub(r"\A\s*(?:<\?.*?\?>|<!--.*?-->|" + doctype + ")", "", text,
-                              count=1, flags=re.DOTALL)
-            if stripped == text:
-                break
-            text = stripped
+        # Advance through the prolog without repeatedly copying its suffix.
+        # Atomic subset tokens also prevent exponential retries on a missing ']'.
+        doctype = r'''<!DOCTYPE\b(?:[^>"'\[]|"[^"]*"|'[^']*'|\[(?><!--.*?-->|[^\]"']|"[^"]*"|'[^']*')*\])*>'''
+        prolog = re.compile(r"\s*(?:<\?.*?\?>|<!--.*?-->|" + doctype + ")", re.DOTALL)
+        offset = 0
+        while match := prolog.match(text, offset):
+            offset = match.end()
+        text = text[offset:]
         match = re.match(r"\A\s*<(?:[A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)(?=[\s/>]|$)", text)
         if match:
             root = match[1].lower()
@@ -136,7 +133,8 @@ def _xml(data: bytes, *, canonical: bool) -> list[str]:
     for element in root.iter():
         if not isinstance(element.tag, str):
             continue
-        finding = _declaration(element.tag, "".join(element.itertext()))
+        value = "".join(element.itertext()) if _local(element.tag) in {"nowarn", "treataslocalproperty"} else ""
+        finding = _declaration(element.tag, value)
         if finding:
             findings.add(finding)
         for key, value in element.attrib.items():
@@ -164,7 +162,7 @@ def _response(data: bytes) -> list[str]:
             findings.add("audit-lint: forbidden " + display + " declaration")
     # Quotes can surround a whole /p: assignment or only its value. Warning and
     # local-property lists use comma, semicolon or whitespace in either form.
-    for match in re.finditer(r'''(?<![\w.-])(["']?)(NoWarn|TreatAsLocalProperty)\1\s*([=:>])\s*''',
+    for match in re.finditer(r'''(?<![\w.-])[-/]?(["']?)(NoWarn|TreatAsLocalProperty)\1\s*([=:>])\s*''',
                              text, re.IGNORECASE):
         value = text[match.end():]
         if match[3] == ">":  # Preserve XML-like declaration scanning in response text.
