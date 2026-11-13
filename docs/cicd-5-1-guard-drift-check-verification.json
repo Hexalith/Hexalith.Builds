@@ -1905,7 +1905,7 @@
     }
   },
   "followup": {
-    "status": "verification-complete-independent-review-pending",
+    "status": "done",
     "observedAt": "2026-11-13T14:39:41.710653+00:00",
     "localIntegrationRevision": "ae77d5690a9411a2154fa4ed5231edc373942573",
     "integrationRevision": "cae351e20093634483afad16aca3bfd90845eda8",
@@ -2839,6 +2839,45 @@
       "docs/cicd-5-1-guard-drift-check-results.md",
       "docs/cicd-5-1-guard-drift-check-verification.json"
     ],
-    "sourceFilesUnchangedDuringExactSourceVerification": true
+    "sourceFilesUnchangedDuringExactSourceVerification": true,
+    "independentReview": {
+      "completedAt": "2026-11-13T14:56:30.841084+00:00",
+      "layers": [
+        "blind-hunter",
+        "edge-case-hunter",
+        "verification-gap",
+        "intent-alignment"
+      ],
+      "findings": 18,
+      "verdicts": {
+        "high": 0,
+        "medium": 7,
+        "low": 7,
+        "false": 4,
+        "maybe-false": 0
+      },
+      "patchesApplied": 0,
+      "deferredFindingRows": 10,
+      "newUpstreamDeferredRootCauses": 6,
+      "carriedReleaseDeferredRootCauses": 2,
+      "rejectedFindingRows": 8,
+      "followupReviewRecommended": false,
+      "parentFingerprintVerification": "passed",
+      "matrixAndFollowupRegressionsCheckedPerLocalLane": 22,
+      "historicalCatalogEvidenceFailuresResolved": true,
+      "commitlint": {
+        "message": "docs(cicd): finalize story 5-1 independent review",
+        "cliVersion": "21.2.4",
+        "exitCode": 0,
+        "transcript": "/tmp/cicd-5-1-final-review-commitlint.log",
+        "sha256": "c0e928a07c31ffc4638f199d97c627b9ff4fa420b18e0a43b4059be285c0696c"
+      },
+      "guardReleaseSourceUnchangedSinceVerifiedSource": true
+    },
+    "lateUpstreamIntegration": {
+      "revision": "9bbe8380c13094ddf41cfd780e3a69289e94b9d4",
+      "summary": "Separately authored catalog consumer-view commit preserved at the final divergence check. No story-owned guard/release source changed.",
+      "scope": "Independent upstream C# catalog/runtime work; the all-seven-job record above remains explicitly bound to source 185e3a4e695f392e114eacffbdecd2a23da32c9b."
+    }
   }
 }

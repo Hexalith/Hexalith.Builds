@@ -1,7 +1,7 @@
 ---
 story: '5-1'
 created: '2026-11-13'
-status: in-progress
+status: done
 implementation_baseline_revision: f01c3ab70f7e7401b3b73217983955f7771a1465
 implementation_integration_revision: 05a75b626fb73c6e386d16c41e885f193d3cff16
 implementation_revision: 0f97426edb6f88ee6e534d95ca9029f7e0b20311
@@ -250,3 +250,33 @@ job logs, both repeated local-lane fingerprints, and commitlint/API evidence.
 Local transcript paths remain session-local and uncommitted. Independent review
 is the remaining workflow step before final completion; this evidence update
 does not claim that subsequent review has run.
+
+## Follow-up independent review completion
+
+All four independent review layers completed after the all-green exact-source
+verification. Every finding was triaged: 18 findings, high 0, medium 7, low 7,
+false 4; zero required story patches, ten deferred finding rows and eight
+rejected rows. Deferred rows represent six newly recorded upstream catalog
+root causes plus two carried release behaviors. The authored guard/release
+patch is complete and needs no further review pass.
+
+The new upstream follow-ups concern exact-case snapshot lookup, default
+no-snapshot catalog evaluation, Python selector discovery, current/frozen
+runtime authority, conditional-selection audit provenance, and automatic
+response-file regression coverage. These are present in integration
+`cae351e20093634483afad16aca3bfd90845eda8` before the story source and are
+recorded in the canonical CiCd story. They did not change the verified runtime.
+The historical red catalog/Evidence entry is resolved: both jobs passed here.
+
+The parent independently checked all retained source/local/hosted fingerprints,
+22 matrix/follow-up regressions in each exact-source local transcript, and the
+completed successful GitHub run at the full source identity. Guard/release runtime remains
+byte-identical to source `185e3a4e695f392e114eacffbdecd2a23da32c9b`.
+Final metadata changes only these two results/verification documents.
+
+The final remote-divergence check preserved separately authored upstream
+`9bbe8380c13094ddf41cfd780e3a69289e94b9d4` (catalog consumer-view propagation).
+It changes no guard/release source, workflow or sample file. The all-seven-job
+verification record above remains bound to source
+`185e3a4e695f392e114eacffbdecd2a23da32c9b`; the independent late upstream C#
+change is not claimed as part of this story's verified patch.
