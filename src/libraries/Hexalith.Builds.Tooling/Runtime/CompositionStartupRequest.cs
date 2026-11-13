@@ -64,11 +64,13 @@ internal sealed class CompositionStartupRequest : IDisposable
             // A partial active-module override could cancel the linked token before a dependency's
             // larger override is known. Expensive source mapping receives only the selected bound.
             mapping ??= await (mappingProbe?.Invoke(manifestPath, mode, Token) ?? ProbeMappingAsync(manifestPath, mode, Token)).ConfigureAwait(false);
-            IReadOnlyList<PlatformModuleDeclaration> declarations = CompositionDeclarationClosure.Load(
+            IReadOnlyList<PlatformModuleDeclaration> declarations = await CompositionDeclarationClosure.LoadForConsumerAsync(
                 new CompositionDeclarationOptions(mapping, [Path.GetFullPath(manifestPath)])
                 {
                     ActiveModule = PlatformManifestCommand.ActiveModule(supplied.Declarations),
-                });
+                    ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName,
+                },
+                Token).ConfigureAwait(false);
             Token.ThrowIfCancellationRequested();
             Apply(CompositionStartupDeadlineResolver.Resolve(declarations, _fallback));
         }
@@ -100,7 +102,8 @@ internal sealed class CompositionStartupRequest : IDisposable
         }
 
         List<SourceMappingEntry> entries = [new(Path.GetFileName(active), "source", active)];
-        foreach (string path in await WorkspaceRootResolver.ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false))
+        IReadOnlyList<string> references = await WorkspaceRootResolver.ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false);
+        foreach (string path in references)
         {
             string identity = Path.GetFileName(path);
             if (!entries.Any(entry => entry.Identity.Equals(identity, StringComparison.OrdinalIgnoreCase)))
@@ -115,7 +118,16 @@ internal sealed class CompositionStartupRequest : IDisposable
             entries.Add(new SourceMappingEntry("Hexalith.Platform", "source", root));
         }
 
-        return new SourceMapping(mode, root, Path.GetFileName(active), entries, false);
+        SourceMapping mapping = new(mode, root, Path.GetFileName(active), entries, probe.ExitCode == 0);
+        if (mode == WorkspaceMode.Package && probe.ExitCode == 0)
+        {
+            // Inspect local objects only. The normal resolver owns any later reference initialization.
+            IReadOnlyDictionary<string, string> recorded = await SubmoduleInitializer.ValidateRecordedGitlinksAsync(root, references, cancellationToken, collectMissingBuilds: true).ConfigureAwait(false);
+            (PlatformIdentity? identity, IReadOnlyList<PlatformIdentityFinding> findings) = await PlatformIdentityResolver.ResolveAsync(root, references, recorded, cancellationToken).ConfigureAwait(false);
+            mapping = mapping with { PlatformIdentity = findings.Count == 0 ? identity : null, IdentityFindings = findings };
+        }
+
+        return mapping;
     }
 
     private void Apply(CompositionEffectiveDeadline deadline)

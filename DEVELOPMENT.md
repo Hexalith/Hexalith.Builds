@@ -94,6 +94,23 @@ guard still prohibit consumer-local version declarations, crossed pairs and
 unrecorded views. Package auditing and transitive pinning remain required.
 These catalog views grant no native, image or new SDK5 Platform admission.
 
+## Composition catalog consumers
+
+`CompositionDeclarationOptions.ConsumerProjectName` selects an actual recorded
+MSBuild consumer view; null keeps the default view. Set it to
+`CompositionDeclarationOptions.PlatformCompositionProjectName` for Platform's
+shared composition model. Owner and package lookups use the same selected view,
+including the `CatalogVersion(module, source, projectName)` overload.
+
+Supply the existing run `Workspace` when loading declarations synchronously.
+`CompositionDeclarationClosure.LoadForConsumerAsync` supports early package
+startup by materializing the verified pin into a private temporary directory and
+removing it before return. It creates no run identity or resources. An explicit
+workspace with a missing snapshot or an unknown consumer refuses. Recorded
+consumer reads validate the mapping, catalog pin and pinned file closure; they
+never substitute the default view or rewrite its versions. Historical unscoped
+APIs remain available for their original consumers.
+
 ## Commit Messages and Releases
 
 All commits must follow Angular Conventional Commits so semantic-release can

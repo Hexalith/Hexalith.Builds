@@ -121,7 +121,7 @@ public static class TestEnvironmentDescriptorWriter
 
         try
         {
-            closure = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, plan.PlatformDeclarationPaths) { ActiveModule = plan.PlatformActiveModule, QualificationOwners = plan.QualificationOwners ?? [] });
+            closure = await CompositionDeclarationClosure.LoadForConsumerAsync(new CompositionDeclarationOptions(mapping, plan.PlatformDeclarationPaths) { ActiveModule = plan.PlatformActiveModule, QualificationOwners = plan.QualificationOwners ?? [], Workspace = plan.Workspace, ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName }, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException)
         {

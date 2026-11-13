@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
+using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Xml;
@@ -19,17 +20,20 @@ public static class CompositionDeclarationClosure
     /// <param name="options">The selected declaration inputs and release provenance.</param>
     /// <returns>The validated dependency closure.</returns>
     /// <exception cref="InvalidDataException">An owner declaration or its release provenance is unavailable or inconsistent.</exception>
-    public static IReadOnlyList<PlatformModuleDeclaration> Load(CompositionDeclarationOptions options)
+    public static IReadOnlyList<PlatformModuleDeclaration> Load(CompositionDeclarationOptions options) => LoadCore(options);
+
+    /// <summary>Loads declarations in the selected consumer context, materializing the verified pin privately for a cold package read.</summary>
+    /// <param name="options">The selected declaration inputs, consumer and release provenance.</param>
+    /// <param name="cancellationToken">The original command cancellation token.</param>
+    /// <returns>The validated dependency closure, detached from any temporary catalog workspace.</returns>
+    /// <exception cref="InvalidDataException">The selected consumer, pinned catalog or owner release provenance is unavailable or inconsistent.</exception>
+    public static Task<IReadOnlyList<PlatformModuleDeclaration>> LoadForConsumerAsync(CompositionDeclarationOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        try
-        {
-            return LoadDeclarations(options);
-        }
-        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or XmlException)
-        {
-            throw new InvalidDataException($"{options.PlatformRoot}: declaration or release provenance is malformed: {exception.Message}", exception);
-        }
+        cancellationToken.ThrowIfCancellationRequested();
+        return options.Mapping.Mode == WorkspaceMode.Package && options.ConsumerProjectName is not null && options.Workspace is null
+            ? LoadColdConsumerAsync(options, cancellationToken)
+            : Task.FromResult(LoadCore(options));
     }
 
     /// <summary>Returns the declared module identity.</summary>
@@ -62,6 +66,55 @@ public static class CompositionDeclarationClosure
         "mcpcli" => "Hexalith.McpCli",
         _ => "Hexalith." + char.ToUpperInvariant(module[0]) + module[1..],
     };
+
+    private static IReadOnlyList<PlatformModuleDeclaration> LoadCore(CompositionDeclarationOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        try
+        {
+            return LoadDeclarations(options);
+        }
+        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or XmlException)
+        {
+            throw new InvalidDataException($"{options.PlatformRoot}: declaration or release provenance is malformed: {exception.Message}", exception);
+        }
+    }
+
+    private static async Task<IReadOnlyList<PlatformModuleDeclaration>> LoadColdConsumerAsync(CompositionDeclarationOptions options, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.ConsumerProjectName);
+        if (string.IsNullOrWhiteSpace(options.Mapping.PlatformIdentity?.CatalogCommit))
+        {
+            throw new InvalidDataException($"{options.PlatformRoot}: consumer '{options.ConsumerProjectName}' requires a verified Builds catalog pin.");
+        }
+
+        string temporary = Path.Combine(Path.GetTempPath(), "hexalith-closure-catalog-" + Guid.NewGuid().ToString("N"));
+        Exception? failure = null;
+        IReadOnlyList<PlatformModuleDeclaration>? declarations = null;
+        try
+        {
+            CompositionWorkspace.CreatePrivateDirectory(temporary);
+            await CatalogVersionMaterializer.WriteAsync(options.Mapping, temporary, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            declarations = LoadCore(options with { Workspace = temporary });
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            failure = exception;
+        }
+
+        if (!await CompositionWorkspace.TryDeleteAsync(temporary, CancellationToken.None).ConfigureAwait(false))
+        {
+            throw new InvalidDataException($"Temporary pinned catalog workspace '{temporary}' could not be removed.", failure);
+        }
+
+        if (failure is not null)
+        {
+            ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+
+        return declarations!;
+    }
 
     private static IReadOnlyList<PlatformModuleDeclaration> LoadDeclarations(CompositionDeclarationOptions options)
     {

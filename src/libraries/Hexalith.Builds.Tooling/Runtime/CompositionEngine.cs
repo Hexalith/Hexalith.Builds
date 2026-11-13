@@ -110,11 +110,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ModuleManifest manifest = manifestResult.Manifest!;
             string? activeModule = PlatformManifestCommand.ActiveModule(platformDeclarations?.Declarations);
             CompositionDeclarationOptions? declarationOptions = platformComposition
-                ? new CompositionDeclarationOptions(_options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."), [Path.GetFullPath(manifestPath)]) { ActiveModule = activeModule, QualificationOwners = _options.QualificationOwners }
+                ? new CompositionDeclarationOptions(_options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."), [Path.GetFullPath(manifestPath)]) { ActiveModule = activeModule, QualificationOwners = _options.QualificationOwners, ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName }
                 : null;
+            if (declarationOptions is { Mapping.Mode: WorkspaceMode.Package })
+            {
+                // Cold pinned catalog reads consume the original finite startup allowance.
+                startupBound.CancelAfter(CompositionStartupClock.Remaining(requestedAt + deadline.Timeout, DateTimeOffset.UtcNow));
+            }
+
             IReadOnlyList<PlatformModuleDeclaration>? closure = declarationOptions is null
                 ? null
-                : CompositionDeclarationClosure.Load(_options.DeclarationOptionsOverride?.Invoke(declarationOptions) ?? declarationOptions);
+                : await CompositionDeclarationClosure.LoadForConsumerAsync(_options.DeclarationOptionsOverride?.Invoke(declarationOptions) ?? declarationOptions, startupBound.Token).ConfigureAwait(false);
             deadline = CompositionStartupDeadlineResolver.Resolve(closure, _options.ReadinessTimeout);
             deadlineResolved = true;
             if (_options.SelectedTest is not null)
@@ -464,6 +470,10 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 ToolExitCode.TopologyOrLifecycle,
                 [Diagnostic("HXP020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, PlatformManifestCommand.BoundedOutput(exception.Message, string.Empty), manifestPath, "Correct the authoritative owner declaration.")],
                 null);
+        }
+        catch (WorkspaceMappingException exception) when (runId is null)
+        {
+            return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, exception.Diagnostics, null);
         }
         catch (WorkspaceMappingException exception) when (runId is not null && appHost is null)
         {

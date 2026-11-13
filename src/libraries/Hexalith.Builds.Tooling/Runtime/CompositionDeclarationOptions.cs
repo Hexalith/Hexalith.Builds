@@ -17,6 +17,9 @@ using Hexalith.Builds.Tooling.Workspace;
 /// <param name="DeclarationPaths">The supplied owner declarations.</param>
 public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadOnlyList<string> DeclarationPaths)
 {
+    /// <summary>The actual project name of the shared Platform composition model.</summary>
+    public const string PlatformCompositionProjectName = "Hexalith.Platform.Composition";
+
     /// <summary>Gets the unchanged owner release commits shared by lifecycle startup and the Platform AppHost.</summary>
     public static IReadOnlyDictionary<string, string> DefaultReleaseCommits { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -70,6 +73,9 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["parties/3.1.1"] = "d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
+    /// <summary>Gets the actual consumer project name, or null to select the default catalog view.</summary>
+    public string? ConsumerProjectName { get; init; }
+
     /// <summary>Gets the selected Platform checkout.</summary>
     public string PlatformRoot { get; init; } = Mapping.PlatformIdentity?.PlatformPath
         ?? Mapping.Entries.SingleOrDefault(entry => entry.Identity == "Hexalith.Platform")?.Path
@@ -101,10 +107,26 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     /// <param name="source">The declaration source for diagnostics.</param>
     /// <returns>The catalog-selected owner version.</returns>
     /// <exception cref="InvalidDataException">The catalog or selected snapshot is unavailable or inconsistent.</exception>
-    public string CatalogVersion(string module, string source)
+    public string CatalogVersion(string module, string source) => CatalogVersion(module, source, ConsumerProjectName);
+
+    /// <summary>Resolves an owner version from an explicitly recorded consumer catalog view.</summary>
+    /// <param name="module">The owner identity.</param>
+    /// <param name="source">The declaration source for diagnostics.</param>
+    /// <param name="projectName">The actual consumer project name, or null for the default view.</param>
+    /// <returns>The catalog-selected owner version.</returns>
+    /// <exception cref="InvalidDataException">The pinned snapshot or selected consumer view is unavailable or inconsistent.</exception>
+    public string CatalogVersion(string module, string source, string? projectName)
     {
         try
         {
+            if (projectName is not null)
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(projectName);
+                string package = module switch { "tenants" => "Hexalith.Tenants.Server", "memories" => "Hexalith.Memories.Aspire", _ => CompositionDeclarationClosure.Repository(module) + ".Aspire" };
+                return ReadCatalogPackageVersion(package, source, projectName)
+                    ?? throw new InvalidDataException($"{source}: {module}: {package}: image version is missing from the selected consumer catalog view.");
+            }
+
             return ReadCatalogVersion(module, source);
         }
         catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or XmlException)
@@ -119,7 +141,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     /// <returns>The catalog-pinned version, or null when the catalog does not pin the package.</returns>
     /// <exception cref="InvalidDataException">The catalog or selected snapshot is unavailable or inconsistent.</exception>
     public string? CatalogPackageVersion(string packageId, string source)
-        => CatalogPackageVersion(packageId, source, null);
+        => CatalogPackageVersion(packageId, source, ConsumerProjectName);
 
     /// <summary>Resolves a package from an already recorded consumer-specific pinned snapshot view.</summary>
     /// <param name="packageId">The package identity.</param>
@@ -130,6 +152,11 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     public string? CatalogPackageVersion(string packageId, string source, string? projectName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(packageId);
+        if (projectName is not null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(projectName);
+        }
+
         try
         {
             return ReadCatalogPackageVersion(packageId, source, projectName);
@@ -168,9 +195,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
 
     private string? ReadRecordedPackageVersion(string packageId, string source, string? projectName, string snapshotPath)
     {
-        CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
-            ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot is null.");
-        ValidateSnapshot(snapshot, source, packageId, snapshotPath);
+        CatalogVersionSnapshot snapshot = ReadValidatedSnapshot(source, packageId, snapshotPath);
         IReadOnlyDictionary<string, string> selected = snapshot.Versions;
         if (!string.IsNullOrWhiteSpace(projectName))
         {
@@ -198,9 +223,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         string? snapshotPath = Workspace is null ? null : Path.Combine(Workspace, "source-mapping", "catalog-versions.json");
         if (snapshotPath is not null && File.Exists(snapshotPath))
         {
-            CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
-                ?? throw new InvalidDataException($"{source}: {module}: {snapshotPath}: catalog snapshot is null.");
-            ValidateSnapshot(snapshot, source, module, snapshotPath);
+            CatalogVersionSnapshot snapshot = ReadValidatedSnapshot(source, module, snapshotPath);
             return snapshot.Versions.TryGetValue(package, out string? selected)
                 ? selected
                 : throw new InvalidDataException($"{source}: {module}: {package}: image version is missing from the Builds catalog.");
@@ -215,6 +238,26 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         };
         string property = "Hexalith" + suffix + "Version";
         return catalog.Descendants(property).FirstOrDefault()?.Value ?? throw new InvalidDataException($"{source}: {module}: {property}: image version is missing from the Builds catalog.");
+    }
+
+    private CatalogVersionSnapshot ReadValidatedSnapshot(string source, string module, string snapshotPath)
+    {
+        try
+        {
+            if (Mapping.PlatformIdentity?.CatalogCommit is { Length: > 0 })
+            {
+                return CatalogVersionMaterializer.ReadVerifiedSnapshot(Mapping, Mapping.ContentHash, snapshotPath);
+            }
+
+            CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
+                ?? throw new InvalidDataException($"{source}: {module}: {snapshotPath}: catalog snapshot is null.");
+            ValidateSnapshot(snapshot, source, module, snapshotPath);
+            return snapshot;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new InvalidDataException($"{source}: {module}: {snapshotPath}: catalog snapshot differs from the selected mapping or pinned source: {exception.Message}", exception);
+        }
     }
 
     private void ValidateSnapshot(CatalogVersionSnapshot snapshot, string source, string module, string snapshotPath)

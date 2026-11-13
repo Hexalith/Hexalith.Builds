@@ -241,14 +241,105 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe").ShouldBe(selected);
     }
 
+    /// <summary>Owner and package APIs share an explicit consumer without changing the default view.</summary>
+    [Fact]
+    public void OwnerAndPackageLookupsShareExplicitConsumerContext()
+    {
+        string root = Directory.CreateTempSubdirectory("catalog-owner-view-").FullName;
+        try
+        {
+            CompositionDeclarationOptions options = Options(root);
+            options.CatalogVersion("eventstore", "probe").ShouldBe("5.0.0");
+            options.CatalogVersion("eventstore", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
+            CompositionDeclarationOptions consumer = options with { ConsumerProjectName = "Hexalith.Platform.EventStoreHost" };
+            consumer.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
+            consumer.CatalogPackageVersion("Hexalith.EventStore.Aspire", "probe").ShouldBe("4.2.0");
+            consumer.CatalogPackageVersion("Package.Probe", "probe").ShouldBe("2.0.0");
+            options.CatalogVersion("eventstore", "probe").ShouldBe("5.0.0");
+            Should.Throw<InvalidDataException>(() => options.CatalogVersion("eventstore", "probe", "Unrecorded.Host"))
+                .Message.ShouldContain("Unrecorded.Host");
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>Real pinned consumer reads refuse source, pin, mapping, view and snapshot drift.</summary>
+    /// <param name="fault">The independently changed authority.</param>
+    /// <returns>The pinned consumer refusal assertions.</returns>
+    [Theory]
+    [InlineData("source")]
+    [InlineData("pin")]
+    [InlineData("mapping")]
+    [InlineData("view")]
+    [InlineData("missing-view")]
+    [InlineData("missing-snapshot")]
+    public async Task PinnedConsumerAuthorityCannotBeReplacedAsync(string fault)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(conditionalCatalog: true).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "consumer-integrity");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace, ConsumerProjectName = "Hexalith.Folders.Aspire" };
+        const string package = "CommunityToolkit.Aspire.Hosting.Dapr";
+        options.CatalogPackageVersion(package, "probe").ShouldBe("13.0.0");
+        string path = Path.Combine(workspace, "source-mapping", "catalog-versions.json");
+        if (fault == "source")
+        {
+            await File.AppendAllTextAsync(Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props"), " ", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        else if (fault == "pin")
+        {
+            CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadSnapshot(path) with { CatalogCommit = new string('f', 40) };
+            snapshot = snapshot with { Hash = CatalogVersionSnapshot.ComputeHash(snapshot.MappingHash, snapshot.CatalogCommit, snapshot.CatalogFileHash, snapshot.PinnedFiles, snapshot.Versions, snapshot.ProjectVersions) };
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(snapshot), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        else if (fault == "mapping")
+        {
+            options = options with { Mapping = mapping with { ActiveModule = "Changed.Module" } };
+        }
+        else if (fault == "view")
+        {
+            await File.WriteAllTextAsync(path, (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true)).Replace("13.0.0", "13.0.1", StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        else if (fault == "missing-view")
+        {
+            options = options with { ConsumerProjectName = "Unrecorded.Host" };
+        }
+        else
+        {
+            File.Delete(path);
+        }
+
+        Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion(package, "probe"))
+            .Message.ShouldContain("catalog snapshot");
+    }
+
+    /// <summary>Concurrent supervised catalog queries retain independent SDK process lifetimes.</summary>
+    /// <returns>The independent pinned version observations.</returns>
+    [Fact]
+    public async Task ParallelPinnedCatalogReadsRemainIsolatedAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(conditionalCatalog: true).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string[] workspaces = [.. Enumerable.Range(0, 3).Select(index => Path.Combine(fixture.Directory, "parallel-catalog-" + index))];
+        await Task.WhenAll(workspaces.Select(workspace => SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken))).ConfigureAwait(true);
+        foreach (string workspace in workspaces)
+        {
+            CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace, ConsumerProjectName = "Hexalith.Folders.Aspire" };
+            options.CatalogPackageVersion("CommunityToolkit.Aspire.Hosting.Dapr", "parallel-probe").ShouldBe("13.0.0");
+        }
+    }
+
     private static CompositionDeclarationOptions Options(string root)
     {
         SourceMapping mapping = new(WorkspaceMode.Package, root, "Hexalith.Platform", [], false);
-        Dictionary<string, string> versions = new() { ["Package.Probe"] = "1.0.0" };
+        Dictionary<string, string> versions = new() { ["Package.Probe"] = "1.0.0", ["Hexalith.EventStore.Aspire"] = "5.0.0" };
         Dictionary<string, string> pinned = new() { ["Props/Directory.Packages.props"] = new string('a', 64) };
         Dictionary<string, IReadOnlyDictionary<string, string>> projects = new()
         {
-            ["Hexalith.Platform.EventStoreHost"] = new Dictionary<string, string> { ["Package.Probe"] = "2.0.0" },
+            ["Hexalith.Platform.EventStoreHost"] = new Dictionary<string, string> { ["Package.Probe"] = "2.0.0", ["Hexalith.EventStore.Aspire"] = "4.2.0" },
         };
         string commit = new('b', 40);
         string hash = new('a', 64);

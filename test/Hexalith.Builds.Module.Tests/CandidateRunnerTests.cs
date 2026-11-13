@@ -528,6 +528,8 @@ public sealed class CandidateRunnerTests
             SelectedPlatformStartOverride = selectedStartOverride,
             DeclarationOptionsOverride = declarations => declarations with
             {
+                // This candidate-policy fixture supplies unpinned synthetic release declarations.
+                ConsumerProjectName = null,
                 ReleaseCommits = packageDeclarations?.ReleaseCommits ?? declarations.ReleaseCommits,
                 ReleaseSnapshotHashes = packageDeclarations?.ReleaseSnapshotHashes ?? declarations.ReleaseSnapshotHashes,
             },

@@ -192,7 +192,48 @@ public sealed class DirectCatalogDeclarationTests
         }
     }
 
-    private static async Task<WorkspaceGitFixture> CreateReleasedWorkspaceAsync(bool unknownVersion, string sdkVersion = "4.2.0", string memoriesVersion = "3.0.27", bool unknownMemories = false)
+    /// <summary>Cold and materialized package closures select the real consumer view without rewriting the global SDK default.</summary>
+    /// <param name="platformRoot">Whether the command starts at Platform or its direct consuming module.</param>
+    /// <returns>The released declaration, cold preparation and unchanged default assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ConsumerClosureUsesPinnedSdk42WhileDefaultRemainsSdk5Async(bool platformRoot)
+    {
+        using WorkspaceGitFixture fixture = await CreateReleasedWorkspaceAsync(false, consumerViews: true).ConfigureAwait(true);
+        string manifest = platformRoot ? Path.Combine(fixture.Directory, "platform", "hexalith-platform.json") : fixture.Manifest;
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionDeclarationOptions cold = new(mapping, []) { ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName };
+        IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformModuleDeclaration> closure = await CompositionDeclarationClosure.LoadForConsumerAsync(cold, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        closure.Select(item => CompositionDeclarationClosure.Id(item.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["eventstore", "memories", "tenants"]);
+        cold.Workspace.ShouldBeNull();
+        Directory.Exists(Path.Combine(mapping.Root, "source-mapping")).ShouldBeFalse();
+        string workspace = Path.Combine(fixture.Directory, "recorded-consumer");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionDeclarationOptions selected = cold with { Workspace = workspace };
+        selected.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
+        (selected with { ConsumerProjectName = null }).CatalogVersion("eventstore", "probe").ShouldBe("5.0.0");
+        CompositionDeclarationClosure.Load(selected).Count.ShouldBe(closure.Count);
+        Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(selected with { ConsumerProjectName = null }))
+            .Message.ShouldContain("5.0.0");
+        CatalogVersionMaterializer.ReadSnapshot(Path.Combine(workspace, "source-mapping", "catalog-versions.json"))
+            .Versions["Hexalith.EventStore.Aspire"].ShouldBe("5.0.0");
+    }
+
+    /// <summary>A cold consumer cannot substitute the default view for an absent recorded identity.</summary>
+    /// <returns>The missing consumer refusal before any runner workspace is allocated.</returns>
+    [Fact]
+    public async Task ColdConsumerClosureRefusesAnUnrecordedProjectAsync()
+    {
+        using WorkspaceGitFixture fixture = await CreateReleasedWorkspaceAsync(false, consumerViews: true).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionDeclarationOptions options = new(mapping, []) { ConsumerProjectName = "Unrecorded.Host" };
+        InvalidDataException refusal = await Should.ThrowAsync<InvalidDataException>(() => CompositionDeclarationClosure.LoadForConsumerAsync(options, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Message.ShouldContain("Unrecorded.Host");
+        Directory.Exists(Path.Combine(mapping.Root, "source-mapping")).ShouldBeFalse();
+    }
+
+    private static async Task<WorkspaceGitFixture> CreateReleasedWorkspaceAsync(bool unknownVersion, string sdkVersion = "4.2.0", string memoriesVersion = "3.0.27", bool unknownMemories = false, bool consumerViews = false)
     {
         WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         try
@@ -202,7 +243,11 @@ public sealed class DirectCatalogDeclarationTests
             XDocument selectedCatalog = XDocument.Parse(catalog);
 
             // A fixture's explicit historical/hostile selection precedes every conditional consumer default.
-            selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithEventStoreVersion", unknownVersion ? "999.0.0" : sdkVersion)));
+            if (!consumerViews)
+            {
+                selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithEventStoreVersion", unknownVersion ? "999.0.0" : sdkVersion)));
+            }
+
             selectedCatalog.Descendants("HexalithMemoriesVersion").Single().Value = unknownMemories ? "3.0.28" : memoriesVersion;
             catalog = selectedCatalog.ToString();
 
