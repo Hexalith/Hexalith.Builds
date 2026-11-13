@@ -84,7 +84,7 @@ def main():
         if bool(args.commit_base) != bool(args.commit_head):
             raise expected_state.ExpectedStateError("explicit commit range requires both endpoints")
         event_name = os.environ.get("CI_EVENT_NAME", os.environ.get("GITHUB_EVENT_NAME", ""))
-        event_path = os.environ.get("CI_EVENT_PATH", os.environ.get("GITHUB_EVENT_PATH", ""))
+        event_path = os.environ.get("CI_EVENT_PATH") or os.environ.get("GITHUB_EVENT_PATH", "")
         # Read payload lazily: ownership failures retain precedence and Builds
         # root does not require event data or perform module lint work.
         run(os.environ.get("GITHUB_WORKSPACE", os.getcwd()),

@@ -129,6 +129,13 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*args]))
         ledger = self.workspace / "guard-tools.jsonl"
         return [json.loads(line) for line in ledger.read_text().splitlines()] if ledger.exists() else []
 
+    def test_empty_optional_event_path_uses_the_real_runner_event_file(self):
+        self.environment["CI_EVENT_PATH"] = ""
+        sha = self.git(self.workspace, "rev-parse", "HEAD")
+        result, values = self.invoke(ref="HEAD", event_name="push", event={"before": sha, "after": sha})
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual({"drift": "false"}, values)
+
     def commands(self):
         return [json.loads(line) for line in self.ledger.read_text().splitlines()] if self.ledger.exists() else []
 

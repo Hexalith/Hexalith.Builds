@@ -61,7 +61,7 @@ def _reference(value: object, snapshot) -> str | None:
             return "local uses target has no regular committed action metadata: " + value
         return None
     match = REMOTE.fullmatch(value)
-    if match is None or (match[3] and not _parts(match[3].lstrip("/"))):
+    if match is None or not _parts(match[1] + "/" + match[2] + match[3]):
         return "third-party uses must be owner/repo[/path]@<40-hex-SHA>"
     return None
 

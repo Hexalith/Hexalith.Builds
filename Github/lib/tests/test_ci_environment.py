@@ -133,7 +133,7 @@ os.execv(sys.executable, [sys.executable, *args])
         event_path = runner_temp / "event.json"
         event_path.write_text(json.dumps({} if event is None else event))
         self.environment.update(GITHUB_EVENT_NAME=event_name, GITHUB_EVENT_PATH=str(event_path))
-        self.context = {"github": {"repository": repository, "event_name": event_name, "event_path": str(event_path),
+        self.context = {"github": {"repository": repository, "event_name": event_name,
                                     "event": {} if event is None else event},
                         "runner": {"temp": str(runner_temp), "os": runner_os},
                         "inputs": {"module-root": module_root, "expected-source": expected_source},

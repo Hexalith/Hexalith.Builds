@@ -82,3 +82,13 @@ commitlint with zero problems/warnings. `git diff --check` passed.
 Both locked Python discovery lanes are running. The initial runs exposed the
 legacy consumer-fixture issue above; the corrected frozen-workflow group passes.
 Final focused totals, full-lane results and hosted results remain pending here.
+
+The first implementation source `fde085eeccc11617f42e71a1e5d7db23ed5e4290`
+triggered normal push run [43463294597](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43463294597).
+Sample job `132015660283` failed before preparation because the attempted
+`github.event_path` context mapping was empty, shadowing the runner's actual
+`GITHUB_EVENT_PATH`. The follow-up removes that nonexistent context mapping and
+reads the standard runner event file, including when an optional override is
+empty. The harness no longer invents that context property and an adapter
+regression covers the runner-file fallback. No event fallback to HEAD or last
+commit was introduced; missing event endpoints still fail closed.

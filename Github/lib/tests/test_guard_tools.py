@@ -17,6 +17,14 @@ from test_expected_state import Repository, configuration, BUILDS
 
 
 class ToolControlsTests(unittest.TestCase):
+    def test_manifest_preparation_failure_does_not_expose_private_paths(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(guard_tools.shutil, "copyfile",
+                side_effect=OSError("/private/path\x1b secret")):
+            with self.assertRaisesRegex(state.ExpectedStateError, "tool preparation failed") as raised:
+                guard_tools.Tools(directory)
+            self.assertNotIn("secret", str(raised.exception))
+            self.assertNotIn(directory, str(raised.exception))
+
     def test_environment_excludes_module_node_npm_git_and_arbitrary_tokens(self):
         poison = {"NODE_OPTIONS": "--require=/module/evil.js", "NODE_PATH": "/module", "NPM_CONFIG_REGISTRY": "evil",
                   "GIT_CONFIG_COUNT": "2", "GITHUB_TOKEN": "secret", "UNUSUAL_TOKEN": "secret", "COREPACK_HOME": "/module"}

@@ -47,7 +47,6 @@ jobs:
       CI_MODULE_ROOT: ${{ inputs.module-root }}
       CI_EXPECTED_SOURCE: ${{ inputs.expected-source }}
       CI_EVENT_NAME: ${{ github.event_name }}
-      CI_EVENT_PATH: ${{ github.event_path }}
     outputs:
       drift: ${{ steps.guard.outputs.drift }}
       solution: ${{ steps.prepare.outputs.solution }}

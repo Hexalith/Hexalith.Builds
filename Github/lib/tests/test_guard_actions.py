@@ -114,6 +114,7 @@ class ActionLintTests(unittest.TestCase):
 
     def test_remote_reference_policy_validates_actual_resolved_uses(self):
         invalid = ["third/party@main", "third/party@v1", "third/party@" + "a" * 39,
+                   "../party@" + PIN, "third/..@" + PIN,
                    "third/party/path/../target@" + PIN, "docker://alpine:3", "${{ inputs.action }}",
                    "Hexalith/Hexalith.Builds/Github/prepare@" + PIN, "hexalith/hexalith.builds@v1.2.3"]
         for number, value in enumerate(invalid):

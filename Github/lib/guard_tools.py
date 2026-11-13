@@ -41,9 +41,12 @@ class Tools:
 
     def __init__(self, directory: str | Path):
         self.directory = Path(directory)
-        self.environment = tool_environment(self.directory)
-        for filename in ("package.json", "package-lock.json"):
-            shutil.copyfile(SOURCE / filename, self.directory / filename)
+        try:
+            self.environment = tool_environment(self.directory)
+            for filename in ("package.json", "package-lock.json"):
+                shutil.copyfile(SOURCE / filename, self.directory / filename)
+        except (OSError, UnicodeError) as error:
+            raise ExpectedStateError("trusted guard tool preparation failed") from error
         self._run(["npm", "ci", "--ignore-scripts"], "npm locked installation")
         self._run(["npm", "audit", "signatures"], "npm signature verification")
 
