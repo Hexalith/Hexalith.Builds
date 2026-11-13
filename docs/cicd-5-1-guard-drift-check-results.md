@@ -1,7 +1,7 @@
 ---
 story: '5-1'
 created: '2026-11-13'
-status: blocked
+status: ready-for-review
 implementation_baseline_revision: f01c3ab70f7e7401b3b73217983955f7771a1465
 implementation_integration_revision: 05a75b626fb73c6e386d16c41e885f193d3cff16
 implementation_revision: 0f97426edb6f88ee6e534d95ca9029f7e0b20311
@@ -97,7 +97,8 @@ uses that exact source. Observed job results:
 | Workflow lint and public API | success | Authenticated workflow lint and committed-object API both succeeded |
 | Package catalog contracts | failure | [job 131765199775](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43389324372/job/131765199775): 14 existing catalog assertions require EventStore 4.2.0 after upstream changed its catalog to 5.0.0; exit 1 |
 | .NET tests / Build and tests | failure | [job 131765199927](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43389324372/job/131765199927): guard, prepare and build succeeded; Evidence.Tests has 44 failures, 147 passes, exit 2 |
-| Python contract tests (3.12 / runner) | unfinished at halt | Hosted lanes were running/queued when the already-failed required product checks established the blocker; both full local lanes above passed |
+| Python contract tests (3.12) | success | [job 131765199513](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43389324372/job/131765199513): Python 3.12.16, all 14 groups passed; completed 08:09:27 UTC |
+| Python contract tests (runner) | success | [job 131765199976](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43389324372/job/131765199976): Python 3.14.4, all 14 groups passed; completed 08:22:27 UTC |
 
 The [pre-story upstream run](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43387068103)
 at `05a75b626fb73c6e386d16c41e885f193d3cff16` already has both failures.
@@ -107,19 +108,34 @@ changes neither the package catalog, its authoritative validator, nor
 `test/Hexalith.Builds.Evidence.Tests`. Concurrent upstream dependency edits were
 preserved by rebasing; they are not authored story changes.
 
+The resumed verification re-fetched the four failing-job logs and compared
+the full sorted signature arrays and their exit codes. The retained
+[verification record](cicd-5-1-guard-drift-check-verification.json) contains
+both actual arrays, including parameterized test identities, source/run/job
+identities, decoded-log SHA-256 fingerprints, normalization rules, all seven
+completed exact-source job results and the local transcript fingerprints.
+The comparison requires exact equality; matching counts alone are insufficient.
+Only timestamps, ANSI display sequences and the final per-test runtime duration
+are removed. The two jobs remain failures, and the overall run remains failed.
+
 Local fixtures and the Builds sample do not establish a normal module's live
 delivered branch. No module adoption, production release or administration was
 performed.
 
 ## Terminal result
 
-Status: blocked.
-Blocking condition: implementation verification failed because exact-source
-Builds CI retains the independently confirmed upstream catalog and evidence-test
-failures. The runtime implementation and self-test evidence are pushed, but the
-required all-green product verification is unsatisfied. No dependency pins or
-unrelated validation expectations were changed to hide those failures.
+Status: ready for independent review under the story-specific verification
+exception approved by the human on 2026-11-13.
 
-The build-auto workflow halts at its implementation-verification gate before
-step 4 review. Review remains outstanding after the upstream failures are
-resolved. This terminal record does not claim the story is done.
+The original implementation run halted while the hosted Python lanes were
+unfinished because the two product jobs had already failed. The approved
+exception now permits those two failures only when their actual signatures
+match the recorded integration baseline. Resumed verification established that
+exact match, and both hosted Python lanes subsequently completed successfully.
+All other required local and exact-source hosted checks passed. No assertion,
+dependency pin or runtime release-green requirement was changed.
+
+The implementation-verification gate is satisfied under that exception.
+Independent review remains outstanding and must pass before story completion;
+this handoff does not claim that the story is done. The exception does not make
+this failed Builds run green for release purposes.
