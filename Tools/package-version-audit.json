@@ -1,21 +1,19 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "22fb5907bc4641de54042ed956852c108ca2b0cf",
+  "generatedFromRevision": "2c1e81297a4943c2c1521ce29f96d8420a2a1f53",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "05276b1dfce24e3ebb2914770f9040539c67dfdf0c7c0a03f2a81d2036889375",
-  "catalogRawSha256": "9e5d1fafaf46d051b68da2090399733d9470873082d20f6444493e3594b0cab3",
+  "catalogSha256": "0cecd06ec6a6fe0df53b90a6e90eeae5f1f0404fef7784c170481a54607ab37b",
+  "catalogRawSha256": "2ca40509cec63bdda8e69360edacea60736530e7e85944301214533b9e9cf626",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-13T10:25:54.4400610+00:00",
+    "auditedAtUtc": "2026-11-13T12:29:52.8048559+00:00",
     "refreshedFamilies": [
-      "hexalith-eventstore",
-      "package:stackexchange.redis"
+      "dotnet-10"
     ],
     "preservedFamilies": [
       "aspire",
       "bunit-html",
       "dapr",
-      "dotnet-10",
       "fluent-ui",
       "hexalith-applications",
       "hexalith-chatbot",
@@ -23,6 +21,7 @@
       "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
+      "hexalith-eventstore",
       "hexalith-folders",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
@@ -151,6 +150,7 @@
       "package:serilog.sinks.file",
       "package:shouldly",
       "package:sonaranalyzer.csharp",
+      "package:stackexchange.redis",
       "package:stylecop.analyzers",
       "package:swashbuckle.aspnetcore",
       "package:swashbuckle.aspnetcore.swaggerui",
@@ -182,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "22fb5907bc4641de54042ed956852c108ca2b0cf",
+    "repositoryRevision": "2c1e81297a4943c2c1521ce29f96d8420a2a1f53",
     "sha256": "aff9f6a2f937cd22eb59a0e3ad5ac6dd02b4b2a1116f0eb91fdfdfb256f0e54a",
     "entries": [
       {
@@ -3460,8 +3460,8 @@
         "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-13T10:00:05.6796461+00:00",
-        "generatedFromRevision": "320da402954fd432e07ceb8bad31dd2e39b8a453",
+        "auditedAtUtc": "2026-11-13T12:29:52.8048559+00:00",
+        "generatedFromRevision": "2c1e81297a4943c2c1521ce29f96d8420a2a1f53",
         "familySelectionSha256": "a14bd753eb55463be8ce7dccf0f998b0dd3d9ed9e48ea1921e5a98b33c076c8b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9a79ebc20733a059e80b2993f984570778306d67bf2a81d75c5726ff101347c5",
