@@ -102,8 +102,8 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion(package, "probe", "Hexalith.Folders.Aspire").ShouldBe("13.0.0");
     }
 
-    /// <summary>Materializes the actual composed-host view from the owning catalog without enrolling an unpublished fixture.</summary>
-    /// <returns>The exact host-view and missing-fixture assertions.</returns>
+    /// <summary>Materializes every retained consumer view from the owning catalog while preserving its current default.</summary>
+    /// <returns>The finite consumer-view and unknown-name refusal assertions.</returns>
     [Fact]
     public async Task OwningCatalogMaterializesTheEventStoreHostViewWithoutAPrematureFixturePinAsync()
     {
@@ -113,7 +113,92 @@ public sealed class CompositionCatalogPackageViewTests
         string workspace = Path.Combine(fixture.Directory, "actual-host-consumer");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
-        snapshot.ProjectVersions.ContainsKey("Hexalith.Platform.EventStoreHost").ShouldBeTrue();
+        string[] retainedConsumers =
+        [
+            "Hexalith.Parties",
+            "Hexalith.Parties.AdminPortal",
+            "Hexalith.Parties.AdminPortal.Tests",
+            "Hexalith.Parties.AppHost",
+            "Hexalith.Parties.Aspire",
+            "Hexalith.Parties.Aspire.Tests",
+            "Hexalith.Parties.Authentication",
+            "Hexalith.Parties.Authentication.Tests",
+            "Hexalith.Parties.Catalog.Tests",
+            "Hexalith.Parties.Ci.Tests",
+            "Hexalith.Parties.Client",
+            "Hexalith.Parties.Client.Tests",
+            "Hexalith.Parties.ConsumerPortal",
+            "Hexalith.Parties.ConsumerPortal.Tests",
+            "Hexalith.Parties.Contracts",
+            "Hexalith.Parties.Contracts.Tests",
+            "Hexalith.Parties.EventStoreAdminUI.TestHost",
+            "Hexalith.Parties.EventStoreExtensions",
+            "Hexalith.Parties.EventStoreGateway.TestHost",
+            "Hexalith.Parties.EventStoreSample.Contracts.TestArtifact",
+            "Hexalith.Parties.EventStoreSample.TestHost",
+            "Hexalith.Parties.IntegrationTests",
+            "Hexalith.Parties.Mcp",
+            "Hexalith.Parties.Mcp.Tests",
+            "Hexalith.Parties.Picker",
+            "Hexalith.Parties.Picker.Tests",
+            "Hexalith.Parties.Platform.AttachedLifecycleTests",
+            "Hexalith.Parties.Platform.IntegrationTests",
+            "Hexalith.Parties.Platform.LifecycleTests",
+            "Hexalith.Parties.Projections",
+            "Hexalith.Parties.Projections.Tests",
+            "Hexalith.Parties.Sample",
+            "Hexalith.Parties.Sample.Tests",
+            "Hexalith.Parties.Security",
+            "Hexalith.Parties.Security.Tests",
+            "Hexalith.Parties.Server.Tests",
+            "Hexalith.Parties.Testing",
+            "Hexalith.Parties.Tests",
+            "Hexalith.Parties.UI",
+            "Hexalith.Parties.UI.Tests",
+            "Hexalith.Platform.CatalogBuilder",
+            "Hexalith.Platform.Composition",
+            "Hexalith.Platform.Composition.Tests",
+            "Hexalith.Platform.Custody",
+            "Hexalith.Platform.Custody.Component",
+            "Hexalith.Platform.Custody.Component.Tests",
+            "Hexalith.Platform.Custody.Tests",
+            "Hexalith.Platform.EventStoreHost",
+            "Hexalith.Platform.Identity",
+            "Hexalith.Platform.Identity.Tests",
+            "Hexalith.Platform.OwnerServices.Tests",
+            "Hexalith.Platform.Protection",
+            "Hexalith.Platform.Protection.Qualification.Enrollment",
+            "Hexalith.Platform.Protection.Qualification.Executor",
+            "Hexalith.Platform.Protection.Qualification.Observer",
+            "Hexalith.Platform.Protection.Tests",
+            "Hexalith.Platform.Secrets.ArchiveProcessFixture",
+            "Hexalith.Platform.Secrets.Authority",
+            "Hexalith.Platform.Secrets.Authority.Tests",
+            "Hexalith.Platform.Secrets.Custody",
+            "Hexalith.Platform.Secrets.Custody.Tests",
+            "Hexalith.Platform.Secrets.Inventory",
+            "Hexalith.Platform.Secrets.Inventory.Tests",
+            "Hexalith.Platform.Secrets.Qualification.Enrollment",
+            "Hexalith.Platform.Secrets.Qualification.Executor",
+            "Hexalith.Platform.Secrets.Qualification.Observer",
+            "Hexalith.Platform.Secrets.Runtime",
+            "Hexalith.Platform.Secrets.Runtime.Tests",
+            "Hexalith.Platform.TenantRegistry.Host",
+            "Hexalith.Platform.TestExtension",
+            "Hexalith.Platform.TestExtension.Qualification.Tests",
+            "Hexalith.Platform.Works.Runtime",
+            "Hexalith.Platform.Works.Tests",
+        ];
+        foreach (string consumer in retainedConsumers)
+        {
+            snapshot.ProjectVersions.ContainsKey(consumer).ShouldBeTrue(consumer);
+            IReadOnlyDictionary<string, string> versions = snapshot.ProjectVersions[consumer];
+            versions["Hexalith.EventStore.DomainService"].ShouldBe("4.2.0", consumer);
+            versions["Hexalith.EventStore.Server"].ShouldBe("4.2.0", consumer);
+            versions["Microsoft.AspNetCore.OpenApi"].ShouldBe("10.0.15", consumer);
+            versions["Microsoft.OpenApi"].ShouldBe("2.13.0", consumer);
+        }
+
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe").ShouldBe("5.0.0");
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe").ShouldBe("11.0.0");
@@ -123,6 +208,14 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.Platform.TestExtension", "probe", "Hexalith.Platform.EventStoreHost").ShouldBeNull();
+        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Parties.EventStoreGateway.TestHost").ShouldBe("4.2.0");
+        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.Composition").ShouldBe("4.2.0");
+        foreach (string unknown in new[] { "Hexalith.Parties.Future", "Hexalith.Platform.Future" })
+        {
+            snapshot.ProjectVersions.ContainsKey(unknown).ShouldBeFalse();
+            Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", unknown))
+                .Message.ShouldContain(unknown);
+        }
     }
 
     /// <summary>Preserves an explicitly selected historical SDK while recording the actual composed-host view.</summary>

@@ -407,7 +407,7 @@ internal static partial class CatalogVersionMaterializer
         }
     }
 
-    [GeneratedRegex("[\\\"']\\$\\(MSBuildProjectName\\)[\\\"']\\s*(?:==|!=)\\s*[\\\"'](?<name>[A-Za-z0-9_.-]+)[\\\"']|[\\\"'](?<name>[A-Za-z0-9_.-]+)[\\\"']\\s*(?:==|!=)\\s*[\\\"']\\$\\(MSBuildProjectName\\)[\\\"']", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, 1000)]
+    [GeneratedRegex("[\\\"']\\$\\(MSBuildProjectName\\)[\\\"']\\s*(?:==|!=)\\s*[\\\"'](?<name>[A-Za-z0-9_.-]+)[\\\"']|[\\\"'](?<name>[A-Za-z0-9_.-]+)[\\\"']\\s*(?:==|!=)\\s*[\\\"']\\$\\(MSBuildProjectName\\)[\\\"']|\\$\\(MSBuildProjectName\\.Equals\\('(?<name>[A-Za-z0-9_.-]+)'\\)\\)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, 1000)]
     private static partial Regex ProjectNameCondition();
 
     private static string XmlEscape(string value) => System.Security.SecurityElement.Escape(value) ?? string.Empty;
