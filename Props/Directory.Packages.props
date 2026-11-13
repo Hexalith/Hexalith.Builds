@@ -321,7 +321,7 @@
     <PackageVersion Include="HotChocolate" Version="16.7.5" />
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
-    <PackageVersion Include="JsonSchema.Net" Version="9.6.0" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.7.0" />
     <PackageVersion Include="Kreuzberg" Version="4.10.4" />
     <PackageVersion Include="LibGit2Sharp" Version="0.32.0" />
     <PackageVersion Include="MailKit" Version="5.0.0" />
