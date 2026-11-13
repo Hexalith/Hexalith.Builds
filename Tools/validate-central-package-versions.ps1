@@ -215,7 +215,7 @@ namespace Hexalith.Builds.CentralCatalog
     try {
         if ([string]::IsNullOrWhiteSpace($ResolvedEvaluatorScriptPath)) {
             $executable = 'dotnet'
-            $arguments = @('msbuild', $evaluationPath, '-nologo', '-getItem:PackageVersion')
+            $arguments = @('msbuild', $evaluationPath, '-nologo', '-noAutoResponse', '-getItem:PackageVersion')
         }
         else {
             $executable = $pwshExecutable

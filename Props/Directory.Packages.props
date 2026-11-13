@@ -91,13 +91,18 @@
         or $(MSBuildProjectName.Equals('Hexalith.Platform.TestExtension.Qualification.Tests'))
         or $(MSBuildProjectName.Equals('Hexalith.Platform.Works.Runtime'))
         or $(MSBuildProjectName.Equals('Hexalith.Platform.Works.Tests'))">true</HexalithPlatformSdk42CatalogView>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
+    <!-- Only these producer host roles retain the admitted SDK4.2 receiver and OpenAPI2 ABI. -->
+    <HexalithBuildsPackagedHostSdk42CatalogView>false</HexalithBuildsPackagedHostSdk42CatalogView>
+    <HexalithBuildsPackagedHostSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Builds.Module.AppHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.EventStoreHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.0.0</HexalithEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.0</HexalithOpenApiVersion>
     <!-- The public SDK4.2 gateway calls the OpenApi2 ABI; keep both exact audited members together. -->
-    <HexalithAspNetCoreOpenApiVersion Condition="'$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true')">10.0.15</HexalithAspNetCoreOpenApiVersion>
-    <HexalithOpenApiVersion Condition="'$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true')">2.13.0</HexalithOpenApiVersion>
+    <HexalithAspNetCoreOpenApiVersion Condition="'$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">10.0.15</HexalithAspNetCoreOpenApiVersion>
+    <HexalithOpenApiVersion Condition="'$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">2.13.0</HexalithOpenApiVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">5.0.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.4.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">2.0.1</HexalithMcpCliVersion>

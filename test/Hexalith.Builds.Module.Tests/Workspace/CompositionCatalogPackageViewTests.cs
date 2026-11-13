@@ -188,6 +188,9 @@ public sealed class CompositionCatalogPackageViewTests
             "Hexalith.Platform.TestExtension.Qualification.Tests",
             "Hexalith.Platform.Works.Runtime",
             "Hexalith.Platform.Works.Tests",
+            "Hexalith.Builds.Module.AppHost",
+            "Hexalith.Builds.Module.EventStoreHost",
+            "Hexalith.Builds.Module.UiHost",
         ];
         foreach (string consumer in retainedConsumers)
         {
@@ -210,7 +213,7 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion("Hexalith.Platform.TestExtension", "probe", "Hexalith.Platform.EventStoreHost").ShouldBeNull();
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Parties.EventStoreGateway.TestHost").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.Composition").ShouldBe("4.2.0");
-        foreach (string unknown in new[] { "Hexalith.Parties.Future", "Hexalith.Platform.Future" })
+        foreach (string unknown in new[] { "Hexalith.Parties.Future", "Hexalith.Platform.Future", "Hexalith.Builds.Module.Future", "Hexalith.Builds.Module.EventStoreHost.Future" })
         {
             snapshot.ProjectVersions.ContainsKey(unknown).ShouldBeFalse();
             Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", unknown))

@@ -416,7 +416,8 @@ exit $LASTEXITCODE
 <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup>
 <ItemGroup><PackageReference Include="Hexalith.EventStore.Gateway" /><PackageReference Include="Microsoft.AspNetCore.OpenApi" /><PackageReference Include="Microsoft.OpenApi" /></ItemGroup></Project>
 '@
-    foreach ($name in @('Hexalith.Parties.EventStoreGateway.TestHost', 'Hexalith.Platform.EventStoreHost')) {
+    foreach ($name in @('Hexalith.Parties.EventStoreGateway.TestHost', 'Hexalith.Platform.EventStoreHost',
+                        'Hexalith.Builds.Module.AppHost', 'Hexalith.Builds.Module.EventStoreHost', 'Hexalith.Builds.Module.UiHost')) {
         $retainedRoot = New-ConsumerFixture -Name ("retained-" + $name) -ProjectContent $retainedProject
         Move-Item -LiteralPath (Join-Path $retainedRoot 'Fixture.csproj') -Destination (Join-Path $retainedRoot ($name + '.csproj'))
         Test-Scenario -Name "Exact retained owner view $name" -RepositoryRoot $retainedRoot -ExpectedExitCode 0 `

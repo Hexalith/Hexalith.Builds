@@ -31,6 +31,7 @@ public sealed class PublicTechnicalReceiverCapabilityTests
     [InlineData("4.1.0", "Hexalith.EventStore.Gateway", 1, false, true)]
     [InlineData("4.1.1", "Hexalith.EventStore.Gateway", 1, false, false)]
     [InlineData("4.2.0", "Hexalith.EventStore.Gateway", 1, false, true)]
+    [InlineData("5.0.0", "Hexalith.EventStore.Gateway", 1, false, false)]
     [InlineData("4.2.1", "Hexalith.EventStore.Gateway", 1, false, false)]
     [InlineData("4.2.0-preview.1", "Hexalith.EventStore.Gateway", 1, false, false)]
     [InlineData("4.2.0.0", "Hexalith.EventStore.Gateway", 1, false, false)]

@@ -82,7 +82,12 @@ The catalog additionally records exact named SDK4.2 views for the forty current
 Parties projects and thirty-three Platform projects selected at Platform
 `32643bde39b4da0e4538f8388e225727f82122f6`. Each view keeps the public SDK4.2
 gateway's measured OpenAPI ABI pair: `Microsoft.AspNetCore.OpenApi/10.0.15`
-and `Microsoft.OpenApi/2.13.0`. Other project names retain SDK5 and the current
+and `Microsoft.OpenApi/2.13.0`. A separate exact view retains this tuple for the
+three packaged Builds host roles: `Hexalith.Builds.Module.AppHost`,
+`Hexalith.Builds.Module.EventStoreHost`, and `Hexalith.Builds.Module.UiHost`.
+Their existing technical receiver admission does not include SDK5. The producer
+checks these role views independently of its embedded current default and frozen
+v1 schema pins. Other project names retain SDK5 and the current
 OpenAPI11/3 pair. Explicit other SDK selections cannot acquire the compatibility
 pair. Independent clean project-name evaluation and the existing package-authority
 guard still prohibit consumer-local version declarations, crossed pairs and

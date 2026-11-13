@@ -390,6 +390,7 @@ public sealed class CatalogVersionTests
     /// <returns>A task for the assertion.</returns>
     [Theory]
     [InlineData("Generated")]
+    [InlineData("Hexalith.Builds.Module.AppHost")]
     [InlineData("Hexalith.Builds.Module.EventStoreHost")]
     [InlineData("Hexalith.Builds.Module.UiHost")]
     public async Task HostBuildRejectsVersionOverrideAsync(string hostName)

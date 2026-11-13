@@ -1000,7 +1000,10 @@ try {
     & (Join-Path $PSScriptRoot 'write-platform-version-catalog.ps1') -OutputPath $expectedCatalogPath
     if ($LASTEXITCODE -ne 0) { throw "Catalog writer failed with exit code $LASTEXITCODE." }
     $expectedCatalog = [IO.File]::ReadAllText($expectedCatalogPath)
-    $expectedEventStoreVersion = ($expectedCatalog | ConvertFrom-Json).eventStoreVersion
+    $frozenV1Pins = Get-FrozenV1PlatformPins
+    $expectedEventStoreVersion = $frozenV1Pins.eventStoreVersion
+    $qualifiedHostSdk = Assert-PackagedHostCatalogViews
+    if ($qualifiedHostSdk -cne $expectedEventStoreVersion) { throw 'The independently qualified host view differs from the immutable v1 contract.' }
 
     $env:NUGET_PACKAGES = Join-Path $consumerRoot '.nuget/packages'
     $env:DOTNET_CLI_HOME = Join-Path $consumerRoot '.dotnet'
@@ -1066,8 +1069,11 @@ try {
             if ($embeddedSchema -cne $expectedSchema) { throw "The installed embedded $schemaName schema differs from its source contract." }
         }
         if ($inspection.catalog -cne $expectedCatalog) { throw 'The installed catalog differs from the evaluated Builds catalog.' }
-        if ($inspection.facadeEventStoreVersion -cne $inspection.catalogEventStoreVersion) { throw 'The installed version facade does not consume its offline catalog.' }
-        $qualificationLog.Add('Installed tooling catalog and pin facade verified offline outside the checkout; no acceptance granted.')
+        if ($inspection.catalogEventStoreVersion -cne ($expectedCatalog | ConvertFrom-Json).eventStoreVersion) { throw 'The installed current pin differs from its offline current catalog.' }
+        foreach ($field in $frozenV1Pins.Keys) {
+            if ($inspection.frozenV1Pins.$field -cne $frozenV1Pins[$field]) { throw "The installed immutable v1 pin '$field' differs from its frozen schema." }
+        }
+        $qualificationLog.Add('Installed current catalog and independent frozen v1 pins verified offline outside the checkout; no acceptance granted.')
 
     }
     finally { $archive.Dispose() }

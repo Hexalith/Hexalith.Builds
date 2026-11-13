@@ -79,7 +79,13 @@ internal static class ToolingProbe
                     schemas,
                     catalog = ReadResource(assembly, "Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json"),
                     catalogEventStoreVersion = catalog.GetProperty("EventStoreVersion")!.GetValue(current),
-                    facadeEventStoreVersion = pins.GetProperty("EventStoreVersion")!.GetValue(null),
+                    frozenV1Pins = new
+                    {
+                        eventStoreVersion = pins.GetProperty("EventStoreVersion")!.GetValue(null),
+                        daprRuntimeVersion = pins.GetProperty("DaprRuntimeVersion")!.GetValue(null),
+                        daprSdkVersion = pins.GetProperty("DaprSdkVersion")!.GetValue(null),
+                        frontComposerVersion = pins.GetProperty("FrontComposerVersion")!.GetValue(null),
+                    },
                 }));
                 return 0;
             case "aspire" when args.Length == 3:

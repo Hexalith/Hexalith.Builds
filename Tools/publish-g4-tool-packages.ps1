@@ -292,14 +292,11 @@ if ($currentSourceTree.Revision -cne [string]$qualifiedSourceTree.revision) {
 $qualifiedSourceRevision = [string]$qualifiedSourceTree.revision
 Assert-SourceValidation -Qualification $qualification
 
-# The verified clean source is the SDK authority for the packages being published.
-# Never derive the expected SDK from the evidence artifact being validated.
-$qualifiedCatalog = [xml][IO.File]::ReadAllText((Join-Path $repositoryRoot 'Props/Directory.Packages.props'))
-$qualifiedSdkPins = @($qualifiedCatalog.SelectNodes('/Project/PropertyGroup/HexalithEventStoreVersion'))
-if ($qualifiedSdkPins.Count -ne 1 -or $qualifiedSdkPins[0].InnerText -cnotmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
-    throw 'The qualified source catalog must declare one canonical EventStore version.'
-}
-$qualifiedEventStoreVersion = $qualifiedSdkPins[0].InnerText
+# Frozen v1 evidence is validated against its immutable schema, independently of the current default.
+$frozenV1Pins = Get-FrozenV1PlatformPins
+$qualifiedEventStoreVersion = $frozenV1Pins.eventStoreVersion
+$qualifiedHostSdk = Assert-PackagedHostCatalogViews
+if ($qualifiedHostSdk -cne $qualifiedEventStoreVersion) { throw 'The independently qualified host view differs from the immutable v1 contract.' }
 
 $fixtureBinding = $qualification.fixtures
 if ($null -eq $fixtureBinding -or
