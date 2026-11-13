@@ -63,7 +63,8 @@ jobs:
   catalog:
     runs-on: ubuntu-latest
     name: Package catalog contracts
-    timeout-minutes: 30
+    # Include the complete audit regressions and isolated tooling rebuilds.
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:

@@ -45,11 +45,19 @@ internal static class ToolingProbe
         switch (args[0])
         {
             case "catalog" when args.Length == 3:
-                if ((string?)pins.GetProperty("DaprRuntimeVersion")!.GetValue(null) != "2.3.4"
-                    || (string?)pins.GetProperty("FrontComposerVersion")!.GetValue(null) != "4.6.9"
+                if ((string?)catalog.GetProperty("DaprRuntimeVersion")!.GetValue(current) != "2.3.4"
+                    || (string?)catalog.GetProperty("FrontComposerVersion")!.GetValue(current) != "4.6.9"
                     || (string?)catalog.GetProperty("DaprCliVersion")!.GetValue(current) != "2.3.5")
                 {
-                    throw new InvalidOperationException("Rebuilt pin consumers did not reflect the catalog mutation.");
+                    throw new InvalidOperationException("The rebuilt current catalog did not reflect the catalog mutation.");
+                }
+
+                if ((string?)pins.GetProperty("EventStoreVersion")!.GetValue(null) != "4.2.0"
+                    || (string?)pins.GetProperty("DaprRuntimeVersion")!.GetValue(null) != "1.19.1"
+                    || (string?)pins.GetProperty("DaprSdkVersion")!.GetValue(null) != "1.19.1"
+                    || (string?)pins.GetProperty("FrontComposerVersion")!.GetValue(null) != "5.0.0")
+                {
+                    throw new InvalidOperationException("The current catalog mutation changed the frozen v1 compatibility pins.");
                 }
 
                 foreach (string snapshot in Directory.EnumerateFiles(args[2], "catalog.json", SearchOption.AllDirectories))
