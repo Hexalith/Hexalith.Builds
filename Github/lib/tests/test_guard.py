@@ -140,6 +140,18 @@ class GuardTests(unittest.TestCase):
             guard.run(self.workspace.root, repository=BUILDS, emit=self.outputs.update, **inputs)
         self.assertEqual({"drift": "true"}, self.outputs)
 
+    def test_sample_config_diagnostics_name_the_sample_logical_path(self):
+        inputs = self.sample()
+        prefix = state.SAMPLE_ROOT
+        for relative in ("/.github/hexalith-ci.json", "/expected-source/rendered/Hexalith.Sample/.github/hexalith-ci.json"):
+            self.workspace.write(prefix + relative, '{"schema":"unknown"}')
+        self.workspace.commit()
+        with self.assertRaises(state.ExpectedStateError) as raised:
+            guard.run(self.workspace.root, repository=BUILDS, emit=self.outputs.update, **inputs)
+        self.assertIn("guard: " + prefix + "/.github/hexalith-ci.json:", str(raised.exception))
+        self.assertNotIn("hexalith-guard-config-", str(raised.exception))
+        self.assertEqual({"drift": "false"}, self.outputs)
+
     def test_solution_none_has_the_same_guard_enforcement(self):
         config = configuration(solution="none")
         self.workspace.write(".github/hexalith-ci.json", json.dumps(config))

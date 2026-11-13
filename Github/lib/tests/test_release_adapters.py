@@ -49,7 +49,9 @@ class ResolveAdapterTests(unittest.TestCase):
         (self.bin / 'git').write_text(f'''#!{sys.executable}
 import json, os, subprocess, sys
 assert not any(k in os.environ for k in ('GITHUB_TOKEN','GH_TOKEN','GITHUB_SHA','GIT_CONFIG_COUNT',
-    'GIT_CONFIG_PARAMETERS','GIT_CONFIG_KEY_0','GIT_CONFIG_VALUE_0'))
+    'GIT_CONFIG_PARAMETERS','GIT_CONFIG_KEY_0','GIT_CONFIG_VALUE_0','CI_CUSTOM_TOKEN'))
+# Every resolve Git process, including the module fetch, uses the strict anonymous environment.
+assert os.environ.get('HOME') == os.devnull and os.environ.get('SSH_ASKPASS') == '/bin/false'
 a=sys.argv[1:]
 with open({str(self.root / 'ledger')!r},'a') as f: f.write(json.dumps(a)+'\\n')
 if 'fetch' in a or 'clone' in a:
@@ -133,10 +135,12 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         output = self.root / 'output'
         output.write_text('')
         ledger = self.root / 'ledger'
+        ledger.touch()  # A shim assertion before its first record still yields a result to inspect.
         environment = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ['PATH'],
             GITHUB_ACTION_PATH=str(ACTION), GITHUB_TOKEN='adapter-secret-marker', GITHUB_REPOSITORY=repository,
             GITHUB_SHA=self.sha, GITHUB_REF=ref, GITHUB_OUTPUT=str(output), RELEASE_SWITCH=switch,
-            TEST_REMOTE=str(self.source), TEST_LEDGER=str(ledger))
+            TEST_REMOTE=str(self.source), TEST_LEDGER=str(ledger),
+            CI_CUSTOM_TOKEN='adapter-secret-marker', SSH_ASKPASS=str(self.root / 'poison-askpass'))
         action = yaml.safe_load((ACTION / 'action.yml').read_text())
         inputs = {name: entry.get('default', '') for name, entry in action.get('inputs', {}).items()}
         inputs.update({name: value for name, value in {'ci-workflow': workflow, 'module-root': module_root,
@@ -157,6 +161,33 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.assertNotIn('adapter-secret-marker', result.stdout + result.stderr + ledger.read_text())
         self.assertNotIn('forbidden-tool', result.stdout + result.stderr)
         return result, values
+
+    def release_inputs(self, **inputs):
+        """Map reusable-workflow inputs through release.yml's real resolve step `with:`."""
+        workflow = yaml.safe_load((ROOT / '.github/workflows/release.yml').read_text())
+        trigger = workflow.get('on', workflow.get(True))['workflow_call']
+        values = {name: str(entry.get('default', '')) for name, entry in trigger['inputs'].items()}
+        values.update(inputs)
+        step, = [step for step in workflow['jobs']['resolve']['steps'] if step.get('uses') == '$/Github/release-resolve']
+        mapped = {name: re.sub(r'\$\{\{\s*inputs\.([a-z-]+)\s*\}\}', lambda match: values.get(match[1], ''), str(value))
+                  for name, value in step.get('with', {}).items()}
+        # An omitted mapping falls back to the composite default, as Actions does.
+        return {'workflow': mapped.get('ci-workflow'), 'module_root': mapped.get('module-root'),
+                'expected_source': mapped.get('expected-source'), 'delivered_sha': mapped.get('delivered-sha')}
+
+    def sample_fixture(self):
+        sample_root = 'Samples/Hexalith.Sample'
+        expected_source = sample_root + '/expected-source'
+        config = dict(self.config, buildsTag='v1.0.0', codeql=['ruby'], hooks=[])
+        for relative in (sample_root + '/.github/hexalith-ci.json',
+                         expected_source + '/rendered/Hexalith.Sample/.github/hexalith-ci.json'):
+            path = self.source / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(config))
+        (self.source / expected_source / 'rendered/Hexalith.Sample.perimeter.json').write_text(json.dumps({
+            'schema': 'hexalith.perimeter.v1', 'entries': [{'kind': 'whole', 'path': '.github/hexalith-ci.json'}]}))
+        self.commit_config()
+        return sample_root, expected_source
 
     def draft(self, **changes):
         value = {'id': 17, 'draft': True, 'prerelease': False, 'author': {'login': 'github-actions[bot]'},
@@ -232,17 +263,7 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.assertIn('both module-root and expected-source', result.stderr)
 
     def test_paired_sample_inputs_reach_the_composite_and_select_sample_settings(self):
-        sample_root = 'Samples/Hexalith.Sample'
-        expected_source = sample_root + '/expected-source'
-        config = dict(self.config, buildsTag='v1.0.0', codeql=['ruby'], hooks=[])
-        for relative in (sample_root + '/.github/hexalith-ci.json',
-                         expected_source + '/rendered/Hexalith.Sample/.github/hexalith-ci.json'):
-            path = self.source / relative
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(config))
-        (self.source / expected_source / 'rendered/Hexalith.Sample.perimeter.json').write_text(json.dumps({
-            'schema': 'hexalith.perimeter.v1', 'entries': [{'kind': 'whole', 'path': '.github/hexalith-ci.json'}]}))
-        self.commit_config()
+        sample_root, expected_source = self.sample_fixture()
         result, values = self.invoke(module_root=sample_root, expected_source=expected_source)
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual('["ruby"]', values['codeql'])
@@ -291,6 +312,24 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
             self.assertEqual(1, result.returncode)
             self.assertNotIn('config-valid', values)
             self.assertNotIn('enabled', values)
+
+    def test_release_workflow_forwards_delivered_sha_and_sample_pair_to_resolve(self):
+        sample_root, expected_source = self.sample_fixture()
+        result, values = self.invoke(**self.release_inputs(**{'module-root': sample_root,
+                                                              'expected-source': expected_source}))
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual('["ruby"]', values['codeql'])
+        self.normal_module()
+        accepted = self.delivered_sha
+        self.config['codeql'] = ['ruby']
+        self.assertNotEqual(accepted, self.accept_module())
+        result, values = self.invoke(repository='Example/ReleaseFixture',
+                                     **self.release_inputs(**{'delivered-sha': accepted}))
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual('false', values['enabled'])
+        result, values = self.invoke(repository='Example/ReleaseFixture', **self.release_inputs())
+        self.assertEqual(1, result.returncode)
+        self.assertIn('CI/CD is owned by Hexalith.CiCd.', result.stderr)
 
     def test_module_unavailable_expected_source_fails_without_security_settings(self):
         self.normal_module()

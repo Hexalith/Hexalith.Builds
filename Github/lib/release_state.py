@@ -338,6 +338,8 @@ def resolve(git, api, *, sha, ref, switch, workflow="ci.yml", module_root="", de
         if ref != "refs/heads/main":
             raise ReleaseError("release requires refs/heads/main")
         ci_workflow(api.repository, workflow)
+        if delivered_sha and not SHA.fullmatch(delivered_sha):
+            raise ReleaseError("delivered-sha must be a full commit SHA")
         selected = select_release(git, api.pages(f"/repos/{api.repository}/releases?per_page=100"), sha)
     except ReleaseError:
         # Builds root has no comparison prerequisite. Preserve its current
@@ -351,8 +353,6 @@ def resolve(git, api, *, sha, ref, switch, workflow="ci.yml", module_root="", de
     emit(selected)
     comparison = None
     if selected["mode"] == "create":
-        if delivered_sha and not SHA.fullmatch(delivered_sha):
-            raise ReleaseError("delivered-sha must be a full commit SHA")
         try:
             comparison = expected_state.compare_repository(expected_state.Git(git.directory), repository=api.repository,
                 ref=selected["sha"], module_root=module_root, expected_source=expected_source,

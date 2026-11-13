@@ -477,15 +477,13 @@ class ReleaseStateTests(unittest.TestCase):
                                     ({"sha": self.dispatch.upper()}, "dispatch SHA must be a full commit"),
                                     ({"delivered_sha": "main"}, "delivered-sha must be a full commit SHA"),
                                     ({"delivered_sha": self.first[:12]}, "delivered-sha must be a full commit SHA")]:
-            with self.subTest(options=options):
-                api = ApiControl()
-                with self.assertRaisesRegex(state.ReleaseError, diagnostic):
-                    self.resolve(api, **options)
-                if "delivered_sha" in options:
-                    self.assertEqual(1, len(api.requests), "mode selection precedes create-only source validation")
-                else:
+            for api in (ApiControl(), ApiControl(drafts=[self.draft()])):
+                with self.subTest(options=options, drafts=bool(api.drafts)):
+                    # Input syntax is rejected before mode selection, so complete mode cannot ignore it.
+                    with self.assertRaisesRegex(state.ReleaseError, diagnostic):
+                        self.resolve(api, **options)
                     self.assertEqual([], api.requests)
-                self.assertEqual([], self.transport.calls)
+                    self.assertEqual([], self.transport.calls)
         with redirect_stdout(io.StringIO()):
             selected, emitted = self.resolve(ApiControl(), delivered_sha=self.delivered_tip)
         self.assertEqual(self.dispatch, selected["sha"])

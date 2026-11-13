@@ -20,7 +20,7 @@
     "Catalog: retain the complete EventStore assertion text after its leading display marker; sort all assertions.",
     "Evidence.Tests: retain each complete failed test identity including parameter values; remove only the final parenthesized runtime duration; sort all identities.",
     "Require both arrays to match exactly and require the same observed process exit code. Counts alone do not establish equivalence.",
-    "Log hashes identify the retained UTF-8 tool-decoded transcripts with a final newline; raw copies are retained in /tmp/cicd-5-1-<kind>-<revision-role>.log."
+    "Log hashes identify the retained UTF-8 tool-decoded transcripts with a final newline; raw copies were session-local files at /tmp/cicd-5-1-<kind>-<revision-role>.log and are not committed."
   ],
   "allowedFailures": {
     "catalog": {
@@ -1903,5 +1903,154 @@
       "transcript": "/tmp/cicd-5-1-final-commitlint.log",
       "sha256": "23da733a5485ed41d490be1f480e123bd51b86b81770ade31d6ccbe230c5b786"
     }
+  },
+  "followup": {
+    "status": "local-verification-complete-hosted-and-independent-review-pending",
+    "observedAt": "2026-11-13T14:10:43.495156+00:00",
+    "localIntegrationRevision": "ae77d5690a9411a2154fa4ed5231edc373942573",
+    "integrationRevision": "cae351e20093634483afad16aca3bfd90845eda8",
+    "sourceFilesSha256": {
+      "Github/lib/expected_state.py": "0a704d84e86db5d919411c0cc1c97410adccbc339a7f02e93f629268ab508f62",
+      "Github/lib/release_state.py": "c9c622e7273b24b04679e63a17fa235d79f596c465337378fd47b387dcce38eb",
+      "Github/lib/tests/test_guard.py": "a27655bc45a2f167996c103229f21f36314084a120aa7be1ad34d18df87ad542",
+      "Github/lib/tests/test_release_adapters.py": "4e3326043afdd5fd7c3e1d6a8917db82ee9a077f65d030ea33f600b82de7d00c",
+      "Github/lib/tests/test_release_state.py": "b1ed4afb3a4613ce5b9bf9c841d1a9013da97ffc18734b068a9b67edc458bc03"
+    },
+    "corrections": [
+      "BH2/EC7/IA-D6: validate delivered-sha syntax before mode selection in every mode",
+      "EC6: identify sample configuration diagnostics by the committed sample logical path",
+      "VG1: execute release.yml input forwarding through the resolve composite",
+      "VG2: assert strict anonymous Git environment at every resolver Git subprocess",
+      "BH10/BH11: clarify historical counts and session-local transcript provenance"
+    ],
+    "deferred": [
+      "BH1/IA-D1: retain dispatch-SHA security settings on completed drift comparison as specified",
+      "BH3/VG3: release dispatch_settings temporary-path diagnostics"
+    ],
+    "localVerification": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-cache",
+          "--locked",
+          "--script",
+          "--python",
+          "3.12",
+          "Tools/ci/run_python_tests.py"
+        ],
+        "exitCode": 0,
+        "elapsedSeconds": 552.98,
+        "sha256": "bf8d699f846d6c09d3aa86d1c205ce27230dec01b76ff2ee170efe82fdae7cf6",
+        "transcript": "/tmp/cicd-5-1-followup-python312.log",
+        "testCases": 824,
+        "groupsPassed": 14,
+        "skips": 0
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-cache",
+          "--locked",
+          "--script",
+          "--python",
+          "/usr/bin/python3",
+          "Tools/ci/run_python_tests.py"
+        ],
+        "exitCode": 0,
+        "elapsedSeconds": 565.06,
+        "sha256": "bcb6a48715adb30ed08c43d0da0a6247ed977aee48be6ef4b49fbba5f89f1457",
+        "transcript": "/tmp/cicd-5-1-followup-runner.log",
+        "testCases": 824,
+        "groupsPassed": 14,
+        "skips": 0
+      },
+      {
+        "command": [
+          "python3",
+          "Tools/ci/lint_workflows.py"
+        ],
+        "exitCode": 0,
+        "elapsedSeconds": 7.81,
+        "sha256": "567dfb1b8ac59d2dfef7090c62ac42c0e90a2126cd701f18c98a0397a27bd16d",
+        "transcript": "/tmp/cicd-5-1-followup-quality.log"
+      },
+      {
+        "check": "perimeter",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "Github/lib/tests",
+          "-p",
+          "test_perimeter*.py",
+          "-v"
+        ],
+        "exitCode": 0,
+        "transcript": "/tmp/cicd-5-1-followup-perimeter.log",
+        "sha256": "fc3df87c113786b7c9a64157a8c270182e64e4206b390a67e39236fc0fa8ba6f"
+      },
+      {
+        "check": "npm registry signatures",
+        "command": [
+          "npm",
+          "audit",
+          "signatures"
+        ],
+        "exitCode": 0,
+        "transcript": "/tmp/cicd-5-1-followup-npm-signatures.log",
+        "sha256": "f928e7bdefa36a669c74e85644ae8bfa909993e72f4e9e2663c34fe547436bbc"
+      },
+      {
+        "check": "exact source commitlint",
+        "command": [
+          "node_modules/.bin/commitlint",
+          "--verbose"
+        ],
+        "exitCode": 0,
+        "transcript": "/tmp/cicd-5-1-followup-commitlint.log",
+        "sha256": "1e47e9b7cc7224d58de3fb6a94305b9bd45371bfa564028db6464fe49489221b"
+      }
+    ],
+    "upstreamGreen": {
+      "revision": "ae77d5690a9411a2154fa4ed5231edc373942573",
+      "url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/43425958565",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "Workflow lint and public API",
+          "conclusion": "success"
+        },
+        {
+          "name": "Python contract tests (runner)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Python contract tests (3.12)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Package catalog contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Sample module / Build and tests",
+          "conclusion": "success"
+        },
+        {
+          "name": ".NET tests / Build and tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "Sample Windows tests",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "hostedGate": "Require all seven exact-source Builds CI jobs to succeed; the historical exception is not needed for the now-green upstream base.",
+    "transcriptProvenance": "Local transcript paths identify session-local uncommitted files; SHA-256 fingerprints and hosted job results are durable committed evidence."
   }
 }

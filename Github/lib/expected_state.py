@@ -118,16 +118,17 @@ def validate_context(repository: str, module_root: str = "", expected_source: st
 def load_ci(snapshot: perimeter.Snapshot, *, repository: str, module_root: str = "") -> dict:
     """Give the sole CI loader a private file materialized from a pinned blob."""
     path = ".github/hexalith-ci.json"
+    logical = (module_root + "/" if module_root else "") + path
     item = snapshot.items.get(path)
     if item is None or item.mode not in {"100644", "100755"}:
-        raise ConfigError(path + ": committed regular configuration is unavailable")
+        raise ConfigError(logical + ": committed regular configuration is unavailable")
     with tempfile.TemporaryDirectory(prefix="hexalith-guard-config-") as directory:
         source = Path(directory) / "hexalith-ci.json"
         source.write_bytes(snapshot.read(path))
         try:
             return load_config(source, repository=repository, module_root=module_root)
         except ConfigError as error:
-            raise ConfigError(str(error).replace(str(source), path)) from error
+            raise ConfigError(str(error).replace(str(source), logical)) from error
 
 
 def tree_snapshot(git: Git, ref: str = "HEAD") -> perimeter.Snapshot:

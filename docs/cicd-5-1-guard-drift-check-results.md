@@ -1,7 +1,7 @@
 ---
 story: '5-1'
 created: '2026-11-13'
-status: done
+status: in-progress
 implementation_baseline_revision: f01c3ab70f7e7401b3b73217983955f7771a1465
 implementation_integration_revision: 05a75b626fb73c6e386d16c41e885f193d3cff16
 implementation_revision: 0f97426edb6f88ee6e534d95ca9029f7e0b20311
@@ -40,7 +40,9 @@ The sample's new nonempty manifest passed `perimeter_config.load_bytes` and
 `perimeter.compare` against its existing committed actual/expected configuration
 with zero drift. `git diff --check` passed during workflow integration.
 
-Focused behavioral checks on runner Python 3.14.4 passed:
+Focused behavioral checks on runner Python 3.14.4 passed at the original
+implementation source `0f97426edb6f88ee6e534d95ca9029f7e0b20311`. These are
+pre-review counts; later sections record the post-review totals:
 
 - `test_expected_state.py`: 12 tests, including all nine entry kinds, anonymous
   branch selection, shallow ancestry, sibling/future rejection, corrupt sources,
@@ -54,7 +56,7 @@ Focused behavioral checks on runner Python 3.14.4 passed:
   publication behavior while exercising create-mode drift/ancestry, current
   security outputs, failed-resolve outcomes, and complete-mode lookup bypass.
 
-The focused transcripts are retained for this session as
+The focused transcripts were session-local files, not committed evidence:
 `/tmp/cicd-5-1-expected-state-tests.log`, `/tmp/cicd-5-1-guard-tests.log`, and
 `/tmp/cicd-5-1-ci-environment-tests.log`. The full release suite is recorded
 separately in `/tmp/cicd-5-1-release-tests.log`.
@@ -78,9 +80,12 @@ The required complete suites passed against implementation source
   import/action/Windows files. Its exact Conventional Commit message passed
   pinned commitlint 21.2.4 with zero problems or warnings.
 
-The full transcripts remain at `/tmp/cicd-5-1-full-python312.log`,
+The full transcripts were session-local files at `/tmp/cicd-5-1-full-python312.log`,
 `/tmp/cicd-5-1-full-runner.log`, `/tmp/cicd-5-1-perimeter-tests.log`,
 `/tmp/cicd-5-1-workflow-lint.log` and `/tmp/cicd-5-1-public-api.log`.
+Only their fingerprints are committed. The durable verification evidence is the
+committed signature arrays and fingerprints in the verification JSON, together
+with the linked hosted job logs.
 The online lint and complete policy suites received the established audit
 credential only through their subprocess environment.
 
@@ -177,3 +182,32 @@ an adopted module's live delivered branch.
 The overall hosted conclusion remains failure. No check, assertion, dependency
 pin, frozen runtime, production release setting or release green-CI requirement
 was weakened. This run performed no adoption, publication or administration.
+
+## Follow-up review corrections and local verification
+
+The subsequent review's recorded corrections restore early `delivered-sha`
+syntax validation in every mode, identify the sample's configuration by its
+committed logical path, execute the reusable release workflow's actual input
+forwarding, and check the strict anonymous Git environment at the resolve
+composite boundary. The existing follow-up patch was preserved in full.
+Historical test counts and session-local transcript descriptions above have
+also been clarified. The two release behaviors deferred in the canonical story
+remain unchanged: dispatch security settings on drift and temporary-path
+configuration diagnostics inside release resolve.
+
+Both complete local lanes passed all 14 groups and 824 test cases without skips
+on Python 3.12.13 and runner Python 3.14.4. The 58 perimeter tests, authenticated
+pinned workflow lint (10 exact frozen findings, zero new findings), npm registry
+signature audit (318 packages), and exact-message commitlint 21.2.4 passed.
+The verification JSON retains commands, transcript fingerprints and source-file
+fingerprints; those local transcripts are session-local and uncommitted.
+
+The local lanes ran on the follow-up worktree over upstream
+`ae77d5690a9411a2154fa4ed5231edc373942573`. A subsequent fast-forward to
+`cae351e20093634483afad16aca3bfd90845eda8` preserved the two separate upstream
+JsonSchema.Net catalog/audit commits and changed none of the seven story files.
+Upstream's [completed CI at ae77d569](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43425958565)
+passed all seven jobs, including the catalog and .NET tests. The earlier
+exception evidence remains historical; this follow-up delivery requires all
+seven exact-source jobs to succeed. Hosted verification and the required
+independent review remain pending for this pass.
