@@ -72,6 +72,23 @@ release multi-target fixtures and byte-bound historical evidence are intentional
 They exercise backward compatibility; installing SDK 10 alongside SDK 11 in CI
 supplies their offline reference packs and runtime without changing the active SDK.
 
+The frozen `hexalith.module-manifest.v1` and G4 P0 acceptance contract retains
+its exact EventStore4.2.0, Dapr runtime/SDK1.19.1 and FrontComposer5.0.0 pins.
+`SupportedPlatformPins` describes that historical contract; it does not follow
+`PlatformVersionCatalog.Current`, whose current v2 default remains EventStore5.0.0.
+The byte-bound schema, corpus, cleanup proofs and negative expectations stay unchanged.
+
+The catalog additionally records exact named SDK4.2 views for the forty current
+Parties projects and thirty-three Platform projects selected at Platform
+`32643bde39b4da0e4538f8388e225727f82122f6`. Each view keeps the public SDK4.2
+gateway's measured OpenAPI ABI pair: `Microsoft.AspNetCore.OpenApi/10.0.15`
+and `Microsoft.OpenApi/2.13.0`. Other project names retain SDK5 and the current
+OpenAPI11/3 pair. Explicit other SDK selections cannot acquire the compatibility
+pair. Independent clean project-name evaluation and the existing package-authority
+guard still prohibit consumer-local version declarations, crossed pairs and
+unrecorded views. Package auditing and transitive pinning remain required.
+These catalog views grant no native, image or new SDK5 Platform admission.
+
 ## Commit Messages and Releases
 
 All commits must follow Angular Conventional Commits so semantic-release can

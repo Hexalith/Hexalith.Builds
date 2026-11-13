@@ -6,19 +6,19 @@
 namespace Hexalith.Builds.Tooling.Manifest;
 
 /// <summary>
-/// Defines the owner-approved platform pins used by the module tooling contract.
+/// Defines the frozen v1 manifest and acceptance pins; current v2 catalogs have separate authority.
 /// </summary>
 public static class SupportedPlatformPins
 {
-    /// <summary>Gets the candidate EventStore package pin.</summary>
-    public static string EventStoreVersion => PlatformVersionCatalog.Current.EventStoreVersion;
+    /// <summary>Gets the frozen v1 EventStore package pin.</summary>
+    public static string EventStoreVersion => "4.2.0";
 
-    /// <summary>Gets the approved Dapr runtime exception pin.</summary>
-    public static string DaprRuntimeVersion => PlatformVersionCatalog.Current.DaprRuntimeVersion;
+    /// <summary>Gets the frozen v1 Dapr runtime pin.</summary>
+    public static string DaprRuntimeVersion => "1.19.1";
 
-    /// <summary>Gets the authorized Dapr SDK package pin.</summary>
-    public static string DaprSdkVersion => PlatformVersionCatalog.Current.DaprSdkVersion;
+    /// <summary>Gets the frozen v1 Dapr SDK package pin.</summary>
+    public static string DaprSdkVersion => "1.19.1";
 
-    /// <summary>Gets the authorized FrontComposer package pin.</summary>
-    public static string FrontComposerVersion => PlatformVersionCatalog.Current.FrontComposerVersion;
+    /// <summary>Gets the frozen v1 FrontComposer package pin.</summary>
+    public static string FrontComposerVersion => "5.0.0";
 }

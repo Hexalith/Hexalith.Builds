@@ -409,6 +409,33 @@ exit $LASTEXITCODE
             -ExpectedExitCode 1 -ExpectedOutput 'must be an exact repository-relative file path' `
             -ExcludedPath @($inexactExclusion)
     }
+
+    # Use the real catalog and independent clean project-name evaluation for retained consumer authority.
+    $catalogPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../Props/Directory.Packages.props'))
+    $retainedProject = @'
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup>
+<ItemGroup><PackageReference Include="Hexalith.EventStore.Gateway" /><PackageReference Include="Microsoft.AspNetCore.OpenApi" /><PackageReference Include="Microsoft.OpenApi" /></ItemGroup></Project>
+'@
+    foreach ($name in @('Hexalith.Parties.EventStoreGateway.TestHost', 'Hexalith.Platform.EventStoreHost')) {
+        $retainedRoot = New-ConsumerFixture -Name ("retained-" + $name) -ProjectContent $retainedProject
+        Move-Item -LiteralPath (Join-Path $retainedRoot 'Fixture.csproj') -Destination (Join-Path $retainedRoot ($name + '.csproj'))
+        Test-Scenario -Name "Exact retained owner view $name" -RepositoryRoot $retainedRoot -ExpectedExitCode 0 `
+            -ExpectedOutput 'consumer package authority validation passed'
+        Write-Utf8File -Path (Join-Path $retainedRoot 'Directory.Build.props') -Content '<Project><PropertyGroup><HexalithEventStoreVersion>5.0.0</HexalithEventStoreVersion></PropertyGroup></Project>'
+        Test-Scenario -Name "Retained owner cannot locally change SDK $name" -RepositoryRoot $retainedRoot -ExpectedExitCode 1 `
+            -ExpectedOutput "overrides authoritative version property 'HexalithEventStoreVersion'"
+        Remove-Item -LiteralPath (Join-Path $retainedRoot 'Directory.Build.props')
+        Write-Utf8File -Path (Join-Path $retainedRoot 'Directory.Build.targets') -Content '<Project><ItemGroup><PackageVersion Update="Microsoft.OpenApi" Version="3.11.0" /></ItemGroup></Project>'
+        Test-Scenario -Name "Retained owner cannot locally cross OpenAPI pair $name" -RepositoryRoot $retainedRoot -ExpectedExitCode 1 `
+            -ExpectedOutput 'consumer PackageVersion Update'
+    }
+    $unknownRoot = New-ConsumerFixture -Name 'unmeasured-retained-owner' -ProjectContent $retainedProject
+    Move-Item -LiteralPath (Join-Path $unknownRoot 'Fixture.csproj') -Destination (Join-Path $unknownRoot 'Hexalith.Parties.Future.csproj')
+    $outsideRetained = Join-Path $temporaryRoot 'untrusted-retained-view.props'
+    Write-Utf8File -Path $outsideRetained -Content '<Project><ItemGroup><PackageVersion Update="Microsoft.OpenApi" Version="2.13.0" /></ItemGroup></Project>'
+    Write-Utf8File -Path (Join-Path $unknownRoot 'Directory.Build.targets') -Content "<Project><Import Project=`"$outsideRetained`" /></Project>"
+    Test-Scenario -Name 'Unmeasured owner cannot claim missing retained view through an outside import' -RepositoryRoot $unknownRoot -ExpectedExitCode 1 `
+        -ExpectedOutput "instead of '3.11.0'"
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue

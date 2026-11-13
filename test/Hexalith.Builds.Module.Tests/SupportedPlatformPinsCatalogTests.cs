@@ -15,27 +15,30 @@ using Shouldly;
 
 using Xunit;
 
-/// <summary>Verifies the embedded catalog is strict and every pin facade reads its selections.</summary>
+/// <summary>Verifies strict current catalog authority and the independent frozen v1 pin facade.</summary>
 public sealed class SupportedPlatformPinsCatalogTests
 {
-    /// <summary>Verifies the catalog defaults and embedded package facades remain aligned.</summary>
+    /// <summary>Verifies current catalog defaults and toolchain facades remain aligned.</summary>
     [Fact]
-    public void CatalogDefaultsMatchSupportedPlatformPins()
+    public void CatalogDefaultsMatchCurrentCatalog()
     {
         XDocument catalog = XDocument.Load(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"));
-        catalog.Descendants("HexalithEventStoreVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.EventStoreVersion);
+        catalog.Descendants("HexalithEventStoreVersion")
+            .Single(property => ((string?)property.Attribute("Condition"))?.Replace(" ", string.Empty, StringComparison.Ordinal) == "'$(HexalithEventStoreVersion)'==''")
+            .Value.Trim().ShouldBe(PlatformVersionCatalog.Current.EventStoreVersion);
         catalog.Descendants("HexalithFrontComposerVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.FrontComposerVersion);
         catalog.Descendants("HexalithAspireAppHostSdkVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.AspireAppHostSdkVersion);
         catalog.Descendants("HexalithDaprRuntimeVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.DaprRuntimeVersion);
         catalog.Descendants("HexalithDaprCliVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.DaprCliVersion);
     }
 
-    /// <summary>Verifies both facades read the same embedded catalog and data records keep value equality.</summary>
+    /// <summary>Verifies the frozen v1 facade cannot follow current v2 catalog changes; current toolchain pins still bind the snapshot.</summary>
     [Fact]
-    public void FacadesUseEmbeddedCatalog()
+    public void FrozenV1AndCurrentToolchainFacadesRetainTheirAuthority()
     {
         PlatformVersionCatalog catalog = PlatformVersionCatalog.Current;
-        SupportedPlatformPins.EventStoreVersion.ShouldBe(catalog.EventStoreVersion);
+        SupportedPlatformPins.EventStoreVersion.ShouldBe("4.2.0");
+        catalog.EventStoreVersion.ShouldBe("5.0.0");
         SupportedPlatformPins.FrontComposerVersion.ShouldBe(catalog.FrontComposerVersion);
         SupportedPlatformPins.DaprSdkVersion.ShouldBe(catalog.DaprSdkVersion);
         SupportedPlatformPins.DaprRuntimeVersion.ShouldBe(catalog.DaprRuntimeVersion);

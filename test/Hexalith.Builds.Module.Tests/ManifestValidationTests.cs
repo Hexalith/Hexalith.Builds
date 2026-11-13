@@ -195,6 +195,17 @@ public sealed class ManifestValidationTests
         }
     }
 
+    /// <summary>Current v2 catalog defaults cannot relabel the byte-bound v1 compatibility contract.</summary>
+    [Fact]
+    public void CurrentCatalogAndFrozenV1PinsHaveIndependentAuthority()
+    {
+        PlatformVersionCatalog.Current.EventStoreVersion.ShouldBe("5.0.0");
+        SupportedPlatformPins.EventStoreVersion.ShouldBe("4.2.0");
+        SupportedPlatformPins.DaprRuntimeVersion.ShouldBe("1.19.1");
+        SupportedPlatformPins.DaprSdkVersion.ShouldBe("1.19.1");
+        SupportedPlatformPins.FrontComposerVersion.ShouldBe("5.0.0");
+    }
+
     /// <summary>
     /// Verifies the published schema and runtime validator share the same exact platform pins.
     /// </summary>

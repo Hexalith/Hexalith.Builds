@@ -200,7 +200,9 @@ public sealed class DirectCatalogDeclarationTests
             string builds = Path.Combine(fixture.Directory, "builds");
             string catalog = await File.ReadAllTextAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             XDocument selectedCatalog = XDocument.Parse(catalog);
-            selectedCatalog.Descendants("HexalithEventStoreVersion").Single().Value = unknownVersion ? "999.0.0" : sdkVersion;
+
+            // A fixture's explicit historical/hostile selection precedes every conditional consumer default.
+            selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithEventStoreVersion", unknownVersion ? "999.0.0" : sdkVersion)));
             selectedCatalog.Descendants("HexalithMemoriesVersion").Single().Value = unknownMemories ? "3.0.28" : memoriesVersion;
             catalog = selectedCatalog.ToString();
 

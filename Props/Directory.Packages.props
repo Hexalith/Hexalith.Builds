@@ -15,7 +15,89 @@
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.0</HexalithPolymorphicSerializationsVersion>
     <!-- Record the composed-host consumer while keeping one canonical SDK version authority. -->
     <HexalithPlatformEventStoreHostCatalogView Condition="'$(MSBuildProjectName)' == 'Hexalith.Platform.EventStoreHost'">true</HexalithPlatformEventStoreHostCatalogView>
+    <!-- Exact measured retained SDK4.2 consumers; other project names keep the current SDK5 catalog. -->
+    <HexalithPartiesSdk42CatalogView>false</HexalithPartiesSdk42CatalogView>
+    <HexalithPartiesSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Parties'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.AdminPortal'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.AdminPortal.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.AppHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Aspire'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Aspire.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Authentication'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Authentication.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Catalog.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Ci.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Client'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Client.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.ConsumerPortal'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.ConsumerPortal.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Contracts'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Contracts.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreAdminUI.TestHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreExtensions'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreGateway.TestHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreSample.Contracts.TestArtifact'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreSample.TestHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.IntegrationTests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Mcp'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Mcp.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Picker'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Picker.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Platform.AttachedLifecycleTests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Platform.IntegrationTests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Platform.LifecycleTests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Projections'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Projections.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Sample'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Sample.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Security'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Security.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Server.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Testing'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.UI'))
+        or $(MSBuildProjectName.Equals('Hexalith.Parties.UI.Tests'))">true</HexalithPartiesSdk42CatalogView>
+    <HexalithPlatformSdk42CatalogView>false</HexalithPlatformSdk42CatalogView>
+    <HexalithPlatformSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Platform.CatalogBuilder'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Composition'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Composition.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Custody'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Custody.Component'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Custody.Component.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Custody.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.EventStoreHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Identity'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Identity.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.OwnerServices.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection.Qualification.Enrollment'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection.Qualification.Executor'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection.Qualification.Observer'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.ArchiveProcessFixture'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Authority'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Authority.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Custody'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Custody.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Inventory'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Inventory.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Qualification.Enrollment'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Qualification.Executor'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Qualification.Observer'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Runtime'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Runtime.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.TenantRegistry.Host'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.TestExtension'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.TestExtension.Qualification.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Works.Runtime'))
+        or $(MSBuildProjectName.Equals('Hexalith.Platform.Works.Tests'))">true</HexalithPlatformSdk42CatalogView>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.0.0</HexalithEventStoreVersion>
+    <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
+    <HexalithOpenApiVersion>3.11.0</HexalithOpenApiVersion>
+    <!-- The public SDK4.2 gateway calls the OpenApi2 ABI; keep both exact audited members together. -->
+    <HexalithAspNetCoreOpenApiVersion Condition="'$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true')">10.0.15</HexalithAspNetCoreOpenApiVersion>
+    <HexalithOpenApiVersion Condition="'$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true')">2.13.0</HexalithOpenApiVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">5.0.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.4.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">2.0.1</HexalithMcpCliVersion>
@@ -240,7 +322,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Identity" Version="2.3.14" />
     <PackageVersion Include="StackExchange.Redis" Version="3.4.35" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="$(HexalithAspNetCoreOpenApiVersion)" />
     <!-- ASP.NET Core 10 Blazor requires IInvocationBinder.GetTarget(ReadOnlySpan<byte>);
          SignalR 11 falls back to netstandard2.0 and aborts interactive circuits. -->
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="11.0.0" />
@@ -297,7 +379,7 @@
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.18.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <!-- ASP.NET Core OpenApi 11 and Swashbuckle 11 use OpenApi 3.x. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="$(HexalithOpenApiVersion)" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.64.1" />
     <!-- Existing Timesheets Works prerequisite; retain the published version. -->
     <PackageVersion Include="Hexalith.Works.Contracts" Version="1.0.2" />

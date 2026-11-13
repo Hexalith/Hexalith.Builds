@@ -5,23 +5,27 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $catalogPath = Join-Path $PSScriptRoot '../Props/Directory.Packages.props'
-$evaluationText = [string]::Join(
-    "`n",
-    @(
-        & dotnet msbuild $catalogPath -nologo `
-            -getProperty:CentralPackageVersionOverrideEnabled `
-            -getProperty:HexalithCommonsVersion `
-            -getProperty:HexalithEventStoreVersion `
-            -getProperty:HexalithMcpCliVersion `
-            -getProperty:HexalithTenantsVersion `
-            -getProperty:HexalithFrontComposerVersion `
-            -getItem:PackageVersion 2>&1 |
-            ForEach-Object { [string] $_ }
-    )
-)
-if ($LASTEXITCODE -ne 0) {
-    throw "Catalog evaluation failed with exit code $LASTEXITCODE.`n$evaluationText"
+# SDK startup notices belong to stderr and cannot become catalog JSON.
+$evaluationDirectory = Join-Path ([IO.Path]::GetTempPath()) "catalog-evaluation-$([Guid]::NewGuid().ToString('N'))"
+try {
+    [void] [IO.Directory]::CreateDirectory($evaluationDirectory)
+    $stdout = Join-Path $evaluationDirectory 'stdout'
+    $stderr = Join-Path $evaluationDirectory 'stderr'
+    & dotnet msbuild $catalogPath -nologo -nr:false `
+        -getProperty:CentralPackageVersionOverrideEnabled `
+        -getProperty:HexalithCommonsVersion `
+        -getProperty:HexalithEventStoreVersion `
+        -getProperty:HexalithMcpCliVersion `
+        -getProperty:HexalithTenantsVersion `
+        -getProperty:HexalithFrontComposerVersion `
+        -getItem:PackageVersion 1> $stdout 2> $stderr
+    $exitCode = $LASTEXITCODE
+    $evaluationText = [IO.File]::ReadAllText($stdout)
+    $diagnostic = [IO.File]::ReadAllText($stderr)
+    if ($exitCode -ne 0) { throw "Catalog evaluation failed with exit code $exitCode.`n$evaluationText`n$diagnostic" }
+    if ($diagnostic) { [Console]::Error.Write($diagnostic) }
 }
+finally { if (Test-Path -LiteralPath $evaluationDirectory) { [IO.Directory]::Delete($evaluationDirectory, $true) } }
 
 $evaluation = $evaluationText | ConvertFrom-Json -ErrorAction Stop
 $failures = [System.Collections.Generic.List[string]]::new()
@@ -140,7 +144,7 @@ if ($overrideEnabled -cne 'false') {
 
 # Each canonical family must use its one authoritative property, including new members.
 $cohortFamilies = [ordered] @{
-    'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '4.2.0' }
+    'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '5.0.0' }
     'Hexalith.McpCli.' = @{ Property = 'HexalithMcpCliVersion'; Version = '2.0.1' }
     'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '7.0.7' }
 }
@@ -163,6 +167,141 @@ foreach ($family in $cohortFamilies.GetEnumerator()) {
         }
     }
 }
+
+# Clean project-name probes keep the retained SDK4.2 views finite and independently evaluated.
+$partiesSdk42Consumers = @(
+    'Hexalith.Parties'
+    'Hexalith.Parties.AdminPortal'
+    'Hexalith.Parties.AdminPortal.Tests'
+    'Hexalith.Parties.AppHost'
+    'Hexalith.Parties.Aspire'
+    'Hexalith.Parties.Aspire.Tests'
+    'Hexalith.Parties.Authentication'
+    'Hexalith.Parties.Authentication.Tests'
+    'Hexalith.Parties.Catalog.Tests'
+    'Hexalith.Parties.Ci.Tests'
+    'Hexalith.Parties.Client'
+    'Hexalith.Parties.Client.Tests'
+    'Hexalith.Parties.ConsumerPortal'
+    'Hexalith.Parties.ConsumerPortal.Tests'
+    'Hexalith.Parties.Contracts'
+    'Hexalith.Parties.Contracts.Tests'
+    'Hexalith.Parties.EventStoreAdminUI.TestHost'
+    'Hexalith.Parties.EventStoreExtensions'
+    'Hexalith.Parties.EventStoreGateway.TestHost'
+    'Hexalith.Parties.EventStoreSample.Contracts.TestArtifact'
+    'Hexalith.Parties.EventStoreSample.TestHost'
+    'Hexalith.Parties.IntegrationTests'
+    'Hexalith.Parties.Mcp'
+    'Hexalith.Parties.Mcp.Tests'
+    'Hexalith.Parties.Picker'
+    'Hexalith.Parties.Picker.Tests'
+    'Hexalith.Parties.Platform.AttachedLifecycleTests'
+    'Hexalith.Parties.Platform.IntegrationTests'
+    'Hexalith.Parties.Platform.LifecycleTests'
+    'Hexalith.Parties.Projections'
+    'Hexalith.Parties.Projections.Tests'
+    'Hexalith.Parties.Sample'
+    'Hexalith.Parties.Sample.Tests'
+    'Hexalith.Parties.Security'
+    'Hexalith.Parties.Security.Tests'
+    'Hexalith.Parties.Server.Tests'
+    'Hexalith.Parties.Testing'
+    'Hexalith.Parties.Tests'
+    'Hexalith.Parties.UI'
+    'Hexalith.Parties.UI.Tests'
+)
+$platformSdk42Consumers = @(
+    'Hexalith.Platform.CatalogBuilder'
+    'Hexalith.Platform.Composition'
+    'Hexalith.Platform.Composition.Tests'
+    'Hexalith.Platform.Custody'
+    'Hexalith.Platform.Custody.Component'
+    'Hexalith.Platform.Custody.Component.Tests'
+    'Hexalith.Platform.Custody.Tests'
+    'Hexalith.Platform.EventStoreHost'
+    'Hexalith.Platform.Identity'
+    'Hexalith.Platform.Identity.Tests'
+    'Hexalith.Platform.OwnerServices.Tests'
+    'Hexalith.Platform.Protection'
+    'Hexalith.Platform.Protection.Qualification.Enrollment'
+    'Hexalith.Platform.Protection.Qualification.Executor'
+    'Hexalith.Platform.Protection.Qualification.Observer'
+    'Hexalith.Platform.Protection.Tests'
+    'Hexalith.Platform.Secrets.ArchiveProcessFixture'
+    'Hexalith.Platform.Secrets.Authority'
+    'Hexalith.Platform.Secrets.Authority.Tests'
+    'Hexalith.Platform.Secrets.Custody'
+    'Hexalith.Platform.Secrets.Custody.Tests'
+    'Hexalith.Platform.Secrets.Inventory'
+    'Hexalith.Platform.Secrets.Inventory.Tests'
+    'Hexalith.Platform.Secrets.Qualification.Enrollment'
+    'Hexalith.Platform.Secrets.Qualification.Executor'
+    'Hexalith.Platform.Secrets.Qualification.Observer'
+    'Hexalith.Platform.Secrets.Runtime'
+    'Hexalith.Platform.Secrets.Runtime.Tests'
+    'Hexalith.Platform.TenantRegistry.Host'
+    'Hexalith.Platform.TestExtension'
+    'Hexalith.Platform.TestExtension.Qualification.Tests'
+    'Hexalith.Platform.Works.Runtime'
+    'Hexalith.Platform.Works.Tests'
+)
+$viewProbeRoot = Join-Path ([IO.Path]::GetTempPath()) "sdk42-catalog-views-$([Guid]::NewGuid().ToString('N'))"
+$viewCount = 0
+function Test-OwnedCatalogView {
+    param([string] $ProjectName, [string] $ExpectedSdk, [string] $ExpectedAspNetOpenApi,
+          [string] $ExpectedOpenApi, [string] $ExpectedPartiesView, [string] $ExpectedPlatformView,
+          [string] $SelectedSdk = '')
+    $probe = Join-Path $viewProbeRoot "$ProjectName.proj"
+    $escapedCatalog = [Security.SecurityElement]::Escape([IO.Path]::GetFullPath($catalogPath))
+    [IO.File]::WriteAllText($probe, "<Project><Import Project=`"$escapedCatalog`" /></Project>")
+    $stdout = Join-Path $viewProbeRoot 'evaluation.stdout'
+    $stderr = Join-Path $viewProbeRoot 'evaluation.stderr'
+    $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" })
+    & dotnet msbuild $probe -nologo -noAutoResponse -nr:false @properties `
+        -getProperty:HexalithEventStoreVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView `
+        -getItem:PackageVersion 1> $stdout 2> $stderr
+    if ($LASTEXITCODE -ne 0) { throw "Clean catalog view '$ProjectName' failed: $([IO.File]::ReadAllText($stderr))" }
+    $observed = [IO.File]::ReadAllText($stdout) | ConvertFrom-Json
+    $pins = @{}
+    foreach ($row in @($observed.Items.PackageVersion)) { $pins[$row.Identity] = $row.Version }
+    if ($observed.Properties.HexalithEventStoreVersion -cne $ExpectedSdk -or
+        $observed.Properties.HexalithPartiesSdk42CatalogView -cne $ExpectedPartiesView -or
+        $observed.Properties.HexalithPlatformSdk42CatalogView -cne $ExpectedPlatformView -or
+        $pins['Microsoft.AspNetCore.OpenApi'] -cne $ExpectedAspNetOpenApi -or
+        $pins['Microsoft.OpenApi'] -cne $ExpectedOpenApi) {
+        $failures.Add("Clean catalog view '$ProjectName' changed its exact SDK/OpenAPI tuple or owner identity.")
+    }
+    foreach ($member in @($observed.Items.PackageVersion | Where-Object { $_.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) })) {
+        if ($member.Version -cne $ExpectedSdk) { $failures.Add("Clean catalog view '$ProjectName' split its canonical EventStore family.") }
+    }
+    foreach ($row in @($observed.Items.PackageVersion)) {
+        if (-not $row.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) -and
+            $row.Identity -notin @('Microsoft.AspNetCore.OpenApi', 'Microsoft.OpenApi') -and
+            $row.Version -cne $evaluatedPackages[$row.Identity]) {
+            $failures.Add("Clean catalog view '$ProjectName' changes unrelated package '$($row.Identity)'.")
+        }
+    }
+    $script:viewCount++
+}
+try {
+    [void] [IO.Directory]::CreateDirectory($viewProbeRoot)
+    foreach ($name in $partiesSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true' 'false' }
+    foreach ($name in $platformSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'true' }
+    foreach ($name in @('Unrelated.Consumer', 'Hexalith.Parties.Future', 'Hexalith.Parties.Tests.Future',
+                        'hexalith.Parties.Tests', 'Hexalith.Platform.Future', 'Hexalith.Platform.EventStoreHost.Future')) {
+        Test-OwnedCatalogView $name '5.0.0' '11.0.0' '3.11.0' 'false' 'false'
+    }
+    foreach ($name in @('Hexalith.Parties.Tests', 'Hexalith.Platform.EventStoreHost')) {
+        $partiesView = if ($name -eq 'Hexalith.Parties.Tests') { 'true' } else { 'false' }
+        $platformView = if ($name -eq 'Hexalith.Platform.EventStoreHost') { 'true' } else { 'false' }
+        foreach ($sdk in @('4.0.4', '4.1.0', '4.3.0', '5.0.0')) {
+            Test-OwnedCatalogView $name $sdk '11.0.0' '3.11.0' $partiesView $platformView $sdk
+        }
+    }
+    Write-Output "Retained SDK4.2 catalog views passed $viewCount exact positive/negative probes."
+}
+finally { if (Test-Path -LiteralPath $viewProbeRoot) { [IO.Directory]::Delete($viewProbeRoot, $true) } }
 
 # Prove NuGet refuses per-package overrides before any source is contacted.
 $probeDirectory = Join-Path ([IO.Path]::GetTempPath()) "canonical-cohort-$([Guid]::NewGuid().ToString('N'))"

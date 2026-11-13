@@ -115,6 +115,11 @@ public sealed class CompositionCatalogPackageViewTests
         CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
         snapshot.ProjectVersions.ContainsKey("Hexalith.Platform.EventStoreHost").ShouldBeTrue();
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
+        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe").ShouldBe("5.0.0");
+        options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe").ShouldBe("11.0.0");
+        options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.0");
+        options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("10.0.15");
+        options.CatalogPackageVersion("Microsoft.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("2.13.0");
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.Platform.TestExtension", "probe", "Hexalith.Platform.EventStoreHost").ShouldBeNull();
