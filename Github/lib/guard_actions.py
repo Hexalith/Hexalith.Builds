@@ -16,8 +16,23 @@ from expected_state import ExpectedStateError
 REGULAR = {"100644", "100755"}
 PREFIX = ".github/actions/"
 REMOTE = re.compile(r"([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)((?:/[^/@\s]+)*)@([0-9a-fA-F]{40})\Z")
-COMMAND = re.compile(r'''(?<![\w.-])(?:dotnet(?:\.exe)?|"dotnet(?:\.exe)?"|'dotnet(?:\.exe)?')[ \t]+'''
-                     r'''(?:build|test|"build"|"test"|'build'|'test')(?=\s|$|[;&|])([^\r\n]*)''', re.IGNORECASE)
+
+
+def _quoted(pattern: str) -> str:
+    return f"(?:{pattern}|\"{pattern}\"|'{pattern}')"
+
+
+def _primitive(*tokens: str) -> str:
+    return r"(?<![\w.-])" + r"[ \t]+".join(_quoted(token) for token in tokens) + r"(?=\s|$|[;&|<>])"
+
+
+# Match only the invocation prefix: consuming its arguments would hide a second
+# literal dotnet command on the same line. Paths are text, never resolved/run.
+DOTNET = r'''(?:[^\s"';&|<>]*[/\\])?dotnet(?:\.exe)?'''
+COMMAND = re.compile(r'''(?<![\w.-])(?:''' + DOTNET
+                     + r'''|"(?:[^"\r\n]*[/\\])?dotnet(?:\.exe)?"|'(?:[^'\r\n]*[/\\])?dotnet(?:\.exe)?')'''
+                     + r"[ \t]+" + _quoted("(?:build|test)") + r"(?=\s|$|[;&|<>])", re.IGNORECASE)
+REDIRECTION = re.compile(r"(?:&?>{1,2}|<{1,2}|[<>]&)$")
 # These options consume the following token, so a logger/settings/output file
 # ending in .csproj cannot masquerade as an explicit project argument.
 VALUE_OPTIONS = {
@@ -31,11 +46,13 @@ DENY = (
     ("actions/checkout", r"(?<![\w.-])actions/checkout\b"),
     ("actions/setup-dotnet", r"(?<![\w.-])actions/setup-dotnet\b"),
     ("actions/cache", r"(?<![\w.-])actions/cache\b"),
-    ("dapr init", r"(?<![\w.-])dapr(?:\.exe)?[ \t]+init\b"),
-    ("nuget push", r"(?<![\w.-])nuget(?:\.exe)?[ \t]+push\b"),
-    ("registry login", r"(?<![\w.-])(?:docker|podman|helm|oras|crane|skopeo)(?:\.exe)?[ \t]+login\b"
-                       r"|(?<![\w.-])az[ \t]+acr[ \t]+login\b"
-                       r"|(?<![\w.-])(?:docker/login-action|azure/docker-login|aws-actions/amazon-ecr-login)\b"),
+    ("dapr init", _primitive(r"dapr(?:\.exe)?", "init")),
+    ("nuget push", _primitive(r"nuget(?:\.exe)?", "push")),
+    ("registry login", _primitive(r"(?:docker|podman|helm|oras|crane|skopeo)(?:\.exe)?", "login")
+                       + "|" + _primitive(r"helm(?:\.exe)?", "registry", "login")
+                       + "|" + _primitive(r"crane(?:\.exe)?", "auth", "login")
+                       + "|" + _primitive(r"az(?:\.exe)?", "acr", "login")
+                       + r"|(?<![\w.-])(?:docker/login-action|azure/docker-login|aws-actions/amazon-ecr-login)\b"),
     ("semantic-release", r"(?<![\w.-])semantic-release\b"),
 )
 
@@ -81,6 +98,9 @@ def _structure(document: object, snapshot) -> list[str]:
         if not isinstance(step, dict):
             findings.append(label + " must be a mapping")
             continue
+        for field in ("env", "with"):
+            if field in step and not isinstance(step[field], dict):
+                findings.append(label + " " + field + " must be a mapping")
         if ("uses" in step) == ("run" in step):
             findings.append(label + " must declare exactly one of uses or run")
         elif "uses" in step:
@@ -96,7 +116,7 @@ def _structure(document: object, snapshot) -> list[str]:
 
 def _explicit_project(arguments: str) -> bool:
     try:
-        lexer = shlex.shlex(arguments, posix=True, punctuation_chars=";&|")
+        lexer = shlex.shlex(arguments, posix=True, punctuation_chars=";&|<>")
         lexer.whitespace_split = True
         lexer.commenters = "#"
         tokens = list(lexer)
@@ -110,6 +130,14 @@ def _explicit_project(arguments: str) -> bool:
         lower = token.lower()
         if token == "--" or token and all(char in ";&|" for char in token):
             break
+        if (token.isdigit() or token == "*") and index + 1 < len(tokens) and REDIRECTION.fullmatch(tokens[index + 1]):
+            index += 1
+            token = tokens[index]
+        if REDIRECTION.fullmatch(token):
+            index += 2  # Redirection and its file/descriptor operand are not project arguments.
+            if index > len(tokens):
+                return False
+            continue
         if lower == "--project":
             index += 1
             if index >= len(tokens) or project is not None:
@@ -155,7 +183,8 @@ def _deny(text: str, document: object) -> list[str]:
     # characters and flow delimiters never become shell arguments. References
     # and deny-listed primitive names above still scan the full metadata text.
     commands = scalars + [match[1] for match in re.finditer(r"(?m)#([^\r\n]*)", text)]
-    if any(not _explicit_project(match[1]) for scalar in commands for match in COMMAND.finditer(scalar)):
+    if any(not _explicit_project(re.split(r"[\r\n]", scalar[match.end():], maxsplit=1)[0])
+           for scalar in commands for match in COMMAND.finditer(scalar)):
         findings.append("deny-list: solution-wide dotnet build/test requires an explicit .csproj")
     return findings
 

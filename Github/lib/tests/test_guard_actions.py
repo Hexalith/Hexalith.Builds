@@ -77,7 +77,7 @@ class ActionLintTests(unittest.TestCase):
     def test_flow_aliases_quoting_and_literal_uses_inside_a_run_block(self):
         self.write("name: Quoted\ndescription: Flow and aliases\n"
                    "reference: &target third/party/path@" + PIN + "\n"
-                   "runs: {using: composite, steps: [{uses: *target}, {shell: bash, run: 'dotnet test \"some project.csproj\" --no-build'}]}\n")
+                   "runs: {using: composite, steps: [{uses: *target, with: {option: value}}, {shell: bash, env: {MODE: test}, run: 'dotnet test \"some project.csproj\" --no-build'}]}\n")
         self.write("runs:\n  using: composite\n  steps:\n    - shell: bash\n      run: |\n        echo 'uses: unpinned/action@main'\n", name="literal")
         self.lint()
 
@@ -97,6 +97,8 @@ class ActionLintTests(unittest.TestCase):
             ("runs: {using: composite, steps: [{shell: bash, run: 123}]}", "nonempty text"),
             ("runs: {using: composite, steps: [{shell: bash, run: echo, uses: other/action@main}]}", "exactly one"),
             ("runs: {using: composite, steps: [{name: missing-command}]}", "exactly one"),
+            ("runs: {using: composite, steps: [{shell: bash, run: echo, env: not-a-mapping}]}", "env must be a mapping"),
+            ("runs: {using: composite, steps: [{uses: 'third/party@" + PIN + "', with: []}]}", "with must be a mapping"),
             ("runs: {using: composite, using: node24}", "parser"),
             ("!!js/function 'function () {}'", "parser"),
             (VALID + "---\n" + VALID, "parser"),
@@ -154,8 +156,8 @@ class ActionLintTests(unittest.TestCase):
     def test_deny_list_recognizes_literal_primitives_case_insensitively(self):
         commands = ["DAPR init", "dotnet nuget push package.nupkg", "nuget push package.nupkg",
                     "nuget.exe push package.nupkg", "dapr.exe init",
-                    "Docker login registry.example", "podman login registry.example", "helm login registry.example",
-                    "oras login registry.example", "crane login registry.example", "skopeo login registry.example",
+                    "Docker login registry.example", "podman login registry.example", "helm registry login registry.example",
+                    "oras login registry.example", "crane auth login registry.example", "skopeo login registry.example",
                     "az acr login --name example", "npx semantic-release", "semantic-release"]
         for number, command in enumerate(commands):
             with self.subTest(command=command):
@@ -167,15 +169,39 @@ class ActionLintTests(unittest.TestCase):
                 self.reject(json.dumps({"runs": {"using": "composite", "steps": [{"uses": action + "@" + PIN}]}}),
                             "deny-list", name="deny-action-" + str(number))
 
+    def test_deny_primitives_allow_ordinary_token_quotation_without_evading_policy(self):
+        primitives = [("dapr", "init"), ("nuget", "push"), ("docker", "login"),
+                      ("podman", "login"), ("helm", "registry", "login"), ("crane", "auth", "login"),
+                      ("oras", "login"), ("skopeo", "login"), ("az", "acr", "login")]
+        for quote in ('"', "'"):
+            for primitive in primitives:
+                # Cover quoting only the verb and quoting every command token.
+                for tokens in ([*primitive[:-1], quote + primitive[-1] + quote],
+                               [quote + token + quote for token in primitive]):
+                    command = " ".join(tokens)
+                    with self.subTest(command=command):
+                        self.reject(json.dumps({"runs": {"using": "composite", "steps": [
+                            {"shell": "bash", "run": command}]}}), "deny-list", name="quoted-primitive")
+
     def test_solution_wide_commands_reject_absent_directory_and_solution_targets(self):
         commands = ["dotnet test", "dotnet build --configuration Release", "dotnet test ./tests", "dotnet test Foo.slnx",
                     "dotnet build Foo.sln", "dotnet test --logger impostor.csproj", "dotnet test --project .",
                     "dotnet test directory project.csproj", "dotnet test --project project.csproj directory",
-                    "& dotnet test", 'dotnet "test"', '& "dotnet" "test"', "dotnet.exe test", "dotnet test -- --project Fake.csproj"]
+                    "& dotnet test", 'dotnet "test"', '& "dotnet" "test"', "dotnet.exe test", "dotnet test -- --project Fake.csproj",
+                    '"/usr/bin/dotnet" test', "/usr/bin/dotnet build", r'"C:\Program Files\dotnet\dotnet.exe" test',
+                    r"C:\tools\dotnet.exe build", "dotnet test > Fake.csproj"]
         for number, command in enumerate(commands):
             with self.subTest(command=command):
                 self.reject(json.dumps({"runs": {"using": "composite", "steps": [{"shell": "bash", "run": command}]}}),
                             "solution-wide", name="solution-" + str(number))
+
+    def test_every_literal_invocation_on_a_line_is_checked_after_separators_and_redirection(self):
+        for separator in (";", "&&", "||"):
+            for first in ("dotnet test Good.csproj", "dotnet test Good.csproj 2>&1", "dotnet test Good.csproj > results.log"):
+                command = first + " " + separator + " dotnet build"
+                with self.subTest(command=command):
+                    self.reject(json.dumps({"runs": {"using": "composite", "steps": [
+                        {"shell": "bash", "run": command}]}}), "solution-wide", name="later-command")
 
     def test_explicit_project_positional_switch_quotes_and_continuations_pass(self):
         commands = ['dotnet test "test/My Project.csproj" --no-build --logger trx',
@@ -183,7 +209,12 @@ class ActionLintTests(unittest.TestCase):
                     "dotnet test --project=test/Tests.csproj --no-build", "dotnet test --configuration Release test/Tests.csproj",
                     "dotnet test \\\n  --project test/Tests.csproj --no-build", "dotnet test `\n  --project test/Tests.csproj --no-build",
                     '& dotnet "test" --project test/Tests.csproj', '& "dotnet" "test" test/Tests.csproj',
-                    "dotnet.exe test test/Tests.csproj"]
+                    "dotnet.exe test test/Tests.csproj", '"/usr/bin/dotnet" test Tests.csproj',
+                    r'"C:\Program Files\dotnet\dotnet.exe" test "test\My Project.csproj"',
+                    "dotnet test Tests.csproj > results.log", "dotnet test Tests.csproj 2>&1",
+                    "dotnet test Tests.csproj 2>> errors.log", "dotnet test Tests.csproj &> results.log",
+                    "dotnet test Tests.csproj > results.log && dotnet build Other.csproj",
+                    "dotnet test Tests.csproj 2>&1; dotnet test Other.csproj || dotnet test Last.csproj"]
         for number, command in enumerate(commands):
             self.write(json.dumps({"runs": {"using": "composite", "steps": [{"shell": "bash", "run": command}]}}),
                        name="explicit-" + str(number))

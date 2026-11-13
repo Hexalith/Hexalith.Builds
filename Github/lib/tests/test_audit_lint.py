@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -111,11 +112,41 @@ class AuditLintTests(unittest.TestCase):
             with self.subTest(encoding=number):
                 self.reject("encoded-" + str(number), data, "NU1903")
 
+    def test_bomless_utf32_signatures_select_valid_and_malformed_project_roots(self):
+        for encoding in ("utf-32-le", "utf-32-be"):
+            with self.subTest(encoding=encoding):
+                declaration = '<?xml version="1.0" encoding="UTF-32"?>'
+                self.reject("valid-" + encoding, (declaration + '<Project NoWarn="NU1903"/>').encode(encoding), "NU1903")
+                self.reject("malformed-" + encoding, (declaration + '<Project NoWarn="NU1903>').encode(encoding), "malformed")
+
+    def test_malformed_project_root_is_recognized_after_doctype_without_loading_entities(self):
+        for doctype in ('<!DOCTYPE Project>', '<!DOCTYPE Project SYSTEM "file:///unavailable-external-dtd">',
+                        '<!DOCTYPE Project [<!ENTITY unused "literal > text">]>',
+                        '<!DOCTYPE Project [<!-- first --><!-- second -->]>'):
+            with self.subTest(doctype=doctype):
+                self.reject("doctype-project", '<?xml version="1.0"?>' + doctype + '<Project NoWarn="NU1903>', "malformed")
+
+    def test_unterminated_doctype_subset_with_repeated_comments_fails_promptly(self):
+        script = """import sys
+sys.path.insert(0, sys.argv[1])
+import audit_lint
+findings = audit_lint._xml(sys.stdin.buffer.read(), canonical=True)
+assert findings and 'malformed' in findings[0], findings
+"""
+        for comments in (20, 25, 1000):
+            payload = ('<!-- lead --><!DOCTYPE Project [' + '<!--x-->' * comments + '<Project NoWarn="NU1903>').encode()
+            with self.subTest(comments=comments):
+                result = subprocess.run([sys.executable, "-I", "-c", script,
+                    str(Path(audit_lint.__file__).parent)], input=payload, capture_output=True, timeout=2, check=False)
+                self.assertEqual(0, result.returncode, result.stderr.decode("utf-8", "replace"))
+
     def test_response_files_match_warning_and_property_lists_with_common_quotes(self):
         values = ['/p:NoWarn="NU1901;NU1903"', '"/p:NoWarn=NU1901, NU1904"',
                   "'-p:NoWarn=NU1902 NU1905'", "/p:NoWarn=NU1900", "-p:TreatAsLocalProperty='Other;NuGetAuditMode'",
                   '"/p:TreatAsLocalProperty=Other, nugetauditLevel"', '/p:NoWarn="NU1901;\nNU1903"',
-                  "/p:NoWarn=NU1901 /p:NoWarn=NU1903", '/p:TreatAsLocalProperty="Other;\nNuGetAudit"']
+                  "/p:NoWarn=NU1901 /p:NoWarn=NU1903", '/p:TreatAsLocalProperty="Other;\nNuGetAudit"',
+                  '/p:"NoWarn"=NU1903', "/p:'NoWarn'=NU1904", '/p:"TreatAsLocalProperty"=NuGetAuditMode',
+                  '/p:NoWarn="NU1901;<unrelated>;NU1903"']
         for number, data in enumerate(values):
             with self.subTest(data=data):
                 self.reject("flags-" + str(number) + ".RSP", data, "audit-lint")
@@ -125,7 +156,7 @@ class AuditLintTests(unittest.TestCase):
 
     def test_benign_response_values_and_comments_are_conservative(self):
         self.repository.write("benign.rsp", "/p:NoWarn=NU1901;NU1902;NU19030\n/p:TreatAsLocalProperty=Other;NotNuGetAudit\n"
-                              "/p:NoWarn=NU1901 /p:Other=NU1903\n")
+                              "/p:NoWarn=NU1901 /p:Other=NU1903\n/p:\"NoWarn\"=\"NU1901;<unrelated>;NU1902\"\n")
         self.lint()
         self.reject("comment.rsp", "# /p:NoWarn=NU1903", "NoWarn")
 

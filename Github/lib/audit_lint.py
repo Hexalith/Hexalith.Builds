@@ -49,6 +49,16 @@ def _declaration(name: str, value: str) -> str | None:
     return None
 
 
+def _utf32_encoding(data: bytes) -> str | None:
+    if data.startswith((codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE)):
+        return "utf-32"
+    if data.startswith(b"<\x00\x00\x00"):
+        return "utf-32-le"
+    if data.startswith(b"\x00\x00\x00<"):
+        return "utf-32-be"
+    return None
+
+
 def _xml_probe(data: bytes) -> tuple[str, set[str]]:
     """Observe root/section names even when a later XML token is malformed."""
     root = ""
@@ -75,8 +85,8 @@ def _xml_probe(data: bytes) -> tuple[str, set[str]]:
         # malformed attribute or invalid encoding declaration must not hide
         # a recognizable Project root. This lexical probe only classifies a
         # failed parse; it never accepts or evaluates the malformed content.
-        if data.startswith((codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE)):
-            encoding = "utf-32"
+        if utf32 := _utf32_encoding(data):
+            encoding = utf32
         elif data.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
             encoding = "utf-16"
         elif data.startswith(b"<\x00"):
@@ -87,7 +97,13 @@ def _xml_probe(data: bytes) -> tuple[str, set[str]]:
             encoding = "utf-8-sig"
         text = data.decode(encoding, errors="replace")
         while True:
-            stripped = re.sub(r"\A\s*(?:<\?.*?\?>|<!--.*?-->)", "", text, count=1, flags=re.DOTALL)
+            # Skip the prolog lexically, including a DTD's quoted declarations
+            # and internal subset. No entity is loaded, expanded or evaluated.
+            # Commit each subset token so a missing ']' cannot repartition
+            # every complete comment into individual characters exponentially.
+            doctype = r'''<!DOCTYPE\b(?:[^>"'\[]|"[^"]*"|'[^']*'|\[(?><!--.*?-->|[^\]"']|"[^"]*"|'[^']*')*\])*>'''
+            stripped = re.sub(r"\A\s*(?:<\?.*?\?>|<!--.*?-->|" + doctype + ")", "", text,
+                              count=1, flags=re.DOTALL)
             if stripped == text:
                 break
             text = stripped
@@ -104,7 +120,8 @@ def _xml(data: bytes, *, canonical: bool) -> list[str]:
     try:
         # Expat supports XML's UTF-8/16 byte inputs directly. UTF-32 BOMs
         # identify a safe explicit decoder before the same stdlib XML parser.
-        source = data.decode("utf-32") if data.startswith((codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE)) else data
+        encoding = _utf32_encoding(data)
+        source = data.decode(encoding) if encoding else data
         root = ET.fromstring(source)
     except (ET.ParseError, ValueError, LookupError, UnicodeError):
         name, sections = _xml_probe(data)
@@ -147,12 +164,14 @@ def _response(data: bytes) -> list[str]:
             findings.add("audit-lint: forbidden " + display + " declaration")
     # Quotes can surround a whole /p: assignment or only its value. Warning and
     # local-property lists use comma, semicolon or whitespace in either form.
-    for match in re.finditer(r"(?<![\w.-])(NoWarn|TreatAsLocalProperty)\s*(?:[=:]\s*|>\s*)",
+    for match in re.finditer(r'''(?<![\w.-])(["']?)(NoWarn|TreatAsLocalProperty)\1\s*([=:>])\s*''',
                              text, re.IGNORECASE):
-        value = text[match.end():].split("<", 1)[0].split(">", 1)[0]
+        value = text[match.end():]
+        if match[3] == ">":  # Preserve XML-like declaration scanning in response text.
+            value = value.split("<", 1)[0]
         value = re.split(r"\s+[\"']?[-/]\w", value, maxsplit=1)[0]
         value = value.replace('"', "").replace("'", "")
-        finding = _declaration(match[1], value)
+        finding = _declaration(match[2], value)
         if finding:
             findings.add(finding)
     return sorted(findings)
