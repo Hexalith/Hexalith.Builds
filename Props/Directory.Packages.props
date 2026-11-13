@@ -57,6 +57,7 @@
         or $(MSBuildProjectName.Equals('Hexalith.Parties.Tests'))
         or $(MSBuildProjectName.Equals('Hexalith.Parties.UI'))
         or $(MSBuildProjectName.Equals('Hexalith.Parties.UI.Tests'))">true</HexalithPartiesSdk42CatalogView>
+    <!-- Preserve OpenAPI2 only when a Platform consumer explicitly selects historical SDK4.2. -->
     <HexalithPlatformSdk42CatalogView>false</HexalithPlatformSdk42CatalogView>
     <HexalithPlatformSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Platform.CatalogBuilder'))
         or $(MSBuildProjectName.Equals('Hexalith.Platform.Composition'))
@@ -115,8 +116,8 @@
     <HexalithBuildsPackagedHostSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Builds.Module.AppHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.EventStoreHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.0.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.0.1</HexalithEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.0</HexalithOpenApiVersion>
     <!-- The public SDK4.2 gateway calls the OpenApi2 ABI; keep both exact audited members together. -->
@@ -125,8 +126,8 @@
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">5.0.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.4.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">2.0.1</HexalithMcpCliVersion>
-    <!-- Keep the released v2 declaration and source provenance aligned with this catalog pin. -->
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">3.0.27</HexalithMemoriesVersion>
+    <!-- Current package selection; historical declarations retain their separately pinned release inputs. -->
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.0.0</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">7.0.7</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">3.1.1</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.1.1</HexalithPartiesAspireVersion>
