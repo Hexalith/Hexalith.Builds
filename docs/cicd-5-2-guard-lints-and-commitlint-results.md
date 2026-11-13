@@ -274,3 +274,15 @@ as qualification of 4.0.0. No audit validation rule or fixture was weakened.
 Commands, exits and logs are retained under `/tmp/bmad-5-2-catalog-*`. Final
 committed-source CI results and the accepted source identity are recorded in
 the canonical CiCd story after publication.
+
+
+The full hosted .NET job in run 43515844620 then exposed two remaining legacy
+closure-fixture cases. They supplied only released EventStore 4.2.0 declaration
+authority while selecting Platform's now-current 5.0.1 consumer view. The fixture
+now selects the actual retained Builds.Module.EventStoreHost producer view;
+current global and Platform 5.0.1 selections explicitly refuse that older release
+authority. No production closure code, release hashes, release-commit authority
+or catalog selection changed. Independent focused review found no defect. The
+entire DirectCatalogDeclarationTests class passed 24/24 with zero skips after a
+zero-warning/error Release build. Final source qualification is recorded in the
+canonical story after the corrective commit is published.

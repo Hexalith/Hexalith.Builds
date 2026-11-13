@@ -192,7 +192,7 @@ public sealed class DirectCatalogDeclarationTests
         }
     }
 
-    /// <summary>Cold and materialized package closures select the real consumer view without rewriting the global SDK default.</summary>
+    /// <summary>Cold and materialized closures retain a producer SDK4.2 view alongside current global and Platform defaults.</summary>
     /// <param name="platformRoot">Whether the command starts at Platform or its direct consuming module.</param>
     /// <returns>The released declaration, cold preparation and unchanged default assertions.</returns>
     [Theory]
@@ -203,7 +203,7 @@ public sealed class DirectCatalogDeclarationTests
         using WorkspaceGitFixture fixture = await CreateReleasedWorkspaceAsync(false, consumerViews: true).ConfigureAwait(true);
         string manifest = platformRoot ? Path.Combine(fixture.Directory, "platform", "hexalith-platform.json") : fixture.Manifest;
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CompositionDeclarationOptions cold = new(mapping, []) { ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName };
+        CompositionDeclarationOptions cold = new(mapping, []) { ConsumerProjectName = "Hexalith.Builds.Module.EventStoreHost" };
         IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformModuleDeclaration> closure = await CompositionDeclarationClosure.LoadForConsumerAsync(cold, TestContext.Current.CancellationToken).ConfigureAwait(true);
         closure.Select(item => CompositionDeclarationClosure.Id(item.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["eventstore", "memories", "tenants"]);
         cold.Workspace.ShouldBeNull();
@@ -212,12 +212,16 @@ public sealed class DirectCatalogDeclarationTests
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionDeclarationOptions selected = cold with { Workspace = workspace };
         selected.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
-        (selected with { ConsumerProjectName = null }).CatalogVersion("eventstore", "probe").ShouldBe("5.0.0");
+        (selected with { ConsumerProjectName = null }).CatalogVersion("eventstore", "probe").ShouldBe("5.0.1");
         CompositionDeclarationClosure.Load(selected).Count.ShouldBe(closure.Count);
+        CompositionDeclarationOptions platform = selected with { ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName };
+        platform.CatalogVersion("eventstore", "probe").ShouldBe("5.0.1");
+        Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(platform))
+            .Message.ShouldContain("5.0.1");
         Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(selected with { ConsumerProjectName = null }))
-            .Message.ShouldContain("5.0.0");
+            .Message.ShouldContain("5.0.1");
         CatalogVersionMaterializer.ReadSnapshot(Path.Combine(workspace, "source-mapping", "catalog-versions.json"))
-            .Versions["Hexalith.EventStore.Aspire"].ShouldBe("5.0.0");
+            .Versions["Hexalith.EventStore.Aspire"].ShouldBe("5.0.1");
     }
 
     /// <summary>A cold consumer cannot substitute the default view for an absent recorded identity.</summary>
