@@ -1,29 +1,28 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "320da402954fd432e07ceb8bad31dd2e39b8a453",
+  "generatedFromRevision": "22fb5907bc4641de54042ed956852c108ca2b0cf",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "5d7f3406bfe75d732ee66f9148918d80a39f892ee551c98882f08501f8419850",
-  "catalogRawSha256": "4e8402c4cd38fe3ebd5504fe77acc5d4eec01c8beb7c7ee255232375c1fc9b66",
+  "catalogSha256": "05276b1dfce24e3ebb2914770f9040539c67dfdf0c7c0a03f2a81d2036889375",
+  "catalogRawSha256": "9e5d1fafaf46d051b68da2090399733d9470873082d20f6444493e3594b0cab3",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-13T10:00:05.6796461+00:00",
+    "auditedAtUtc": "2026-11-13T10:25:54.4400610+00:00",
     "refreshedFamilies": [
-      "dotnet-10",
-      "hexalith-conversations",
-      "hexalith-projects",
-      "package:swashbuckle.aspnetcore"
+      "hexalith-eventstore",
+      "package:stackexchange.redis"
     ],
     "preservedFamilies": [
       "aspire",
       "bunit-html",
       "dapr",
+      "dotnet-10",
       "fluent-ui",
       "hexalith-applications",
       "hexalith-chatbot",
       "hexalith-commons",
+      "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
-      "hexalith-eventstore",
       "hexalith-folders",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
@@ -33,6 +32,7 @@
       "hexalith-netaspire",
       "hexalith-parties",
       "hexalith-polymorphicserializations",
+      "hexalith-projects",
       "hexalith-security",
       "hexalith-tenants",
       "hexalith-works",
@@ -151,8 +151,8 @@
       "package:serilog.sinks.file",
       "package:shouldly",
       "package:sonaranalyzer.csharp",
-      "package:stackexchange.redis",
       "package:stylecop.analyzers",
+      "package:swashbuckle.aspnetcore",
       "package:swashbuckle.aspnetcore.swaggerui",
       "package:system.commandline",
       "package:system.componentmodel.annotations",
@@ -182,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "320da402954fd432e07ceb8bad31dd2e39b8a453",
+    "repositoryRevision": "22fb5907bc4641de54042ed956852c108ca2b0cf",
     "sha256": "aff9f6a2f937cd22eb59a0e3ad5ac6dd02b4b2a1116f0eb91fdfdfb256f0e54a",
     "entries": [
       {
@@ -9047,8 +9047,8 @@
         "test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-13T09:33:21.0092127+00:00",
-        "generatedFromRevision": "00d91d526ec54c0269a9abdfff7c9c8a5f7f80da",
+        "auditedAtUtc": "2026-11-13T10:25:54.4400610+00:00",
+        "generatedFromRevision": "22fb5907bc4641de54042ed956852c108ca2b0cf",
         "familySelectionSha256": "61060a13172b1b507bf57fa91b58bf64f2be04251a3a7291fb766899183389d4",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "2cbca63780ce09a05b03e6b93ee2b0706327bac641868869d6094abbf6e1f396",
@@ -66578,8 +66578,8 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-13T09:33:21.0092127+00:00",
-        "generatedFromRevision": "00d91d526ec54c0269a9abdfff7c9c8a5f7f80da",
+        "auditedAtUtc": "2026-11-13T10:25:54.4400610+00:00",
+        "generatedFromRevision": "22fb5907bc4641de54042ed956852c108ca2b0cf",
         "familySelectionSha256": "0771f2a8b812551bcf71a301bcf9bd53853a7b15d86e167293011f6ff6bf30f3",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a13530f801131bf4b14aa4ec7e77e60ed75a9970ab2bf633fc549707d939e1f3",
