@@ -94,7 +94,12 @@
     <!-- These supported net10 consumers include Shell's transitive CPM dependents.
          OpenIdConnect 11 contains only net11 assets; other identities keep the current catalog. -->
     <HexalithFrontComposerNet10CatalogView>false</HexalithFrontComposerNet10CatalogView>
-    <HexalithFrontComposerNet10CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.FrontComposer.AppHost'))
+    <HexalithFrontComposerNet10CatalogView Condition="$(MSBuildProjectName.Equals('Counter.Domain'))
+        or $(MSBuildProjectName.Equals('Counter.Specimens'))
+        or $(MSBuildProjectName.Equals('Counter.Specimens.Domain'))
+        or $(MSBuildProjectName.Equals('Counter.Web'))
+        or $(MSBuildProjectName.Equals('IdeParityCounter'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.AppHost'))
         or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell'))
         or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests'))
         or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests.Bench'))

@@ -252,7 +252,8 @@ $viewCount = 0
 function Test-OwnedCatalogView {
     param([string] $ProjectName, [string] $ExpectedSdk, [string] $ExpectedAspNetOpenApi,
           [string] $ExpectedOpenApi, [string] $ExpectedPartiesView, [string] $ExpectedPlatformView,
-          [string] $SelectedSdk = '', [string] $ExpectedBuildsHostView = 'false')
+          [string] $SelectedSdk = '', [string] $ExpectedBuildsHostView = 'false',
+          [string] $ExpectedOpenIdConnect = '11.0.0', [string] $ExpectedFrontComposerView = 'false')
     $probe = Join-Path $viewProbeRoot "$ProjectName.proj"
     $escapedCatalog = [Security.SecurityElement]::Escape([IO.Path]::GetFullPath($catalogPath))
     [IO.File]::WriteAllText($probe, "<Project><Import Project=`"$escapedCatalog`" /></Project>")
@@ -260,7 +261,7 @@ function Test-OwnedCatalogView {
     $stderr = Join-Path $viewProbeRoot 'evaluation.stderr'
     $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" })
     & dotnet msbuild $probe -nologo -noAutoResponse -nr:false @properties `
-        -getProperty:HexalithEventStoreVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView `
+        -getProperty:HexalithEventStoreVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView `
         -getItem:PackageVersion 1> $stdout 2> $stderr
     if ($LASTEXITCODE -ne 0) { throw "Clean catalog view '$ProjectName' failed: $([IO.File]::ReadAllText($stderr))" }
     $observed = [IO.File]::ReadAllText($stdout) | ConvertFrom-Json
@@ -270,6 +271,8 @@ function Test-OwnedCatalogView {
         $observed.Properties.HexalithPartiesSdk42CatalogView -cne $ExpectedPartiesView -or
         $observed.Properties.HexalithPlatformSdk42CatalogView -cne $ExpectedPlatformView -or
         $observed.Properties.HexalithBuildsPackagedHostSdk42CatalogView -cne $ExpectedBuildsHostView -or
+        $observed.Properties.HexalithFrontComposerNet10CatalogView -cne $ExpectedFrontComposerView -or
+        $pins['Microsoft.AspNetCore.Authentication.OpenIdConnect'] -cne $ExpectedOpenIdConnect -or
         $pins['Microsoft.AspNetCore.OpenApi'] -cne $ExpectedAspNetOpenApi -or
         $pins['Microsoft.OpenApi'] -cne $ExpectedOpenApi) {
         $failures.Add("Clean catalog view '$ProjectName' changed its exact SDK/OpenAPI tuple or owner identity.")
@@ -279,7 +282,7 @@ function Test-OwnedCatalogView {
     }
     foreach ($row in @($observed.Items.PackageVersion)) {
         if (-not $row.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) -and
-            $row.Identity -notin @('Microsoft.AspNetCore.OpenApi', 'Microsoft.OpenApi') -and
+            $row.Identity -notin @('Microsoft.AspNetCore.OpenApi', 'Microsoft.OpenApi', 'Microsoft.AspNetCore.Authentication.OpenIdConnect') -and
             $row.Version -cne $evaluatedPackages[$row.Identity]) {
             $failures.Add("Clean catalog view '$ProjectName' changes unrelated package '$($row.Identity)'.")
         }
@@ -305,7 +308,21 @@ try {
             Test-OwnedCatalogView $name $sdk '11.0.0' '3.11.0' $partiesView $platformView $sdk -ExpectedBuildsHostView $buildsHostView
         }
     }
-    Write-Output "Retained SDK4.2 catalog views passed $viewCount exact positive/negative probes."
+    # Include the supported source samples: their central transitive pins consume Shell too.
+    foreach ($name in @('Counter.Domain', 'Counter.Specimens', 'Counter.Specimens.Domain', 'Counter.Web', 'IdeParityCounter',
+                        'Hexalith.FrontComposer.AppHost', 'Hexalith.FrontComposer.Shell', 'Hexalith.FrontComposer.Shell.Tests',
+                        'Hexalith.FrontComposer.Shell.Tests.Bench', 'Hexalith.FrontComposer.SourceTools.Tests',
+                        'Hexalith.FrontComposer.Testing', 'Hexalith.FrontComposer.Testing.Tests',
+                        'Hexalith.FrontComposer.UI', 'Hexalith.FrontComposer.UI.Tests')) {
+        Test-OwnedCatalogView $name '5.0.0' '11.0.0' '3.11.0' 'false' 'false' `
+            -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true'
+    }
+    foreach ($name in @('Hexalith.Memories.Server', 'Hexalith.Memories.Web', 'Hexalith.FrontComposer.Future',
+                        'Hexalith.FrontComposer.Shell.Future', 'Counter.Web.Future', 'Counter.Specimens.Domain.Future',
+                        'counter.Web', 'ideParityCounter', 'hexalith.FrontComposer.Shell')) {
+        Test-OwnedCatalogView $name '5.0.0' '11.0.0' '3.11.0' 'false' 'false'
+    }
+    Write-Output "Owned catalog views passed $viewCount exact positive/negative probes."
 }
 finally { if (Test-Path -LiteralPath $viewProbeRoot) { [IO.Directory]::Delete($viewProbeRoot, $true) } }
 
