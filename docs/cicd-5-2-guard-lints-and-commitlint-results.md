@@ -241,3 +241,36 @@ Story 5.2 forbids changing catalog pins outside the guard tools, so that
 independent failure requires a separately authorized correction. The canonical
 story remains in-review until its all-retained-jobs qualification gate passes;
 its final source/run identities and gate verdict are recorded there after push.
+
+
+## Authorized catalog unblock
+
+The maintainer authorized repair of the upstream catalog and stale .NET
+expectations so story 5.2 can complete its all-jobs qualification. Inspection
+showed every EventStore package already binds to the shared current 5.0.1 pin;
+Platform defaults had intentionally moved to that pin and the OpenAPI3 tuple.
+The production catalog, Memories 4.0.0 selection, producer defaults and frozen
+v1 authorities remain unchanged by this repair.
+
+The authoritative contract now checks current 5.0.1 defaults, explicitly
+selected Platform 4.2.0/OpenAPI2 compatibility, and unrelated/case-variant
+negative consumers. Its 185 consumer probes and 17 independent frozen-v1 /
+producer mutation controls pass. The real materialization class passed all
+18 tests with zero skips, including all 13 EventStore snapshot identities,
+current/historical owner lookup, explicit consumer context and unknown-name
+refusal. The owning Release test-project build passed with zero warnings/errors
+and the workflow's package-reference/analyzer flags.
+
+The next catalog gate exposed an audit snapshot not refreshed with the upstream
+pin change. The existing production generator refreshed only hexalith-eventstore
+and hexalith-memories against committed source
+`1fc93c238d5ef2a8f5c2590a8e9fa0cdab63c57c`. Its output validates 317 packages and
+157 families. Independent semantic review confirmed 18 package rows and two
+family records changed, while 299 package rows and 155 family records are
+identical. All prior history is retained. Current selections remain retained;
+old Memories compatibility observations remain historical and are not claimed
+as qualification of 4.0.0. No audit validation rule or fixture was weakened.
+
+Commands, exits and logs are retained under `/tmp/bmad-5-2-catalog-*`. Final
+committed-source CI results and the accepted source identity are recorded in
+the canonical CiCd story after publication.

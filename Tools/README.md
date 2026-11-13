@@ -231,8 +231,9 @@ Run `python3 Tools/test_works_package_versions.py` from the Builds root to verif
 `test-authoritative-package-catalog.ps1` protects the approved migration package
 identities, shared package-family alignment, and
 `CentralPackageVersionOverrideEnabled=false` through evaluated MSBuild output.
-It does not pin dependency versions, so an intentional version bump remains a
-valid release input.
+Its canonical family defaults and historical compatibility tuples are explicit
+contract expectations; update and qualify those expectations with an intentional
+catalog bump.
 
 ### Revision-bound audit refresh
 
