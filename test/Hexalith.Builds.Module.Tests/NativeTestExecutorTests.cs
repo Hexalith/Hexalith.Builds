@@ -24,6 +24,8 @@ using Xunit;
 /// <summary>
 /// Verifies the runner-owned native test step never hides the native exit status or report semantics.
 /// </summary>
+// Native discovery snapshots the host process table; parallel fixtures can introduce unreadable processes after its baseline.
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class NativeTestExecutorTests
 {
     private const string _markerRunner = "import pathlib\npathlib.Path(__file__).with_name('child-executed').touch()\n";
