@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -127,19 +128,27 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
             server.server_close()
             thread.join()
 
-    def invoke(self, *, switch='false', ref='refs/heads/main', workflow='ci.yml', module_root='',
-               expected_source='', delivered_sha='', repository='Hexalith/Hexalith.Builds'):
+    def invoke(self, *, switch='false', ref='refs/heads/main', workflow=None, module_root=None,
+               expected_source=None, delivered_sha=None, repository='Hexalith/Hexalith.Builds'):
         output = self.root / 'output'
         output.write_text('')
         ledger = self.root / 'ledger'
         environment = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ['PATH'],
             GITHUB_ACTION_PATH=str(ACTION), GITHUB_TOKEN='adapter-secret-marker', GITHUB_REPOSITORY=repository,
             GITHUB_SHA=self.sha, GITHUB_REF=ref, GITHUB_OUTPUT=str(output), RELEASE_SWITCH=switch,
-            RELEASE_CI_WORKFLOW=workflow, RELEASE_MODULE_ROOT=module_root,
-            RELEASE_EXPECTED_SOURCE=expected_source, RELEASE_DELIVERED_SHA=delivered_sha,
             TEST_REMOTE=str(self.source), TEST_LEDGER=str(ledger))
         action = yaml.safe_load((ACTION / 'action.yml').read_text())
-        script = action['runs']['steps'][0]['run']
+        inputs = {name: entry.get('default', '') for name, entry in action.get('inputs', {}).items()}
+        inputs.update({name: value for name, value in {'ci-workflow': workflow, 'module-root': module_root,
+            'expected-source': expected_source, 'delivered-sha': delivered_sha}.items() if value is not None})
+        # Inputs reach the subprocess only through the real composite metadata.
+        # Clear inherited values so omitting a mapping cannot be hidden by the harness.
+        for name in ('RELEASE_CI_WORKFLOW', 'RELEASE_MODULE_ROOT', 'RELEASE_EXPECTED_SOURCE', 'RELEASE_DELIVERED_SHA'):
+            environment.pop(name, None)
+        step = action['runs']['steps'][0]
+        environment.update({name: re.sub(r'\$\{\{\s*inputs\.([a-z-]+)\s*\}\}',
+            lambda match: str(inputs.get(match[1], '')), str(value)) for name, value in step.get('env', {}).items()})
+        script = step['run']
         with self.server() as base:
             environment['GITHUB_API_URL'] = base
             result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', script], env=environment,
@@ -222,6 +231,25 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.assertEqual({}, values)
         self.assertIn('both module-root and expected-source', result.stderr)
 
+    def test_paired_sample_inputs_reach_the_composite_and_select_sample_settings(self):
+        sample_root = 'Samples/Hexalith.Sample'
+        expected_source = sample_root + '/expected-source'
+        config = dict(self.config, buildsTag='v1.0.0', codeql=['ruby'], hooks=[])
+        for relative in (sample_root + '/.github/hexalith-ci.json',
+                         expected_source + '/rendered/Hexalith.Sample/.github/hexalith-ci.json'):
+            path = self.source / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(config))
+        (self.source / expected_source / 'rendered/Hexalith.Sample.perimeter.json').write_text(json.dumps({
+            'schema': 'hexalith.perimeter.v1', 'entries': [{'kind': 'whole', 'path': '.github/hexalith-ci.json'}]}))
+        self.commit_config()
+        result, values = self.invoke(module_root=sample_root, expected_source=expected_source)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual('["ruby"]', values['codeql'])
+        self.assertEqual('false', values['nightly-hook'])
+        self.assertEqual('false', values['enabled'])
+        commands = [json.loads(line) for line in (self.root / 'ledger').read_text().splitlines()]
+        self.assertFalse(any('https://github.com/Hexalith/Hexalith.CiCd.git' in command for command in commands))
 
     def test_module_create_matches_accepted_state_and_blocks_drift_before_false_switch(self):
         self.normal_module()

@@ -635,7 +635,7 @@ else:
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertTrue((self.root / "pwsh-ready").exists())
 
-    def test_module_root_hooks_resolve_from_workspace_root(self):
+    def sample_fixture(self):
         fixture = self.root / "Samples/Hexalith.Sample"
         fixture.mkdir(parents=True)
         # Move only module inputs/outputs; actions intentionally stay at workspace root.
@@ -660,10 +660,32 @@ else:
             (fixture / ".github/hexalith-ci.json").read_bytes())
         (expected / "Hexalith.Sample.perimeter.json").write_text(json.dumps({
             "schema": "hexalith.perimeter.v1", "entries": [{"kind": "whole", "path": ".github/hexalith-ci.json"}]}))
+        return fixture
+
+    def test_module_root_hooks_resolve_from_workspace_root(self):
+        self.sample_fixture()
         result = CompositeHarness(self.root, self.fixture.environment, module_root="Samples/Hexalith.Sample",
                                   expected_source="Samples/Hexalith.Sample/expected-source").run()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertTrue((self.root / "hook-after-unit-tests").is_file())
+
+    def test_shared_sample_guard_blocks_committed_owned_drift_before_prepare_build_or_hooks(self):
+        fixture = self.sample_fixture()
+        path = fixture / ".github/hexalith-ci.json"
+        document = json.loads(path.read_text())
+        document["codeql"] = ["ruby"]
+        path.write_text(json.dumps(document))
+        harness = CompositeHarness(self.root, self.fixture.environment, module_root="Samples/Hexalith.Sample",
+                                   expected_source="Samples/Hexalith.Sample/expected-source")
+        result = harness.run()
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("CI/CD is owned by Hexalith.CiCd. Fix the product code, not the pipeline.", result.stderr)
+        self.assertIn(".github/hexalith-ci.json", result.stderr)
+        self.assertNotIn("prepare", harness.context["steps"])
+        self.assertFalse((fixture / "commands.jsonl").exists())
+        self.assertFalse((fixture / "build-completed").exists())
+        self.assertFalse((self.root / "hook-after-unit-tests").exists())
+        self.assertFalse(self.effects.exists())
 
     def test_no_solution_shared_job_never_calls_sdk_environment_or_hooks(self):
         self.fixture.document.update(solution="none", registry=True)

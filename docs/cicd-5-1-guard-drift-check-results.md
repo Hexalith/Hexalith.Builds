@@ -122,6 +122,28 @@ Local fixtures and the Builds sample do not establish a normal module's live
 delivered branch. No module adoption, production release or administration was
 performed.
 
+## Independent review corrections
+
+All four review layers completed. The edge-case layer reported no findings.
+The other layers produced 17 individual observations: four medium, six low
+and seven false. Seven findings formed six patch groups (three medium and
+three low); seven false findings and three uncommon cosmetic/timeout
+extensions were rejected with individual evidence in the canonical story.
+No finding was deferred.
+
+The corrections preserve filtered history deepening, remove an expired unused
+snapshot handle, and give loader failures their committed logical filename.
+Behavioral tests now cover actual lazy blob reads, a delivered-branch advance
+during deepening, committed drift through the shared CI job, and real release
+composite input/environment mapping. These changes touch
+`Github/lib/expected_state.py` and the four affected test modules.
+
+The implementation handoff passed all 55 focused tests. Independent in-memory
+mutation checks then removed the deepening filter, shared-job guard, and each
+of the two release input mappings. Each mutation was caught by an assertion in
+its new behavioral regression; the repository files were not mutated.
+Complete post-review verification is recorded in the following update.
+
 ## Terminal result
 
 Status: ready for independent review under the story-specific verification

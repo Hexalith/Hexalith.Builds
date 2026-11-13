@@ -61,6 +61,26 @@ class GuardTests(unittest.TestCase):
                 self.run_guard()
         self.assertEqual({"drift": "false"}, self.outputs)
 
+    def test_matching_invalid_config_reports_the_same_logical_path_on_repeated_runs(self):
+        for data, message in (("malformed JSON", "Expecting value"),
+                              ('{"schema":"unknown"}', "unsupported schema")):
+            self.workspace.write(".github/hexalith-ci.json", data)
+            self.workspace.commit()
+            self.delivered.write("rendered/Fixture/.github/hexalith-ci.json", data)
+            self.delivered.commit()
+            self.delivered.command("branch", "-f", "delivered/Fixture", "HEAD")
+            diagnostics = []
+            for _ in range(2):
+                with self.assertRaises(state.ExpectedStateError) as raised:
+                    self.run_guard()
+                diagnostics.append(str(raised.exception))
+            with self.subTest(data=data):
+                self.assertEqual(diagnostics[0], diagnostics[1])
+                self.assertIn("guard: .github/hexalith-ci.json:", diagnostics[0])
+                self.assertIn(message, diagnostics[0])
+                self.assertNotIn("hexalith-guard-config-", diagnostics[0])
+                self.assertEqual({"drift": "false"}, self.outputs)
+
     def test_every_enabled_hook_and_job_requires_regular_committed_root_metadata(self):
         with self.assertRaises(state.ExpectedStateError) as raised:
             self.run_guard()

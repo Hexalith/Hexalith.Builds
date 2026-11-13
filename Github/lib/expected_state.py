@@ -90,7 +90,7 @@ class AnonymousTransport:
         return Git(directory)
 
     def deepen(self, git: Git, branch: str) -> None:
-        git.run("fetch", "--unshallow", "--no-tags", "--no-recurse-submodules", CICD_REMOTE,
+        git.run("fetch", "--unshallow", "--filter=blob:none", "--no-tags", "--no-recurse-submodules", CICD_REMOTE,
                 "+refs/heads/" + branch + ":refs/remotes/origin/" + branch)
 
     def builds(self, directory: Path, tags: tuple[str, ...]) -> Git:
@@ -124,7 +124,10 @@ def load_ci(snapshot: perimeter.Snapshot, *, repository: str, module_root: str =
     with tempfile.TemporaryDirectory(prefix="hexalith-guard-config-") as directory:
         source = Path(directory) / "hexalith-ci.json"
         source.write_bytes(snapshot.read(path))
-        return load_config(source, repository=repository, module_root=module_root)
+        try:
+            return load_config(source, repository=repository, module_root=module_root)
+        except ConfigError as error:
+            raise ConfigError(str(error).replace(str(source), path)) from error
 
 
 def tree_snapshot(git: Git, ref: str = "HEAD") -> perimeter.Snapshot:
@@ -141,7 +144,6 @@ class Comparison:
 
     drift: tuple[perimeter.Drift, ...]
     actual: perimeter.Snapshot
-    expected: perimeter.Snapshot
     workspace: perimeter.Snapshot
     document: dict
     rendered_root: str
@@ -250,7 +252,7 @@ def compare_repository(actual: perimeter.Git, *, repository: str, ref: str = "HE
             rendered_root = "rendered/" + name
             drift = tuple(perimeter.compare(document, actual_snapshot, expected=expected,
                                              rendered_root=rendered_root, builds=builds))
-            return Comparison(drift, actual_snapshot, expected, workspace, document, rendered_root, pinned,
+            return Comparison(drift, actual_snapshot, workspace, document, rendered_root, pinned,
                               _report(drift, actual_snapshot, expected, document, rendered_root, builds))
     except ExpectedStateError:
         raise

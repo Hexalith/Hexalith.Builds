@@ -151,6 +151,98 @@ class ExpectedStateTests(unittest.TestCase):
         with self.assertRaisesRegex(state.ExpectedStateError, "full commit SHA"):
             self.compare(delivered_sha="HEAD")
 
+    def test_filtered_transport_lazily_reads_owned_blobs_and_deepens_without_historical_blobs(self):
+        self.delivered.command("config", "uploadpack.allowFilter", "true")
+        self.delivered.command("config", "uploadpack.allowAnySHA1InWant", "true")
+        self.delivered.write("unrelated/historical.bin", "unrelated historical payload")
+        historical = self.publish()
+        unrelated = self.delivered.command("rev-parse", historical + ":unrelated/historical.bin")
+        (self.delivered.root / "unrelated/historical.bin").unlink()
+        ancestor = self.publish()
+        owned = self.delivered.command("rev-parse", ancestor + ":rendered/Fixture/.github/hexalith-ci.json")
+        self.delivered.write("rendered/Fixture/.github/hexalith-ci.json", json.dumps(configuration(codeql=["ruby"])))
+        self.publish()
+        wrapper = self.root / "transport-bin/git"
+        wrapper.parent.mkdir()
+        wrapper.write_text(f"#!{sys.executable}\n" + f'''
+import subprocess, sys
+arguments=[{self.delivered.root.as_uri()!r} if value=={state.CICD_REMOTE!r}
+           else value.replace("protocol.file.allow=never", "protocol.file.allow=always")
+           for value in sys.argv[1:]]
+raise SystemExit(subprocess.call([{REAL_GIT!r}, *arguments]))
+''')
+        wrapper.chmod(0o755)
+        observed = {}
+
+        def objects(git):
+            # Enumerate only present objects; probing a missing oid with
+            # cat-file -e would itself trigger the lazy retrieval under test.
+            return set(subprocess.check_output([REAL_GIT, "-C", str(git.root), "cat-file",
+                "--batch-all-objects", "--batch-check=%(objectname)"],
+                env=git.environment).decode().splitlines())
+
+        class ObservedGit(state.Git):
+            def blob(self, oid):
+                before = objects(self)
+                data = super().blob(oid)
+                observed.setdefault("reads", []).append((oid, before, objects(self)))
+                return data
+
+        class FilteringTransport(state.AnonymousTransport):
+            def clone(self, directory, branch):
+                acquired = super().clone(directory, branch)
+                git = ObservedGit(acquired.root)
+                observed["clone"] = objects(git)
+                observed["promisor"] = git.run("config", "--get", "remote.origin.promisor").strip()
+                return git
+
+            def deepen(self, git, branch):
+                super().deepen(git, branch)
+                observed["deepen"] = objects(git)
+
+        with patch.dict(os.environ, PATH=str(wrapper.parent) + os.pathsep + os.environ["PATH"]):
+            comparison = state.compare_repository(state.Git(self.module.root), repository=REPOSITORY,
+                delivered_sha=ancestor, transport=FilteringTransport())
+        self.assertEqual((), comparison.drift)
+        self.assertEqual(ancestor, comparison.delivered_sha)
+        self.assertEqual(b"true", observed["promisor"])
+        for phase in ("clone", "deepen"):
+            self.assertNotIn(owned, observed[phase])
+            self.assertNotIn(unrelated, observed[phase])
+        read = next(record for record in observed["reads"] if record[0] == owned)
+        self.assertNotIn(owned, read[1])
+        self.assertIn(owned, read[2])
+        self.assertTrue(all(unrelated not in after for _, _, after in observed["reads"]))
+
+    def test_branch_advance_during_deepening_cannot_change_the_acquired_tip(self):
+        ancestor = self.accepted
+        self.delivered.write("unowned", "original acquired tip")
+        tip = self.publish()
+        self.delivered.write("rendered/Fixture/.github/hexalith-ci.json", json.dumps(configuration(codeql=["ruby"])))
+        advanced = self.publish()
+        fixture = self
+
+        class AdvancingTransport(LocalTransport):
+            def deepen(self, git, branch):
+                fixture.assertEqual(tip, git.run("rev-parse", "HEAD").decode().strip())
+                fixture.delivered.command("branch", "-f", branch, advanced)
+                super().deepen(git, branch)
+                fixture.assertEqual(advanced, git.run("rev-parse", "refs/remotes/origin/" + branch).decode().strip())
+
+        for requested in (ancestor, advanced):
+            self.delivered.command("branch", "-f", "delivered/Fixture", tip)
+            transport = AdvancingTransport(self.delivered, self.builds)
+            with self.subTest(requested=requested):
+                if requested == ancestor:
+                    comparison = state.compare_repository(state.Git(self.module.root), repository=REPOSITORY,
+                        delivered_sha=requested, transport=transport)
+                    self.assertEqual(ancestor, comparison.delivered_sha)
+                    self.assertEqual((), comparison.drift)
+                else:
+                    with self.assertRaisesRegex(state.ExpectedStateError, "not an ancestor"):
+                        state.compare_repository(state.Git(self.module.root), repository=REPOSITORY,
+                            delivered_sha=requested, transport=transport)
+
     def test_sibling_and_future_commits_are_rejected_using_only_delivered_branch_history(self):
         base = self.accepted
         self.delivered.write("unowned", "live accepted descendant")
