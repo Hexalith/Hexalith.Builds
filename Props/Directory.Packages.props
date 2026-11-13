@@ -91,6 +91,20 @@
         or $(MSBuildProjectName.Equals('Hexalith.Platform.TestExtension.Qualification.Tests'))
         or $(MSBuildProjectName.Equals('Hexalith.Platform.Works.Runtime'))
         or $(MSBuildProjectName.Equals('Hexalith.Platform.Works.Tests'))">true</HexalithPlatformSdk42CatalogView>
+    <!-- These supported net10 consumers include Shell's transitive CPM dependents.
+         OpenIdConnect 11 contains only net11 assets; other identities keep the current catalog. -->
+    <HexalithFrontComposerNet10CatalogView>false</HexalithFrontComposerNet10CatalogView>
+    <HexalithFrontComposerNet10CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.FrontComposer.AppHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests.Bench'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.SourceTools.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI.Tests'))">true</HexalithFrontComposerNet10CatalogView>
+    <HexalithAspNetCoreOpenIdConnectVersion>11.0.0</HexalithAspNetCoreOpenIdConnectVersion>
+    <HexalithAspNetCoreOpenIdConnectVersion Condition="'$(HexalithFrontComposerNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreOpenIdConnectVersion>
     <!-- Only these producer host roles retain the admitted SDK4.2 receiver and OpenAPI2 ABI. -->
     <HexalithBuildsPackagedHostSdk42CatalogView>false</HexalithBuildsPackagedHostSdk42CatalogView>
     <HexalithBuildsPackagedHostSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Builds.Module.AppHost'))
@@ -314,7 +328,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(HexalithAspNetCoreOpenIdConnectVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.CustomElements" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0" />
