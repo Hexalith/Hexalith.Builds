@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass
+import http.client
 import json
 import os
 from pathlib import Path
@@ -173,7 +174,7 @@ class Dispatch:
             # Do not read error bodies or remote URLs; either may echo tokens.
             error.close()
             raise RestoreError("CI dispatch failed: HTTP " + str(error.code)) from None
-        except (URLError, OSError, ValueError) as error:
+        except (URLError, OSError, ValueError, http.client.HTTPException) as error:
             if isinstance(error, RestoreError):
                 raise
             raise RestoreError("CI dispatch transport failed") from None

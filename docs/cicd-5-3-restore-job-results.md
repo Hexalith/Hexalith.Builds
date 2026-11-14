@@ -38,7 +38,7 @@ composite/job adapters), 16 expected-state tests, 51 perimeter tests, 12 guard
 tests, 16 guard-adapter tests and 24 CI-environment tests. Parent execution of
 `python3 -m unittest discover -s Github/lib/tests -p 'test_restore*.py' -v`
 passed all 26 again after the workflow lint correction. No covering test was
-skipped. The source uses stdlib Python only.
+skipped. Restore’s runtime uses stdlib Python only.
 
 | Contract scenario | Executed restore tests |
 | --- | --- |
@@ -73,6 +73,82 @@ whitespace checks passed. Pinned commitlint 21.2.4 accepted the exact
 implementation message, with a breaking-change footer for caller permissions,
 and the runtime repair message with zero problems or warnings.
 
-Full locked local and committed-source hosted qualification are the remaining
-gates before final acceptance; their results will be retained with the source
-and run identities.
+Both complete locked local lanes passed 14/14 retained groups and 920 tests per
+lane, including 504 shared-library tests and all 26 restore tests. Commands were
+`uv run --no-cache --locked --script --python 3.12 Tools/ci/run_python_tests.py`
+and the same command with `--python /usr/bin/python3`. Interpreters were Python
+3.12.13 and 3.14.4; no covering restore test was skipped. Complete logs and
+command/exit manifests are retained at `/tmp/bmad-5-3-python312.{log,json}` and
+`/tmp/bmad-5-3-python-runner.{log,json}`. Expected failure output inside negative
+controls does not represent a failing suite; both complete commands exited 0.
+
+The committed public-API check passed for implementation revision
+`5f8ae823fb74e116c7dec5289fb0c91805f092e6`, against stable `v5.2.2`
+(`02ed624aa19781cac75d2c9112940e9bd830441a`): 2,590 entries and no removals.
+The permission increase is separately declared as a breaking caller API
+change, since the removal checker does not evaluate permission requirements.
+The scoped CiCd-agent profile pushed that implementation to Builds `main`;
+`git ls-remote` independently confirmed the complete revision.
+
+CiCd callers derive permissions from their selected trusted workflow declaration:
+the existing `v5.1.0` pin remains valid, while a restore-enabled tag requires the
+Contents/Actions write union. No Builds tag, module adoption or release is
+created by this story. Exact-source hosted CI passed as recorded below.
+
+The locked CiCd renderer and validator suites passed 32 and 49 tests,
+respectively. They render real disposable old-tag and restore-enabled tagged
+contracts, ignore a newer mutable Builds HEAD/worktree, preserve Windows read
+permissions, and reject insufficient or excess caller permissions. Production
+render and `--check` produced zero generated changes; `builds-version` remains
+`v5.1.0`.
+Parent `uv run --locked --script tools/tests/test_render.py --lint` then passed
+all 32 renderer tests and eight generated fixture workflows through pinned
+actionlint and authenticated online zizmor. The complete log and command/exit
+manifest are retained at `/tmp/bmad-5-3-cicd-render-lint.{log,json}`.
+
+Normal push [run 43534137412](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43534137412)
+uses implementation revision `5f8ae823fb74e116c7dec5289fb0c91805f092e6`.
+Both hosted Python lanes passed 14/14 groups with 504 library tests and all
+26 restore tests, under Python 3.12.16 and 3.14.4. Their complete job logs are
+retained at `/tmp/bmad-5-3-hosted/python312.log` and
+`/tmp/bmad-5-3-hosted/python-runner.log`. Hosted quality, sample CI and dependent
+Windows also passed. Root .NET and the complete catalog gate then passed; the
+normal push run completed successfully. Both self/sample restore jobs were
+correctly skipped. These hosted skips do not claim production-module writes;
+the executable disposable-repository controls provide that evidence.
+
+| Hosted job | Job ID | Result |
+| --- | --- | --- |
+| Package catalog contracts | 132258879756 | success |
+| Python contract tests (3.12) | 132258880074 | success |
+| Python contract tests (runner) | 132258880078 | success |
+| Root .NET build and tests | 132258880107 | success |
+| Workflow lint and public API | 132258880119 | success |
+| Sample module build and tests | 132258880125 | success |
+| Sample Windows tests | 132259315233 | success |
+| Sample restore | 132259317070 | skipped |
+| Builds root restore | 132264692162 | skipped |
+
+
+## Independent review corrections
+
+All four review layers completed. Parent probes confirmed that standard-library
+HTTP protocol errors escaped the original dispatch sanitizer, and the
+verification reviewer demonstrated that removing the default redirect handler
+was undetected by the earlier tests. The correction catches HTTPException with
+the existing fixed transport diagnostic. New controls cover malformed status
+lines and incomplete body reads, confirm a successful repair survives protocol
+failure, and execute the actual default opener against a loopback HTTPS
+connection transport while retaining the production URL and handler chain.
+The redirect destination receives no request or authorization. The focused
+runtime/HTTP suite passed all 25 tests after these corrections.
+
+The parent separately reproduced the purported ancestor-replacement issue:
+both full and eligible-only comparison refuse removal of the unowned `.github`
+ancestor, as the contract's structural-failure rule requires. Shorthand
+permission calculation also fails in the pre-existing global checker; that
+inherited limitation is recorded as deferred, alongside unverified capacity for
+very large future module repositories. All current tagged declarations use
+explicit permission mappings. The canonical CiCd story records every review
+verdict, including rejected diagnostics/retention suggestions and the intended
+qualification/adoption boundary. Fresh post-review qualification follows.

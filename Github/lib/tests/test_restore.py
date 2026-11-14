@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 import copy
+import http.client
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import io
 import json
 import os
@@ -11,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
@@ -361,6 +364,24 @@ class RestoreTests(unittest.TestCase):
         self.assertEqual([repaired], self.transport.pushes)
         self.assertEqual(2, len(self.dispatch.calls))
 
+    def test_protocol_dispatch_failure_preserves_successful_repair(self):
+        class Opener:
+            def open(self, *args, **kwargs):
+                raise http.client.BadStatusLine('secret-marker raw response text')
+        self.module.write('AGENTS.md', 'repair')
+        parent = self.module.commit()
+        self.dispatch = R.Dispatch(Opener())
+        with self.assertRaises(R.RestoreError) as raised:
+            self.invoke()
+        self.assertEqual('CI dispatch transport failed', str(raised.exception))
+        self.assertNotIn('secret-marker', str(raised.exception))
+        repaired = self.module.command('rev-parse', 'main')
+        self.assertNotEqual(parent, repaired)
+        self.assertEqual([repaired], self.transport.pushes)
+        self.assertEqual(parent, self.module.command('show', '-s', '--format=%P', repaired))
+        self.assertEqual(b'product state\n', self.snapshot().read('product.txt'))
+        self.assertIn(b'hexalith-cicd:begin', self.snapshot().read('AGENTS.md'))
+
     def test_excluded_only_drift_never_commits_pushes_or_dispatches(self):
         self.module.write('.github/workflows/ci.yml', 'changed caller')
         self.module.commit()
@@ -452,6 +473,69 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual({'ref': 'main'}, json.loads(request.data))
         self.assertEqual('Bearer secret-marker', request.get_header('Authorization'))
         self.assertEqual(30, timeout)
+
+    def test_protocol_errors_during_open_or_read_are_sanitized(self):
+        class BrokenBody(self.Response):
+            def read(self, amount):
+                raise http.client.IncompleteRead(b'secret-marker response body', 100)
+        for failure in (http.client.BadStatusLine('secret-marker raw status'), BrokenBody()):
+            class Opener:
+                def open(self, *args, **kwargs):
+                    if isinstance(failure, Exception):
+                        raise failure
+                    return failure
+            with self.subTest(failure=type(failure).__name__), self.assertRaises(R.RestoreError) as raised:
+                R.Dispatch(Opener()).send('Example/Fixture', 'secret-marker')
+            self.assertEqual('CI dispatch transport failed', str(raised.exception))
+            self.assertNotIn('secret-marker', str(raised.exception))
+            self.assertTrue(raised.exception.__suppress_context__)
+
+    def test_default_opener_refuses_redirect_without_contacting_its_destination(self):
+        source_requests, destination_requests = [], []
+        class Destination(BaseHTTPRequestHandler):
+            def do_GET(self):
+                destination_requests.append((self.command, self.path, self.headers.get('Authorization')))
+                self.send_response(204)
+                self.end_headers()
+            do_POST = do_GET
+            def log_message(self, *args):
+                pass
+        destination = ThreadingHTTPServer(('127.0.0.1', 0), Destination)
+        class Source(BaseHTTPRequestHandler):
+            def do_POST(self):
+                body = self.rfile.read(int(self.headers.get('Content-Length', '0')))
+                source_requests.append((self.path, self.headers.get('Authorization'), body))
+                self.send_response(302)
+                self.send_header('Location', f'http://127.0.0.1:{destination.server_port}/capture')
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+            def log_message(self, *args):
+                pass
+        source = ThreadingHTTPServer(('127.0.0.1', 0), Source)
+        threads = [threading.Thread(target=server.serve_forever, kwargs={'poll_interval': 0.01}, daemon=True)
+                   for server in (source, destination)]
+        for thread in threads:
+            thread.start()
+        fixture = self
+        class LoopbackHTTPSConnection(http.client.HTTPConnection):
+            def __init__(self, host, *, context=None, **kwargs):
+                fixture.assertEqual('api.github.com', host)
+                super().__init__('127.0.0.1', source.server_port, **kwargs)
+        try:
+            # Keep production's endpoint, opener and redirect-handler chain.
+            # Only replace the HTTPS socket transport with a loopback control.
+            with (patch('urllib.request.getproxies', return_value={}),
+                  patch('http.client.HTTPSConnection', LoopbackHTTPSConnection),
+                  self.assertRaisesRegex(R.RestoreError, 'refused a redirect')):
+                R.Dispatch().send('Example/Fixture', 'secret-marker')
+        finally:
+            for server, thread in zip((source, destination), threads):
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=1)
+        self.assertEqual([('/repos/Example/Fixture/actions/workflows/ci.yml/dispatches',
+                          'Bearer secret-marker', b'{"ref":"main"}')], source_requests)
+        self.assertEqual([], destination_requests)
 
     def test_bounded_errors_and_redirects_never_expose_tokens(self):
         class Opener:
