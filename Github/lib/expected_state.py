@@ -7,6 +7,7 @@ an executable Git repository, a remote override, or an ownership path list.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 import difflib
 import json
@@ -29,6 +30,7 @@ BUILDS_REMOTE = "https://github.com/Hexalith/Hexalith.Builds.git"
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
 SAMPLE_ROOT = "Samples/Hexalith.Sample"
+MAX_DOCUMENT_BYTES = 4 * 1024 * 1024
 
 
 def escaped(value: object) -> str:
@@ -188,27 +190,56 @@ def _report(drift, actual, expected, document, rendered_root, builds):
     return tuple(lines)
 
 
-def compare_repository(actual: perimeter.Git, *, repository: str, ref: str = "HEAD",
-                       module_root: str = "", expected_source: str = "",
-                       delivered_sha: str = "", transport: AnonymousTransport | None = None) -> Comparison | None:
-    """Compare an exact tree to a pinned accepted branch or committed sample."""
+def read_bounded(snapshot: perimeter.Snapshot, path: str, limit: int = MAX_DOCUMENT_BYTES) -> bytes:
+    """Check object size before materializing an untrusted document/blob."""
+    item = snapshot.items.get(path)
+    if item is None or item.mode not in {"100644", "100755"}:
+        raise ExpectedStateError("missing or non-regular expected source: " + path)
+    size = int(snapshot.git.run("cat-file", "-s", item.oid).strip())
+    if size > limit:
+        raise ExpectedStateError("source exceeds 4 MiB limit: " + path)
+    data = snapshot.read(path)
+    if data is None or len(data) > limit:
+        raise ExpectedStateError("source exceeds 4 MiB limit: " + path)
+    return data
+
+
+@dataclass(frozen=True)
+class AcceptedState:
+    """Live accepted objects, valid only inside acquire_expected's context."""
+
+    expected: perimeter.Snapshot
+    document: dict
+    rendered_root: str
+    delivered_sha: str
+    builds: Git
+
+
+@contextmanager
+def acquire_expected(*, repository: str, workspace: perimeter.Snapshot | None = None,
+                     module_root: str = "", expected_source: str = "", delivered_sha: str = "",
+                     transport: AnonymousTransport | None = None, additional_tags: tuple[str, ...] = ()):
+    """Pin the accepted branch once and retain its objects until context exit.
+
+    The optional requested ancestor remains the release reader's contract.
+    Restore supplies no ancestor and therefore always acquires current accepted
+    state anew. There are no production remote or filesystem overrides.
+    """
     validate_context(repository, module_root, expected_source)
-    if repository == BUILDS_REPOSITORY and not module_root:
-        return None
     if delivered_sha and not SHA.fullmatch(delivered_sha):
         raise ExpectedStateError("delivered-sha must be a full commit SHA")
     transport = transport or AnonymousTransport()
-    git = Git(actual.root)
+    yielded = False
     try:
-        workspace = tree_snapshot(git, ref)
-        actual_tree = git.run("rev-parse", "--verify", workspace.ref + ":" + module_root).decode().strip() if module_root else workspace.ref
-        actual_snapshot = git.snapshot(actual_tree) if module_root else workspace
         with tempfile.TemporaryDirectory(prefix="hexalith-expected-") as directory:
             temporary = Path(directory)
             name = module_root.rsplit("/", 1)[-1] if module_root else repository.split("/")[1]
             if module_root:
                 if delivered_sha:
                     raise ExpectedStateError("delivered-sha is unavailable for the committed Builds sample fixture")
+                if workspace is None:
+                    raise ExpectedStateError("committed sample workspace is unavailable")
+                git = workspace.git
                 expected_tree = git.run("rev-parse", "--verify", workspace.ref + ":" + expected_source).decode().strip()
                 expected = git.snapshot(expected_tree)
                 pinned = workspace.ref
@@ -230,11 +261,8 @@ def compare_repository(actual: perimeter.Git, *, repository: str, ref: str = "HE
                         except ExpectedStateError as error:
                             raise ExpectedStateError("cannot establish delivered-sha ancestry in " + branch,
                                                      *error.diagnostics) from error
-                    # rev-list is pinned to the original live tip even if the
-                    # branch advanced while its shallow history was deepened.
-                    # Establish membership before resolving a caller SHA: in
-                    # a partial clone, peeling an unknown object could itself
-                    # trigger a promisor fetch of that unaccepted bare SHA.
+                    # Check ancestry at the original acquired tip, even if the
+                    # branch advanced during deepening. Never fetch a bare SHA.
                     ancestors = accepted.run("rev-list", tip).decode().splitlines()
                     if pinned not in ancestors:
                         raise ExpectedStateError("requested delivered-sha is unavailable or not an ancestor of the accepted branch")
@@ -243,18 +271,45 @@ def compare_repository(actual: perimeter.Git, *, repository: str, ref: str = "HE
             item = expected.items.get(manifest)
             if item is None or item.mode not in {"100644", "100755"}:
                 raise ExpectedStateError("missing or non-regular expected perimeter: " + manifest)
-            document = perimeter_config.load_bytes(expected.read(manifest), source=manifest)
-            tags = tuple(sorted({entry["buildsTag"] for entry in document["entries"] if entry["kind"] == "gitlink"}))
+            document = perimeter_config.load_bytes(read_bounded(expected, manifest), source=manifest)
+            tags = tuple(sorted({entry["buildsTag"] for entry in document["entries"]
+                                 if entry["kind"] == "gitlink"} | set(additional_tags)))
             try:
-                builds = transport.builds(temporary / "builds", tags) if tags else git
+                builds = transport.builds(temporary / "builds", tags) if tags else expected.git
             except ExpectedStateError as error:
                 raise ExpectedStateError("trusted Builds tag objects are unavailable: " + ", ".join(tags),
                                          *error.diagnostics) from error
-            rendered_root = "rendered/" + name
-            drift = tuple(perimeter.compare(document, actual_snapshot, expected=expected,
-                                             rendered_root=rendered_root, builds=builds))
-            return Comparison(drift, actual_snapshot, workspace, document, rendered_root, pinned,
-                              _report(drift, actual_snapshot, expected, document, rendered_root, builds))
+            yielded = True
+            yield AcceptedState(expected, document, "rendered/" + name, pinned, builds)
+    except ExpectedStateError:
+        raise
+    except (perimeter.PerimeterError, perimeter_config.ConfigError, OSError, UnicodeError, ValueError) as error:
+        if yielded:
+            raise
+        raise ExpectedStateError("expected-state comparison unavailable: " + str(error)) from error
+
+
+def compare_repository(actual: perimeter.Git, *, repository: str, ref: str = "HEAD",
+                       module_root: str = "", expected_source: str = "",
+                       delivered_sha: str = "", transport: AnonymousTransport | None = None) -> Comparison | None:
+    """Compare an exact tree to a pinned accepted branch or committed sample."""
+    validate_context(repository, module_root, expected_source)
+    if repository == BUILDS_REPOSITORY and not module_root:
+        return None
+    git = Git(actual.root)
+    try:
+        workspace = tree_snapshot(git, ref)
+        actual_tree = git.run("rev-parse", "--verify", workspace.ref + ":" + module_root).decode().strip() if module_root else workspace.ref
+        actual_snapshot = git.snapshot(actual_tree) if module_root else workspace
+        with acquire_expected(repository=repository, workspace=workspace, module_root=module_root,
+                              expected_source=expected_source, delivered_sha=delivered_sha,
+                              transport=transport) as accepted:
+            drift = tuple(perimeter.compare(accepted.document, actual_snapshot, expected=accepted.expected,
+                rendered_root=accepted.rendered_root, builds=accepted.builds))
+            return Comparison(drift, actual_snapshot, workspace, accepted.document,
+                accepted.rendered_root, accepted.delivered_sha,
+                _report(drift, actual_snapshot, accepted.expected, accepted.document,
+                        accepted.rendered_root, accepted.builds))
     except ExpectedStateError:
         raise
     except (perimeter.PerimeterError, perimeter_config.ConfigError, OSError, UnicodeError) as error:

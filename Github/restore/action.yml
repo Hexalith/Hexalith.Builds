@@ -1,0 +1,8 @@
+name: Restore owned CI/CD content
+description: Recompute accepted ownership from committed sources, push one isolated repair and dispatch CI.
+runs:
+  using: composite
+  steps:
+    - name: Restore owned CI/CD content
+      shell: bash
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/restore.py"

@@ -530,11 +530,31 @@ Missing branches, malformed perimeters, unreadable expected blobs or failed tag
 resolution fail closed before config parsing. The guard's internal `drift`
 output is `true` only for completed perimeter comparisons with owned drift;
 missing expected state, unavailable actions and lint-only failures emit `false`. The CI job keeps
-that flag for a later restore implementation, without adding a public workflow
-output or write permission. Lint failures stop prepare, SDK, build, tests and
+that internal flag for the isolated restore job, without adding a public workflow
+output or CI-job write permission. Lint failures stop prepare, SDK, build, tests and
 hooks. The retired Builds commitlint caller is replaced by this sample guard;
 PR title edits trigger the same validation. Frozen reusable commitlint remains
 available to legacy module callers.
+
+On a noncancelled push to `main` with literal `drift=true`, the separate
+`restore` job runs `$/Github/restore` with only Contents and Actions write.
+Reusable callers must grant both write permissions as the called workflow's
+permission union (AD-10). The inner CI job, module hooks and Windows jobs stay
+read-only. PRs, dispatches, Builds itself and every nonempty `module-root` skip
+restoration; the script repeats these checks before network access.
+
+Restore independently acquires live module main and accepted delivered state,
+using a fresh bare repository and private index without executing module code.
+It protects every workflow path/mode, permits Builds gitlink/section repair only
+at the verified running tag, and additionally requires matching workflows to
+repair CI configuration. It pushes at most one ordinary repair commit and then
+dispatches `ci.yml` on `main`. Rejected pushes stop without retry. A dispatch
+failure preserves the pushed repair; already-clean main supports dispatch-only
+recovery, while excluded-only drift waits for delivery. Guard failure remains
+visible in the original run. The
+[restore qualification results](../../docs/cicd-5-3-restore-job-results.md)
+distinguish disposable-repository write/race controls from hosted Builds CI,
+where restoration is deliberately skipped.
 
 Prepare tests execute real PowerShell and the actual composite metadata in a
 temporary workspace. External checkout/SDK actions and command doubles are

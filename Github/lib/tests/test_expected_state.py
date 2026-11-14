@@ -404,6 +404,35 @@ raise SystemExit(subprocess.call([{REAL_GIT!r}, *arguments]))
         self.assertEqual(index, (self.module.root / ".git/index").read_bytes())
         self.assertEqual(configuration_bytes, (self.module.root / ".github/hexalith-ci.json").read_bytes())
 
+    def test_acquisition_retains_snapshots_and_tag_handles_only_inside_the_context(self):
+        self.document["entries"].append({"kind": "gitlink", "path": "references/Builds", "buildsTag": "v1.2.3"})
+        self.publish()
+        with state.acquire_expected(repository=REPOSITORY, transport=self.transport) as accepted:
+            roots = [accepted.expected.git.root, accepted.builds.root]
+            self.assertTrue(all(root.exists() for root in roots))
+            self.assertEqual(self.delivered.command("rev-parse", "delivered/Fixture"), accepted.delivered_sha)
+            self.assertEqual(self.builds_sha, accepted.builds.run("rev-parse", "refs/tags/v1.2.3^{}").decode().strip())
+            self.assertEqual(json.dumps(configuration()).encode(), accepted.expected.read("rendered/Fixture/.github/hexalith-ci.json"))
+        self.assertTrue(all(not root.exists() for root in roots))
+        with self.assertRaisesRegex(RuntimeError, "consumer failure"):
+            with state.acquire_expected(repository=REPOSITORY, transport=self.transport) as accepted:
+                roots = [accepted.expected.git.root, accepted.builds.root]
+                raise RuntimeError("consumer failure")
+        self.assertTrue(all(not root.exists() for root in roots))
+
+    def test_oversized_manifest_is_rejected_before_blob_materialization(self):
+        self.delivered.write("rendered/Fixture.perimeter.json", b" " * (state.MAX_DOCUMENT_BYTES + 1))
+        revision = self.delivered.commit()
+        self.delivered.command("branch", "-f", "delivered/Fixture", revision)
+        original = state.Git.blob
+        reads = []
+        def observed(git, oid):
+            reads.append(oid)
+            return original(git, oid)
+        with patch.object(state.Git, "blob", observed), self.assertRaisesRegex(state.ExpectedStateError, "4 MiB"):
+            self.compare()
+        self.assertEqual([], reads)
+
     def test_index_snapshot_is_unavailable_at_the_shared_runtime_boundary(self):
         with self.assertRaisesRegex(state.ExpectedStateError, "committed Git tree"):
             self.compare(ref="index")

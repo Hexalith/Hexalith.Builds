@@ -8,6 +8,7 @@ this engine. There are no implicit ownership paths or network operations.
 
 from __future__ import annotations
 
+from copy import copy
 from dataclasses import dataclass
 import importlib.util
 import json
@@ -81,6 +82,12 @@ class Git:
             message = result.stderr.decode("utf-8", "backslashreplace").strip()
             raise PerimeterError(f"git {arguments[0]}: {message or 'command failed'}")
         return result.stdout if check or not result.returncode else b""
+
+    def with_index(self, index_file: str | Path) -> Git:
+        """Retain the caller's Git adapter and environment for candidate reads."""
+        result = copy(self)
+        result.environment = self.environment | {"GIT_INDEX_FILE": str(Path(index_file).resolve())}
+        return result
 
     def blob(self, oid: str) -> bytes:
         return self.run("cat-file", "blob", oid)
@@ -771,7 +778,7 @@ def apply(document: dict, repository: Git, *, expected: Snapshot,
                            environment=environment)
         # Clean filters can transform even stdin. Refuse a candidate whose
         # resulting blobs no longer satisfy the selected ownership contract.
-        candidate_git = Git(repository.root, index_file=candidate)
+        candidate_git = repository.with_index(candidate)
         remaining = _Plan(document, candidate_git.snapshot("index"), expected,
                           rendered_root, builds, plan.selected).drift
         if remaining:

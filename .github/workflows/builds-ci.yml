@@ -26,7 +26,8 @@ jobs:
     name: .NET tests
     uses: ./.github/workflows/ci.yml
     permissions:
-      contents: read
+      contents: write
+      actions: write
     with:
       # Active projects use SDK 11; SDK 10 supplies offline backward-compatibility fixtures.
       additional-sdk-version: '10.0.404'
@@ -38,7 +39,8 @@ jobs:
     name: Sample module
     uses: ./.github/workflows/ci.yml
     permissions:
-      contents: read
+      contents: write
+      actions: write
     with:
       module-root: Samples/Hexalith.Sample
       expected-source: Samples/Hexalith.Sample/expected-source

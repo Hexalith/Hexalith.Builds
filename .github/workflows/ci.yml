@@ -116,3 +116,31 @@ jobs:
       - name: After integration tests hook
         if: steps.unit.outputs.after-integration-tests == 'true'
         uses: ./.github/actions/after-integration-tests
+
+  restore:
+    name: Restore owned CI/CD content
+    needs: ci
+    if: >-
+      ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          needs.ci.outputs.drift == 'true' && inputs.module-root == '' &&
+          github.repository != 'Hexalith/Hexalith.Builds' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Restore from trusted committed sources
+        uses: $/Github/restore
+        env:
+          RESTORE_REPOSITORY: ${{ github.repository }}
+          RESTORE_EVENT_NAME: ${{ github.event_name }}
+          RESTORE_REF: ${{ github.ref }}
+          RESTORE_DRIFT: ${{ needs.ci.outputs.drift }}
+          RESTORE_MODULE_ROOT: ${{ inputs.module-root }}
+          RESTORE_EXPECTED_SOURCE: ${{ inputs.expected-source }}
+          RESTORE_CANCELLED: ${{ job.status == 'cancelled' }}
+          RESTORE_WORKFLOW_REF: ${{ job.workflow_ref }}
+          RESTORE_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          RESTORE_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          RESTORE_TOKEN: ${{ github.token }}
