@@ -61,6 +61,15 @@ catalog packages 18.12.2 with runtime assets excluded; the executing SDK supplie
 its own MSBuild assemblies. Unit tests include those packages' runtime assets.
 
 ASP.NET Core, OAuth, Identity Stores and Immutable now use version 11.0.0.
+The exact 25 current FrontComposer source/test and Counter/IdeParity compiler
+consumer identities retain Immutable 10.0.15 through the named
+`HexalithFrontComposerImmutable10CatalogView`. This preserves .NET 10 compiler
+and generator loading; every other consumer retains the 11.0.0 default. The
+catalog owns both selections through one unconditional package declaration.
+`Tools/test-frontcomposer-immutable-view.py` evaluates the admitted and nearby
+non-admitted identities under Debug and Release in the blocking catalog lane.
+No consumer-local PackageVersion or VersionOverride is authorized.
+
 Authorization and SignalR advance with the host's ASP.NET Core runtime, removing
 the mixed-major ABI constraints. OpenApi 3.11.0 and Swashbuckle 11.0.0 align with
 ASP.NET Core OpenApi 11. Retain the Dapr hosting integration required by the

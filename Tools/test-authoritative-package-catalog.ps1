@@ -253,7 +253,8 @@ function Test-OwnedCatalogView {
     param([string] $ProjectName, [string] $ExpectedSdk, [string] $ExpectedAspNetOpenApi,
           [string] $ExpectedOpenApi, [string] $ExpectedPartiesView, [string] $ExpectedPlatformView,
           [string] $SelectedSdk = '', [string] $ExpectedBuildsHostView = 'false',
-          [string] $ExpectedOpenIdConnect = '11.0.0', [string] $ExpectedFrontComposerView = 'false')
+          [string] $ExpectedOpenIdConnect = '11.0.0', [string] $ExpectedFrontComposerView = 'false',
+          [string] $ExpectedImmutable = '11.0.0', [string] $ExpectedImmutableView = 'false')
     $probe = Join-Path $viewProbeRoot "$ProjectName.proj"
     $escapedCatalog = [Security.SecurityElement]::Escape([IO.Path]::GetFullPath($catalogPath))
     [IO.File]::WriteAllText($probe, "<Project><Import Project=`"$escapedCatalog`" /></Project>")
@@ -261,28 +262,32 @@ function Test-OwnedCatalogView {
     $stderr = Join-Path $viewProbeRoot 'evaluation.stderr'
     $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" })
     & dotnet msbuild $probe -nologo -noAutoResponse -nr:false @properties `
-        -getProperty:HexalithEventStoreVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView `
+        -getProperty:HexalithEventStoreVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView,HexalithFrontComposerImmutable10CatalogView,HexalithImmutableVersion `
         -getItem:PackageVersion 1> $stdout 2> $stderr
     if ($LASTEXITCODE -ne 0) { throw "Clean catalog view '$ProjectName' failed: $([IO.File]::ReadAllText($stderr))" }
     $observed = [IO.File]::ReadAllText($stdout) | ConvertFrom-Json
     $pins = @{}
     foreach ($row in @($observed.Items.PackageVersion)) { $pins[$row.Identity] = $row.Version }
+    $immutableRows = @($observed.Items.PackageVersion | Where-Object { $_.Identity -ceq 'System.Collections.Immutable' })
     if ($observed.Properties.HexalithEventStoreVersion -cne $ExpectedSdk -or
         $observed.Properties.HexalithPartiesSdk42CatalogView -cne $ExpectedPartiesView -or
         $observed.Properties.HexalithPlatformSdk42CatalogView -cne $ExpectedPlatformView -or
         $observed.Properties.HexalithBuildsPackagedHostSdk42CatalogView -cne $ExpectedBuildsHostView -or
         $observed.Properties.HexalithFrontComposerNet10CatalogView -cne $ExpectedFrontComposerView -or
+        $observed.Properties.HexalithFrontComposerImmutable10CatalogView -cne $ExpectedImmutableView -or
+        $observed.Properties.HexalithImmutableVersion -cne $ExpectedImmutable -or
+        $immutableRows.Count -ne 1 -or $pins['System.Collections.Immutable'] -cne $ExpectedImmutable -or
         $pins['Microsoft.AspNetCore.Authentication.OpenIdConnect'] -cne $ExpectedOpenIdConnect -or
         $pins['Microsoft.AspNetCore.OpenApi'] -cne $ExpectedAspNetOpenApi -or
         $pins['Microsoft.OpenApi'] -cne $ExpectedOpenApi) {
-        $failures.Add("Clean catalog view '$ProjectName' changed its exact SDK/OpenAPI tuple or owner identity.")
+        $failures.Add("Clean catalog view '$ProjectName' changed its exact SDK/OpenAPI/Immutable tuple or owner identity.")
     }
     foreach ($member in @($observed.Items.PackageVersion | Where-Object { $_.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) })) {
         if ($member.Version -cne $ExpectedSdk) { $failures.Add("Clean catalog view '$ProjectName' split its canonical EventStore family.") }
     }
     foreach ($row in @($observed.Items.PackageVersion)) {
         if (-not $row.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) -and
-            $row.Identity -notin @('Microsoft.AspNetCore.OpenApi', 'Microsoft.OpenApi', 'Microsoft.AspNetCore.Authentication.OpenIdConnect') -and
+            $row.Identity -notin @('Microsoft.AspNetCore.OpenApi', 'Microsoft.OpenApi', 'Microsoft.AspNetCore.Authentication.OpenIdConnect', 'System.Collections.Immutable') -and
             $row.Version -cne $evaluatedPackages[$row.Identity]) {
             $failures.Add("Clean catalog view '$ProjectName' changes unrelated package '$($row.Identity)'.")
         }
@@ -320,7 +325,18 @@ try {
                         'Hexalith.FrontComposer.Testing', 'Hexalith.FrontComposer.Testing.Tests',
                         'Hexalith.FrontComposer.UI', 'Hexalith.FrontComposer.UI.Tests')) {
         Test-OwnedCatalogView $name '5.0.1' '11.0.0' '3.11.0' 'false' 'false' `
-            -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true'
+            -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true' `
+            -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
+    }
+    # These net10 consumers need the Immutable view without the separate Shell/OpenIdConnect view.
+    foreach ($name in @('Hexalith.FrontComposer.Cli', 'Hexalith.FrontComposer.Cli.Tests',
+                        'Hexalith.FrontComposer.Contracts', 'Hexalith.FrontComposer.Contracts.Tests',
+                        'Hexalith.FrontComposer.Contracts.UI', 'Hexalith.FrontComposer.Contracts.UI.Tests',
+                        'Hexalith.FrontComposer.CounterFixture', 'Hexalith.FrontComposer.Mcp',
+                        'Hexalith.FrontComposer.Mcp.Tests', 'Hexalith.FrontComposer.Schema',
+                        'Hexalith.FrontComposer.SourceTools')) {
+        Test-OwnedCatalogView $name '5.0.1' '11.0.0' '3.11.0' 'false' 'false' `
+            -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
     }
     foreach ($name in @('Hexalith.Memories.Server', 'Hexalith.Memories.Web', 'Hexalith.FrontComposer.Future',
                         'Hexalith.FrontComposer.Shell.Future', 'Counter.Web.Future', 'Counter.Specimens.Domain.Future',

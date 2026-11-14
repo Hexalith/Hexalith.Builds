@@ -98,6 +98,9 @@ jobs:
       - name: Test logging generator selection
         run: python3 Tools/test-logging-generator-selection.py
 
+      - name: Test FrontComposer Immutable consumer view
+        run: python3 Tools/test-frontcomposer-immutable-view.py
+
       - name: Test central package version validator
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1

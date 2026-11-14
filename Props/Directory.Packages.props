@@ -109,6 +109,35 @@
         or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing.Tests'))
         or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI'))
         or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI.Tests'))">true</HexalithFrontComposerNet10CatalogView>
+    <!-- FrontComposer net10 compiler and generator consumers retain the supported Immutable ABI. -->
+    <HexalithFrontComposerImmutable10CatalogView>false</HexalithFrontComposerImmutable10CatalogView>
+    <HexalithFrontComposerImmutable10CatalogView Condition="$(MSBuildProjectName.Equals('Counter.Domain'))
+        or $(MSBuildProjectName.Equals('Counter.Specimens'))
+        or $(MSBuildProjectName.Equals('Counter.Specimens.Domain'))
+        or $(MSBuildProjectName.Equals('Counter.Web'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.AppHost'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Cli'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Cli.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Contracts'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Contracts.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Contracts.UI'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Contracts.UI.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.CounterFixture'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Mcp'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Mcp.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Schema'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests.Bench'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.SourceTools'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.SourceTools.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing.Tests'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI'))
+        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI.Tests'))
+        or $(MSBuildProjectName.Equals('IdeParityCounter'))">true</HexalithFrontComposerImmutable10CatalogView>
+    <HexalithImmutableVersion>11.0.0</HexalithImmutableVersion>
+    <HexalithImmutableVersion Condition="'$(HexalithFrontComposerImmutable10CatalogView)' == 'true'">10.0.15</HexalithImmutableVersion>
     <HexalithAspNetCoreOpenIdConnectVersion>11.0.0</HexalithAspNetCoreOpenIdConnectVersion>
     <HexalithAspNetCoreOpenIdConnectVersion Condition="'$(HexalithFrontComposerNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreOpenIdConnectVersion>
     <!-- Only these producer host roles retain the admitted SDK4.2 receiver and OpenAPI2 ABI. -->
@@ -468,7 +497,7 @@
     <PackageVersion Include="StyleCop.Analyzers" Version="1.3.180" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="11.0.1" />
     <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="11.0.1" />
-    <PackageVersion Include="System.Collections.Immutable" Version="11.0.0" />
+    <PackageVersion Include="System.Collections.Immutable" Version="$(HexalithImmutableVersion)" />
     <!-- Microsoft-supported CLI parser chosen per Hexalith.Memories ADR-7.1-008: recursive/global options, async handlers with CancellationToken, global-tool packaging. -->
     <PackageVersion Include="System.CommandLine" Version="3.0.0" />
     <!-- FrontComposer FcShellOptions data-annotation validation on netstandard2.0. -->
