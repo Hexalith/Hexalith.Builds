@@ -146,7 +146,7 @@ if ($overrideEnabled -cne 'false') {
 $cohortFamilies = [ordered] @{
     'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '5.1.0' }
     'Hexalith.McpCli.' = @{ Property = 'HexalithMcpCliVersion'; Version = '2.0.1' }
-    'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '7.0.7' }
+    'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '8.0.0' }
 }
 [xml] $catalog = Get-Content -LiteralPath $catalogPath -Raw
 foreach ($family in $cohortFamilies.GetEnumerator()) {
@@ -255,16 +255,17 @@ function Test-OwnedCatalogView {
           [string] $SelectedSdk = '', [string] $ExpectedBuildsHostView = 'false',
           [string] $ExpectedOpenIdConnect = '11.0.0', [string] $ExpectedFrontComposerView = 'false',
           [string] $ExpectedImmutable = '11.0.0', [string] $ExpectedImmutableView = 'false',
-          [string] $SelectedMemories = '')
+          [string] $SelectedMemories = '', [string] $SelectedTenants = '')
     $probe = Join-Path $viewProbeRoot "$ProjectName.proj"
     $escapedCatalog = [Security.SecurityElement]::Escape([IO.Path]::GetFullPath($catalogPath))
     [IO.File]::WriteAllText($probe, "<Project><Import Project=`"$escapedCatalog`" /></Project>")
     $stdout = Join-Path $viewProbeRoot 'evaluation.stdout'
     $stderr = Join-Path $viewProbeRoot 'evaluation.stderr'
-    $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" }; if ($SelectedMemories) { "-p:HexalithMemoriesVersion=$SelectedMemories" })
+    $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" }; if ($SelectedMemories) { "-p:HexalithMemoriesVersion=$SelectedMemories" }; if ($SelectedTenants) { "-p:HexalithTenantsVersion=$SelectedTenants" })
     $expectedMemories = if ($SelectedMemories) { $SelectedMemories } elseif ($ExpectedSdk -ceq '4.2.0' -and ($ExpectedPartiesView -ceq 'true' -or $ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '3.0.27' } else { '4.0.0' }
+    $expectedTenants = if ($SelectedTenants) { $SelectedTenants } elseif ($ExpectedSdk -ceq '4.2.0' -and ($ExpectedPartiesView -ceq 'true' -or $ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '7.0.7' } else { '8.0.0' }
     & dotnet msbuild $probe -nologo -noAutoResponse -nr:false @properties `
-        -getProperty:HexalithEventStoreVersion,HexalithMemoriesVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView,HexalithFrontComposerImmutable10CatalogView,HexalithImmutableVersion `
+        -getProperty:HexalithEventStoreVersion,HexalithMemoriesVersion,HexalithTenantsVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView,HexalithFrontComposerImmutable10CatalogView,HexalithImmutableVersion `
         -getItem:PackageVersion 1> $stdout 2> $stderr
     if ($LASTEXITCODE -ne 0) { throw "Clean catalog view '$ProjectName' failed: $([IO.File]::ReadAllText($stderr))" }
     $observed = [IO.File]::ReadAllText($stdout) | ConvertFrom-Json
@@ -273,6 +274,7 @@ function Test-OwnedCatalogView {
     $immutableRows = @($observed.Items.PackageVersion | Where-Object { $_.Identity -ceq 'System.Collections.Immutable' })
     if ($observed.Properties.HexalithEventStoreVersion -cne $ExpectedSdk -or
         $observed.Properties.HexalithMemoriesVersion -cne $expectedMemories -or
+        $observed.Properties.HexalithTenantsVersion -cne $expectedTenants -or
         $observed.Properties.HexalithPartiesSdk42CatalogView -cne $ExpectedPartiesView -or
         $observed.Properties.HexalithPlatformSdk42CatalogView -cne $ExpectedPlatformView -or
         $observed.Properties.HexalithBuildsPackagedHostSdk42CatalogView -cne $ExpectedBuildsHostView -or
@@ -291,9 +293,13 @@ function Test-OwnedCatalogView {
     foreach ($member in @($observed.Items.PackageVersion | Where-Object { $_.Identity.StartsWith('Hexalith.Memories.', [StringComparison]::Ordinal) })) {
         if ($member.Version -cne $expectedMemories) { $failures.Add("Clean catalog view '$ProjectName' split its canonical Memories family.") }
     }
+    foreach ($member in @($observed.Items.PackageVersion | Where-Object { $_.Identity.StartsWith('Hexalith.Tenants.', [StringComparison]::Ordinal) })) {
+        if ($member.Version -cne $expectedTenants) { $failures.Add("Clean catalog view '$ProjectName' split its canonical Tenants family.") }
+    }
     foreach ($row in @($observed.Items.PackageVersion)) {
         if (-not $row.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) -and
             -not $row.Identity.StartsWith('Hexalith.Memories.', [StringComparison]::Ordinal) -and
+            -not $row.Identity.StartsWith('Hexalith.Tenants.', [StringComparison]::Ordinal) -and
             $row.Identity -notin @('Microsoft.AspNetCore.OpenApi', 'Microsoft.OpenApi', 'Microsoft.AspNetCore.Authentication.OpenIdConnect', 'System.Collections.Immutable') -and
             $row.Version -cne $evaluatedPackages[$row.Identity]) {
             $failures.Add("Clean catalog view '$ProjectName' changes unrelated package '$($row.Identity)'.")
@@ -317,6 +323,8 @@ try {
     Test-OwnedCatalogView 'Hexalith.Parties' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '4.0.0'
     Test-OwnedCatalogView 'Hexalith.Parties.Contracts' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '3.0.26'
     Test-OwnedCatalogView 'Hexalith.Builds.Module.EventStoreHost' '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedTenants '8.0.0'
+    Test-OwnedCatalogView 'Unrelated.Consumer' '5.1.0' '11.0.0' '3.11.0' 'false' 'false' -SelectedTenants '7.0.7'
     foreach ($name in $buildsHostSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' }
     foreach ($name in @('Unrelated.Consumer', 'Hexalith.Parties.Future', 'Hexalith.Parties.Tests.Future',
                         'hexalith.Parties.Tests', 'Hexalith.Platform.Future', 'Hexalith.Platform.EventStoreHost.Future',

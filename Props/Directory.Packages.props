@@ -159,7 +159,9 @@
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">3.0.27</HexalithMemoriesVersion>
     <!-- Current package selection; historical declarations retain their separately pinned release inputs. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.0.0</HexalithMemoriesVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">7.0.7</HexalithTenantsVersion>
+    <!-- SDK4.2 consumers retain Tenants7; Tenants8 requires the current SDK5 cohort. -->
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == '' and ('$(HexalithEventStoreVersion)' != '4.2.0' or ('$(HexalithPartiesSdk42CatalogView)' != 'true' and '$(HexalithPlatformSdk42CatalogView)' != 'true' and '$(HexalithBuildsPackagedHostSdk42CatalogView)' != 'true'))">8.0.0</HexalithTenantsVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">7.0.7</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">3.1.1</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.1.1</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.4</HexalithProjectsVersion>

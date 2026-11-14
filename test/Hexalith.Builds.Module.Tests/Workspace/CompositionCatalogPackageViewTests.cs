@@ -102,6 +102,30 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion(package, "probe", "Hexalith.Folders.Aspire").ShouldBe("13.0.0");
     }
 
+    /// <summary>Unmaterialized owner and package lookups read the current Tenants default from the real catalog.</summary>
+    [Fact]
+    public void UnmaterializedOwningCatalogUsesCurrentTenantsVersion()
+    {
+        string root = Directory.CreateTempSubdirectory("catalog-unmaterialized-tenants-").FullName;
+        try
+        {
+            string catalog = Path.Combine(root, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(catalog)!);
+            File.Copy(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), catalog);
+            SourceMapping mapping = new(WorkspaceMode.Package, root, "Hexalith.Platform", [], false);
+            CompositionDeclarationOptions options = new(mapping, []);
+            options.CatalogVersion("tenants", "probe").ShouldBe("8.0.0");
+            foreach (string package in new[] { "Hexalith.Tenants.Aspire", "Hexalith.Tenants.Client", "Hexalith.Tenants.Contracts", "Hexalith.Tenants.Server", "Hexalith.Tenants.Testing" })
+            {
+                options.CatalogPackageVersion(package, "probe").ShouldBe("8.0.0", package);
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     /// <summary>Materializes every retained consumer view from the owning catalog while preserving its current default.</summary>
     /// <returns>The finite consumer-view and unknown-name refusal assertions.</returns>
     [Fact]
@@ -197,6 +221,8 @@ public sealed class CompositionCatalogPackageViewTests
             snapshot.ProjectVersions.ContainsKey(consumer).ShouldBeTrue(consumer);
             IReadOnlyDictionary<string, string> versions = snapshot.ProjectVersions[consumer];
             AssertEventStoreFamily(versions, "4.2.0", consumer);
+            versions["Hexalith.Tenants.Contracts"].ShouldBe("7.0.7", consumer);
+            versions["Hexalith.Tenants.Client"].ShouldBe("7.0.7", consumer);
             versions["Microsoft.AspNetCore.OpenApi"].ShouldBe("10.0.15", consumer);
             versions["Microsoft.OpenApi"].ShouldBe("2.13.0", consumer);
             foreach (KeyValuePair<string, string> package in versions.Where(pair => pair.Key.StartsWith("Hexalith.Memories.", StringComparison.Ordinal)))
@@ -208,6 +234,9 @@ public sealed class CompositionCatalogPackageViewTests
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
         AssertEventStoreFamily(snapshot.Versions, "5.1.0", "default");
         snapshot.Versions["Hexalith.Memories.Contracts"].ShouldBe("4.0.0");
+        snapshot.Versions["Hexalith.Tenants.Contracts"].ShouldBe("8.0.0");
+        options.CatalogVersion("tenants", "probe").ShouldBe("8.0.0");
+        options.CatalogVersion("tenants", "probe", "Hexalith.Platform.Composition").ShouldBe("7.0.7");
         options.CatalogVersion("memories", "probe", "Hexalith.Platform.Composition").ShouldBe("3.0.27");
         options.CatalogVersion("memories", "probe", "Hexalith.Parties").ShouldBe("3.0.27");
         options.CatalogPackageVersion("Hexalith.Memories.Client.Rest", "probe", "Hexalith.Parties").ShouldBe("3.0.27");
@@ -265,7 +294,10 @@ public sealed class CompositionCatalogPackageViewTests
         CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
         AssertEventStoreFamily(snapshot.Versions, selected, "default");
         snapshot.Versions["Hexalith.Memories.Contracts"].ShouldBe("4.0.0");
+        snapshot.Versions["Hexalith.Tenants.Contracts"].ShouldBe("8.0.0");
         AssertEventStoreFamily(snapshot.ProjectVersions[consumer], selected, consumer);
+        snapshot.ProjectVersions[consumer]["Hexalith.Tenants.Contracts"]
+            .ShouldBe(selected == "4.2.0" ? "7.0.7" : "8.0.0");
         snapshot.ProjectVersions[consumer]["Hexalith.Memories.Contracts"]
             .ShouldBe(selected == "4.2.0" ? "3.0.27" : "4.0.0");
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
@@ -311,6 +343,42 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogVersion("memories", "probe").ShouldBe(selected);
         options.CatalogVersion("memories", "probe", consumer).ShouldBe(selected);
         options.CatalogPackageVersion("Hexalith.Memories.Client.Rest", "probe", consumer).ShouldBe(selected);
+    }
+
+    /// <summary>Retains an ordinary Tenants property selection in both exact SDK4.2 owner views.</summary>
+    /// <param name="consumer">The finite owning consumer.</param>
+    /// <param name="selected">The explicit Tenants selection.</param>
+    /// <returns>The real materialized owner/default family and lookup assertions.</returns>
+    [Theory]
+    [InlineData("Hexalith.Parties", "7.0.6")]
+    [InlineData("Hexalith.Parties", "8.0.0")]
+    [InlineData("Hexalith.Platform.EventStoreHost", "7.0.6")]
+    [InlineData("Hexalith.Platform.EventStoreHost", "8.0.0")]
+    public async Task OwningSdk42ViewPreservesExplicitTenantsSelectionAsync(string consumer, string selected)
+    {
+        string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        System.Xml.Linq.XDocument document = System.Xml.Linq.XDocument.Parse(catalog);
+        document.Root!.AddFirst(new System.Xml.Linq.XElement("PropertyGroup", new System.Xml.Linq.XElement("HexalithTenantsVersion", selected)));
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(document.ToString()).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "explicit-tenants-consumer");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
+        AssertEventStoreFamily(snapshot.Versions, "5.1.0", "default");
+        AssertEventStoreFamily(snapshot.ProjectVersions[consumer], "4.2.0", consumer);
+        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
+        foreach (string package in new[] { "Hexalith.Tenants.Aspire", "Hexalith.Tenants.Client", "Hexalith.Tenants.Contracts", "Hexalith.Tenants.Server", "Hexalith.Tenants.Testing" })
+        {
+            snapshot.Versions[package].ShouldBe(selected, "default:" + package);
+            snapshot.ProjectVersions[consumer][package].ShouldBe(selected, consumer + ":" + package);
+            options.CatalogPackageVersion(package, "probe").ShouldBe(selected, package);
+            options.CatalogPackageVersion(package, "probe", consumer).ShouldBe(selected, consumer + ":" + package);
+        }
+
+        options.CatalogVersion("tenants", "probe").ShouldBe(selected);
+        options.CatalogVersion("tenants", "probe", consumer).ShouldBe(selected);
+        CompositionDeclarationOptions owning = options with { ConsumerProjectName = consumer };
+        owning.CatalogVersion("tenants", "probe").ShouldBe(selected);
     }
 
     /// <summary>Owner and package APIs share an explicit consumer without changing the default view.</summary>

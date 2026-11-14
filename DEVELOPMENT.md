@@ -103,6 +103,11 @@ guard still prohibit consumer-local version declarations, crossed pairs and
 unrecorded views. Package auditing and transitive pinning remain required.
 These catalog views grant no native, image or new SDK5 Platform admission.
 
+Tenants 8.0.0 is the current default and requires EventStore 5.1.0. The same
+finite SDK4.2 consumer identities retain Tenants 7.0.7; explicit Tenants
+selections remain authoritative. Both evaluated catalog probes and the real
+materialized consumer snapshot cover this retained family.
+
 ## Composition catalog consumers
 
 `CompositionDeclarationOptions.ConsumerProjectName` selects an actual recorded
