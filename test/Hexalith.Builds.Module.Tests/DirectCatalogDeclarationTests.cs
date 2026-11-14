@@ -212,16 +212,16 @@ public sealed class DirectCatalogDeclarationTests
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionDeclarationOptions selected = cold with { Workspace = workspace };
         selected.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
-        (selected with { ConsumerProjectName = null }).CatalogVersion("eventstore", "probe").ShouldBe("5.0.1");
+        (selected with { ConsumerProjectName = null }).CatalogVersion("eventstore", "probe").ShouldBe("5.1.0");
         CompositionDeclarationClosure.Load(selected).Count.ShouldBe(closure.Count);
         CompositionDeclarationOptions platform = selected with { ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName };
-        platform.CatalogVersion("eventstore", "probe").ShouldBe("5.0.1");
+        platform.CatalogVersion("eventstore", "probe").ShouldBe("5.1.0");
         Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(platform))
-            .Message.ShouldContain("5.0.1");
+            .Message.ShouldContain("5.1.0");
         Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(selected with { ConsumerProjectName = null }))
-            .Message.ShouldContain("5.0.1");
+            .Message.ShouldContain("5.1.0");
         CatalogVersionMaterializer.ReadSnapshot(Path.Combine(workspace, "source-mapping", "catalog-versions.json"))
-            .Versions["Hexalith.EventStore.Aspire"].ShouldBe("5.0.1");
+            .Versions["Hexalith.EventStore.Aspire"].ShouldBe("5.1.0");
     }
 
     /// <summary>A cold consumer cannot substitute the default view for an absent recorded identity.</summary>

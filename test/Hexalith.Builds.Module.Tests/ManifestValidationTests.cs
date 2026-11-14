@@ -199,7 +199,7 @@ public sealed class ManifestValidationTests
     [Fact]
     public void CurrentCatalogAndFrozenV1PinsHaveIndependentAuthority()
     {
-        PlatformVersionCatalog.Current.EventStoreVersion.ShouldBe("5.0.1");
+        PlatformVersionCatalog.Current.EventStoreVersion.ShouldBe("5.1.0");
         SupportedPlatformPins.EventStoreVersion.ShouldBe("4.2.0");
         SupportedPlatformPins.DaprRuntimeVersion.ShouldBe("1.19.1");
         SupportedPlatformPins.DaprSdkVersion.ShouldBe("1.19.1");

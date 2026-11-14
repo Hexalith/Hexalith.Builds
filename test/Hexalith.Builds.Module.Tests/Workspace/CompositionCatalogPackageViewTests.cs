@@ -197,28 +197,28 @@ public sealed class CompositionCatalogPackageViewTests
             snapshot.ProjectVersions.ContainsKey(consumer).ShouldBeTrue(consumer);
             IReadOnlyDictionary<string, string> versions = snapshot.ProjectVersions[consumer];
             bool currentPlatformView = consumer.StartsWith("Hexalith.Platform.", StringComparison.Ordinal);
-            string expectedSdk = currentPlatformView ? "5.0.1" : "4.2.0";
+            string expectedSdk = currentPlatformView ? "5.1.0" : "4.2.0";
             AssertEventStoreFamily(versions, expectedSdk, consumer);
             versions["Microsoft.AspNetCore.OpenApi"].ShouldBe(currentPlatformView ? "11.0.0" : "10.0.15", consumer);
             versions["Microsoft.OpenApi"].ShouldBe(currentPlatformView ? "3.11.0" : "2.13.0", consumer);
         }
 
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
-        AssertEventStoreFamily(snapshot.Versions, "5.0.1", "default");
-        options.CatalogVersion("eventstore", "probe").ShouldBe("5.0.1");
-        options.CatalogVersion("eventstore", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("5.0.1");
+        AssertEventStoreFamily(snapshot.Versions, "5.1.0", "default");
+        options.CatalogVersion("eventstore", "probe").ShouldBe("5.1.0");
+        options.CatalogVersion("eventstore", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("5.1.0");
         CompositionDeclarationOptions platform = options with { ConsumerProjectName = "Hexalith.Platform.EventStoreHost" };
-        platform.CatalogVersion("eventstore", "probe").ShouldBe("5.0.1");
-        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe").ShouldBe("5.0.1");
+        platform.CatalogVersion("eventstore", "probe").ShouldBe("5.1.0");
+        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe").ShouldBe("5.1.0");
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe").ShouldBe("11.0.0");
         options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.0");
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("11.0.0");
         options.CatalogPackageVersion("Microsoft.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("3.11.0");
-        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("5.0.1");
-        options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("5.0.1");
+        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("5.1.0");
+        options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("5.1.0");
         options.CatalogPackageVersion("Hexalith.Platform.TestExtension", "probe", "Hexalith.Platform.EventStoreHost").ShouldBeNull();
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Parties.EventStoreGateway.TestHost").ShouldBe("4.2.0");
-        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.Composition").ShouldBe("5.0.1");
+        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.Composition").ShouldBe("5.1.0");
         foreach (string unknown in new[] { "Hexalith.Parties.Future", "Hexalith.Platform.Future", "Hexalith.Builds.Module.Future", "Hexalith.Builds.Module.EventStoreHost.Future" })
         {
             snapshot.ProjectVersions.ContainsKey(unknown).ShouldBeFalse();
