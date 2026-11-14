@@ -121,6 +121,43 @@ This repository:
 
 ## Usage
 
+### Check a Module Before Pushing
+
+From a module repository, run the Builds-provided command:
+
+```bash
+python3 references/Hexalith.Builds/check.py
+```
+
+It runs the same guard, Release package-mode restore/build and classified unit
+test executors as CI stages 1–3. All tests in a failing project complete, and
+later projects stop. `solution: "none"` runs the guard alone. The command does
+not run hooks, integration tests or environment setup, and installs no Git hook.
+
+Commit all module inputs first. Builds and every dependency listed in
+`.github/hexalith-ci.json` must already be initialized at the module HEAD's
+direct gitlink, with no staged, modified or untracked files. The Builds checkout,
+its committed gitlink and the exact local `buildsTag` must identify the same
+commit. Python 3.12+, Node 24+, npm, Git, and (for a solution) the module's
+`global.json` SDK are prerequisites. The module needs a standard GitHub HTTPS or
+SSH `origin` using the canonical repository spelling and case that matches
+CiCd's `delivered/<Repository>` branch, complete (non-shallow) module history,
+a locally available `origin/main` and the exact Builds tag. Network
+access to the accepted CiCd delivered branch, Builds tag objects and npm is
+required for the guard; package restore also needs NuGet access on cache misses.
+
+The command checks committed guard content and the local `origin/main..HEAD`
+commit range, so fetch the base before running it; for shallow clones, run
+`git fetch --unshallow origin` first. Executable Git clean/process filters must
+be disabled. Inputs are rechecked after the guard and product stages, so edits
+made while it runs require another check on the intended commit. It does not fetch into the
+caller, initialize dependencies, change checkouts or repair owned files. Normal
+ignored build outputs and tool caches are the only expected local changes.
+Warm NuGet caches are reused; for a fresh-download parity check use an empty
+`NUGET_PACKAGES` directory. See [local-check prerequisites, cache policy and
+failure recovery](Tools/ci/README.md#local-module-check) for details. Builds itself
+uses its own CI instead of this module command.
+
 ### Add Hexalith.Builds as a Submodule
 
 From a consuming repository root, add or initialize this repository as a

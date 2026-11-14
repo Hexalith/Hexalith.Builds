@@ -1,5 +1,96 @@
 # Builds quality checks
 
+## Local module check
+
+Run from the module repository, including before pushing its committed changes:
+
+```bash
+python3 references/Hexalith.Builds/check.py
+```
+
+This is a module command. Builds' own repository uses the quality checks below.
+Python 3.12 or later supplies the stdlib-only runtime. Install Git, Node 24 or
+later and npm; solution-bearing modules also need the SDK selected by their own
+`global.json` on `PATH`. The command neither installs an SDK nor changes SDK
+selection. The guard installs its locked, signature-checked npm tools into a
+disposable directory. It needs network access to npm and anonymous HTTPS access
+to the fixed Hexalith.CiCd and Hexalith.Builds remotes. The module must already
+have an accepted `delivered/<Repository>` branch in CiCd; an unavailable branch
+fails the guard. There is no local substitute for accepted ownership data.
+
+Prerequisites are committed, clean module inputs and clean required direct
+dependency checkouts. Staged changes, modified files, untracked files and hidden
+assume-unchanged/skip-worktree entries refuse. Ignored build outputs and caches
+are allowed. A required dependency is Builds or a path in the strict
+`.github/hexalith-ci.json` `submodules` list; each must be declared in committed
+root `.gitmodules`, have a HEAD gitlink and have its own initialized checkout at
+that exact commit. Unselected submodules are not initialized or inspected.
+The command never initializes nested dependencies or retargets any checkout.
+
+Before reading JSON, the command checks that HEAD records Builds as a direct
+gitlink and that a separate initialized Builds checkout has the same full
+commit identity. The strict shared loader then requires the exact stable
+`buildsTag`; its locally available tag must peel to that same commit. The trusted
+module identity comes from its local `origin` URL, supporting
+`https://github.com/Owner/Repository.git`, `git@github.com:Owner/Repository.git`
+and `ssh://git@github.com/Owner/Repository.git` (the `.git` suffix is optional).
+Use the canonical repository spelling and case in `origin`, matching CiCd's
+`delivered/<Repository>` branch: GitHub accepts URL case variations, but the
+delivered branch name is case sensitive. Other origin forms are rejected.
+JSON and inherited Actions context never
+select a repository, event payload, workspace or workflow-output destination.
+
+Fetch `origin/main` and the exact Builds tag yourself before checking; a missing
+base or tag fails with instructions. Module history must be complete: shallow
+clones refuse even when both endpoints are present because the range may be
+truncated. Run `git fetch --unshallow origin` before checking a shallow clone.
+The command freezes full commit endpoints
+and passes `origin/main..HEAD` to the existing guard. An empty range lints no
+commit messages. After a successful guard, the shared executor restores once,
+builds once in Release package mode, then evaluates solution membership and
+`IsTestProject` with the module's SDK. The shared classification chooses unit
+projects and the shared unit executor completes every test inside a failing
+project before returning its exit status; later projects do not run.
+`solution: "none"` needs no SDK and runs only the guard. Hooks, integration tests
+and Dapr/browser/registry setup are outside stages 1–3 and never run locally.
+
+Restore retains CI's fixed `NuGet.ci.Config`, required package signatures and
+source mapping, analyzers, warnings-as-errors and `NuGetAudit=false` flags.
+Local warm global-package and HTTP caches can avoid downloads; a successful
+restore does not prove that previously cached package contents were downloaded
+and verified during this invocation. Use only trusted caches for routine checks.
+If a cache is suspect, or fresh-download parity evidence is needed, select new
+empty cache directories outside the repository rather than weakening the flags:
+
+```bash
+CHECK_CACHE="$(mktemp -d)"
+NUGET_PACKAGES="$CHECK_CACHE/packages" NUGET_HTTP_CACHE_PATH="$CHECK_CACHE/http" \
+  python3 references/Hexalith.Builds/check.py
+```
+
+An isolated cache requires NuGet network access and may expose a signature,
+source or unavailable-package failure that a warm cache hid. CI remains the
+authoritative hosted check; local success does not qualify integration tests or
+a different platform. Remove the disposable cache when it is no longer needed.
+
+On failure, commit the intended product inputs and rerun; populate sparse paths
+and clear hidden index flags first. Local Git operations disable fsmonitor
+helpers. Effective executable clean/process filter configurations, including
+included configurations, must be disabled before worktree comparisons can run.
+The command checks the frozen module HEAD, Builds tag, required checkout pins
+and clean inputs again after the guard, between product stages and before
+success. A concurrent edit or pin change refuses without reverting that change;
+rerun on the intended committed inputs. For a pin or dependency error, explicitly
+initialize only the required root-declared dependency at its committed revision
+or fetch the named tag, then rerun. The command performs no repair, checkout,
+index, source-file or caller-ref writes apart from normal ignored build outputs
+and tool caches. Guard ownership failures keep the instruction to fix product
+code and leave pipeline repairs to Hexalith.CiCd. SDK, restore, build and test
+failures require fixing their reported prerequisite or product error; product
+exit status is preserved.
+
+## Builds repository checks
+
 Run from the Builds repository root on Linux x86_64 with Python 3.12 or later,
 the .NET SDK from `global.json`, Node 24 or later, PowerShell 7.6 or later
 (`pwsh` on `PATH`), and the locked npm tools. The shared Python suite launches
