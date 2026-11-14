@@ -192,7 +192,7 @@ public sealed class DirectCatalogDeclarationTests
         }
     }
 
-    /// <summary>Cold and materialized closures retain a producer SDK4.2 view alongside current global and Platform defaults.</summary>
+    /// <summary>Cold and materialized closures retain producer and Platform SDK4.2 views alongside the current global default.</summary>
     /// <param name="platformRoot">Whether the command starts at Platform or its direct consuming module.</param>
     /// <returns>The released declaration, cold preparation and unchanged default assertions.</returns>
     [Theory]
@@ -215,9 +215,9 @@ public sealed class DirectCatalogDeclarationTests
         (selected with { ConsumerProjectName = null }).CatalogVersion("eventstore", "probe").ShouldBe("5.1.0");
         CompositionDeclarationClosure.Load(selected).Count.ShouldBe(closure.Count);
         CompositionDeclarationOptions platform = selected with { ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName };
-        platform.CatalogVersion("eventstore", "probe").ShouldBe("5.1.0");
-        Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(platform))
-            .Message.ShouldContain("5.1.0");
+        platform.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
+        platform.CatalogVersion("memories", "probe").ShouldBe("3.0.27");
+        CompositionDeclarationClosure.Load(platform).Count.ShouldBe(closure.Count);
         Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(selected with { ConsumerProjectName = null }))
             .Message.ShouldContain("5.1.0");
         CatalogVersionMaterializer.ReadSnapshot(Path.Combine(workspace, "source-mapping", "catalog-versions.json"))
@@ -252,7 +252,7 @@ public sealed class DirectCatalogDeclarationTests
                 selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithEventStoreVersion", unknownVersion ? "999.0.0" : sdkVersion)));
             }
 
-            selectedCatalog.Descendants("HexalithMemoriesVersion").Single().Value = unknownMemories ? "3.0.28" : memoriesVersion;
+            selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithMemoriesVersion", unknownMemories ? "3.0.28" : memoriesVersion)));
             catalog = selectedCatalog.ToString();
 
             await File.WriteAllTextAsync(Path.Combine(builds, "Props", "Directory.Packages.props"), catalog, TestContext.Current.CancellationToken).ConfigureAwait(true);

@@ -254,15 +254,17 @@ function Test-OwnedCatalogView {
           [string] $ExpectedOpenApi, [string] $ExpectedPartiesView, [string] $ExpectedPlatformView,
           [string] $SelectedSdk = '', [string] $ExpectedBuildsHostView = 'false',
           [string] $ExpectedOpenIdConnect = '11.0.0', [string] $ExpectedFrontComposerView = 'false',
-          [string] $ExpectedImmutable = '11.0.0', [string] $ExpectedImmutableView = 'false')
+          [string] $ExpectedImmutable = '11.0.0', [string] $ExpectedImmutableView = 'false',
+          [string] $SelectedMemories = '')
     $probe = Join-Path $viewProbeRoot "$ProjectName.proj"
     $escapedCatalog = [Security.SecurityElement]::Escape([IO.Path]::GetFullPath($catalogPath))
     [IO.File]::WriteAllText($probe, "<Project><Import Project=`"$escapedCatalog`" /></Project>")
     $stdout = Join-Path $viewProbeRoot 'evaluation.stdout'
     $stderr = Join-Path $viewProbeRoot 'evaluation.stderr'
-    $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" })
+    $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" }; if ($SelectedMemories) { "-p:HexalithMemoriesVersion=$SelectedMemories" })
+    $expectedMemories = if ($SelectedMemories) { $SelectedMemories } elseif ($ExpectedPlatformView -ceq 'true' -and $ExpectedSdk -ceq '4.2.0') { '3.0.27' } else { '4.0.0' }
     & dotnet msbuild $probe -nologo -noAutoResponse -nr:false @properties `
-        -getProperty:HexalithEventStoreVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView,HexalithFrontComposerImmutable10CatalogView,HexalithImmutableVersion `
+        -getProperty:HexalithEventStoreVersion,HexalithMemoriesVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView,HexalithFrontComposerImmutable10CatalogView,HexalithImmutableVersion `
         -getItem:PackageVersion 1> $stdout 2> $stderr
     if ($LASTEXITCODE -ne 0) { throw "Clean catalog view '$ProjectName' failed: $([IO.File]::ReadAllText($stderr))" }
     $observed = [IO.File]::ReadAllText($stdout) | ConvertFrom-Json
@@ -270,6 +272,7 @@ function Test-OwnedCatalogView {
     foreach ($row in @($observed.Items.PackageVersion)) { $pins[$row.Identity] = $row.Version }
     $immutableRows = @($observed.Items.PackageVersion | Where-Object { $_.Identity -ceq 'System.Collections.Immutable' })
     if ($observed.Properties.HexalithEventStoreVersion -cne $ExpectedSdk -or
+        $observed.Properties.HexalithMemoriesVersion -cne $expectedMemories -or
         $observed.Properties.HexalithPartiesSdk42CatalogView -cne $ExpectedPartiesView -or
         $observed.Properties.HexalithPlatformSdk42CatalogView -cne $ExpectedPlatformView -or
         $observed.Properties.HexalithBuildsPackagedHostSdk42CatalogView -cne $ExpectedBuildsHostView -or
@@ -285,8 +288,12 @@ function Test-OwnedCatalogView {
     foreach ($member in @($observed.Items.PackageVersion | Where-Object { $_.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) })) {
         if ($member.Version -cne $ExpectedSdk) { $failures.Add("Clean catalog view '$ProjectName' split its canonical EventStore family.") }
     }
+    foreach ($member in @($observed.Items.PackageVersion | Where-Object { $_.Identity.StartsWith('Hexalith.Memories.', [StringComparison]::Ordinal) })) {
+        if ($member.Version -cne $expectedMemories) { $failures.Add("Clean catalog view '$ProjectName' split its canonical Memories family.") }
+    }
     foreach ($row in @($observed.Items.PackageVersion)) {
         if (-not $row.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) -and
+            -not $row.Identity.StartsWith('Hexalith.Memories.', [StringComparison]::Ordinal) -and
             $row.Identity -notin @('Microsoft.AspNetCore.OpenApi', 'Microsoft.OpenApi', 'Microsoft.AspNetCore.Authentication.OpenIdConnect', 'System.Collections.Immutable') -and
             $row.Version -cne $evaluatedPackages[$row.Identity]) {
             $failures.Add("Clean catalog view '$ProjectName' changes unrelated package '$($row.Identity)'.")
@@ -298,9 +305,10 @@ try {
     [void] [IO.Directory]::CreateDirectory($viewProbeRoot)
     foreach ($name in $partiesSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true' 'false' }
     foreach ($name in $platformSdk42Consumers) {
-        Test-OwnedCatalogView $name '5.1.0' '11.0.0' '3.11.0' 'false' 'true'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'true'
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedSdk '4.2.0'
     }
+    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedMemories '3.0.26'
     foreach ($name in $buildsHostSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' }
     foreach ($name in @('Unrelated.Consumer', 'Hexalith.Parties.Future', 'Hexalith.Parties.Tests.Future',
                         'hexalith.Parties.Tests', 'Hexalith.Platform.Future', 'Hexalith.Platform.EventStoreHost.Future',

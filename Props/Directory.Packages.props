@@ -140,12 +140,12 @@
     <HexalithImmutableVersion Condition="'$(HexalithFrontComposerImmutable10CatalogView)' == 'true'">10.0.15</HexalithImmutableVersion>
     <HexalithAspNetCoreOpenIdConnectVersion>11.0.0</HexalithAspNetCoreOpenIdConnectVersion>
     <HexalithAspNetCoreOpenIdConnectVersion Condition="'$(HexalithFrontComposerNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreOpenIdConnectVersion>
-    <!-- Only these producer host roles retain the admitted SDK4.2 receiver and OpenAPI2 ABI. -->
+    <!-- These finite producer host roles and Platform consumers retain the admitted SDK4.2/OpenAPI2 ABI. -->
     <HexalithBuildsPackagedHostSdk42CatalogView>false</HexalithBuildsPackagedHostSdk42CatalogView>
     <HexalithBuildsPackagedHostSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Builds.Module.AppHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.EventStoreHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.1.0</HexalithEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.0</HexalithOpenApiVersion>
@@ -155,6 +155,8 @@
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.4.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">2.0.1</HexalithMcpCliVersion>
+    <!-- The finite Platform SDK4.2 view uses its admitted current Memories cohort; explicit selections remain authoritative. -->
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == '' and '$(HexalithPlatformSdk42CatalogView)' == 'true' and '$(HexalithEventStoreVersion)' == '4.2.0'">3.0.27</HexalithMemoriesVersion>
     <!-- Current package selection; historical declarations retain their separately pinned release inputs. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.0.0</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">7.0.7</HexalithTenantsVersion>
