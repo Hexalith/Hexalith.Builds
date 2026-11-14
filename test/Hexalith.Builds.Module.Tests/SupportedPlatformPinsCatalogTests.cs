@@ -26,7 +26,7 @@ public sealed class SupportedPlatformPinsCatalogTests
         catalog.Descendants("HexalithEventStoreVersion")
             .Single(property => ((string?)property.Attribute("Condition"))?.Replace(" ", string.Empty, StringComparison.Ordinal) == "'$(HexalithEventStoreVersion)'==''")
             .Value.Trim().ShouldBe(PlatformVersionCatalog.Current.EventStoreVersion);
-        catalog.Descendants("HexalithFrontComposerVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.FrontComposerVersion);
+        catalog.Descendants("HexalithFrontComposerVersion").Single().Value.Trim().ShouldBe(PlatformVersionCatalog.Current.FrontComposerVersion);
         catalog.Descendants("HexalithAspireAppHostSdkVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.AspireAppHostSdkVersion);
         catalog.Descendants("HexalithDaprRuntimeVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.DaprRuntimeVersion);
         catalog.Descendants("HexalithDaprCliVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.DaprCliVersion);
@@ -39,7 +39,8 @@ public sealed class SupportedPlatformPinsCatalogTests
         PlatformVersionCatalog catalog = PlatformVersionCatalog.Current;
         SupportedPlatformPins.EventStoreVersion.ShouldBe("4.2.0");
         catalog.EventStoreVersion.ShouldBe("5.1.0");
-        SupportedPlatformPins.FrontComposerVersion.ShouldBe(catalog.FrontComposerVersion);
+        SupportedPlatformPins.FrontComposerVersion.ShouldBe("5.0.0");
+        catalog.FrontComposerVersion.ShouldBe("6.0.0");
         SupportedPlatformPins.DaprSdkVersion.ShouldBe(catalog.DaprSdkVersion);
         SupportedPlatformPins.DaprRuntimeVersion.ShouldBe(catalog.DaprRuntimeVersion);
         CompositionToolchainPins.DaprCliVersion.ShouldBe(catalog.DaprCliVersion);
