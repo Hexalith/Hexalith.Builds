@@ -9,19 +9,28 @@ python3 references/Hexalith.Builds/check.py
 ```
 
 This is a module command. Builds' own repository uses the quality checks below.
-Python 3.12 or later supplies the stdlib-only runtime. Install Git, Node 24 or
-later and npm; solution-bearing modules also need the SDK selected by their own
+The command is validated on Linux; other platforms are untested.
+Python 3.12 or later supplies the stdlib-only runtime. Install Git 2.31 or
+later, Node 24 or later and npm; solution-bearing modules also need the SDK selected by their own
 `global.json` on `PATH`. The command neither installs an SDK nor changes SDK
 selection. The guard installs its locked, signature-checked npm tools into a
 disposable directory. It needs network access to npm and anonymous HTTPS access
-to the fixed Hexalith.CiCd and Hexalith.Builds remotes. The module must already
+to the fixed Hexalith.CiCd and Hexalith.Builds remotes. Proxy environment
+variables and Git or npm proxy configuration are not applied, so these
+connections must be direct. The module must already
 have an accepted `delivered/<Repository>` branch in CiCd; an unavailable branch
 fails the guard. There is no local substitute for accepted ownership data.
 
 Prerequisites are committed, clean module inputs and clean required direct
 dependency checkouts. Staged changes, modified files, untracked files and hidden
-assume-unchanged/skip-worktree entries refuse. Ignored build outputs and caches
-are allowed. A required dependency is Builds or a path in the strict
+assume-unchanged/skip-worktree entries refuse, and the refusal names the paths.
+Ignored build outputs and caches are allowed. Cleanliness checks read only the
+repository's own Git configuration and ignore files: global and system settings
+such as `core.excludesFile` or `core.autocrlf` are not applied. List files that
+only global excludes ignore in `.git/info/exclude`, and keep required
+line-ending settings in the repository configuration. Git's `safe.directory`
+setting is not applied either, so the module and its checkouts must be owned by
+the invoking user. A required dependency is Builds or a path in the strict
 `.github/hexalith-ci.json` `submodules` list; each must be declared in committed
 root `.gitmodules`, have a HEAD gitlink and have its own initialized checkout at
 that exact commit. Unselected submodules are not initialized or inspected.
@@ -46,7 +55,8 @@ clones refuse even when both endpoints are present because the range may be
 truncated. Run `git fetch --unshallow origin` before checking a shallow clone.
 The command freezes full commit endpoints
 and passes `origin/main..HEAD` to the existing guard. An empty range lints no
-commit messages. After a successful guard, the shared executor restores once,
+commit messages. CI also lints a pull request's title, which has no local
+equivalent. After a successful guard, the shared executor restores once,
 builds once in Release package mode, then evaluates solution membership and
 `IsTestProject` with the module's SDK. The shared classification chooses unit
 projects and the shared unit executor completes every test inside a failing
@@ -73,9 +83,23 @@ source or unavailable-package failure that a warm cache hid. CI remains the
 authoritative hosted check; local success does not qualify integration tests or
 a different platform. Remove the disposable cache when it is no longer needed.
 
+Restore, build and unit tests run in the caller's worktree, so ignored files
+such as existing `bin/` and `obj/` outputs or `*.csproj.user` files, and
+initialized submodules that the configuration does not select, remain visible
+to them although CI's fresh checkout lacks them. In particular, up-to-date
+outputs from a build with different flags let MSBuild skip compilation, so
+compiler and analyzer warnings that CI reports as errors may not appear. For
+fresh-checkout parity evidence, run the command in a fresh clone of the
+committed module with only Builds and the selected dependencies initialized.
+These stages also inherit the caller's environment. In an IDE terminal
+(`TERM_PROGRAM` set to `vscode` or `cursor`, or `VSCODE_PID`/`VSCODE_CWD` set),
+Builds sets `IDEBuild`, which leaves package projects non-packable, unlike CI.
+Run the command from a plain terminal for parity.
+
 On failure, commit the intended product inputs and rerun; populate sparse paths
-and clear hidden index flags first. Local Git operations disable fsmonitor
-helpers. Effective executable clean/process filter configurations, including
+and clear hidden index flags first. The command's own Git inspections disable
+fsmonitor helpers; the shared product executors and module tools run with the
+caller's Git configuration. Effective executable clean/process filter configurations, including
 included configurations, must be disabled before worktree comparisons can run.
 The command checks the frozen module HEAD, Builds tag, required checkout pins
 and clean inputs again after the guard, between product stages and before
@@ -84,8 +108,12 @@ rerun on the intended committed inputs. For a pin or dependency error, explicitl
 initialize only the required root-declared dependency at its committed revision
 or fetch the named tag, then rerun. The command performs no repair, checkout,
 index, source-file or caller-ref writes apart from normal ignored build outputs
-and tool caches. Guard ownership failures keep the instruction to fix product
-code and leave pipeline repairs to Hexalith.CiCd. SDK, restore, build and test
+and tool caches. Module build tools that run `git status`, such as MinVer, may
+still refresh the index's stat cache as a manual `git status` does; staged
+content is unchanged. Guard ownership failures keep the instruction to fix product
+code and leave pipeline repairs to Hexalith.CiCd. A `trusted guard tool failed`
+or `commitlint tool failed` diagnostic reports a missing or failing Node/npm
+prerequisite or network access, not a product or commit-message defect. SDK, restore, build and test
 failures require fixing their reported prerequisite or product error; product
 exit status is preserved.
 

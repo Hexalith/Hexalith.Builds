@@ -37,7 +37,7 @@ def commit(git: state.Git, ref: str, label: str) -> str:
     """Resolve a locally available commit to its full canonical identity."""
     value = git.run("rev-parse", "--verify", "--end-of-options", ref + "^{commit}", check=False).decode().strip()
     if not state.SHA.fullmatch(value):
-        raise state.ExpectedStateError(label + ": required local commit is unavailable")
+        raise ci_pipeline.PipelineError(label + ": required local commit is unavailable")
     return value
 
 
@@ -77,14 +77,20 @@ def require_clean(git: state.Git, label: str) -> None:
     # separately, and unselected dependencies need not be initialized or clean.
     staged = git.run("diff", "--cached", "--name-only", "-z", "--no-ext-diff", "--no-textconv",
                      "--ignore-submodules=none", "HEAD", "--")
-    dirty = git.run("status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignore-submodules=all")
+    # Without rename records every porcelain entry is "XY path".
+    dirty = git.run("status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=all",
+                    "--ignore-submodules=all")
     # Git status intentionally hides these entries. Missing sparse sources or
     # assume-unchanged files cannot establish that disk content matches HEAD.
-    hidden = any(entry[:1] == b"S" or entry[:1].islower()
-                 for entry in git.run("ls-files", "-v", "-z").split(b"\0") if entry)
-    if staged or dirty or hidden:
+    hidden = [entry[2:] for entry in git.run("ls-files", "-v", "-z").split(b"\0")
+              if entry and (entry[:1] == b"S" or entry[:1].islower())]
+    paths = [path.decode("utf-8", "backslashreplace") for path in dict.fromkeys(
+        (*staged.split(b"\0"), *(entry[3:] for entry in dirty.split(b"\0")), *hidden)) if path]
+    if paths:
+        listed = ", ".join(paths[:10]) + (", ..." if len(paths) > 10 else "")
         raise ci_pipeline.PipelineError(label + ": commit all staged, modified and untracked inputs before checking; "
-                                        "populate sparse paths and clear assume-unchanged/skip-worktree flags")
+                                        "populate sparse paths and clear assume-unchanged/skip-worktree flags: "
+                                        + listed)
 
 
 def repository_identity(git: state.Git) -> str:
@@ -92,10 +98,10 @@ def repository_identity(git: state.Git) -> str:
     origins = git.run("config", "--local", "--get-all", "remote.origin.url", check=False).decode().splitlines()
     match = GITHUB_ORIGIN.fullmatch(origins[0]) if len(origins) == 1 else None
     if match is None:
-        raise state.ExpectedStateError("origin must have one standard GitHub HTTPS or SSH repository URL")
+        raise ci_pipeline.PipelineError("origin must have one standard GitHub HTTPS or SSH repository URL")
     repository = match[1]
     if any(part in (".", "..") for part in repository.split("/")):
-        raise state.ExpectedStateError("origin has an invalid GitHub repository identity")
+        raise ci_pipeline.PipelineError("origin has an invalid GitHub repository identity")
     state.validate_context(repository)
     return repository
 
@@ -106,16 +112,16 @@ def require_declarations(git: state.Git, head: str, paths: tuple[str, ...]) -> N
                       "--get-regexp", r"^submodule\..*\.path$", check=False)
     declared = [record.partition(b"\n")[2].decode() for record in records.split(b"\0") if record]
     if len(declared) != len(set(declared)):
-        raise state.ExpectedStateError("duplicate direct submodule paths in committed .gitmodules")
+        raise ci_pipeline.PipelineError("duplicate direct submodule paths in committed .gitmodules")
     for path in paths:
         if path not in declared:
-            raise state.ExpectedStateError(path + ": required direct submodule is not declared in committed .gitmodules")
+            raise ci_pipeline.PipelineError(path + ": required direct submodule is not declared in committed .gitmodules")
 
 
 def revalidate(git: state.Git, head: str, snapshot, paths: tuple[str, ...], tag: str) -> None:
     """Refuse changes made while the guard or product tools were running."""
     if commit(git, "HEAD", "module HEAD") != head:
-        raise state.ExpectedStateError("module HEAD changed during the local check; rerun on the intended committed inputs")
+        raise ci_pipeline.PipelineError("module HEAD changed during the local check; rerun on the intended committed inputs")
     require_clean(git, "module")
     for path in paths:
         child = checkout(git, snapshot, path)
@@ -127,17 +133,22 @@ def revalidate(git: state.Git, head: str, snapshot, paths: tuple[str, ...], tag:
 def run(workspace: Path, *, transport=None, tool_factory=guard.Tools) -> None:
     """Freeze module identities, validate inputs, then reuse the shared stages."""
     initial = git_at(workspace)
-    top = initial.run("rev-parse", "--show-toplevel").decode().removesuffix("\n")
+    top = initial.run("rev-parse", "--show-toplevel", check=False).decode().removesuffix("\n")
+    if not top:
+        raise ci_pipeline.PipelineError("run the command inside the module's Git work tree, "
+                                        "owned by the current user")
     git = git_at(Path(top))
     head = commit(git, "HEAD", "module HEAD")
     snapshot = state.tree_snapshot(git, head)
+    # Builds has no Builds gitlink; recognize its origin before module pin checks.
+    repository = repository_identity(git)
+    # GitHub repository names are case-insensitive.
+    if repository.casefold() == ci_pipeline.BUILDS_REPOSITORY.casefold():
+        raise ci_pipeline.PipelineError("Builds itself is checked by its own CI; the local command requires a module origin")
     # Identity failures precede JSON parsing and SDK metadata/commands.
     builds = checkout(git, snapshot, BUILDS_PATH)
     require_clean(git, "module")
     require_clean(builds, BUILDS_PATH)
-    repository = repository_identity(git)
-    if repository == ci_pipeline.BUILDS_REPOSITORY:
-        raise state.ExpectedStateError("Builds itself is checked by its own CI; the local command requires a module origin")
     document = load_config(git.root / ".github/hexalith-ci.json", repository=repository)
     tag = document["buildsTag"]
     tagged = commit(builds, "refs/tags/" + tag, "Builds tag " + tag + "; fetch this exact tag before checking")
@@ -151,8 +162,8 @@ def run(workspace: Path, *, transport=None, tool_factory=guard.Tools) -> None:
             require_clean(checkout(git, snapshot, path), path)
     base = commit(git, "refs/remotes/origin/main", "origin/main; fetch the base before checking")
     if git.run("rev-parse", "--is-shallow-repository").strip() != b"false":
-        raise state.ExpectedStateError("module history is shallow; fetch --unshallow origin with complete history "
-                                       "before checking origin/main..HEAD")
+        raise ci_pipeline.PipelineError("module history is shallow; fetch --unshallow origin with complete history "
+                                        "before checking origin/main..HEAD")
     guard.run(git.root, repository=repository, ref=head, commit_range=(base, head),
               emit=lambda values: None, transport=transport, tool_factory=tool_factory)
     revalidate(git, head, snapshot, paths, tag)

@@ -138,13 +138,13 @@ Commit all module inputs first. Builds and every dependency listed in
 `.github/hexalith-ci.json` must already be initialized at the module HEAD's
 direct gitlink, with no staged, modified or untracked files. The Builds checkout,
 its committed gitlink and the exact local `buildsTag` must identify the same
-commit. Python 3.12+, Node 24+, npm, Git, and (for a solution) the module's
+commit. Python 3.12+, Node 24+, npm, Git 2.31+, and (for a solution) the module's
 `global.json` SDK are prerequisites. The module needs a standard GitHub HTTPS or
 SSH `origin` using the canonical repository spelling and case that matches
 CiCd's `delivered/<Repository>` branch, complete (non-shallow) module history,
-a locally available `origin/main` and the exact Builds tag. Network
-access to the accepted CiCd delivered branch, Builds tag objects and npm is
-required for the guard; package restore also needs NuGet access on cache misses.
+a locally available `origin/main` and the exact Builds tag. Direct network
+access (proxy settings are not applied) to the accepted CiCd delivered branch,
+Builds tag objects and npm is required for the guard; package restore also needs NuGet access on cache misses.
 
 The command checks committed guard content and the local `origin/main..HEAD`
 commit range, so fetch the base before running it; for shallow clones, run
@@ -154,7 +154,10 @@ made while it runs require another check on the intended commit. It does not fet
 caller, initialize dependencies, change checkouts or repair owned files. Normal
 ignored build outputs and tool caches are the only expected local changes.
 Warm NuGet caches are reused; for a fresh-download parity check use an empty
-`NUGET_PACKAGES` directory. See [local-check prerequisites, cache policy and
+`NUGET_PACKAGES` directory. Existing ignored build outputs are reused too, so
+run the command in a fresh clone for fresh-checkout parity. Cleanliness checks
+ignore global Git settings such as `core.excludesFile` and `safe.directory`, so
+the module and its checkouts must be owned by the invoking user. See [local-check prerequisites, cache policy and
 failure recovery](Tools/ci/README.md#local-module-check) for details. Builds itself
 uses its own CI instead of this module command.
 

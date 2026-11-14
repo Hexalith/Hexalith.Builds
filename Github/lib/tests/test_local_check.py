@@ -162,6 +162,12 @@ else:
         self.delivered.commit()
         self.delivered.command("branch", "-f", "delivered/Fixture", "HEAD")
 
+    def external_calls(self):
+        """Return shimmed npm/Node calls and Git calls that name a fixed remote."""
+        calls = [json.loads(line) for line in self.ledger.read_text().splitlines()] if self.ledger.exists() else []
+        return [call for call in calls
+                if call["tool"] != "git" or any(value.startswith("https://") for value in call["args"])]
+
     def build_fixture(self, **changes):
         self.document.update(solution="Fixture.slnx", hooks=["after-unit-tests"],
                              tests={"integration": ["test/Custom.csproj"],
@@ -260,6 +266,7 @@ else:
         self.assertEqual(before, self.unchanged())
 
     def test_cli_refuses_effective_clean_process_and_included_filters_without_executing_them(self):
+        self.cli_controls()
         marker = self.root / "filter-executed"
         helper = self.root / "filter-helper"
         helper.write_text(f"#!{sys.executable}\nfrom pathlib import Path\nPath({str(marker)!r}).write_text('executed')\n")
@@ -289,12 +296,17 @@ else:
                 self.module.command("-C", str(directory), "config", "--unset-all", key)
             attributes.unlink()
             path.write_bytes(original)
-        self.assertEqual([], self.installations)
+        self.assertEqual([], self.external_calls())
 
     def test_empty_effective_filter_override_is_allowed_without_executing_helper(self):
         marker = self.root / "filter-executed"
         self.module.command("config", "filter.fixture.clean", f"touch {marker}")
         self.module.command("config", "--add", "filter.fixture.clean", "")
+        # Status must compare this file's content through the fixture filter.
+        (self.module.root / ".git/info/attributes").write_text(".gitignore filter=fixture\n")
+        tracked = self.module.root / ".gitignore"
+        tracked.write_bytes(tracked.read_bytes())
+        os.utime(tracked, (tracked.stat().st_atime, tracked.stat().st_mtime + 10))
         before = self.unchanged()
         self.run_check()
         self.assertFalse(marker.exists())
@@ -308,6 +320,7 @@ else:
         head = self.module.command("rev-parse", "HEAD")
         shallow = self.module.root / ".git/shallow"
         shallow.write_text(head + "\n")
+        self.cli_controls()
         self.assertEqual(base, self.module.command("rev-parse", base + "^{commit}"))
         self.assertEqual([head], self.module.command("rev-list", base + "..HEAD").splitlines())
         before = self.unchanged()
@@ -317,7 +330,7 @@ else:
         self.assertIn("fetch --unshallow", result.stderr)
         self.assertEqual(before, self.unchanged())
         self.assertEqual(head + "\n", shallow.read_text())
-        self.assertEqual([], self.transport.calls)
+        self.assertEqual([], self.external_calls())
         self.assertEqual([], self.commands())
 
     def test_whitespace_module_and_dependency_roots_are_preserved(self):
@@ -365,7 +378,7 @@ else:
             changed.append(self.module.commit())
             return tools
 
-        with patch.object(self, "tools", side_effect=edit), self.assertRaisesRegex(state.ExpectedStateError, "HEAD changed"):
+        with patch.object(self, "tools", side_effect=edit), self.assertRaisesRegex(ci_pipeline.PipelineError, "HEAD changed"):
             self.run_check()
         self.assertEqual(changed[0], self.module.command("rev-parse", "HEAD"))
         self.assertEqual("committed during guard", (self.module.root / "caller-source").read_text())
@@ -433,7 +446,7 @@ else:
                 changed.append(self.module.commit())
             return result
 
-        with patch.object(ci_pipeline, "run_command", side_effect=edit), self.assertRaisesRegex(state.ExpectedStateError, "HEAD changed"):
+        with patch.object(ci_pipeline, "run_command", side_effect=edit), self.assertRaisesRegex(ci_pipeline.PipelineError, "HEAD changed"):
             self.run_check()
         self.assertEqual(changed[0], self.module.command("rev-parse", "HEAD"))
         self.assertEqual("committed during unit tests", (self.module.root / "caller-source").read_text())
@@ -534,9 +547,9 @@ else:
         self.module.commit()
         shutil.rmtree(self.builds_path)
         before = (self.module.root / ".git/index").read_bytes()
-        result = self.invoke() if self.builds_path.exists() else subprocess.run(
-            [sys.executable, "-I", "-S", str(ROOT / "check.py")], cwd=self.module.root,
-            env=self.environment, text=True, capture_output=True, check=False)
+        # The module's own Builds copy is gone; launch the repository command.
+        result = subprocess.run([sys.executable, "-I", "-S", str(ROOT / "check.py")], cwd=self.module.root,
+                                env=self.environment, text=True, capture_output=True, check=False)
         self.assertEqual(1, result.returncode)
         self.assertIn("initialize the required", result.stderr)
         self.assertEqual(before, (self.module.root / ".git/index").read_bytes())
@@ -589,7 +602,8 @@ else:
             else:
                 self.module.command("update-index", "--assume-unchanged" if kind == "assumed" else "--skip-worktree", ".gitignore")
             before = self.unchanged()
-            with self.subTest(kind=kind), self.assertRaisesRegex(ci_pipeline.PipelineError, "commit all"):
+            named = "untracked-input" if kind == "untracked" else r"\.gitignore"
+            with self.subTest(kind=kind), self.assertRaisesRegex(ci_pipeline.PipelineError, "commit all.*flags: " + named + r"\Z"):
                 self.run_check()
             self.assertEqual(before, self.unchanged())
             path.write_bytes(original)
@@ -612,17 +626,21 @@ else:
         (self.module.root / path).mkdir()
         self.module.command("update-index", "--add", "--cacheinfo", "160000", pin, path)
         self.record()
-        with self.assertRaisesRegex(state.ExpectedStateError, "not declared"):
+        with self.assertRaisesRegex(ci_pipeline.PipelineError, "not declared"):
             self.run_check()
+        self.assertEqual(([], []), (self.installations, self.transport.calls))
         self.module.write(".gitmodules", (self.module.root / ".gitmodules").read_text()
                           + f'[submodule "Extra"]\n\tpath = {path}\n\turl = https://github.com/Example/Extra.git\n')
         self.record()
         with self.assertRaisesRegex(state.ExpectedStateError, "initialize the required"):
             self.run_check()
         self.assertFalse((self.module.root / path / ".git").exists())
+        self.assertEqual(([], []), (self.installations, self.transport.calls))
         self.module.command("clone", "-q", str(dependency.root), str(self.module.root / path))
         self.run_check()
         self.assertFalse((self.module.root / path / "references/Nested/.git").exists())
+        self.installations.clear()
+        self.transport.calls.clear()
         (self.module.root / path / "data").write_text("dirty")
         with self.assertRaisesRegex(ci_pipeline.PipelineError, "Extra dependency.*commit all"):
             self.run_check()
@@ -634,6 +652,31 @@ else:
         with self.assertRaisesRegex(state.ExpectedStateError, "differs from committed gitlink"):
             self.run_check()
         self.assertEqual(tip, state.Git(self.module.root / path).run("rev-parse", "HEAD").decode().strip())
+        self.assertEqual(([], []), (self.installations, self.transport.calls))
+
+    def test_undeclared_builds_gitlink_refuses_before_guard(self):
+        self.module.write(".gitmodules", "")
+        self.record()
+        with self.assertRaisesRegex(ci_pipeline.PipelineError,
+                                    "references/Hexalith.Builds: required direct submodule is not declared"):
+            self.run_check()
+        self.assertEqual(([], []), (self.installations, self.transport.calls))
+
+    def test_subdirectory_workspace_checks_the_module_root(self):
+        before = self.unchanged()
+        with patch.dict(os.environ, self.environment, clear=True):
+            local.run(self.module.root / ".github", transport=self.transport, tool_factory=self.tools)
+        self.assertEqual(before, self.unchanged())
+        self.assertEqual(1, len(self.installations))
+
+    def test_outside_work_tree_refuses_without_guard_ownership_message(self):
+        outside = self.root / "outside"
+        outside.mkdir()
+        with patch.dict(os.environ, self.environment, clear=True), self.assertRaisesRegex(
+                ci_pipeline.PipelineError, "inside the module's Git work tree") as raised:
+            local.run(outside, transport=self.transport, tool_factory=self.tools)
+        self.assertNotIn(state.OWNERSHIP_MESSAGE, str(raised.exception))
+        self.assertEqual([], self.installations)
 
     def test_dirty_builds_and_staged_gitlink_refuse_without_changing_inputs(self):
         ignored = self.builds_path / ".gitignore"
@@ -651,18 +694,51 @@ else:
         with self.assertRaisesRegex(ci_pipeline.PipelineError, "module.*commit all"):
             self.run_check()
         self.assertEqual(before, self.unchanged())
+        # Committed `ignore = all` hides the gitlink from plain diff and status.
+        self.module.command("update-index", "--cacheinfo", "160000", self.builds_sha, local.BUILDS_PATH)
+        self.module.write(".gitmodules", (self.module.root / ".gitmodules").read_text() + "\tignore = all\n")
+        self.record()
+        self.module.command("update-index", "--cacheinfo", "160000", next_sha, local.BUILDS_PATH)
+        with self.subTest(ignore="all"), self.assertRaisesRegex(ci_pipeline.PipelineError, "module.*commit all"):
+            self.run_check()
 
     def test_missing_base_and_unsupported_origin_do_not_start_guard_or_sdk(self):
+        head = self.module.command("rev-parse", "HEAD")
         self.module.command("update-ref", "-d", "refs/remotes/origin/main")
-        with self.assertRaisesRegex(state.ExpectedStateError, "origin/main.*fetch"):
+        with self.assertRaisesRegex(ci_pipeline.PipelineError, "origin/main.*fetch"):
             self.run_check()
-        for origin in ("https://example.com/Example/Fixture.git", "file:///tmp/Fixture", "https://token@github.com/Example/Fixture.git",
-                       "https://github.com/Example/Fixture.git?query", "https://github.com/Hexalith/Hexalith.Builds.git"):
+        # Restore the base so each origin refusal is the failure under test.
+        self.module.command("update-ref", "refs/remotes/origin/main", head)
+        unsupported, invalid = "one standard GitHub HTTPS or SSH", "invalid GitHub repository identity"
+        for origin, message in (("https://example.com/Example/Fixture.git", unsupported),
+                                ("file:///tmp/Fixture", unsupported),
+                                ("https://token@github.com/Example/Fixture.git", unsupported),
+                                ("https://github.com/Example/Fixture.git?query", unsupported),
+                                ("https://github.com/../Fixture.git", invalid),
+                                ("https://github.com/Example/..", invalid),
+                                ("https://github.com/Hexalith/Hexalith.Builds.git", "Builds itself is checked by its own CI"),
+                                ("git@github.com:hexalith/hexalith.builds", "Builds itself is checked by its own CI")):
             self.module.command("remote", "set-url", "origin", origin)
-            with self.subTest(origin=origin), self.assertRaises(state.ExpectedStateError):
+            with self.subTest(origin=origin), self.assertRaisesRegex(ci_pipeline.PipelineError, message):
                 self.run_check()
+        self.module.command("config", "--add", "remote.origin.url", "https://github.com/Example/Fixture.git")
+        with self.subTest(origin="multi-valued"), self.assertRaisesRegex(ci_pipeline.PipelineError, unsupported):
+            self.run_check()
+        self.module.command("config", "--unset-all", "remote.origin.url")
+        with self.subTest(origin="missing"), self.assertRaisesRegex(ci_pipeline.PipelineError, unsupported):
+            self.run_check()
         self.assertEqual([], self.transport.calls)
         self.assertEqual([], self.commands())
+
+    def test_builds_origin_is_refused_before_module_gitlink_checks(self):
+        builds = Repository(self.root / "builds-own")
+        builds.write(".github/hexalith-ci.json", "malformed JSON")
+        builds.commit()
+        builds.command("remote", "add", "origin", "https://github.com/Hexalith/Hexalith.Builds.git")
+        with patch.dict(os.environ, self.environment, clear=True), \
+                self.assertRaisesRegex(ci_pipeline.PipelineError, "Builds itself is checked by its own CI"):
+            local.run(builds.root, transport=self.transport, tool_factory=self.tools)
+        self.assertEqual([], self.installations)
 
     def test_standard_https_and_ssh_origins_supply_only_repository_identity(self):
         for origin in ("https://github.com/Example/Fixture", "https://github.com/Example/Fixture.git",
@@ -670,6 +746,79 @@ else:
             self.module.command("remote", "set-url", "origin", origin)
             with self.subTest(origin=origin):
                 self.assertEqual("Example/Fixture", local.repository_identity(local.git_at(self.module.root)))
+
+    def add_dependency(self):
+        dependency = Repository(self.root / "dependency")
+        dependency.write("data", "committed")
+        dependency.commit()
+        path = "references/Extra"
+        self.module.command("clone", "-q", str(dependency.root), str(self.module.root / path))
+        self.module.write(".gitmodules", (self.module.root / ".gitmodules").read_text()
+                          + f'[submodule "Extra"]\n\tpath = {path}\n\turl = https://github.com/Example/Extra.git\n')
+        self.document["submodules"] = [path]
+        return dependency, self.module.root / path
+
+    def test_guard_time_builds_edit_refuses_product_stages_and_preserves_caller_edit(self):
+        self.build_fixture()
+        path = self.builds_path / ".gitignore"
+        changed = path.read_bytes() + b"caller edit\n"
+        original = self.tools
+
+        def edit(directory):
+            tools = original(directory)
+            path.write_bytes(changed)
+            return tools
+
+        with patch.object(self, "tools", side_effect=edit), \
+                self.assertRaisesRegex(ci_pipeline.PipelineError, "Hexalith.Builds: commit all.*: .gitignore"):
+            self.run_check()
+        self.assertEqual(changed, path.read_bytes())
+        self.assertEqual([], self.commands())
+
+    def test_build_time_dependency_edit_or_retarget_stops_unit_successor(self):
+        dependency, directory = self.add_dependency()
+        self.build_fixture()
+        dependency.write("new", "different revision")
+        tip = dependency.commit()
+        self.module.command("-C", str(directory), "fetch", "-q")
+        original = ci_pipeline.run_command
+        for change, error, message in (("edit", ci_pipeline.PipelineError, "references/Extra: commit all.*: data"),
+                                       ("retarget", state.ExpectedStateError, "references/Extra: checkout HEAD .* differs")):
+            def edit(arguments, root, **options):
+                result = original(arguments, root, **options)
+                if arguments[0:2] == ["dotnet", "build"]:
+                    if change == "edit":
+                        (directory / "data").write_text("caller edit")
+                    else:
+                        self.module.command("-C", str(directory), "checkout", "-q", tip)
+                return result
+
+            (self.module.root / "commands.jsonl").unlink(missing_ok=True)
+            with self.subTest(change=change):
+                with patch.object(ci_pipeline, "run_command", side_effect=edit), self.assertRaisesRegex(error, message):
+                    self.run_check()
+                self.assertEqual(["restore", "build"], [args[0] for args in self.commands()])
+            if change == "edit":
+                self.assertEqual("caller edit", (directory / "data").read_text())
+                (directory / "data").write_text("committed")
+        self.assertEqual(tip, self.module.command("-C", str(directory), "rev-parse", "HEAD"))
+
+    def test_stat_dirty_tracked_input_does_not_refresh_caller_index(self):
+        path = self.module.root / ".gitignore"
+        status = path.stat()
+        os.utime(path, ns=(status.st_atime_ns, status.st_mtime_ns + 5_000_000_000))
+        before = self.unchanged()
+        self.run_check()
+        self.assertEqual(before, self.unchanged())
+
+    def test_duplicate_committed_submodule_paths_refuse_before_guard(self):
+        self.module.write(".gitmodules", (self.module.root / ".gitmodules").read_text()
+                          + f'[submodule "Duplicate"]\n\tpath = {local.BUILDS_PATH}\n'
+                          '\turl = https://github.com/Example/Duplicate.git\n')
+        self.record()
+        with self.assertRaisesRegex(ci_pipeline.PipelineError, "duplicate direct submodule paths"):
+            self.run_check()
+        self.assertEqual([], self.installations)
 
     def test_main_preserves_product_exit_status(self):
         with patch.object(local, "run", side_effect=ci_pipeline.PipelineError("product failed", 23)), \
