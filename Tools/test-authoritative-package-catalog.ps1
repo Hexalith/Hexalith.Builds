@@ -303,12 +303,18 @@ function Test-OwnedCatalogView {
 }
 try {
     [void] [IO.Directory]::CreateDirectory($viewProbeRoot)
-    foreach ($name in $partiesSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true' 'false' }
+    foreach ($name in $partiesSdk42Consumers) {
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true' 'false'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedSdk '4.2.0'
+    }
     foreach ($name in $platformSdk42Consumers) {
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'true'
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedSdk '4.2.0'
     }
     Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedMemories '4.0.0'
+    Test-OwnedCatalogView 'Hexalith.Parties' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Parties' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '4.0.0'
     Test-OwnedCatalogView 'Hexalith.Parties.Contracts' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '3.0.26'
     Test-OwnedCatalogView 'Hexalith.Builds.Module.EventStoreHost' '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' -SelectedMemories '3.0.26'
     foreach ($name in $buildsHostSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' }
