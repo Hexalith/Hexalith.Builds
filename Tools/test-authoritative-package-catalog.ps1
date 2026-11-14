@@ -262,7 +262,7 @@ function Test-OwnedCatalogView {
     $stdout = Join-Path $viewProbeRoot 'evaluation.stdout'
     $stderr = Join-Path $viewProbeRoot 'evaluation.stderr'
     $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" }; if ($SelectedMemories) { "-p:HexalithMemoriesVersion=$SelectedMemories" })
-    $expectedMemories = if ($SelectedMemories) { $SelectedMemories } elseif ($ExpectedPlatformView -ceq 'true' -and $ExpectedSdk -ceq '4.2.0') { '3.0.27' } else { '4.0.0' }
+    $expectedMemories = if ($SelectedMemories) { $SelectedMemories } elseif ($ExpectedSdk -ceq '4.2.0' -and ($ExpectedPartiesView -ceq 'true' -or $ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '3.0.27' } else { '4.0.0' }
     & dotnet msbuild $probe -nologo -noAutoResponse -nr:false @properties `
         -getProperty:HexalithEventStoreVersion,HexalithMemoriesVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView,HexalithFrontComposerImmutable10CatalogView,HexalithImmutableVersion `
         -getItem:PackageVersion 1> $stdout 2> $stderr
@@ -309,6 +309,8 @@ try {
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedSdk '4.2.0'
     }
     Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Parties.Contracts' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Builds.Module.EventStoreHost' '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' -SelectedMemories '3.0.26'
     foreach ($name in $buildsHostSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' }
     foreach ($name in @('Unrelated.Consumer', 'Hexalith.Parties.Future', 'Hexalith.Parties.Tests.Future',
                         'hexalith.Parties.Tests', 'Hexalith.Platform.Future', 'Hexalith.Platform.EventStoreHost.Future',

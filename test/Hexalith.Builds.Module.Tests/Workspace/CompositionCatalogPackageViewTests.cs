@@ -196,13 +196,12 @@ public sealed class CompositionCatalogPackageViewTests
         {
             snapshot.ProjectVersions.ContainsKey(consumer).ShouldBeTrue(consumer);
             IReadOnlyDictionary<string, string> versions = snapshot.ProjectVersions[consumer];
-            bool currentPlatformView = consumer.StartsWith("Hexalith.Platform.", StringComparison.Ordinal);
             AssertEventStoreFamily(versions, "4.2.0", consumer);
             versions["Microsoft.AspNetCore.OpenApi"].ShouldBe("10.0.15", consumer);
             versions["Microsoft.OpenApi"].ShouldBe("2.13.0", consumer);
             foreach (KeyValuePair<string, string> package in versions.Where(pair => pair.Key.StartsWith("Hexalith.Memories.", StringComparison.Ordinal)))
             {
-                package.Value.ShouldBe(currentPlatformView ? "3.0.27" : "4.0.0", consumer + ":" + package.Key);
+                package.Value.ShouldBe("3.0.27", consumer + ":" + package.Key);
             }
         }
 
@@ -210,6 +209,9 @@ public sealed class CompositionCatalogPackageViewTests
         AssertEventStoreFamily(snapshot.Versions, "5.1.0", "default");
         snapshot.Versions["Hexalith.Memories.Contracts"].ShouldBe("4.0.0");
         options.CatalogVersion("memories", "probe", "Hexalith.Platform.Composition").ShouldBe("3.0.27");
+        options.CatalogVersion("memories", "probe", "Hexalith.Parties.Contracts").ShouldBe("3.0.27");
+        options.CatalogVersion("memories", "probe", "Hexalith.Parties.EventStoreExtensions").ShouldBe("3.0.27");
+        options.CatalogVersion("memories", "probe", "Hexalith.Builds.Module.EventStoreHost").ShouldBe("3.0.27");
         options.CatalogVersion("eventstore", "probe").ShouldBe("5.1.0");
         options.CatalogVersion("eventstore", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
         CompositionDeclarationOptions platform = options with { ConsumerProjectName = "Hexalith.Platform.EventStoreHost" };

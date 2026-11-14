@@ -155,8 +155,8 @@
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.4.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">2.0.1</HexalithMcpCliVersion>
-    <!-- The finite Platform SDK4.2 view uses its admitted current Memories cohort; explicit selections remain authoritative. -->
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == '' and '$(HexalithPlatformSdk42CatalogView)' == 'true' and '$(HexalithEventStoreVersion)' == '4.2.0'">3.0.27</HexalithMemoriesVersion>
+    <!-- Every finite SDK4.2 role uses the admitted Memories cohort, including private Parties producers; explicit selections remain authoritative. -->
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">3.0.27</HexalithMemoriesVersion>
     <!-- Current package selection; historical declarations retain their separately pinned release inputs. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.0.0</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">7.0.7</HexalithTenantsVersion>
