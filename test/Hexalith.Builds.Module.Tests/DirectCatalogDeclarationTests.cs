@@ -250,6 +250,7 @@ public sealed class DirectCatalogDeclarationTests
             if (!consumerViews)
             {
                 selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithEventStoreVersion", unknownVersion ? "999.0.0" : sdkVersion)));
+                selectedCatalog.Root.AddFirst(new XElement("PropertyGroup", new XElement("HexalithTenantsVersion", "7.0.7")));
             }
 
             selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithMemoriesVersion", unknownMemories ? "3.0.28" : memoriesVersion)));
