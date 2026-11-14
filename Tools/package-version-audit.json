@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "37a3cdd6eaeec4a95b5e0b1ef3231f2b05fda2d7",
+  "generatedFromRevision": "58e1a5f4a8ced48d23c64fe51e266513344f79d3",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "9c0928ddeae75ca77375b2c5e03cc8ec3218d7f6ad64a1c93b25aad2650b695c",
-  "catalogRawSha256": "45b05f6755f337baccfaa805e5e4afb4a57e91b2f70226a357c82d03b4c19bb7",
+  "catalogSha256": "633a03d577ed16057e918f896f65b71556338220c625d9d405ad38d0c3116a8d",
+  "catalogRawSha256": "ef691a7a3caa7a92e524f766a770574cd21ef5e32fccd996d1d2899b9d7bddd7",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-14T11:19:25.8505538+00:00",
+    "auditedAtUtc": "2026-11-14T13:24:56.2188527+00:00",
     "refreshedFamilies": [
-      "hexalith-frontcomposer"
+      "hexalith-memories"
     ],
     "preservedFamilies": [
       "aspire",
@@ -24,10 +24,10 @@
       "hexalith-domains",
       "hexalith-eventstore",
       "hexalith-folders",
+      "hexalith-frontcomposer",
       "hexalith-identitystores",
       "hexalith-keyvaluestorages",
       "hexalith-mcpcli",
-      "hexalith-memories",
       "hexalith-netaspire",
       "hexalith-parties",
       "hexalith-polymorphicserializations",
@@ -182,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "37a3cdd6eaeec4a95b5e0b1ef3231f2b05fda2d7",
+    "repositoryRevision": "58e1a5f4a8ced48d23c64fe51e266513344f79d3",
     "sha256": "aff9f6a2f937cd22eb59a0e3ad5ac6dd02b4b2a1116f0eb91fdfdfb256f0e54a",
     "entries": [
       {
@@ -14011,8 +14011,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-13T21:54:53.8640879+00:00",
-        "generatedFromRevision": "1fc93c238d5ef2a8f5c2590a8e9fa0cdab63c57c",
+        "auditedAtUtc": "2026-11-14T13:24:56.2188527+00:00",
+        "generatedFromRevision": "58e1a5f4a8ced48d23c64fe51e266513344f79d3",
         "familySelectionSha256": "b5d5c7ea81a0644a99c3d53fa34baef2221e9d9d7a445b77ad8a79e36651b797",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "8a7d597374cd5d616f69e83879c9656b75f20d1c06c137613fcb9365a5a332d3",

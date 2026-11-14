@@ -200,7 +200,7 @@ public sealed class CompositionCatalogPackageViewTests
             AssertEventStoreFamily(versions, "4.2.0", consumer);
             versions["Microsoft.AspNetCore.OpenApi"].ShouldBe("10.0.15", consumer);
             versions["Microsoft.OpenApi"].ShouldBe("2.13.0", consumer);
-            foreach (var package in versions.Where(pair => pair.Key.StartsWith("Hexalith.Memories.", StringComparison.Ordinal)))
+            foreach (KeyValuePair<string, string> package in versions.Where(pair => pair.Key.StartsWith("Hexalith.Memories.", StringComparison.Ordinal)))
             {
                 package.Value.ShouldBe(currentPlatformView ? "3.0.27" : "4.0.0", consumer + ":" + package.Key);
             }
