@@ -1,6 +1,7 @@
 """Qualify isolated ownership writes against disposable real Git remotes."""
 from __future__ import annotations
 
+from contextlib import redirect_stderr
 from dataclasses import replace
 import copy
 import http.client
@@ -473,6 +474,26 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual({'ref': 'main'}, json.loads(request.data))
         self.assertEqual('Bearer secret-marker', request.get_header('Authorization'))
         self.assertEqual(30, timeout)
+
+    def test_unexpected_success_status_is_rejected(self):
+        for status in (200, 202):
+            response = self.Response(b'secret-marker response body')
+            response.status = status
+            class Opener:
+                def open(self, *args, **kwargs):
+                    return response
+            with self.subTest(status=status), self.assertRaises(R.RestoreError) as raised:
+                R.Dispatch(Opener()).send('Example/Fixture', 'secret-marker')
+            self.assertEqual('CI dispatch failed: HTTP ' + str(status), str(raised.exception))
+            self.assertTrue(response.closed)
+
+    def test_main_redacts_token_and_escapes_hostile_failure_diagnostics(self):
+        diagnostic = R.RestoreError('secret-marker\n::error::\x1bhostile diagnostic')
+        output = io.StringIO()
+        with (patch.dict(os.environ, {'RESTORE_TOKEN': 'secret-marker'}, clear=True),
+              patch.object(R, 'run', side_effect=diagnostic), redirect_stderr(output)):
+            self.assertEqual(1, R.main())
+        self.assertEqual('restore: [REDACTED]\\u000a::error::\\u001bhostile diagnostic\n', output.getvalue())
 
     def test_protocol_errors_during_open_or_read_are_sanitized(self):
         class BrokenBody(self.Response):
