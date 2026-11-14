@@ -152,3 +152,83 @@ very large future module repositories. All current tagged declarations use
 explicit permission mappings. The canonical CiCd story records every review
 verdict, including rejected diagnostics/retention suggestions and the intended
 qualification/adoption boundary. Fresh post-review qualification follows.
+
+Both full post-review locked local lanes passed 14/14 groups and 923 tests per
+lane, including 507 library tests and all 29 restore runtime/composite tests.
+Focused restore discovery also passed 29/29 under both interpreters. Pinned
+online workflow lint passed with zero new findings, and the public API check
+for `522a5dda67756af5f7b1c04e0c7a6d3f39b555e2` retained 2,590 entries against
+`v5.2.2` with no removals. CiCd production render/check, 32 renderer tests,
+eight generated fixture workflow online audits and 49 validator tests all
+passed again. Complete command/exit manifests and logs are retained under
+`/tmp/bmad-5-3-postreview-{312,runner,focused,quality,cicd}.{json,log}`.
+
+The independent verification reviewer confirmed both patch entries closed at
+that revision. Its original default-opener constructor mutation now fails the
+new test, and protocol-error controls verify suppressed exception context and
+preservation of the single pushed repair. No specific unverified risk remains
+in those patched entries, so the follow-up review recommendation is false.
+The canonical story records 18 findings/intent observations: five medium,
+three low, nine false and one maybe-false. Three medium observations form the
+two fixed entries; two grouped entries remain deferred, and all twelve
+rejected observations include their evidence or proportionality reason.
+
+Post-review normal push [run 43539307409](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43539307409)
+passed all seven retained jobs for the corrected implementation
+`522a5dda67756af5f7b1c04e0c7a6d3f39b555e2`; both restore jobs correctly skipped
+Builds and sample contexts.
+
+## Resumed review qualification
+
+Three independent review layers completed a fresh pass. Two additional
+verification controls now reject returned HTTP 200/202 dispatch responses and
+assert main's token redaction and control-character escaping. Focused discovery
+passes all 31 restore tests. Independent in-memory mutations demonstrate that
+the controls detect removal of each protection, including accepting only 202.
+Both entries are closed with no specific unverified risk; runtime behavior is
+unchanged. Pinned commitlint accepted the exact regression message before
+commit, and git ls-remote confirmed pushed regression revision
+`fe5d7a6c0b68584131f5dce42f366e77b3e915fc`.
+
+The canonical story retains individual verdicts for all twelve resumed-review
+findings. Existing permission-shorthand and large-repository-capacity entries
+retain their previous routes without duplicate deferrals.
+
+Final-source normal push [run 43542954431](https://github.com/Hexalith/Hexalith.Builds/actions/runs/43542954431)
+passed all seven retained jobs at
+`fe5d7a6c0b68584131f5dce42f366e77b3e915fc`. Both hosted Python lanes passed
+14/14 groups and 925 tests each, including 509 shared-library tests and all
+31 restore runtime/composite tests. Root .NET, catalog contracts, sample and
+Windows passed; both forbidden restore contexts correctly skipped.
+
+Local repeats initially ended with exit 120 while the workspace filesystem was
+nearly full. Repeating with TMPDIR on the separate memory filesystem passed
+13/14 groups in each interpreter. The final group required the verified lint
+tools beneath that new temporary directory; after restoring those prerequisites
+and read-audit authentication, its focused retry passed all 46 tests under
+both interpreters. Every one of the 14 groups and 925 tests therefore has
+passing local evidence, with no product or gate change. The complete full-run,
+focused-retry and aggregate qualification manifests are retained beneath
+`/dev/shm/bmad-5-3-qualification-0g2b9gv3/{312,runner}/`. The original local
+attempts remain recorded at `/tmp/bmad-5-3-final-{312,runner}.{log,json}`.
+
+Pinned authenticated workflow lint and the public API check passed again at
+the regression revision: 2,590 entries and no removals. CiCd render/check,
+32 renderer tests, eight generated-workflow online audits and 49 validator
+tests passed. The empty registry produced no module adoption or generated
+changes. Whitespace and the unchanged intent contract were checked separately.
+
+| Final hosted job | Job ID | Result |
+| --- | --- | --- |
+| Package catalog contracts | 132287472616 | success |
+| Python contract tests (runner) | 132287472796 | success |
+| Python contract tests (3.12) | 132287472797 | success |
+| Workflow lint and public API | 132287472825 | success |
+| Sample module build and tests | 132287472966 | success |
+| Root .NET build and tests | 132287473086 | success |
+| Sample Windows tests | 132287787976 | success |
+| Sample restore | 132287788936 | skipped |
+| Builds root restore | 132292311466 | skipped |
+
+The source qualification above covers the complete implementation and review
+regressions. The subsequent documentation commit records these results only.
