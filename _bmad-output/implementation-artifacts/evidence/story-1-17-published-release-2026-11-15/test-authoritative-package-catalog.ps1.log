@@ -1,0 +1,6 @@
+["pwsh", "-NoLogo", "-NoProfile", "-File", "Tools/test-authoritative-package-catalog.ps1"]
+Exception: /tmp/hexalith-job.hIRlsqzg/folders/references/Hexalith.Builds/Tools/test-authoritative-package-catalog.ps1:270
+Line |
+ 270 |  … DE -ne 0) { throw "Clean catalog view '$ProjectName' failed: $([IO.Fi …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Clean catalog view 'Hexalith.platform.Composition' failed: 

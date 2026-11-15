@@ -1,0 +1,5 @@
+["pwsh", "-NoLogo", "-NoProfile", "-File", "Tools/test-authoritative-package-catalog.ps1"]
+DOTNET_CLI_TELEMETRY_OPTOUT=1
+Owned catalog views passed 254 exact positive/negative probes.
+Independent frozen-v1 and packaged-host authority controls executed: 17.
+Authoritative package catalog tests passed for 68 approved package identities, 4 shared package versions, and 3 canonical families with overrides prohibited.
