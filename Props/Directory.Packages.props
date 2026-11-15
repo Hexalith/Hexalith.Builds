@@ -154,7 +154,7 @@
     <HexalithAspNetCoreOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">10.0.15</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">2.13.0</HexalithOpenApiVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.0</HexalithFrontComposerVersion>
-    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.4.0</HexalithFoldersVersion>
+    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.0.0</HexalithFoldersVersion>
     <!-- Retain the qualified MCP2 package ABI only for the finite SDK4.2 roles; source MCP keeps its current catalog. -->
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithMcpCliFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true')">2.0.1</HexalithMcpCliVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">3.0.0</HexalithMcpCliVersion>

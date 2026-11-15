@@ -17,6 +17,7 @@ try {
         -getProperty:HexalithEventStoreVersion `
         -getProperty:HexalithMcpCliVersion `
         -getProperty:HexalithTenantsVersion `
+        -getProperty:HexalithFoldersVersion `
         -getProperty:HexalithFrontComposerVersion `
         -getItem:PackageVersion 1> $stdout 2> $stderr
     $exitCode = $LASTEXITCODE
@@ -147,6 +148,7 @@ $cohortFamilies = [ordered] @{
     'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '5.1.1' }
     'Hexalith.McpCli.' = @{ Property = 'HexalithMcpCliVersion'; Version = '3.0.0' }
     'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '8.0.0' }
+    'Hexalith.Folders' = @{ Property = 'HexalithFoldersVersion'; Version = '2.0.0' }
 }
 [xml] $catalog = Get-Content -LiteralPath $catalogPath -Raw
 foreach ($family in $cohortFamilies.GetEnumerator()) {
