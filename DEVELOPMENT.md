@@ -88,7 +88,7 @@ supplies their offline reference packs and runtime without changing the active S
 The frozen `hexalith.module-manifest.v1` and G4 P0 acceptance contract retains
 its exact EventStore4.2.0, Dapr runtime/SDK1.19.1 and FrontComposer5.0.0 pins.
 `SupportedPlatformPins` describes that historical contract; it does not follow
-`PlatformVersionCatalog.Current`, whose current v2 default remains EventStore5.0.0.
+`PlatformVersionCatalog.Current`, whose current v2 default selects EventStore5.1.1.
 The byte-bound schema, corpus, cleanup proofs and negative expectations stay unchanged.
 
 The catalog additionally records exact named SDK4.2 views for the forty current
