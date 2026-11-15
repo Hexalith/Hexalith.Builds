@@ -34,8 +34,9 @@ is needed. Historical audit observations remain historical evidence.
 - CommunityToolkit.Aspire.Hosting.Dapr remains 13.6.2-beta.959 because the published
   EventStore 4.2.0 package requires that integration. Aspire Keycloak remains on its
   published preview channel. Neither hold is removed by retargeting to .NET 11.
-- AngleSharp remains 1.10.2 for bunit 2.15.2's BeforeToggle implementation;
-  the host framework change does not establish compatibility with AngleSharp 2.
+- AngleSharp remains on the 1.10 line (currently 1.10.3) for bunit 2.15.2's
+  BeforeToggle implementation; the host framework change does not establish
+  compatibility with AngleSharp 2.
 
 ## Validation and publication
 

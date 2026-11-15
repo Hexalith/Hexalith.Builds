@@ -145,7 +145,7 @@ if ($overrideEnabled -cne 'false') {
 # Each canonical family must use its one authoritative property, including new members.
 $cohortFamilies = [ordered] @{
     'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '5.1.0' }
-    'Hexalith.McpCli.' = @{ Property = 'HexalithMcpCliVersion'; Version = '2.0.1' }
+    'Hexalith.McpCli.' = @{ Property = 'HexalithMcpCliVersion'; Version = '3.0.0' }
     'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '8.0.0' }
 }
 [xml] $catalog = Get-Content -LiteralPath $catalogPath -Raw
