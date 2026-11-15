@@ -49,6 +49,44 @@ public sealed class PlatformModelCatalogTests
         assets.RootElement.GetProperty("libraries").GetProperty("Hexalith.Dep/1.0.0").GetProperty("type").GetString().ShouldBe("project");
     }
 
+    /// <summary>Evaluates the pinned catalog with verified mode and mixed-owner inputs before owner props.</summary>
+    /// <param name="mode">The verified workspace mode.</param>
+    /// <param name="packageOwner">Whether the dependency stays a package in source mode.</param>
+    /// <param name="expected">The catalog-selected version for the actual model build.</param>
+    /// <returns>The real offline model build and isolated package-purpose snapshot assertions.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source, false, "3.0.0")]
+    [InlineData(WorkspaceMode.Source, true, "2.0.0")]
+    [InlineData(WorkspaceMode.Package, false, "1.0.0")]
+    public async Task ModelCatalogSeesVerifiedModeAndOwnerOriginBeforeItsFirstImportAsync(WorkspaceMode mode, bool packageOwner, string expected)
+    {
+        const string catalog = "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion>"
+            + "<ModeProbeVersion Condition=\"'$(ModeProbeVersion)' == '' and '$(MSBuildProjectName)' == 'Hexalith.Platform.Composition' and '$(UseHexalithProjectReferences)' == 'true' and '$(HexalithDepFromSource)' != 'false'\">3.0.0</ModeProbeVersion>"
+            + "<ModeProbeVersion Condition=\"'$(ModeProbeVersion)' == '' and '$(MSBuildProjectName)' == 'Hexalith.Platform.Composition' and '$(UseHexalithProjectReferences)' == 'true' and '$(HexalithDepFromSource)' == 'false'\">2.0.0</ModeProbeVersion>"
+            + "<ModeProbeVersion Condition=\"'$(ModeProbeVersion)' == ''\">1.0.0</ModeProbeVersion>"
+            + "</PropertyGroup><ItemGroup><PackageVersion Include=\"Local.ModeProbe\" Version=\"$(ModeProbeVersion)\" /></ItemGroup></Project>";
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(catalog).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (packageOwner)
+        {
+            mapping = mapping with { Entries = [.. mapping.Entries.Select(entry => entry.Identity == "Hexalith.Dep" ? entry with { Origin = "package", Path = null } : entry)] };
+        }
+
+        string workspace = Path.Combine(fixture.Directory, "mode-model-run");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string root = mapping.PlatformIdentity!.PlatformPath;
+        string model = Path.Combine(root, "src", "Hexalith.Platform.Composition");
+        _ = Directory.CreateDirectory(model);
+        await File.WriteAllTextAsync(Path.Combine(root, "NuGet.Config"), "<configuration><packageSources><clear /></packageSources></configuration>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string project = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup>"
+            + "<Target Name=\"ObserveEarlyModeCatalog\" BeforeTargets=\"CoreCompile\"><Error Condition=\"'$(ModeProbeVersion)' != '" + expected + "'\" Text=\"Catalog observed wrong early mapping context: $(ModeProbeVersion)\" /></Target></Project>";
+        await File.WriteAllTextAsync(Path.Combine(model, "Hexalith.Platform.Composition.csproj"), project, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string assembly = await PlatformManifestCommand.BuildModelAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        File.Exists(assembly).ShouldBeTrue();
+        CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
+        snapshot.ProjectVersions["Hexalith.Platform.Composition"]["Local.ModeProbe"].ShouldBe("1.0.0");
+    }
+
     /// <summary>Builds an actual SDK project graph with early properties and conditional pinned versions.</summary>
     /// <param name="mode">The selected source or package build mode.</param>
     /// <param name="changeLiveCatalog">Whether the live catalog disagrees with the committed pin.</param>
