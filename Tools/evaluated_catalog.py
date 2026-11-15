@@ -55,7 +55,7 @@ def evaluate_catalog(path: Path, configuration: str = "Debug",
             ET.SubElement(project, "Import", {"Project": str(path)})
             ET.ElementTree(project).write(evaluation_path, encoding="utf-8")
         preprocessed = Path(temporary) / "catalog.xml"
-        _run(evaluation_path, ["-preprocess:" + str(preprocessed)], neutral=True,
+        _run(evaluation_path, ["-p:UseHexalithProjectReferences=false", "-preprocess:" + str(preprocessed)], neutral=True,
              configuration=configuration, target_framework=target_framework, working_directory=path.parent)
         document = ET.parse(preprocessed).getroot()
         event_store_defaults = []
@@ -76,7 +76,8 @@ def evaluate_catalog(path: Path, configuration: str = "Debug",
             raise ValueError("Ambiguous controlled EventStore catalog default: HexalithEventStoreVersion")
         names = sorted({_local_name(item.tag) for group in document.iter()
                         if _local_name(group.tag) == "PropertyGroup" for item in group} | {"HexalithAspireAppHostSdkVersion"})
-        arguments = ["-getItem:PackageVersion"]
+        # Catalog snapshots describe package consumers; source project inspection keeps its own context.
+        arguments = ["-p:UseHexalithProjectReferences=false", "-getItem:PackageVersion"]
         if names:
             arguments.append("-getProperty:" + ",".join(names))
         evaluation = json.loads(_run(evaluation_path, arguments, neutral=True, configuration=configuration,
