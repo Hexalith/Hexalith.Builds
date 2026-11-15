@@ -17,6 +17,11 @@ a reviewed full commit SHA and pass that same literal as
 `builds-execution-sha`. Do not use a branch, tag, expression, or repository
 variable for release-tool identity.
 
+The reusable CI workflow defaults to a 30-minute build and test job. Callers
+can set its numeric `job-timeout-minutes` input for a larger suite. Builds uses
+60 minutes for its full .NET catalog/workspace regression suite; sample jobs
+retain the shared default.
+
 ## Verified package preparation in domain workflows
 
 Both domain CI and `Github/prepare-domain-release` accept the optional

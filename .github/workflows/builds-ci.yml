@@ -31,6 +31,8 @@ jobs:
     with:
       # Active projects use SDK 11; SDK 10 supplies offline backward-compatibility fixtures.
       additional-sdk-version: '10.0.404'
+      # The full catalog/workspace regression suite exceeds the shared 30-minute default.
+      job-timeout-minutes: 60
     secrets:
       registry-pull-username: ${{ secrets.HEXALITH_REGISTRY_PULL_USERNAME }}
       registry-pull-password: ${{ secrets.HEXALITH_REGISTRY_PULL_PASSWORD }}

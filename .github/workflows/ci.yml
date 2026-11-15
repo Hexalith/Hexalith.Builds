@@ -15,6 +15,10 @@ on:
         description: Optional SDK supplying targeting packs for offline tests of older frameworks.
         type: string
         default: ''
+      job-timeout-minutes:
+        description: Maximum duration of the build and test job in minutes.
+        type: number
+        default: 30
     secrets:
       registry-pull-username:
         description: Dedicated pull-only registry identity, required only with registry enabled.
@@ -39,7 +43,7 @@ jobs:
   ci:
     name: Build and tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: ${{ inputs.job-timeout-minutes }}
     permissions:
       contents: read
     env:
