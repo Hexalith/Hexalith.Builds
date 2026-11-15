@@ -352,7 +352,7 @@ try {
         $partiesView = if ($name -cin $partiesSdk42Consumers) { 'true' } else { 'false' }
         $platformView = if ($name -cin $platformSdk42Consumers) { 'true' } else { 'false' }
         $buildsHostView = if ($name -cin $buildsHostSdk42Consumers) { 'true' } else { 'false' }
-        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.0' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
+        Test-OwnedCatalogView $name '5.1.0' '11.0.0' '3.11.0' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
     }
     foreach ($name in @('Hexalith.Parties', 'Hexalith.Platform.EventStoreHost', 'Hexalith.Builds.Module.EventStoreHost')) {
         $partiesView = if ($name -ceq 'Hexalith.Parties') { 'true' } else { 'false' }
@@ -361,6 +361,8 @@ try {
         Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'false'
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'false'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'false'
+        Test-OwnedCatalogView $name '5.1.0' '11.0.0' '3.11.0' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
         Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
         Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -McpCliFromSource 'false'
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -SelectedMcpCli '3.0.0'

@@ -84,7 +84,7 @@ public static class PlatformManifestCommand
         }
 
         string pinnedCatalog = VerifiedPinnedCatalog(mapping, workspace, $"Platform model '{project}'");
-        SourceMappingMaterializer.VerifyModelCommonProps(workspace);
+        SourceMappingMaterializer.VerifyModelCommonProps(mapping, workspace);
         string output = Path.Combine(workspace, "hosts", "platform-model");
         List<string> arguments =
         [

@@ -44,7 +44,7 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
             versions = {item["Identity"]: item["Version"] for item in json.loads(result.stdout)["Items"]["PackageVersion"]}
             self.assertEqual("11.0.0", versions["Microsoft.AspNetCore.OpenApi"])
             self.assertEqual("3.11.0", versions["Microsoft.OpenApi"])
-            self.assertEqual("4.2.0", versions["Hexalith.EventStore.Gateway"])
+            self.assertEqual("5.1.0", versions["Hexalith.EventStore.Gateway"])
             self.assertEqual("3.0.0", versions["Hexalith.McpCli.Abstractions"])
 
     def test_project_sdk_inspection_preserves_its_source_context(self):
