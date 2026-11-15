@@ -74,7 +74,7 @@ public static class SourceMappingMaterializer
         }
 
         await CatalogVersionMaterializer.WriteAsync(mapping, workspace, cancellationToken).ConfigureAwait(false);
-        await File.WriteAllTextAsync(ModelCommonPropsPath(workspace), CreateModelCommonProps(workspace), cancellationToken).ConfigureAwait(false);
+        await File.WriteAllTextAsync(ModelCommonPropsPath(workspace), CreateModelCommonProps(mapping, workspace), cancellationToken).ConfigureAwait(false);
         await WriteResourceAsync("SourceMapping.props", PropsPath(workspace), cancellationToken).ConfigureAwait(false);
         await WriteResourceAsync("SourceMapping.targets", TargetsPath(workspace), cancellationToken).ConfigureAwait(false);
         string props = CreateProps(mapping, workspace, initializeObserved: true);
@@ -105,20 +105,40 @@ public static class SourceMappingMaterializer
     }
 
     /// <summary>Refuses changed model import bytes before starting the model SDK child.</summary>
+    /// <param name="mapping">The command-resolved mapping whose early properties are sealed.</param>
     /// <param name="workspace">The materialized workspace.</param>
     /// <exception cref="InvalidDataException">The production import is unavailable or changed.</exception>
-    internal static void VerifyModelCommonProps(string workspace)
+    internal static void VerifyModelCommonProps(SourceMapping mapping, string workspace)
     {
         string path = ModelCommonPropsPath(workspace);
-        if (!File.Exists(path) || !string.Equals(File.ReadAllText(path), CreateModelCommonProps(workspace), StringComparison.Ordinal))
+        if (!File.Exists(path) || !string.Equals(File.ReadAllText(path), CreateModelCommonProps(mapping, workspace), StringComparison.Ordinal))
         {
             throw new InvalidDataException("The production model common-props import is missing or changed.");
         }
     }
 
-    private static string CreateModelCommonProps(string workspace) =>
-        "<Project><Import Project=\"" + XmlEscape(MsBuildEscape(Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props")))
-        + "\" /><Import Project=\"$(MSBuildExtensionsPath)/$(MSBuildToolsVersion)/Microsoft.Common.props\" /></Project>";
+    private static string CreateModelCommonProps(SourceMapping mapping, string workspace)
+    {
+        StringBuilder xml = new("<Project>");
+        if (mapping.HasGit)
+        {
+            _ = xml.Append("<PropertyGroup>");
+            foreach ((string name, string value) in MappedSelectionValues(mapping))
+            {
+                if (name is "UseHexalithProjectReferences" or "UseNuGetDeps" || name.EndsWith("FromSource", StringComparison.Ordinal))
+                {
+                    Property(xml, name, value);
+                }
+            }
+
+            _ = xml.Append("</PropertyGroup>");
+        }
+
+        _ = xml.Append("<Import Project=\"")
+            .Append(XmlEscape(MsBuildEscape(Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props"))))
+            .Append("\" /><Import Project=\"$(MSBuildExtensionsPath)/$(MSBuildToolsVersion)/Microsoft.Common.props\" /></Project>");
+        return xml.ToString();
+    }
 
     private static string CreateProps(SourceMapping mapping, string workspace, bool initializeObserved)
     {

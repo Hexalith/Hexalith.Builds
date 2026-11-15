@@ -1,28 +1,25 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "6508014ba449856289f06b40d4b806cc8c8d2ff5",
+  "generatedFromRevision": "f49a2021d757a0fe8d7344d7baa67e721155afa6",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "253c5d1d7530ee9f6b17ecdfa0f4e49c1f30356e075e1111c2c3c803623ef683",
-  "catalogRawSha256": "2b21bbac8b295c95dce60739d205adbb9937da5a78867841ef9763724bf920bd",
+  "catalogSha256": "cd4eb3ef4924b95c4f90a6ed503ee8d2fccdc881dfa949c994346e28e21378f1",
+  "catalogRawSha256": "d098dab50977041a536508f6df7e934f95678a4a0abedd80b28e9bae19ee0637",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-15T08:34:18.2094164+00:00",
+    "auditedAtUtc": "2026-11-15T11:52:06.9764273+00:00",
     "refreshedFamilies": [
-      "bunit-html",
-      "hexalith-conversations",
-      "hexalith-mcpcli",
-      "package:radzen.blazor",
-      "roslyn",
-      "verify"
+      "hexalith-mcpcli"
     ],
     "preservedFamilies": [
       "aspire",
+      "bunit-html",
       "dapr",
       "dotnet-10",
       "fluent-ui",
       "hexalith-applications",
       "hexalith-chatbot",
       "hexalith-commons",
+      "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
       "hexalith-eventstore",
@@ -137,6 +134,7 @@
       "package:octokit",
       "package:orchardcore.localization.core",
       "package:pactnet",
+      "package:radzen.blazor",
       "package:roslynator.analyzers",
       "package:roslynator.formatting.analyzers",
       "package:scriban",
@@ -166,6 +164,8 @@
       "package:testcontainers",
       "package:threenine.data",
       "package:yamldotnet",
+      "roslyn",
+      "verify",
       "xunit"
     ]
   },
@@ -182,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "6508014ba449856289f06b40d4b806cc8c8d2ff5",
+    "repositoryRevision": "f49a2021d757a0fe8d7344d7baa67e721155afa6",
     "sha256": "aff9f6a2f937cd22eb59a0e3ad5ac6dd02b4b2a1116f0eb91fdfdfb256f0e54a",
     "entries": [
       {
@@ -13962,8 +13962,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-15T08:34:18.2094164+00:00",
-        "generatedFromRevision": "6508014ba449856289f06b40d4b806cc8c8d2ff5",
+        "auditedAtUtc": "2026-11-15T11:52:06.9764273+00:00",
+        "generatedFromRevision": "f49a2021d757a0fe8d7344d7baa67e721155afa6",
         "familySelectionSha256": "3721bd476d712d397c2c8f40adae50f43374bfd59357b65857536d17d8f75a3f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "85c9062d86d63cd1fead1581319b4761e6cfb2339e2e16e721f05223d05403ab",
