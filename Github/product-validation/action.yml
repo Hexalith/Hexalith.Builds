@@ -1,0 +1,14 @@
+name: Validate built product packages
+description: Pack existing Release outputs and validate isolated package consumers.
+inputs:
+  contract:
+    description: Repository-relative product-validation JSON contract.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Validate package and consumer contracts
+      shell: bash
+      env:
+        PRODUCT_VALIDATION_CONTRACT: ${{ inputs.contract }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/product_validation.py" --contract "$PRODUCT_VALIDATION_CONTRACT"

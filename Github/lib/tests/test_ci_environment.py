@@ -986,5 +986,162 @@ else:
         self.assertFalse(self.effects.exists())
 
 
+class NativeAspireTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="native-aspire-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+
+    def archive(self, payload=b"authenticated-cli"):
+        stream = io.BytesIO()
+        with tarfile.open(fileobj=stream, mode="w:gz") as archive:
+            item = tarfile.TarInfo("aspire")
+            item.size = len(payload)
+            archive.addfile(item, io.BytesIO(payload))
+        return stream.getvalue()
+
+    def test_both_archive_and_executable_are_authenticated_before_execution(self):
+        data = self.archive()
+        directory = self.root / "cli"
+        with self.assertRaisesRegex(ENV.PipelineError, "archive SHA-256"):
+            ENV.install_aspire_cli(data, directory)
+        self.assertFalse(directory.exists())
+        with mock.patch.object(ENV, "ASPIRE_ARCHIVE_SHA256", hashlib.sha256(data).hexdigest()):
+            with self.assertRaisesRegex(ENV.PipelineError, "executable SHA-256"):
+                ENV.install_aspire_cli(data, directory)
+            with mock.patch.object(ENV, "ASPIRE_BINARY_SHA256", hashlib.sha256(b"authenticated-cli").hexdigest()):
+                binary = ENV.install_aspire_cli(data, directory)
+                self.assertEqual(b"authenticated-cli", binary.read_bytes())
+                self.assertTrue(os.access(binary, os.X_OK))
+
+    def test_embedded_bundle_detects_changed_missing_extra_and_symlink_bytes(self):
+        expected, installed = self.root / "expected", self.root / "installed"
+        for directory in (expected, installed):
+            for name in ("dcp/dcp", "dashboard/Aspire.Dashboard", "dashboard/runtime.json"):
+                path = directory / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(name.encode())
+        ENV.verify_aspire_bundle(expected, installed)
+        changed = installed / "dashboard/runtime.json"
+        original = changed.read_bytes()
+        changed.write_bytes(b"changed")
+        with self.assertRaisesRegex(ENV.PipelineError, "bundle differs"):
+            ENV.verify_aspire_bundle(expected, installed)
+        changed.unlink()
+        with self.assertRaisesRegex(ENV.PipelineError, "bundle differs"):
+            ENV.verify_aspire_bundle(expected, installed)
+        changed.write_bytes(original)
+        extra = installed / "extra"
+        extra.touch()
+        with self.assertRaisesRegex(ENV.PipelineError, "bundle differs"):
+            ENV.verify_aspire_bundle(expected, installed)
+        extra.unlink()
+        changed.unlink()
+        changed.symlink_to(expected / "dashboard/runtime.json")
+        with self.assertRaisesRegex(ENV.PipelineError, "symbolic link"):
+            ENV.verify_aspire_bundle(expected, installed)
+
+    def prerequisites(self, *, hosted=False, runtimes=None):
+        inventory = runtimes or ("Microsoft.NETCore.App 11.0.0 [/sdk]\n"
+                                 "Microsoft.AspNetCore.App 11.0.0 [/sdk]\n")
+        calls = []
+        def command(arguments, root, **kwargs):
+            calls.append(arguments)
+            if "--list-runtimes" in arguments:
+                return inventory
+            if "unshare" in arguments and sum("unshare" in call for call in calls) == 1:
+                raise ENV.PipelineError("controlled namespace refusal", 27)
+            return ""
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true" if hosted else "false",
+                                         "RUNNER_ENVIRONMENT": "github-hosted" if hosted else "self-hosted"}), \
+                mock.patch.object(ENV.shutil, "which", return_value="/tool"), \
+                mock.patch.object(ENV.ctypes, "CDLL"), \
+                mock.patch.object(ENV.ctypes.util, "find_library", return_value="/library"), \
+                mock.patch.object(ENV, "run_command", side_effect=command):
+            if not hosted and "11.0.1" not in inventory:
+                with self.assertRaisesRegex(ENV.PipelineError, "namespace refusal"):
+                    ENV.native_prerequisites(self.root)
+            else:
+                ENV.native_prerequisites(self.root)
+        return calls
+
+    def test_namespace_adjustment_requires_disposable_hosted_runner_and_reprobe(self):
+        local = self.prerequisites()
+        self.assertFalse(any("sysctl" in call for call in local))
+        hosted = self.prerequisites(hosted=True)
+        self.assertEqual(2, sum("unshare" in call for call in hosted))
+        self.assertEqual(1, sum("sysctl" in call for call in hosted))
+        self.assertTrue(all(call[:3] == ["timeout", "--signal=TERM", "--kill-after=30s"] for call in hosted))
+
+    def test_exact_managed_runtime_fails_before_namespace_adjustment(self):
+        with self.assertRaisesRegex(ENV.PipelineError, "highest installed.*11.0.0"):
+            self.prerequisites(hosted=True, runtimes="Microsoft.NETCore.App 11.0.1 [/sdk]\n"
+                               "Microsoft.AspNetCore.App 11.0.0 [/sdk]\n")
+
+    def test_environment_enables_native_setup_once_after_dapr_and_propagates_failure(self):
+        (self.root / "Fixture.slnx").touch()
+        calls = []
+        with mock.patch.object(ENV, "setup_dapr", side_effect=lambda root: calls.append("dapr")), \
+                mock.patch.object(ENV, "setup_aspire", side_effect=lambda root: calls.append("aspire")):
+            ENV.setup_environment(self.root, solution="Fixture.slnx", dapr=True, aspire=True)
+        self.assertEqual(["dapr", "aspire"], calls)
+        with mock.patch.object(ENV, "setup_dapr"), \
+                mock.patch.object(ENV, "setup_aspire", side_effect=ENV.PipelineError("native failure", 29)), \
+                mock.patch.object(ENV, "playwright_tools") as browsers:
+            with self.assertRaisesRegex(ENV.PipelineError, "native failure") as error:
+                ENV.setup_environment(self.root, solution="Fixture.slnx", dapr=True, aspire=True, browsers=True)
+            self.assertEqual(29, error.exception.returncode)
+            browsers.assert_not_called()
+
+    def test_controlled_install_exports_pinned_tools_and_keeps_module_outputs_untouched(self):
+        data = self.archive()
+        calls = []
+        module = self.root / "module"
+        module.mkdir()
+        output = module / "built.dll"
+        output.write_bytes(b"shared-build")
+        path_file, env_file = self.root / "github-path", self.root / "github-env"
+        def command(arguments, root, **kwargs):
+            self.assertEqual(module, root)
+            calls.append(arguments)
+            if "setup" in arguments:
+                target = Path(arguments[arguments.index("--install-path") + 1]) / "bundle"
+                for name in ("dcp/dcp", "dashboard/Aspire.Dashboard"):
+                    path = target / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(name.encode())
+            if "venv" in arguments:
+                executable = Path(arguments[-1]) / "bin/python"
+                executable.parent.mkdir(parents=True)
+                executable.touch()
+            return ""
+        with mock.patch.dict(os.environ, {"RUNNER_TEMP": str(self.root),
+                                         "GITHUB_PATH": str(path_file), "GITHUB_ENV": str(env_file)}), \
+                mock.patch.object(ENV, "native_prerequisites") as prerequisites, \
+                mock.patch.object(ENV, "urlopen", return_value=io.BytesIO(data)) as download, \
+                mock.patch.object(ENV.Path, "home", return_value=self.root / "home"), \
+                mock.patch.object(ENV, "ASPIRE_ARCHIVE_SHA256", hashlib.sha256(data).hexdigest()), \
+                mock.patch.object(ENV, "ASPIRE_BINARY_SHA256", hashlib.sha256(b"authenticated-cli").hexdigest()), \
+                mock.patch.object(ENV, "run_command", side_effect=command):
+            ENV.setup_aspire(module)
+        prerequisites.assert_called_once_with(module)
+        download.assert_called_once_with(ENV.ASPIRE_URL, timeout=120)
+        self.assertEqual(4, len(calls))
+        self.assertTrue(all(call[:3] == ["timeout", "--signal=TERM", "--kill-after=30s"] for call in calls))
+        self.assertIn("--require-hashes", calls[-1])
+        self.assertIn("--only-binary=:all:", calls[-1])
+        self.assertEqual(str(ENV.NATIVE_PYTHON_REQUIREMENTS), calls[-1][-1])
+        paths = path_file.read_text().splitlines()
+        self.assertEqual(2, len(paths))
+        self.assertTrue(all(Path(path).is_relative_to(self.root) for path in paths))
+        exported = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
+        self.assertEqual(f"{paths[-1]}/python", exported["HEXALITH_CI_PYTHON"])
+        qualified = Path(exported["HEXALITH_CI_ASPIRE_QUALIFIED_BUNDLE"])
+        self.assertTrue(qualified.is_relative_to(self.root))
+        ENV.verify_aspire_bundle(qualified, self.root / "home/.aspire/bundle")
+        self.assertEqual(b"shared-build", output.read_bytes())
+        self.assertEqual([output], list(module.iterdir()))
+
+
 if __name__ == "__main__":
     unittest.main()

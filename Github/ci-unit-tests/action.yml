@@ -1,6 +1,9 @@
 name: Run shared CI unit tests
 description: Evaluate solution test projects and stop after the first failing unit project.
 outputs:
+  aspire:
+    description: Validated native Aspire toolchain flag after successful unit tests.
+    value: ${{ steps.unit.outputs.aspire }}
   dapr:
     description: Validated Dapr setup flag after successful units.
     value: ${{ steps.unit.outputs.dapr }}

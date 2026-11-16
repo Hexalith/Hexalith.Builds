@@ -339,7 +339,7 @@ class SubprocessPipelineTests(unittest.TestCase):
         (self.root / project).write_text("<Project />")
         result = self.invoke("--phase", "unit")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertEqual({"dapr": "true", "registry": "true", "browsers": "true",
+        self.assertEqual({"dapr": "true", "registry": "true", "browsers": "true", "aspire": "false",
                           "npmWorkspaces": '["tests/e2e"]', "dotnetTools": "true",
                           "after-unit-tests": "true", "after-integration-tests": "false"},
                          dict(line.split("=", 1) for line in output.read_text().splitlines()))

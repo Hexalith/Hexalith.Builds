@@ -1,0 +1,11 @@
+name: Sample MacOSTests
+description: Execute the sample product on the macOS runner after shared preparation.
+runs:
+  using: composite
+  steps:
+    - name: Run built sample MacOSTests
+      shell: pwsh
+      working-directory: Samples/Hexalith.Sample
+      run: |
+          dotnet test --project test/Hexalith.Sample.MacOSTests/Hexalith.Sample.MacOSTests.csproj --no-build --no-restore --configuration Release --stop-on-fail off
+          exit $LASTEXITCODE

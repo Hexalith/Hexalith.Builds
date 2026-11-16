@@ -82,6 +82,30 @@ class PrepareTests(unittest.TestCase):
         self.assertIn("--no-restore", commands[1])
         self.assertEqual(2, len(self.external))
 
+    def test_macos_consumes_validated_outputs_without_config_read_or_environment(self):
+        self.save = lambda: None
+        (self.root / ".github/hexalith-ci.json").write_text("not JSON")
+        result = self.invoke("macOS")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        commands = self.commands()
+        self.assertEqual(["restore", "build"], [command[0] for command in commands])
+        self.assertIn("--no-restore", commands[1])
+        for command in commands:
+            self.assertTrue(all(flag in command for flag in FIXTURE.EXPECTED_PROPERTIES))
+        self.assertEqual(2, len(self.external))
+
+    def test_macos_failed_restore_stops_before_build(self):
+        self.fixture.data["failure"] = "restore"
+        result = self.invoke("macOS")
+        self.assertEqual(17, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["restore"], [command[0] for command in self.commands()])
+
+    def test_macos_unsafe_paths_fail_before_sdk_or_build(self):
+        result = self.invoke("macOS", inputs=dict(self.inputs, solution="../outside.slnx"))
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(1, len(self.external))
+        self.assertEqual([], self.commands())
+
     def test_windows_prefixed_nested_solution_with_spaces_keeps_sdk_directory(self):
         module = self.root / "Samples/A sample"
         (module / "solutions/nested").mkdir(parents=True)
@@ -510,7 +534,8 @@ with pathlib.Path("delegated-tests.jsonl").open("a") as stream:
 sys.exit(int(os.environ.get("FAIL_DELEGATED_TEST", "0")))
 ''')
         executable.chmod(0o755)
-        for name, lane in (("after-unit-tests", "HookTests"), ("sample-windows", "WindowsTests")):
+        for name, lane in (("after-unit-tests", "HookTests"), ("sample-windows", "WindowsTests"),
+                           ("sample-macos", "MacOSTests")):
             with self.subTest(action=name):
                 assembly = module / f"test/Hexalith.Sample.{lane}/bin/Release/net10.0/Hexalith.Sample.{lane}.dll"
                 assembly.parent.mkdir(parents=True)
