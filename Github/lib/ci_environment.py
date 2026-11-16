@@ -598,10 +598,12 @@ def setup_tls_trust(root: Path) -> None:
         if not certificates or any(path.is_symlink() or not path.is_file() or path.stat().st_size == 0
                                    for path in certificates):
             raise PipelineError("TLS trust requires the exported .NET development certificate PEM files")
-        for index, certificate in enumerate(certificates):
+        for certificate in certificates:
             run_command(["openssl", "x509", "-in", str(certificate), "-checkend", "0", "-noout"], root)
             for directory in directories:
-                name = f"hexalith-ci-dev-cert-{index}"
+                # The CLI uses the exported PEM basename as its NSS nickname.
+                # NSS keeps that nickname when the same certificate is reimported.
+                name = certificate.stem
                 run_command(["certutil", "-A", "-d", f"sql:{directory}", "-n", name,
                              "-t", "P,,", "-i", str(certificate)], root)
                 run_command(["certutil", "-L", "-d", f"sql:{directory}", "-n", name], root, capture=True)

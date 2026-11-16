@@ -196,6 +196,37 @@ class PrerequisiteTests(unittest.TestCase):
             self.assertEqual(f"{trust}:/usr/lib/ssl/certs", os.environ["SSL_CERT_DIR"])
             self.assertEqual(f"SSL_CERT_DIR={trust}:/usr/lib/ssl/certs\n", environment_file.read_text())
 
+    def test_existing_cli_certificate_nickname_survives_reimport(self):
+        trust = self.root / ".aspnet/dev-certs/trust"
+        trust.mkdir(parents=True)
+        certificate = trust / ("aspnetcore-localhost-" + "A" * 40 + ".pem")
+        certificate.write_text("synthetic certificate bytes")
+        stores = {"sql:" + str(self.root / relative): {"foreign": "foreign certificate"}
+                  for relative in (".pki/nssdb", ".local/share/pki/nssdb")}
+        old_store = stores["sql:" + str(self.root / ".pki/nssdb")]
+        old_store[certificate.stem] = certificate.read_text()
+
+        def run(arguments, root, **kwargs):
+            if arguments[:2] in (["certutil", "-A"], ["certutil", "-L"]):
+                store = stores[arguments[arguments.index("-d") + 1]]
+                nickname = arguments[arguments.index("-n") + 1]
+                if arguments[1] == "-A":
+                    # NSS retains the existing nickname when the certificate
+                    # bytes already exist, even if -A names a different alias.
+                    if certificate.read_text() not in store.values():
+                        store[nickname] = certificate.read_text()
+                elif nickname not in store:
+                    raise ENV.PipelineError("NSS certificate nickname was not found", 255)
+            return ""
+
+        with mock.patch.dict(os.environ), mock.patch.object(ENV.Path, "home", return_value=self.root), \
+                mock.patch.object(ENV, "run_command", side_effect=run):
+            os.environ.pop("GITHUB_ENV", None)
+            ENV.setup_tls_trust(self.root)
+        for store in stores.values():
+            self.assertEqual("synthetic certificate bytes", store[certificate.stem])
+            self.assertEqual("foreign certificate", store["foreign"])
+
     def test_tls_import_failure_propagates_and_does_not_claim_trust(self):
         trust = self.root / ".aspnet/dev-certs/trust"
         trust.mkdir(parents=True)
