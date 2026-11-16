@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Stage exact official qualification tools in a fresh private job directory.
 
-The product owns version/profile selection and qualification assertions. This
-installer owns bounded downloads and integrity checks; it never starts services,
-initializes Dapr, changes a global installation, or grants runtime eligibility.
+The product owns version/profile selection and qualification assertions. Builds
+owns bounded downloads, integrity checks and explicit fresh-worker Dapr setup.
+Staging alone starts no services and never grants runtime eligibility.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import io
 import json
 import os
 from pathlib import Path
+import platform
 import re
 import shutil
 import subprocess
@@ -25,6 +26,7 @@ from urllib.parse import urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ci_config import ConfigError, _read_json
 from ci_pipeline import PipelineError, contained_path, publish_outputs
+from ci_environment import DAPR_RECEIPT_ENV, export_path, initialize_dapr
 
 
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
@@ -33,6 +35,25 @@ SOURCE = re.compile(
     r"/(?:dapr/(?:dapr|cli)|kubernetes-sigs/kind|kubernetes/kubernetes)/"
     r"releases/download/v[0-9]+\.[0-9]+\.[0-9]+/[A-Za-z0-9_.-]+\Z")
 LIMIT = 512 * 1024 * 1024
+
+
+def validate_initialization(artifacts: list[dict], version: str) -> None:
+    """Allow an explicit historical tuple only on a fresh disposable hosted VM."""
+    if not version:
+        return
+    if (re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", version) is None
+            or tuple(map(int, version.split("."))) < (1, 18, 0)):
+        raise PipelineError("Dapr qualification initialization requires an exact runtime version >=1.18.0")
+    if (platform.system() != "Linux" or platform.machine() not in ("x86_64", "AMD64")
+            or os.environ.get("GITHUB_ACTIONS") != "true"
+            or os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted"):
+        raise PipelineError("historical Dapr initialization requires a fresh disposable hosted Linux worker")
+    if os.environ.get(DAPR_RECEIPT_ENV) or (Path.home() / ".dapr").exists() or (Path.home() / ".dapr").is_symlink():
+        raise PipelineError("historical Dapr initialization refuses an existing Dapr home or initialization receipt")
+    cli = [row for row in artifacts if row["name"] == "dapr"]
+    if (len(cli) != 1 or cli[0]["format"] != "tar.gz" or cli[0]["member"] != "dapr"
+            or not cli[0]["url"].startswith("https://github.com/dapr/cli/releases/download/")):
+        raise PipelineError("historical Dapr initialization requires the verified official dapr CLI artifact")
 
 
 def read_manifest(root: Path, relative: str) -> list[dict]:
@@ -119,10 +140,12 @@ def executable_bytes(data: bytes, member: str, expected: str) -> bytes:
     return content
 
 
-def stage(root: Path, manifest: str, *, temporary: Path | None = None, transport=download) -> dict[str, str]:
+def stage(root: Path, manifest: str, *, temporary: Path | None = None, transport=download,
+          dapr_runtime_version: str = "") -> dict[str, str]:
     """Publish paths only after the entire selected tool inventory verifies."""
     root = root.resolve()
     artifacts = read_manifest(root, manifest)
+    validate_initialization(artifacts, dapr_runtime_version)
     parent = temporary or Path(os.environ.get("RUNNER_TEMP", tempfile.gettempdir()))
     if (not parent.is_absolute() or not parent.is_dir() or parent.resolve() != parent
             or any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in str(parent))):
@@ -146,12 +169,21 @@ def stage(root: Path, manifest: str, *, temporary: Path | None = None, transport
             files[item["name"]] = str(path)
             observations.append({**item, "path": str(path),
                                  "installedSha256": hashlib.sha256(content).hexdigest()})
+        initialization = ""
+        if dapr_runtime_version:
+            # The same shared implementation captures actual preexisting/new
+            # Docker resources. No module-owned initializer or catalog mutation.
+            initialization = str(initialize_dapr(Path(files["dapr"]), dapr_runtime_version, root))
         receipt = directory / "receipt.json"
         receipt.write_text(json.dumps({"schema": "hexalith.qualification-tools-receipt.v1",
-                                       "qualification": "not-established", "artifacts": observations},
+                                       "qualification": "not-established", "artifacts": observations,
+                                       "daprInitializationReceipt": initialization},
                                       sort_keys=True) + "\n", encoding="utf-8")
         receipt.chmod(0o400)
-        return {"directory": str(directory), "receipt": str(receipt), "files": json.dumps(files, sort_keys=True)}
+        if initialization:
+            export_path(directory)
+        return {"directory": str(directory), "receipt": str(receipt), "files": json.dumps(files, sort_keys=True),
+                "dapr-receipt": initialization}
     except BaseException:
         shutil.rmtree(directory)
         raise
@@ -161,9 +193,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace", type=Path, default=os.environ.get("GITHUB_WORKSPACE", "."))
     parser.add_argument("--manifest", required=True)
+    parser.add_argument("--dapr-runtime-version", default="")
     arguments = parser.parse_args()
     try:
-        publish_outputs(stage(arguments.workspace, arguments.manifest))
+        publish_outputs(stage(arguments.workspace, arguments.manifest,
+                              dapr_runtime_version=arguments.dapr_runtime_version))
         return 0
     except (ConfigError, OSError, ValueError) as error:
         print(error, file=sys.stderr)

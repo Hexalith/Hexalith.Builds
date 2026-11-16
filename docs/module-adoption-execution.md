@@ -138,6 +138,8 @@ npm. Omitted exact versions retain the older Node 24 preparation contract. APT
 uses the existing shared mirror recovery and preserves signed Ubuntu source
 settings while selecting HTTPS. TLS setup verifies the development certificate,
 imports it into both Linux NSS locations, and fails on missing/empty certificates.
+It exports `SSL_CERT_DIR` for subsequent OpenSSL clients while preserving system
+and existing trust directories, following the [ASP.NET Core Linux trust guidance](https://learn.microsoft.com/en-us/aspnet/core/security/enforcing-ssl).
 Product actions own HTTPS host startup and client assertions.
 
 `dapr: true` still initializes the catalog tuple and emits the existing fresh
@@ -153,9 +155,20 @@ and executable SHA-256 checks, safe member selection, private directory creation
 and integrity receipts. Formats are `file` (including original archives/checksum
 records), `binary`, and `tar.gz` (one exact executable member). See
 `schemas/hexalith.qualification-tools.v1.json` for the closed contract. Outputs are
-`directory`, `receipt` and JSON `files`. No global runtime or PATH is replaced.
-The receipt explicitly says qualification is not established. This supports
-side-by-side historical inputs without silently upgrading them to the catalog.
+`directory`, `receipt`, JSON `files`, and optional `dapr-receipt`. Staging alone
+replaces no global runtime or PATH. The receipt explicitly says qualification is
+not established. This supports side-by-side historical inputs without silently
+upgrading them to the catalog.
+
+For fresh hosted Linux qualification, set the action's optional
+`dapr-runtime-version` to an exact retained runtime version (at least 1.18.0)
+and include an official `dapr/cli` tar artifact named `dapr`, with member `dapr`.
+Builds uses the same shared full initializer and job-bound backend receipt as
+catalog setup, then exports the verified CLI to PATH. Leave shared `dapr` setup
+disabled for this job: an existing Dapr home or initialization receipt fails
+closed. This option refuses private/self-hosted workers and cannot initialize
+over owner-prepared Azure fixtures. Product assertions still decide whether the
+retained tuple qualifies; initialization never promotes a runtime.
 
 ## Package consumer mechanics
 

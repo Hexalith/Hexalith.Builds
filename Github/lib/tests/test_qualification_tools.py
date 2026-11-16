@@ -54,10 +54,24 @@ class QualificationToolTests(unittest.TestCase):
     def write(self):
         (self.root / "tools.json").write_text(json.dumps(self.document))
 
-    def install(self, transport=None):
+    def install(self, transport=None, **options):
         self.write()
         return tools.stage(self.root, "tools.json", temporary=self.parent,
-                           transport=transport or (lambda url, size: self.archive))
+                           transport=transport or (lambda url, size: self.archive), **options)
+
+    def historical_cli(self):
+        self.archive = tar_bytes([("dapr", self.binary, tarfile.REGTYPE)])
+        self.row.update(name="dapr", member="dapr", sha256=digest(self.archive), size=len(self.archive),
+                        url="https://github.com/dapr/cli/releases/download/v1.18.0/dapr_linux_amd64.tar.gz")
+
+    def hosted_worker(self):
+        self.home = self.parent / "home"
+        self.home.mkdir()
+        self.enterContext(mock.patch.object(tools.Path, "home", return_value=self.home))
+        self.enterContext(mock.patch.object(tools.platform, "system", return_value="Linux"))
+        self.enterContext(mock.patch.object(tools.platform, "machine", return_value="x86_64"))
+        self.enterContext(mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true",
+            "RUNNER_ENVIRONMENT": "github-hosted", tools.DAPR_RECEIPT_ENV: ""}))
 
     def test_verified_executable_and_raw_archive_are_private_and_distinct(self):
         raw = {key: value for key, value in self.row.items() if key not in ("member", "binarySha256")}
@@ -77,6 +91,80 @@ class QualificationToolTests(unittest.TestCase):
         self.assertEqual("not-established", receipt["qualification"])
         self.assertEqual(self.row["binarySha256"], receipt["artifacts"][0]["installedSha256"])
         self.assertEqual(["tools.json"], sorted(path.name for path in self.root.iterdir()))
+
+    def test_staging_alone_never_initializes_or_changes_path(self):
+        with mock.patch.object(tools, "initialize_dapr") as initialize, mock.patch.object(tools, "export_path") as export:
+            result = self.install()
+        initialize.assert_not_called()
+        export.assert_not_called()
+        self.assertEqual("", result["dapr-receipt"])
+
+    def test_historical_initialization_uses_verified_cli_and_shared_receipt(self):
+        self.historical_cli()
+        self.hosted_worker()
+        receipt = self.parent / "dapr-initialization.json"
+
+        def initialize(binary, runtime, root):
+            self.assertEqual(self.binary, binary.read_bytes())
+            self.assertEqual("dapr", binary.name)
+            self.assertEqual("1.18.2", runtime)
+            self.assertEqual(self.root, root)
+            return receipt
+
+        with mock.patch.object(tools, "initialize_dapr", side_effect=initialize) as initialize_call, \
+                mock.patch.object(tools, "export_path") as export:
+            result = self.install(dapr_runtime_version="1.18.2")
+        initialize_call.assert_called_once()
+        export.assert_called_once_with(Path(result["directory"]))
+        self.assertEqual(str(receipt), result["dapr-receipt"])
+        document = json.loads(Path(result["receipt"]).read_text())
+        self.assertEqual("not-established", document["qualification"])
+        self.assertEqual(str(receipt), document["daprInitializationReceipt"])
+
+    def test_historical_initialization_refuses_unsupported_versions_before_download(self):
+        self.historical_cli()
+        self.hosted_worker()
+        for version in ("1.17.9", "1.18", "latest", "01.18.2", "1.18.2\n", "1.18.2;id"):
+            with self.subTest(version=version), self.assertRaisesRegex(tools.PipelineError, "exact runtime"):
+                self.install(lambda *_: self.fail("transport must not run"), dapr_runtime_version=version)
+
+    def test_historical_initialization_refuses_private_existing_or_unverified_setup(self):
+        self.historical_cli()
+        self.hosted_worker()
+        for environment in ({"RUNNER_ENVIRONMENT": "self-hosted"}, {"GITHUB_ACTIONS": "false"},
+                            {tools.DAPR_RECEIPT_ENV: "/retained-receipt.json"}):
+            with self.subTest(environment=environment), mock.patch.dict(os.environ, environment), \
+                    self.assertRaises(tools.PipelineError):
+                self.install(lambda *_: self.fail("transport must not run"), dapr_runtime_version="1.18.2")
+        with mock.patch.object(tools.platform, "system", return_value="Windows"), \
+                self.assertRaises(tools.PipelineError):
+            self.install(lambda *_: self.fail("transport must not run"), dapr_runtime_version="1.18.2")
+        (self.home / ".dapr").symlink_to(self.home / "missing-runtime")
+        with self.assertRaisesRegex(tools.PipelineError, "existing Dapr home"):
+            self.install(lambda *_: self.fail("transport must not run"), dapr_runtime_version="1.18.2")
+        (self.home / ".dapr").unlink()
+        (self.home / ".dapr").mkdir()
+        with self.assertRaisesRegex(tools.PipelineError, "existing Dapr home"):
+            self.install(lambda *_: self.fail("transport must not run"), dapr_runtime_version="1.18.2")
+        (self.home / ".dapr").rmdir()
+        self.row["name"] = "unverified-cli"
+        with self.assertRaisesRegex(tools.PipelineError, "verified official dapr CLI"):
+            self.install(lambda *_: self.fail("transport must not run"), dapr_runtime_version="1.18.2")
+
+    def test_failed_integrity_or_initialization_never_exports_a_tool_path(self):
+        self.historical_cli()
+        self.hosted_worker()
+        with mock.patch.object(tools, "initialize_dapr") as initialize, mock.patch.object(tools, "export_path") as export:
+            self.row["binarySha256"] = "0" * 64
+            with self.assertRaisesRegex(tools.PipelineError, "SHA-256 mismatch"):
+                self.install(dapr_runtime_version="1.18.2")
+            initialize.assert_not_called()
+            self.row["binarySha256"] = digest(self.binary)
+            initialize.side_effect = tools.PipelineError("initialization failed")
+            with self.assertRaisesRegex(tools.PipelineError, "initialization failed"):
+                self.install(dapr_runtime_version="1.18.2")
+            export.assert_not_called()
+        self.assertEqual(["home", "module"], sorted(path.name for path in self.parent.iterdir()))
 
     def test_bad_size_or_archive_or_executable_digest_leaves_no_partial_directory(self):
         for field, value in (("size", len(self.archive) + 1), ("sha256", "0" * 64), ("binarySha256", "0" * 64)):

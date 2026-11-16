@@ -567,6 +567,10 @@ def use_https_ubuntu_sources(root: Path, sources: tuple[Path, ...]) -> None:
 
 def setup_tls_trust(root: Path) -> None:
     """Trust the job's .NET development certificate in both supported NSS databases."""
+    inherited_certificates = os.environ.get("SSL_CERT_DIR", "")
+    if any(ord(char) < 32 or 127 <= ord(char) <= 159 or char in "\u2028\u2029"
+           for char in inherited_certificates):
+        raise PipelineError("SSL_CERT_DIR must not contain control characters")
     run_command(["sudo", "apt-get", "-o", "APT::Update::Error-Mode=any", "update"], root)
     run_command(["sudo", "apt-get", "install", "-y", "--no-install-recommends", "libnss3-tools"], root)
     directories = [Path.home() / relative for relative in (".pki/nssdb", ".local/share/pki/nssdb")]
@@ -592,6 +596,15 @@ def setup_tls_trust(root: Path) -> None:
                          "-t", "P,,", "-i", str(certificate)], root)
             run_command(["certutil", "-L", "-d", f"sql:{directory}", "-n", name], root, capture=True)
     run_command(["dotnet", "dev-certs", "https", "--check", "--trust"], root)
+    certificate_directories = os.pathsep.join(dict.fromkeys(
+        (str(trust), "/usr/lib/ssl/certs", *filter(None, inherited_certificates.split(os.pathsep)))))
+    if any(ord(char) < 32 or 127 <= ord(char) <= 159 or char in "\u2028\u2029"
+           for char in certificate_directories):
+        raise PipelineError("TLS certificate paths must not contain control characters")
+    if os.environ.get("GITHUB_ENV"):
+        with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
+            stream.write(f"SSL_CERT_DIR={certificate_directories}\n")
+    os.environ["SSL_CERT_DIR"] = certificate_directories
 
 
 def require_node_versions(root: Path, prerequisites: dict, *, npm_required: bool) -> None:

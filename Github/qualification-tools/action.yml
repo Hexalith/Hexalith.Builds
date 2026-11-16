@@ -1,9 +1,12 @@
 name: Stage isolated qualification tools
-description: Verify and stage exact official archives or executables without initializing services.
+description: Verify exact official tools, optionally initializing an explicit Dapr tuple on a fresh hosted worker.
 inputs:
   manifest:
     description: Module-relative hexalith.qualification-tools.v1 JSON manifest of official immutable assets.
     required: true
+  dapr-runtime-version:
+    description: Optional exact historical runtime >=1.18.0 to initialize once on a fresh hosted Linux worker; requires a verified dapr CLI artifact.
+    default: ''
 outputs:
   directory:
     description: Fresh private job directory containing only verified files and the receipt.
@@ -14,6 +17,9 @@ outputs:
   files:
     description: JSON mapping of configured artifact names to their verified absolute paths.
     value: ${{ steps.stage.outputs.files }}
+  dapr-receipt:
+    description: Shared job-bound initialization receipt when requested; never runtime qualification or promotion evidence.
+    value: ${{ steps.stage.outputs.dapr-receipt }}
 runs:
   using: composite
   steps:
@@ -22,4 +28,5 @@ runs:
       shell: bash
       env:
         QUALIFICATION_TOOL_MANIFEST: ${{ inputs.manifest }}
-      run: python3 -I "$GITHUB_ACTION_PATH/../lib/qualification_tools.py" --manifest "$QUALIFICATION_TOOL_MANIFEST"
+        QUALIFICATION_DAPR_RUNTIME: ${{ inputs.dapr-runtime-version }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/qualification_tools.py" --manifest "$QUALIFICATION_TOOL_MANIFEST" --dapr-runtime-version "$QUALIFICATION_DAPR_RUNTIME"

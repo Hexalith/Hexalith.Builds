@@ -148,9 +148,17 @@ class PrerequisiteTests(unittest.TestCase):
         trust.mkdir(parents=True)
         certificate = trust / "certificate.pem"
         certificate.write_text("synthetic certificate bytes")
-        with mock.patch.object(ENV.Path, "home", return_value=self.root), \
+        environment_file = self.root / "github-env"
+        with mock.patch.dict(os.environ, {"SSL_CERT_DIR": "/existing/certificates:/usr/lib/ssl/certs:/other/certificates",
+                                          "GITHUB_ENV": str(environment_file)}), \
+                mock.patch.object(ENV.Path, "home", return_value=self.root), \
                 mock.patch.object(ENV, "run_command", side_effect=lambda args, root, **kw: commands.append(args) or ""):
             ENV.setup_tls_trust(self.root)
+            expected = f"{trust}:/usr/lib/ssl/certs:/existing/certificates:/other/certificates"
+            self.assertEqual(expected, os.environ["SSL_CERT_DIR"])
+            observed = subprocess.check_output([sys.executable, "-c", "import os; print(os.environ['SSL_CERT_DIR'])"], text=True)
+            self.assertEqual(expected, observed.strip())
+            self.assertEqual(f"SSL_CERT_DIR={expected}\n", environment_file.read_text())
         imports = [args for args in commands if args[:2] == ["certutil", "-A"]]
         self.assertEqual(2, len(imports))
         self.assertEqual({"sql:" + str(self.root / relative) for relative in
@@ -171,11 +179,28 @@ class PrerequisiteTests(unittest.TestCase):
                 raise ENV.PipelineError("NSS import verification failed", 57)
             return ""
 
-        with mock.patch.object(ENV.Path, "home", return_value=self.root), \
-                mock.patch.object(ENV, "run_command", side_effect=run), self.assertRaises(ENV.PipelineError) as failure:
-            ENV.setup_tls_trust(self.root)
+        environment_file = self.root / "github-env"
+        with mock.patch.dict(os.environ, {"SSL_CERT_DIR": "/existing/certificates", "GITHUB_ENV": str(environment_file)}):
+            with mock.patch.object(ENV.Path, "home", return_value=self.root), \
+                    mock.patch.object(ENV, "run_command", side_effect=run), self.assertRaises(ENV.PipelineError) as failure:
+                ENV.setup_tls_trust(self.root)
+            self.assertEqual("/existing/certificates", os.environ["SSL_CERT_DIR"])
+            self.assertFalse(environment_file.exists())
         self.assertEqual(57, failure.exception.returncode)
         self.assertFalse(any("--check" in args for args in commands))
+
+    def test_tls_trust_rejects_inherited_certificate_path_control_characters_before_effects(self):
+        environment_file = self.root / "github-env"
+        for control in ("\n", "\r", "\t", "\x7f", "\x85", "\u2028", "\u2029"):
+            value = "/existing/certificates" + control + "FORGED=value"
+            with self.subTest(control=repr(control)), \
+                    mock.patch.dict(os.environ, {"SSL_CERT_DIR": value, "GITHUB_ENV": str(environment_file)}), \
+                    mock.patch.object(ENV, "run_command") as command:
+                with self.assertRaisesRegex(ENV.PipelineError, "control characters"):
+                    ENV.setup_tls_trust(self.root)
+                command.assert_not_called()
+                self.assertEqual(value, os.environ["SSL_CERT_DIR"])
+                self.assertFalse(environment_file.exists())
 
     def test_job_setup_changes_environment_without_changing_classification_or_original_document(self):
         from ci_pipeline import PreparedConfig
