@@ -175,7 +175,7 @@
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
     <!-- Story 1.17: published 5.1.1 supplies the native source scanner APIs used by Folders and Projects. -->
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.1.1</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.2.0</HexalithEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.0</HexalithOpenApiVersion>
     <!-- Packaged SDK4.2 uses OpenApi2; current source projects consume the .NET11 OpenAPI ABI. -->
@@ -191,8 +191,8 @@
     <!-- Current package selection; historical declarations retain their separately pinned release inputs. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.0.0</HexalithMemoriesVersion>
     <!-- SDK4.2 consumers retain Tenants7; Tenants8 requires the current SDK5 cohort. -->
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == '' and ('$(HexalithEventStoreVersion)' != '4.2.0' or ('$(HexalithPartiesSdk42CatalogView)' != 'true' and '$(HexalithPlatformSdk42CatalogView)' != 'true' and '$(HexalithBuildsPackagedHostSdk42CatalogView)' != 'true' and '$(HexalithTimesheetsNet10CatalogView)' != 'true'))">8.0.0</HexalithTenantsVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">7.0.7</HexalithTenantsVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.1</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">3.1.1</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.1.1</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.4</HexalithProjectsVersion>
@@ -308,7 +308,7 @@
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.6" />
     <!-- FrontComposer bunit transitive floor pulls the vulnerable 1.4.0; pin the GHSA-pgww-w46g-26qg fix. -->
     <!-- bunit 2.15.2 implements AngleSharp 1.10 BeforeToggle; keep the latest 1.10 patch with that release. -->
-    <PackageVersion Include="AngleSharp" Version="1.10.3" />
+    <PackageVersion Include="AngleSharp" Version="1.10.4" />
     <!-- OAuth and ASP.NET Core packages align with the .NET 11 host. -->
     <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="11.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="11.0.0" />
@@ -356,7 +356,7 @@
     <PackageVersion Include="Cocona" Version="2.2.0" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="$(HexalithAspireHostingDaprVersion)" />
     <PackageVersion Include="CompareNETObjects" Version="4.84.0" />
-    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.1" />
     <PackageVersion Include="Dapr.Client" Version="1.19.1" />
     <PackageVersion Include="Dapr.AspNetCore" Version="1.19.1" />
     <PackageVersion Include="Dapr.Actors.AspNetCore" Version="1.19.1" />
@@ -457,8 +457,8 @@
     <PackageVersion Include="Microsoft.Extensions.Validation" Version="11.0.0" />
     <!-- FrontComposer Story 2-4: deterministic TimeProvider-based threshold tests. -->
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components" Version="5.0.1" />
-    <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="5.0.1" />
+    <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components" Version="5.1.0" />
+    <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="5.1.0" />
     <PackageVersion Include="Microsoft.Graph" Version="6.10.0" />
     <PackageVersion Include="Microsoft.Identity.Client" Version="4.92.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Abstractions" Version="8.23.0" />
@@ -547,11 +547,11 @@
     <PackageVersion Include="System.Text.Json" Version="11.0.0" />
     <!-- FrontComposer Story 3-5 D3: ValueTask<T> contracts on netstandard2.0. -->
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
-    <PackageVersion Include="Testcontainers" Version="4.16.0" />
+    <PackageVersion Include="Testcontainers" Version="4.17.0" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
     <!-- FrontComposer snapshot testing uses the xUnit v3 adapter, not Verify.Xunit. -->
-    <PackageVersion Include="Verify" Version="33.4.0" />
-    <PackageVersion Include="Verify.XunitV3" Version="33.4.0" />
+    <PackageVersion Include="Verify" Version="33.5.0" />
+    <PackageVersion Include="Verify.XunitV3" Version="33.5.0" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="bunit" Version="2.15.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />

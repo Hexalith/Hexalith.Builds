@@ -530,6 +530,37 @@ else:
         self.assertEqual(2, len((self.module.root / "tests-completed").read_text().splitlines()))
         self.assertEqual(before, self.unchanged())
 
+    def test_local_reports_match_stage_three_and_defer_cross_stage_coverage_gate(self):
+        self.build_fixture(xunit=True)
+        self.module.write("src/Product/Target.cs", "// actual product coverage fixture")
+        self.module.write(".gitignore", (self.module.root / ".gitignore").read_text() + "TestResults/\n")
+        global_json = json.loads((self.module.root / "global.json").read_text())
+        global_json["test"] = {"runner": "Microsoft.Testing.Platform"}
+        self.module.write("global.json", json.dumps(global_json))
+        self.document["tests"]["reports"] = {"trx": True, "coverage": {
+            "projects": ["test/A.Tests.csproj", "test/Fixture.IntegrationTests.csproj"],
+            "lineScope": ["src/Product/"], "minimumLine": 100, "lineComparison": "greater-than"}}
+        self.record()
+        before = self.unchanged()
+        self.run_check()
+        self.assertEqual(before, self.unchanged())
+        tests = [command for command in self.commands() if command[0] == "test"]
+        self.assertEqual(["test/A.Tests.csproj", "test/Z.Tests.csproj"], [command[2] for command in tests])
+        self.assertTrue(all("--report-xunit-trx" in command for command in tests))
+        self.assertIn("--coverage", tests[0])
+        self.assertNotIn("--coverage", tests[1])
+        self.assertFalse((self.module.root / "TestResults/shared-ci/integration.json").exists())
+
+    def test_local_missing_required_report_fails_at_the_same_project_as_ci(self):
+        self.build_fixture(missing_trx=True)
+        self.module.write(".gitignore", (self.module.root / ".gitignore").read_text() + "TestResults/\n")
+        self.document["tests"]["reports"] = {"trx": True}
+        self.record()
+        with self.assertRaisesRegex(ci_pipeline.ci_reports.ReportError, "missing required"):
+            self.run_check()
+        tests = [command for command in self.commands() if command[0] == "test"]
+        self.assertEqual(["test/A.Tests.csproj"], [command[1] for command in tests])
+
     def test_guard_and_build_failures_stop_successors(self):
         self.build_fixture(failure="build")
         self.delivered.write("rendered/Fixture/.github/hexalith-ci.json", "owned drift")

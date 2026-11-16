@@ -34,9 +34,37 @@ inputs:
   source-sha:
     description: Green CI source commit, required for preserve-mode qualification.
     default: ''
+  job-name:
+    description: Enabled custom job whose validated setup overrides apply on Linux.
+    default: ''
+  resource-profile:
+    description: Trusted execution profile selected by the generated caller.
+    default: ''
+  additional-sdk-version:
+    description: Exact additional SDK supplying targeting packs for product compatibility fixtures.
+    default: ''
+  additional-test-projects:
+    description: Validated workspace-relative JSON test projects built outside the platform solution.
+    default: '[]'
 runs:
   using: composite
   steps:
+    - name: Prepare bounded mutation container prerequisites
+      if: runner.os == 'Linux' && inputs.resource-profile == 'mutation'
+      shell: bash
+      run: |
+        set -euo pipefail
+        apt-get update
+        apt-get install -y --no-install-recommends python3 patch
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        cat /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.swap.max /sys/fs/cgroup/cpu.max
+
+    - name: Install the supported mutation preparation interpreter
+      if: runner.os == 'Linux' && inputs.resource-profile == 'mutation'
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+
     - name: Enable long Git paths on disposable Windows runners
       if: runner.os == 'Windows' && runner.environment == 'github-hosted'
       shell: pwsh
@@ -85,6 +113,7 @@ runs:
         CI_REPOSITORY: ${{ github.repository }}
         CI_MODULE_ROOT: ${{ inputs.module-root }}
         CI_PREPARE_ENVIRONMENT: ${{ inputs.environment }}
+        CI_CUSTOM_JOB: ${{ inputs.job-name }}
       run: python3 -I "$GITHUB_ACTION_PATH/prepare_linux.py" --phase prepare
 
     - name: Validate platform paths and direct dependencies
@@ -95,6 +124,7 @@ runs:
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
         CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
+        CI_PREPARE_ADDITIONAL_TEST_PROJECTS: ${{ inputs.additional-test-projects }}
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Validate'
 
     - name: Set up Linux module SDK
@@ -102,6 +132,7 @@ runs:
       uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
       with:
         global-json-file: ${{ steps.linux.outputs.global-json }}
+        dotnet-version: ${{ inputs.additional-sdk-version }}
 
     - name: Initialize Windows direct dependencies
       if: runner.os == 'Windows' && inputs.solution != 'none'
@@ -111,6 +142,7 @@ runs:
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
         CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
+        CI_PREPARE_ADDITIONAL_TEST_PROJECTS: ${{ inputs.additional-test-projects }}
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Dependencies'
 
     - name: Set up platform module SDK
@@ -118,6 +150,7 @@ runs:
       uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
       with:
         global-json-file: ${{ inputs.global-json }}
+        dotnet-version: ${{ inputs.additional-sdk-version }}
 
     - name: Restore and build Linux module
       id: build
@@ -127,6 +160,7 @@ runs:
         CI_REPOSITORY: ${{ github.repository }}
         CI_MODULE_ROOT: ${{ inputs.module-root }}
         CI_PREPARE_ENVIRONMENT: ${{ inputs.environment }}
+        CI_CUSTOM_JOB: ${{ inputs.job-name }}
       run: python3 -I "$GITHUB_ACTION_PATH/prepare_linux.py" --phase build
 
     - name: Set up locked npm runtime
@@ -159,6 +193,8 @@ runs:
         npm-workspaces: ${{ steps.build.outputs.npmWorkspaces }}
         dotnet-tools: ${{ steps.build.outputs.dotnetTools }}
         aspire: ${{ steps.build.outputs.aspire }}
+        prerequisites: ${{ steps.build.outputs.prerequisites }}
+        additional-projects: ${{ steps.build.outputs.additional-projects }}
       env:
         CI_MODULE_ROOT: ${{ inputs.module-root }}
 
@@ -171,4 +207,5 @@ runs:
         CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
         CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
         CI_PREPARE_DEPENDENCIES_READY: 'true'
+        CI_PREPARE_ADDITIONAL_TEST_PROJECTS: ${{ inputs.additional-test-projects }}
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Build'

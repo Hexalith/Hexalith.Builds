@@ -23,6 +23,7 @@ from typing import Any
 # -I excludes the script directory. Only this workflow-owned directory is added.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ci_config import BUILDS_REPOSITORY, ConfigError, _read_json, load_config, validate_config
+import ci_reports
 
 
 NUGET_CONFIG = Path(__file__).resolve().parents[2] / "NuGet.ci.Config"
@@ -261,10 +262,14 @@ def evaluated_properties(root: Path, project: str, *, framework: str = "",
         raise PipelineError(f"{project}: invalid MSBuild discovery metadata: {error}") from error
 
 
-def discover_test_projects(root: Path, solution: str) -> tuple[str, ...]:
+def discover_test_projects(root: Path, solution: str, additional: tuple[str, ...] = ()) -> tuple[str, ...]:
     """Evaluate every solution project, including each cross-targeting inner build."""
     tests = []
-    for project in solution_projects(root, solution):
+    members = solution_projects(root, solution)
+    for project in additional:
+        if not contained_path(root, project, kind="additional test project").is_file():
+            raise PipelineError(f"additional test project does not exist: {project}")
+    for project in sorted(set(members) | set(additional)):
         outer = evaluated_properties(root, project)
         frameworks = target_frameworks(outer)
         if outer["IsCrossTargetingBuild"].lower() not in ("", "true", "false"):
@@ -280,6 +285,8 @@ def discover_test_projects(root: Path, solution: str) -> tuple[str, ...]:
             raise PipelineError(f"{project}: outer and inner IsTestProject disagree")
         if is_test:
             tests.append(project)
+        elif project in additional:
+            raise PipelineError(f"additional project is not an evaluated test project: {project}")
     return tuple(tests)
 
 
@@ -290,6 +297,7 @@ def classify_projects(projects: tuple[str, ...], document: dict[str, Any], *,
     known = set(projects)
     overrides = (set(document["tests"]["integration"]) | document["tests"]["exclude"].keys()
                  | document["tests"]["minimumExpectedTests"].keys())
+    overrides |= set(document["tests"].get("reports", {}).get("coverage", {}).get("projects", []))
     if overrides - known:
         raise PipelineError("test overrides name unknown test projects: " + ", ".join(sorted(overrides - known)))
     unit, integration, excluded = [], [], []
@@ -314,6 +322,16 @@ def restore_and_build(prepared: PreparedConfig) -> None:
     run_command(["dotnet", "build", solution, "--no-restore", *build_flags()], prepared.root)
     from build_projects import build_declared
     build_declared(prepared, build_flags(), run_command)
+    additional = tuple(prepared.document["tests"].get("additional", []))
+    if additional:
+        members = set(solution_projects(prepared.root, solution))
+        for project in sorted(set(additional) - members):
+            if not contained_path(prepared.root, project, kind="additional test project").is_file():
+                raise PipelineError(f"additional test project does not exist: {project}")
+            run_command(["dotnet", "restore", project, *build_flags()], prepared.root)
+            run_command(["dotnet", "build", project, "--no-restore", *build_flags()], prepared.root)
+        # Reject product/library paths admitted as tests in the stage-2 contract.
+        discover_test_projects(prepared.root, solution, additional)
 
 
 def preparation_environment(value: str) -> bool:
@@ -394,13 +412,15 @@ def validate_test_policy(root: Path, projects: tuple[str, ...], *, runner: str,
 
 
 def execute_test_projects(root: Path, projects: tuple[str, ...], *, runner: str, stage: str,
-                          minimum_expected_tests: dict[str, int] | None = None, fail_skips: bool = False) -> None:
+                          minimum_expected_tests: dict[str, int] | None = None, fail_skips: bool = False,
+                          reports: dict | None = None) -> None:
     """Finish every test in a project; stop before the next failing-project successor."""
     if runner not in ("VSTest", "Microsoft.Testing.Platform"):
         raise PipelineError(f"unsupported test runner: {runner!r}")
     minimum_expected_tests = {} if minimum_expected_tests is None else minimum_expected_tests
     validate_test_policy(root, projects, runner=runner,
                          minimum_expected_tests=minimum_expected_tests, fail_skips=fail_skips)
+    session = ci_reports.ReportSession(root, stage, projects, reports) if reports is not None else None
     for project in sorted(projects):
         print(f"{stage} tests: {project}", flush=True)
         selector = ["--project", project] if runner == "Microsoft.Testing.Platform" else [project]
@@ -420,26 +440,64 @@ def execute_test_projects(root: Path, projects: tuple[str, ...], *, runner: str,
             options.extend(("--minimum-expected-tests", str(minimum_expected_tests[project])))
         if fail_skips:
             options.extend(("--fail-skips", "on"))
-        arguments = ["dotnet", "test", *selector, "--no-build", "--no-restore", *test_flags(runner), *options]
-        if xunit and runner == "VSTest":
-            with complete_xunit_vstest_configuration(root, project, properties):
-                run_command(arguments, root)
-        else:
-            run_command(arguments, root)
+        # A reported multi-target project gets an independent native invocation
+        # and output directory for every TFM; complete tests still run unfiltered.
+        frameworks = target_frameworks(properties) if session else []
+        first_failure = None
+        first_product_failure = None
+        for framework in frameworks or [""]:
+            directory = session.directory_for(project, framework) if session else None
+            reporting = session.options(project, directory, runner=runner, xunit=xunit) if session else []
+            arguments = ["dotnet", "test", *selector, "--no-build", "--no-restore", *test_flags(runner)]
+            if framework:
+                arguments.extend(("--framework", framework))
+            arguments.extend((*reporting, *options))
+            try:
+                if xunit and runner == "VSTest":
+                    with complete_xunit_vstest_configuration(root, project, properties):
+                        run_command(arguments, root)
+                else:
+                    run_command(arguments, root)
+            except ConfigError as product_error:
+                if first_product_failure is None:
+                    first_product_failure = product_error
+                if session:
+                    try:
+                        session.record(project, framework, directory, success=False)
+                    except ConfigError as report_error:
+                        print(f"Test report diagnostics: {report_error}", file=sys.stderr)
+                if first_failure is None:
+                    first_failure = product_error
+                continue  # Complete the same project's remaining frameworks.
+            if session:
+                try:
+                    session.record(project, framework, directory, success=True)
+                except ConfigError as report_error:
+                    if first_failure is None:
+                        first_failure = report_error
+        if first_product_failure is not None:
+            raise first_product_failure
+        if first_failure is not None:
+            raise first_failure
+    if session:
+        session.finish()
 
 
 def execute_unit_projects(root: Path, projects: tuple[str, ...], *, runner: str,
-                          minimum_expected_tests: dict[str, int] | None = None, fail_skips: bool = False) -> None:
+                          minimum_expected_tests: dict[str, int] | None = None, fail_skips: bool = False,
+                          reports: dict | None = None) -> None:
     """Keep the stages 1–3 Python API while sharing complete-project semantics."""
     execute_test_projects(root, projects, runner=runner, stage="Unit",
-                          minimum_expected_tests=minimum_expected_tests, fail_skips=fail_skips)
+                          minimum_expected_tests=minimum_expected_tests, fail_skips=fail_skips,
+                          **({"reports": reports} if reports is not None else {}))
 
 
 def classified_projects(prepared: PreparedConfig, *, repository: str, module_root: str = "") -> TestProjects:
     """Discover and validate the one AD-13 classification shared by both stages."""
     if prepared.solution == "none":
         return TestProjects((), (), ())
-    projects = discover_test_projects(prepared.root, prepared.document["solution"])
+    additional = tuple(prepared.document["tests"].get("additional", []))
+    projects = discover_test_projects(prepared.root, prepared.document["solution"], additional) if additional else discover_test_projects(prepared.root, prepared.document["solution"])
     classified = classify_projects(projects, prepared.document, repository=repository, module_root=module_root)
     validate_test_policy(prepared.root, classified.unit + classified.integration, runner=test_runner(prepared.root),
                          minimum_expected_tests=prepared.document["tests"]["minimumExpectedTests"],
@@ -456,40 +514,57 @@ def run_unit_tests(prepared: PreparedConfig, *, repository: str, module_root: st
         return classified
     execute_unit_projects(prepared.root, classified.unit, runner=test_runner(prepared.root),
                           minimum_expected_tests=prepared.document["tests"]["minimumExpectedTests"],
-                          fail_skips=prepared.document["tests"]["failSkips"])
+                          fail_skips=prepared.document["tests"]["failSkips"],
+                          **({"reports": prepared.document["tests"]["reports"]} if "reports" in prepared.document["tests"] else {}))
+    reports = prepared.document["tests"].get("reports")
+    if reports is not None:
+        coverage = reports.get("coverage")
+        unit_only = coverage is not None and set(coverage["projects"]) <= set(classified.unit)
+        ci_reports.aggregate_reports(prepared.root, reports, ("Unit",), enforce=unit_only)
     return classified
 
 
 def stage_state(prepared: PreparedConfig, classified: TestProjects) -> dict[str, Any]:
     """Bind the successful unit classification to its validated module inputs."""
-    return {"root": str(prepared.root), "document": prepared.document,
+    result = {"root": str(prepared.root), "document": prepared.document,
             "runner": test_runner(prepared.root) if prepared.solution != "none" else "",
             "projects": {name: list(getattr(classified, name)) for name in ("unit", "integration", "excluded")}}
+    if "reports" in prepared.document["tests"]:
+        result["unitReports"] = ci_reports.stage_manifest(prepared.root, "Unit", prepared.document["tests"]["reports"])
+    return result
 
 
 def run_integration_tests(prepared: PreparedConfig, *, repository: str, module_root: str = "",
                           expected_state: dict[str, Any] | None = None) -> TestProjects:
     """Execute stage 4 projects without checkout, restore, build or setup."""
     classified = classified_projects(prepared, repository=repository, module_root=module_root)
+    if "reports" in prepared.document["tests"]:
+        ci_reports.stage_manifest(prepared.root, "Unit", prepared.document["tests"]["reports"])
     if expected_state is not None and stage_state(prepared, classified) != expected_state:
         raise PipelineError("CI configuration, runner or test classification changed after unit tests")
     if prepared.solution != "none":
         execute_test_projects(prepared.root, classified.integration,
                               runner=test_runner(prepared.root), stage="Integration",
                               minimum_expected_tests=prepared.document["tests"]["minimumExpectedTests"],
-                              fail_skips=prepared.document["tests"]["failSkips"])
+                              fail_skips=prepared.document["tests"]["failSkips"],
+                              **({"reports": prepared.document["tests"]["reports"]} if "reports" in prepared.document["tests"] else {}))
+        if "reports" in prepared.document["tests"]:
+            ci_reports.aggregate_reports(prepared.root, prepared.document["tests"]["reports"],
+                                         ("Unit", "Integration"), enforce=True)
     return classified
 
 
-def write_stage_outputs(prepared: PreparedConfig, classified: TestProjects) -> None:
+def write_stage_outputs(prepared: PreparedConfig, classified: TestProjects, *, infer_browsers: bool = True) -> None:
     """Publish environment and hook gates only after successful unit execution."""
     active = prepared.solution != "none"
     document = prepared.document
     values = {name: str(active and document[name]).lower() for name in ("dapr", "registry", "dotnetTools")}
     values["npmWorkspaces"] = json.dumps(document["npmWorkspaces"] if active else [])
+    values["prerequisites"] = json.dumps(document.get("prerequisites", {}) if active else {})
+    values["additional-projects"] = json.dumps(document["tests"].get("additional", []) if active else [])
     # Optional additive capability: old complete v1 documents remain valid.
     values["aspire"] = str(active and document.get("aspire", False)).lower()
-    values["browsers"] = str(active and (document["browsers"] or any(
+    values["browsers"] = str(active and (document["browsers"] or infer_browsers and any(
         "E2E" in Path(project).stem for project in classified.integration))).lower()
     values.update({hook: str(active and hook in document["hooks"]).lower()
                    for hook in ("after-unit-tests", "after-integration-tests")})
@@ -508,6 +583,7 @@ def write_outputs(prepared: PreparedConfig, *, repository: str = "") -> None:
             raise PipelineError("validated Windows checkout requires an exact committed source revision")
     values = {"solution": prepared.solution, "global-json": prepared.global_json,
               "submodules": json.dumps(prepared.submodules),
+              "additional-test-projects": json.dumps([prefix + project for project in prepared.document["tests"].get("additional", [])]),
               "module-manifest": prefix + manifest if manifest else "",
               "windows-checkout": json.dumps(checkout, separators=(",", ":")),
               "source-revision": revision}

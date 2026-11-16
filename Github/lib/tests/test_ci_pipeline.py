@@ -56,7 +56,7 @@ if command=="sln":
         print("unsupported discovery output")
     else:
         print("Project(s)\n----------")
-        print("\n".join(data["projects"]))
+        print("\n".join(project for project in data["projects"] if project not in data.get("outside_solution", [])))
 elif command=="msbuild":
     if data.get("broken_metadata"):
         print('{"Properties":{"IsTestProject":"maybe"}}')
@@ -84,6 +84,16 @@ elif command=="msbuild":
         print(json.dumps({"Properties":values}))
 elif command=="test":
     project=args[2] if args[1]=="--project" else args[1]
+    framework=args[args.index("--framework")+1] if "--framework" in args else ""
+    if "--results-directory" in args:
+        directory=pathlib.Path(args[args.index("--results-directory")+1])
+        directory.mkdir(parents=True, exist_ok=True)
+        if not data.get("missing_trx") and framework not in data.get("missing_trx_frameworks", []):
+            (directory/"results.trx").write_text('<TestRun><Results><UnitTestResult outcome="Passed" /><UnitTestResult outcome="Passed" /></Results><ResultSummary outcome="Completed"><Counters total="2" executed="2" passed="2" failed="0" /></ResultSummary></TestRun>')
+        if ("--coverage" in args or "--collect" in args) and not data.get("missing_coverage"):
+            coverage='<coverage><packages><package><classes><class filename="src/Product/Target.cs"><lines><line number="1" hits="1" branch="True" condition-coverage="100% (2/2)" /></lines></class></classes></package></packages></coverage>'
+            hits=data.get("coverage_hits_by_project", {}).get(project, data.get("coverage_hits", 1))
+            (directory/"coverage.cobertura.xml").write_text(coverage.replace('hits="1"', 'hits="'+str(hits)+'"'))
     with (root / "tests-completed").open("a") as results:
         results.write(project+":failing-test-completed\n")
         results.write(project+":passing-test-completed\n")
@@ -91,7 +101,7 @@ elif command=="test":
         sys.exit(24)
     if "--fail-skips" in args and data.get("skipped", False):
         sys.exit(25)
-    if data.get("fail_project")==project:
+    if data.get("fail_project")==project and (not data.get("fail_framework") or data["fail_framework"]==framework):
         sys.exit(23)
 elif command=="build":
     (root / "build-completed").write_text("Release")
@@ -131,6 +141,8 @@ class SubprocessPipelineTests(unittest.TestCase):
             path = self.root / project
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("<Project />", encoding="utf-8")
+        (self.root / "src/Product").mkdir()
+        (self.root / "src/Product/Target.cs").write_text("// product coverage fixture")
         (self.root / "Fixture.slnx").write_text("<Solution />", encoding="utf-8")
         (self.root / "global.json").write_text(json.dumps({"sdk": {"version": "10.0.403", "rollForward": "latestPatch"},
                                                            "test": {"runner": "Microsoft.Testing.Platform"}}))
@@ -185,6 +197,122 @@ class SubprocessPipelineTests(unittest.TestCase):
         self.assertEqual(["test/A space/A.Tests.csproj:failing-test-completed",
                           "test/A space/A.Tests.csproj:passing-test-completed"], completed)
         self.assertEqual(1, sum(command[0] == "test" for command in self.commands()))
+
+    def test_reported_multitargets_are_isolated_and_complete_before_next_project(self):
+        self.document["tests"]["reports"] = {"trx": True}
+        self.data.update(cross=True, fail_project="test/A space/A.Tests.csproj")
+        result = self.invoke()
+        self.assertEqual(23, result.returncode, result.stdout + result.stderr)
+        tests = [command for command in self.commands() if command[0] == "test"]
+        self.assertEqual(["net10.0", "net9.0"], [command[command.index("--framework") + 1] for command in tests])
+        directories = [command[command.index("--results-directory") + 1] for command in tests]
+        self.assertEqual(2, len(set(directories)))
+        self.assertTrue(all(command[2] == "test/A space/A.Tests.csproj" for command in tests))
+        for command in tests:
+            self.assertIn("--report-xunit-trx", command)
+            self.assertEqual(["--stop-on-fail", "off"], command[-2:])
+
+    def test_later_framework_product_exit_wins_over_an_earlier_report_error(self):
+        self.document["tests"]["reports"] = {"trx": True}
+        self.data.update(cross=True, missing_trx_frameworks=["net10.0"],
+                         fail_project="test/A space/A.Tests.csproj", fail_framework="net9.0")
+        result = self.invoke("--phase", "unit")
+        self.assertEqual(23, result.returncode, result.stdout + result.stderr)
+        tests = [command for command in self.commands() if command[0] == "test"]
+        self.assertEqual(["net10.0", "net9.0"], [command[command.index("--framework") + 1] for command in tests])
+
+    def test_unit_only_coverage_gate_fails_in_the_actual_unit_caller(self):
+        first = "test/A space/A.Tests.csproj"
+        self.document["tests"]["reports"] = {"trx": True, "coverage": {
+            "projects": [first], "lineScope": ["src/Product/"], "minimumLine": 80}}
+        self.data["coverage_hits"] = 0
+        result = self.invoke("--phase", "unit")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("line coverage 0.00%", result.stderr)
+
+    def test_cross_stage_coverage_gate_fails_only_after_all_selected_projects_run(self):
+        first = "test/A space/A.Tests.csproj"
+        integration = "test/Fixture.IntegrationTests.csproj"
+        self.document["tests"]["reports"] = {"trx": True, "coverage": {
+            "projects": [first, integration], "lineScope": ["src/Product/"], "minimumLine": 80}}
+        self.data["coverage_hits"] = 0
+        unit = self.invoke("--phase", "unit")
+        self.assertEqual(0, unit.returncode, unit.stdout + unit.stderr)
+        result = self.invoke("--phase", "integration")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("line coverage 0.00%", result.stderr)
+        self.assertIn(integration, [call[2] for call in self.commands() if call[0] == "test"])
+
+    def test_trx_only_tampering_stops_the_integration_caller_before_any_test(self):
+        self.document["tests"]["reports"] = {"trx": True}
+        unit = self.invoke("--phase", "unit")
+        self.assertEqual(0, unit.returncode, unit.stdout + unit.stderr)
+        manifest = json.loads((self.root / "TestResults/shared-ci/unit.json").read_text())
+        report = self.root / manifest["results"][0]["paths"][0]
+        report.unlink()
+        before = len([call for call in self.commands() if call[0] == "test"])
+        result = self.invoke("--phase", "integration")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("report changed after collection or is missing", result.stderr)
+        self.assertEqual(before, len([call for call in self.commands() if call[0] == "test"]))
+
+    def test_required_results_cannot_be_missing_or_reused_from_a_previous_invocation(self):
+        self.document["tests"]["reports"] = {"trx": True}
+        passed = self.invoke("--phase", "unit")
+        self.assertEqual(0, passed.returncode, passed.stdout + passed.stderr)
+        self.data["missing_trx"] = True
+        refused = self.invoke("--phase", "unit")
+        self.assertEqual(1, refused.returncode, refused.stdout + refused.stderr)
+        self.assertIn("missing required *.trx", refused.stderr)
+        index = json.loads((self.root / "TestResults/shared-ci/unit.json").read_text())
+        self.assertFalse(index["complete"])
+
+    def test_coverage_collects_unit_and_integration_without_enforcing_partial_thresholds(self):
+        first = "test/A space/A.Tests.csproj"
+        integration = "test/Fixture.IntegrationTests.csproj"
+        self.document["tests"]["reports"] = {"trx": True, "coverage": {
+            "projects": [first, integration], "lineScope": ["src/Product/"], "minimumLine": 80,
+            "lineComparison": "greater-than", "branchTargets": ["src/Product/Target.cs"], "minimumBranch": 100}}
+        unit = self.invoke("--phase", "unit")
+        self.assertEqual(0, unit.returncode, unit.stdout + unit.stderr)
+        complete = self.invoke("--phase", "integration")
+        self.assertEqual(0, complete.returncode, complete.stdout + complete.stderr)
+        self.assertIn("100.00% (1/1)", complete.stdout)
+        self.assertIn("100.00% (2/2)", complete.stdout)
+        for call in self.commands():
+            if call[0] == "test" and call[2] in (first, integration):
+                self.assertIn("--coverage", call)
+
+    def test_coverage_report_failure_preserves_original_failed_project_exit(self):
+        first = "test/A space/A.Tests.csproj"
+        self.document["tests"]["reports"] = {"trx": True, "coverage": {"projects": [first]}}
+        self.data.update(missing_coverage=True, fail_project=first)
+        result = self.invoke("--phase", "unit")
+        self.assertEqual(23, result.returncode, result.stdout + result.stderr)
+        self.assertIn("Test report diagnostics", result.stderr)
+        self.assertIn("missing required coverage.cobertura.xml", result.stderr)
+
+    def test_additional_product_test_is_built_in_stage_two_and_admitted_to_discovery(self):
+        additional = "outside/Payload.Tests.csproj"
+        (self.root / additional).parent.mkdir()
+        (self.root / additional).write_text("<Project />")
+        self.data["projects"][additional] = True
+        self.document["tests"]["additional"] = [additional]
+        # The fake SDK solution list must exclude the extra admitted project.
+        self.data["outside_solution"] = [additional]
+        result = self.invoke()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        commands = self.commands()
+        self.assertEqual(["Fixture.slnx", additional], [call[1] for call in commands if call[0] == "restore"])
+        self.assertEqual(["Fixture.slnx", additional], [call[1] for call in commands if call[0] == "build"])
+        self.assertIn(additional, [call[2] for call in commands if call[0] == "test"])
+
+    def test_additional_library_cannot_masquerade_as_a_test(self):
+        self.document["tests"]["additional"] = ["src/Ordinary.csproj"]
+        result = self.invoke()
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("not an evaluated test project", result.stderr)
+        self.assertFalse(any(call[0] == "test" for call in self.commands()))
 
     def test_restore_and_build_failures_stop_before_discovery(self):
         for failing_command in ("restore", "build"):
@@ -381,14 +509,14 @@ class SubprocessPipelineTests(unittest.TestCase):
         self.environment["GITHUB_OUTPUT"] = str(output)
         result = self.invoke("--phase", "prepare")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertEqual(["solution=Fixture.slnx", "global-json=global.json", "submodules=[]",
+        self.assertEqual(["solution=Fixture.slnx", "global-json=global.json", "submodules=[]", "additional-test-projects=[]",
                           "module-manifest=", "windows-checkout=null", "source-revision=", "module-authority="],
                          output.read_text().splitlines())
         output.unlink()
         self.document["solution"] = "none"
         result = self.invoke("--phase", "prepare")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertEqual(["solution=none", "global-json=", "submodules=[]",
+        self.assertEqual(["solution=none", "global-json=", "submodules=[]", "additional-test-projects=[]",
                           "module-manifest=", "windows-checkout=null", "source-revision=", "module-authority="], output.read_text().splitlines())
         self.assertEqual([], self.commands())
 
@@ -403,7 +531,7 @@ class SubprocessPipelineTests(unittest.TestCase):
         result = self.invoke("--phase", "unit")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual({"dapr": "true", "registry": "true", "browsers": "true", "aspire": "false",
-                          "npmWorkspaces": '["tests/e2e"]', "dotnetTools": "true",
+                          "npmWorkspaces": '["tests/e2e"]', "dotnetTools": "true", "prerequisites": '{}', "additional-projects": '[]',
                           "after-unit-tests": "true", "after-integration-tests": "false"},
                          dict(line.split("=", 1) for line in output.read_text().splitlines()))
         output.unlink()
@@ -433,7 +561,7 @@ class SubprocessPipelineTests(unittest.TestCase):
         for phase in ("unit", "integration"):
             result = self.invoke("--phase", phase)
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertTrue(all(line.endswith("=false") or line == "npmWorkspaces=[]"
+        self.assertTrue(all(line.endswith("=false") or line in ("npmWorkspaces=[]", "prerequisites={}", "additional-projects=[]")
                             for line in output.read_text().splitlines()))
         self.assertEqual([], self.commands())
 
@@ -479,7 +607,7 @@ class SubprocessPipelineTests(unittest.TestCase):
         result = prepare()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual(["solution=Samples/Fixture/Fixture.slnx", "global-json=Samples/Fixture/global.json",
-                          "submodules=[]", "module-manifest=", "windows-checkout=null",
+                          "submodules=[]", "additional-test-projects=[]", "module-manifest=", "windows-checkout=null",
                           "source-revision=", "module-authority="], output.read_text().splitlines())
         environment["CI_REPOSITORY"] = "Example/Module"
         result = prepare()
@@ -993,6 +1121,50 @@ class SinglePropertySdkTests(unittest.TestCase):
                 with self.subTest(property=name):
                     self.assertEqual({name: expected}, PIPE.evaluated_properties(root, "Fixture.csproj",
                         properties=(name,)))
+
+    def test_real_mtp_reports_collect_fresh_trx_and_product_coverage(self):
+        with tempfile.TemporaryDirectory(prefix="ci-real-reports-") as directory:
+            root = Path(directory)
+            (root / "global.json").write_bytes((ROOT / "global.json").read_bytes())
+            versions = {item.attrib["Include"]: item.attrib["Version"]
+                        for item in ET.parse(ROOT / "Props/Directory.Packages.props").iter("PackageVersion")}
+            library = root / "src/Product"
+            library.mkdir(parents=True)
+            (library / "Product.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>')
+            (library / "Target.cs").write_text('''public static class Target
+{
+    public static int Select(bool value)
+    {
+        if (value)
+        {
+            return 1;
+        }
+        return 0;
+    }
+}
+''')
+            tests = root / "test/Product.Tests"
+            tests.mkdir(parents=True)
+            (tests / "Product.Tests.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup>'
+                + ''.join(f'<PackageReference Include="{package}" Version="{versions[package]}" />'
+                          for package in ("xunit.v3", "Microsoft.Testing.Extensions.CodeCoverage"))
+                + '<ProjectReference Include="../../src/Product/Product.csproj" /></ItemGroup></Project>')
+            (tests / "Tests.cs").write_text('using Xunit; public sealed class Tests { [Fact] public void BothBranches() { Assert.Equal(1, Target.Select(true)); Assert.Equal(0, Target.Select(false)); } }')
+            (root / "Fixture.slnx").write_text('<Solution><Project Path="src/Product/Product.csproj" /><Project Path="test/Product.Tests/Product.Tests.csproj" /></Solution>')
+            (root / ".github").mkdir()
+            document = configuration()
+            project = "test/Product.Tests/Product.Tests.csproj"
+            document["tests"]["reports"] = {"trx": True, "coverage": {
+                "projects": [project], "lineScope": ["src/Product/"], "minimumLine": 80,
+                "lineComparison": "greater-than", "branchTargets": ["src/Product/Target.cs"], "minimumBranch": 100}}
+            (root / ".github/hexalith-ci.json").write_text(json.dumps(document))
+            prepared = PIPE.prepare_config(root, repository=BUILDS)
+            PIPE.restore_and_build(prepared)
+            PIPE.run_unit_tests(prepared, repository=BUILDS)
+            PIPE.run_integration_tests(prepared, repository=BUILDS)
+            manifest = PIPE.ci_reports.stage_manifest(root, "Unit", document["tests"]["reports"])
+            self.assertEqual(project, manifest["results"][0]["project"])
+            self.assertEqual(2, len(manifest["results"][0]["paths"]))
 
 
 class NuGetTrustPolicyTests(unittest.TestCase):

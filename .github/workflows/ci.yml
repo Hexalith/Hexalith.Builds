@@ -36,6 +36,9 @@ on:
       submodules:
         description: JSON array of validated workspace-relative direct submodule paths.
         value: ${{ jobs.ci.outputs.submodules }}
+      additional-test-projects:
+        description: JSON array of validated workspace-relative additional product test projects.
+        value: ${{ jobs.ci.outputs.additional-test-projects }}
       global-json:
         description: Validated workspace-relative module SDK path, empty for solution none.
         value: ${{ jobs.ci.outputs.global-json }}
@@ -71,6 +74,7 @@ jobs:
       drift: ${{ steps.guard.outputs.drift }}
       solution: ${{ steps.prepare.outputs.solution }}
       submodules: ${{ steps.prepare.outputs.submodules }}
+      additional-test-projects: ${{ steps.prepare.outputs.additional-test-projects }}
       global-json: ${{ steps.prepare.outputs.global-json }}
       module-manifest: ${{ steps.prepare.outputs.module-manifest }}
       windows-checkout: ${{ steps.prepare.outputs.windows-checkout }}
@@ -133,6 +137,8 @@ jobs:
           npm-workspaces: ${{ steps.unit.outputs.npmWorkspaces }}
           dotnet-tools: ${{ steps.unit.outputs.dotnetTools }}
           aspire: ${{ steps.unit.outputs.aspire }}
+          prerequisites: ${{ steps.unit.outputs.prerequisites }}
+          additional-projects: ${{ steps.unit.outputs.additional-projects }}
         env:
           REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}
           REGISTRY_PULL_PASSWORD: ${{ secrets.registry-pull-password }}
@@ -150,6 +156,14 @@ jobs:
       - name: After integration tests hook
         if: steps.unit.outputs.after-integration-tests == 'true'
         uses: ./.github/actions/after-integration-tests
+
+      - name: Preserve project results and coverage diagnostics
+        if: always() && steps.prepare.outputs.solution != 'none'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hexalith-ci-results
+          path: TestResults/shared-ci/**
+          if-no-files-found: ignore
 
   restore:
     name: Restore owned CI/CD content

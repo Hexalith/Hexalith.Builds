@@ -189,7 +189,7 @@
     "document": {
       "schema": "hexalith.ci.v1",
       "buildsTag": "v4.45.1",
-      "solution": "équipe/My Solution.slnx",
+      "solution": "\u00e9quipe/My Solution.slnx",
       "dapr": false,
       "browsers": false,
       "registry": false,
@@ -198,7 +198,7 @@
       ],
       "tests": {
         "integration": [
-          "test/équipe/My Tests.csproj"
+          "test/\u00e9quipe/My Tests.csproj"
         ],
         "exclude": {},
         "minimumExpectedTests": {},
@@ -207,7 +207,7 @@
       "hooks": [],
       "jobs": {},
       "submodules": [
-        "lib/équipe"
+        "lib/\u00e9quipe"
       ],
       "ciTimeoutMinutes": 30,
       "npmWorkspaces": [],
@@ -2367,8 +2367,8 @@
     }
   },
   {
-    "name": "bad-job-options-{'runner': 'ubuntu-latest'}",
-    "valid": false,
+    "name": "hosted-linux-job",
+    "valid": true,
     "document": {
       "schema": "hexalith.ci.v1",
       "buildsTag": "v4.45.1",
@@ -4528,7 +4528,7 @@
     "document": {
       "schema": "hexalith.ci.v1",
       "buildsTag": "v4.45.1",
-      "solution": "folder/Fixture.slnx",
+      "solution": "folder/Fixture\u007f.slnx",
       "dapr": false,
       "browsers": false,
       "registry": false,
@@ -4564,7 +4564,7 @@
       ],
       "tests": {
         "integration": [
-          "folder/Fixture.csproj"
+          "folder/Fixture\u007f.csproj"
         ],
         "exclude": {},
         "minimumExpectedTests": {},
@@ -4594,7 +4594,7 @@
       "tests": {
         "integration": [],
         "exclude": {
-          "folder/Fixture.csproj": "nightly"
+          "folder/Fixture\u007f.csproj": "nightly"
         },
         "minimumExpectedTests": {},
         "failSkips": false
@@ -4631,7 +4631,7 @@
       "hooks": [],
       "jobs": {},
       "submodules": [
-        "folder/Fixture"
+        "folder/Fixture\u007f"
       ],
       "ciTimeoutMinutes": 30,
       "npmWorkspaces": [],
@@ -4644,7 +4644,7 @@
     "document": {
       "schema": "hexalith.ci.v1",
       "buildsTag": "v4.45.1",
-      "solution": "folder/Fixture.slnx",
+      "solution": "folder/Fixture\u0085.slnx",
       "dapr": false,
       "browsers": false,
       "registry": false,
@@ -4680,7 +4680,7 @@
       ],
       "tests": {
         "integration": [
-          "folder/Fixture.csproj"
+          "folder/Fixture\u0085.csproj"
         ],
         "exclude": {},
         "minimumExpectedTests": {},
@@ -4710,7 +4710,7 @@
       "tests": {
         "integration": [],
         "exclude": {
-          "folder/Fixture.csproj": "nightly"
+          "folder/Fixture\u0085.csproj": "nightly"
         },
         "minimumExpectedTests": {},
         "failSkips": false
@@ -4747,7 +4747,7 @@
       "hooks": [],
       "jobs": {},
       "submodules": [
-        "folder/Fixture"
+        "folder/Fixture\u0085"
       ],
       "ciTimeoutMinutes": 30,
       "npmWorkspaces": [],
@@ -4978,7 +4978,7 @@
     "document": {
       "schema": "hexalith.ci.v1",
       "buildsTag": "v4.45.1",
-      "solution": "src/Fixture  .slnx",
+      "solution": "src/Fixture\u2028\u2029.slnx",
       "dapr": false,
       "browsers": false,
       "registry": false,
@@ -4987,10 +4987,10 @@
       ],
       "tests": {
         "integration": [
-          "test/Fixture .csproj"
+          "test/Fixture\u2028.csproj"
         ],
         "exclude": {
-          "test/Fixture .csproj": "nightly"
+          "test/Fixture\u2029.csproj": "nightly"
         },
         "minimumExpectedTests": {},
         "failSkips": false
@@ -5000,12 +5000,12 @@
       ],
       "jobs": {},
       "submodules": [
-        "references/Fixture Library",
-        "references/Fixture Library",
-        "references/. ",
-        "references/.. ",
-        "references/ ",
-        "references/ "
+        "references/Fixture\u2028Library",
+        "references/Fixture\u2029Library",
+        "references/.\u2028",
+        "references/..\u2029",
+        "references/\u2028",
+        "references/\u2029"
       ],
       "ciTimeoutMinutes": 30,
       "npmWorkspaces": [],

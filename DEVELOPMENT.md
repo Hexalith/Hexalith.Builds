@@ -22,6 +22,11 @@ can set its numeric `job-timeout-minutes` input for a larger suite. Builds uses
 60 minutes for its full .NET catalog/workspace regression suite; sample jobs
 retain the shared default.
 
+CiCd's extended module execution contract supports isolated product jobs,
+qualification schedules, native reports/coverage and shared prerequisites. See
+[module adoption execution](docs/module-adoption-execution.md) for configuration,
+private execution boundaries and the separate infrastructure-release prerequisite.
+
 The complete CI document materializes required `ciTimeoutMinutes` (1–360,
 renderer default 30). Adopted callers forward that value through CiCd's
 generated workflow; select a compatible published Builds release before
@@ -74,7 +79,7 @@ its own MSBuild assemblies. Unit tests include those packages' runtime assets.
 Roslyn catalog packages use 5.12.0, matching the compiler shipped in SDK
 11.0.100. Conversations 2.0.0 and McpCli 3.0.0 are the current net11 defaults
 and require EventStore 5.1.0 with Commons 3.0.0. AngleSharp stays on the 1.10
-line at 1.10.3 for bunit 2.15.2.
+line at 1.10.4 for bunit 2.15.2.
 
 ASP.NET Core, OAuth, Identity Stores and Immutable now use version 11.0.0.
 The exact 25 current FrontComposer source/test and Counter/IdeParity compiler
@@ -100,7 +105,7 @@ supplies their offline reference packs and runtime without changing the active S
 The frozen `hexalith.module-manifest.v1` and G4 P0 acceptance contract retains
 its exact EventStore4.2.0, Dapr runtime/SDK1.19.1 and FrontComposer5.0.0 pins.
 `SupportedPlatformPins` describes that historical contract; it does not follow
-`PlatformVersionCatalog.Current`, whose current v2 default selects EventStore5.1.1.
+`PlatformVersionCatalog.Current`, whose current v2 default selects EventStore5.2.0.
 The byte-bound schema, corpus, cleanup proofs and negative expectations stay unchanged.
 
 The catalog additionally records exact named SDK4.2 views for the forty current
@@ -119,7 +124,7 @@ guard still prohibit consumer-local version declarations, crossed pairs and
 unrecorded views. Package auditing and transitive pinning remain required.
 These catalog views grant no native, image or new SDK5 Platform admission.
 
-Tenants 8.0.0 is the current default and requires EventStore 5.1.0. The same
+Tenants 8.0.1 is the current default and requires EventStore 5.1.0. The same
 finite SDK4.2 consumer identities retain Tenants 7.0.7; explicit Tenants
 selections remain authoritative. Both evaluated catalog probes and the real
 materialized consumer snapshot cover this retained family.

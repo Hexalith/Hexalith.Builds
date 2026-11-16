@@ -114,10 +114,10 @@ public sealed class CompositionCatalogPackageViewTests
             File.Copy(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), catalog);
             SourceMapping mapping = new(WorkspaceMode.Package, root, "Hexalith.Platform", [], false);
             CompositionDeclarationOptions options = new(mapping, []);
-            options.CatalogVersion("tenants", "probe").ShouldBe("8.0.0");
+            options.CatalogVersion("tenants", "probe").ShouldBe("8.0.1");
             foreach (string package in new[] { "Hexalith.Tenants.Aspire", "Hexalith.Tenants.Client", "Hexalith.Tenants.Contracts", "Hexalith.Tenants.Server", "Hexalith.Tenants.Testing" })
             {
-                options.CatalogPackageVersion(package, "probe").ShouldBe("8.0.0", package);
+                options.CatalogPackageVersion(package, "probe").ShouldBe("8.0.1", package);
             }
         }
         finally
@@ -232,10 +232,10 @@ public sealed class CompositionCatalogPackageViewTests
         }
 
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
-        AssertEventStoreFamily(snapshot.Versions, "5.1.1", "default");
+        AssertEventStoreFamily(snapshot.Versions, "5.2.0", "default");
         snapshot.Versions["Hexalith.Memories.Contracts"].ShouldBe("4.0.0");
-        snapshot.Versions["Hexalith.Tenants.Contracts"].ShouldBe("8.0.0");
-        options.CatalogVersion("tenants", "probe").ShouldBe("8.0.0");
+        snapshot.Versions["Hexalith.Tenants.Contracts"].ShouldBe("8.0.1");
+        options.CatalogVersion("tenants", "probe").ShouldBe("8.0.1");
         options.CatalogVersion("tenants", "probe", "Hexalith.Platform.Composition").ShouldBe("7.0.7");
         options.CatalogVersion("memories", "probe", "Hexalith.Platform.Composition").ShouldBe("3.0.27");
         options.CatalogVersion("memories", "probe", "Hexalith.Parties").ShouldBe("3.0.27");
@@ -243,11 +243,11 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogVersion("memories", "probe", "Hexalith.Parties.Contracts").ShouldBe("3.0.27");
         options.CatalogVersion("memories", "probe", "Hexalith.Parties.EventStoreExtensions").ShouldBe("3.0.27");
         options.CatalogVersion("memories", "probe", "Hexalith.Builds.Module.EventStoreHost").ShouldBe("3.0.27");
-        options.CatalogVersion("eventstore", "probe").ShouldBe("5.1.1");
+        options.CatalogVersion("eventstore", "probe").ShouldBe("5.2.0");
         options.CatalogVersion("eventstore", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
         CompositionDeclarationOptions platform = options with { ConsumerProjectName = "Hexalith.Platform.EventStoreHost" };
         platform.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
-        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe").ShouldBe("5.1.1");
+        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe").ShouldBe("5.2.0");
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe").ShouldBe("11.0.0");
         options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.0");
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("10.0.15");
@@ -294,10 +294,10 @@ public sealed class CompositionCatalogPackageViewTests
         CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
         AssertEventStoreFamily(snapshot.Versions, selected, "default");
         snapshot.Versions["Hexalith.Memories.Contracts"].ShouldBe("4.0.0");
-        snapshot.Versions["Hexalith.Tenants.Contracts"].ShouldBe("8.0.0");
+        snapshot.Versions["Hexalith.Tenants.Contracts"].ShouldBe("8.0.1");
         AssertEventStoreFamily(snapshot.ProjectVersions[consumer], selected, consumer);
         snapshot.ProjectVersions[consumer]["Hexalith.Tenants.Contracts"]
-            .ShouldBe(selected == "4.2.0" ? "7.0.7" : "8.0.0");
+            .ShouldBe(selected == "4.2.0" ? "7.0.7" : "8.0.1");
         snapshot.ProjectVersions[consumer]["Hexalith.Memories.Contracts"]
             .ShouldBe(selected == "4.2.0" ? "3.0.27" : "4.0.0");
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
@@ -332,7 +332,7 @@ public sealed class CompositionCatalogPackageViewTests
         string workspace = Path.Combine(fixture.Directory, "explicit-memories-consumer");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
-        AssertEventStoreFamily(snapshot.Versions, "5.1.1", "default");
+        AssertEventStoreFamily(snapshot.Versions, "5.2.0", "default");
         AssertEventStoreFamily(snapshot.ProjectVersions[consumer], "4.2.0", consumer);
         foreach (KeyValuePair<string, string> package in snapshot.ProjectVersions[consumer].Where(pair => pair.Key.StartsWith("Hexalith.Memories.", StringComparison.Ordinal)))
         {
@@ -364,7 +364,7 @@ public sealed class CompositionCatalogPackageViewTests
         string workspace = Path.Combine(fixture.Directory, "explicit-tenants-consumer");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
-        AssertEventStoreFamily(snapshot.Versions, "5.1.1", "default");
+        AssertEventStoreFamily(snapshot.Versions, "5.2.0", "default");
         AssertEventStoreFamily(snapshot.ProjectVersions[consumer], "4.2.0", consumer);
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
         foreach (string package in new[] { "Hexalith.Tenants.Aspire", "Hexalith.Tenants.Client", "Hexalith.Tenants.Contracts", "Hexalith.Tenants.Server", "Hexalith.Tenants.Testing" })

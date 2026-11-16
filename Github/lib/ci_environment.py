@@ -29,11 +29,12 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ci_config import ConfigError, _read_json
-from ci_pipeline import (PipelineError, contained_path, evaluated_properties, run_command,
-                         solution_projects, target_frameworks, NUGET_CONFIG)
+from ci_pipeline import (PipelineError, contained_path, evaluated_properties, publish_outputs,
+                         run_command, solution_projects, target_frameworks, NUGET_CONFIG)
 
 
 BUILDS_ROOT = Path(__file__).resolve().parents[2]
+EXACT_VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 # Official release asset digest, independently checked against GitHub's asset
 # metadata. Versions still come exclusively from the executing Builds Props.
 DAPR_CLI_DIGESTS = {"1.19.1": "6e9a339d261e430e5914909cc4443572573c197c174c3e14504c34116831de3b"}
@@ -381,10 +382,29 @@ def setup_dapr(root: Path) -> None:
     initialize_dapr(binary, runtime, root)
 
 
-def playwright_tools(root: Path, solution: str) -> tuple[Path, ...]:
+def additional_project_paths(root: Path, value: object) -> tuple[str, ...]:
+    """Validate explicitly built projects before evaluating any browser tooling."""
+    if (not isinstance(value, (list, tuple)) or any(not isinstance(item, str) for item in value)
+            or len(value) != len(set(value))):
+        raise PipelineError("additional-projects must be a unique array of project paths")
+    for relative in value:
+        path = contained_path(root, relative, kind="additional browser project")
+        if not relative.endswith(".csproj") or not path.is_file():
+            raise PipelineError("additional browser project must be an existing .csproj file")
+        current = root
+        for component in relative.split("/"):
+            current /= component
+            if current.is_symlink():
+                raise PipelineError("additional browser project must not traverse a symbolic link")
+    return tuple(value)
+
+
+def playwright_tools(root: Path, solution: str, additional_projects: tuple[str, ...] = ()) -> tuple[Path, ...]:
     """Select built tooling from evaluated outputs, once per package version."""
     tools = {}
-    for project in solution_projects(root, solution):
+    additional = additional_project_paths(root, additional_projects)
+    projects = tuple(dict.fromkeys((*solution_projects(root, solution), *additional)))
+    for project in projects:
         outer = evaluated_properties(root, project)
         targets = [evaluated_properties(root, project, framework=framework)
                    for framework in target_frameworks(outer)] or [outer]
@@ -499,17 +519,125 @@ def login_registry(root: Path) -> None:
         raise PipelineError("pull-only registry login failed", result.returncode)
 
 
+def validate_prerequisites(value: object) -> dict:
+    """Validate action-boundary data independently of the delivered configuration."""
+    if not isinstance(value, dict) or value.keys() - {
+            "nodeVersion", "npmVersion", "apt", "tlsTrust", "daprProfile"}:
+        raise PipelineError("prerequisites must contain only supported shared setup settings")
+    for flag in ("apt", "tlsTrust"):
+        if flag in value and type(value[flag]) is not bool:
+            raise PipelineError(f"prerequisites.{flag} must be a boolean")
+    if ("nodeVersion" in value) != ("npmVersion" in value):
+        raise PipelineError("prerequisites requires nodeVersion and npmVersion together")
+    for name in ("nodeVersion", "npmVersion"):
+        if name in value and (not isinstance(value[name], str) or not EXACT_VERSION.fullmatch(value[name])):
+            raise PipelineError(f"prerequisites.{name} requires an exact numeric version")
+    if value.get("daprProfile", "catalog") != "catalog":
+        raise PipelineError("prerequisites.daprProfile is not an admitted Builds profile")
+    return value
+
+
+def setup_apt(root: Path) -> None:
+    """Reuse the authenticated Builds Ubuntu mirror preparation, without module code."""
+    run_command(["bash", str(BUILDS_ROOT / "Github/initialize-apt/initialize-apt.sh")], root)
+    use_https_ubuntu_sources(root, (Path("/etc/apt/sources.list"), Path("/etc/apt/apt-mirrors.txt"),
+                                  *sorted(Path("/etc/apt/sources.list.d").glob("*.list")),
+                                  *sorted(Path("/etc/apt/sources.list.d").glob("*.sources"))))
+
+
+def use_https_ubuntu_sources(root: Path, sources: tuple[Path, ...]) -> None:
+    """Change only the canonical Azure archive transport, retaining signed policy."""
+    # Preserve signed suites, components and keys while avoiding the hosted
+    # Azure HTTP archive's stalled browser/media package downloads.
+    for source in sources:
+        if not source.is_file():
+            continue
+        if source.is_symlink():
+            raise PipelineError("Ubuntu browser package source must be a regular file")
+        try:
+            contents = source.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            raise PipelineError("cannot inspect Ubuntu browser package source") from error
+        if "azure.archive.ubuntu.com/ubuntu" in contents:
+            run_command(["sudo", "sed", "-i", "-e",
+                         r"s|http://azure\.archive\.ubuntu\.com/ubuntu|https://archive.ubuntu.com/ubuntu|g",
+                         "-e", r"s|https://azure\.archive\.ubuntu\.com/ubuntu|https://archive.ubuntu.com/ubuntu|g",
+                         str(source)], root)
+
+
+def setup_tls_trust(root: Path) -> None:
+    """Trust the job's .NET development certificate in both supported NSS databases."""
+    inherited_certificates = os.environ.get("SSL_CERT_DIR", "")
+    if any(ord(char) < 32 or 127 <= ord(char) <= 159 or char in "\u2028\u2029"
+           for char in inherited_certificates):
+        raise PipelineError("SSL_CERT_DIR must not contain control characters")
+    run_command(["sudo", "apt-get", "-o", "APT::Update::Error-Mode=any", "update"], root)
+    run_command(["sudo", "apt-get", "install", "-y", "--no-install-recommends", "libnss3-tools"], root)
+    directories = [Path.home() / relative for relative in (".pki/nssdb", ".local/share/pki/nssdb")]
+    trust = Path.home() / ".aspnet/dev-certs/trust"
+    if any(path.is_symlink() for path in (trust, *trust.parents)):
+        raise PipelineError("TLS certificate export must not traverse a symbolic link")
+    for directory in directories:
+        if any(path.is_symlink() for path in (directory, *directory.parents)):
+            raise PipelineError("TLS trust database must not traverse a symbolic link")
+        directory.mkdir(parents=True, exist_ok=True)
+        if not (directory / "cert9.db").exists():
+            run_command(["certutil", "-N", "-d", f"sql:{directory}", "--empty-password"], root)
+    run_command(["dotnet", "dev-certs", "https", "--trust"], root)
+    certificates = sorted(trust.glob("*.pem"))
+    if not certificates or any(path.is_symlink() or not path.is_file() or path.stat().st_size == 0
+                               for path in certificates):
+        raise PipelineError("TLS trust requires the exported .NET development certificate PEM files")
+    for index, certificate in enumerate(certificates):
+        run_command(["openssl", "x509", "-in", str(certificate), "-checkend", "0", "-noout"], root)
+        for directory in directories:
+            name = f"hexalith-ci-dev-cert-{index}"
+            run_command(["certutil", "-A", "-d", f"sql:{directory}", "-n", name,
+                         "-t", "P,,", "-i", str(certificate)], root)
+            run_command(["certutil", "-L", "-d", f"sql:{directory}", "-n", name], root, capture=True)
+    run_command(["dotnet", "dev-certs", "https", "--check", "--trust"], root)
+    certificate_directories = os.pathsep.join(dict.fromkeys(
+        (str(trust), "/usr/lib/ssl/certs", *filter(None, inherited_certificates.split(os.pathsep)))))
+    if any(ord(char) < 32 or 127 <= ord(char) <= 159 or char in "\u2028\u2029"
+           for char in certificate_directories):
+        raise PipelineError("TLS certificate paths must not contain control characters")
+    if os.environ.get("GITHUB_ENV"):
+        with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
+            stream.write(f"SSL_CERT_DIR={certificate_directories}\n")
+    os.environ["SSL_CERT_DIR"] = certificate_directories
+
+
+def require_node_versions(root: Path, prerequisites: dict, *, npm_required: bool) -> None:
+    """Keep selected Node/npm pins exact; never silently accept a newer bundled npm."""
+    if "nodeVersion" in prerequisites:
+        node = run_command(["node", "--version"], root, capture=True).strip()
+        npm = run_command(["npm", "--version"], root, capture=True).strip()
+        if node != "v" + prerequisites["nodeVersion"] or npm != prerequisites["npmVersion"]:
+            raise PipelineError("Node/npm runtime differs from the exact shared prerequisite pins")
+    elif npm_required and re.fullmatch(r"v24\.[0-9]+\.[0-9]+\s*", run_command(
+            ["node", "--version"], root, capture=True)) is None:
+        raise PipelineError("npm preparation requires the trusted Node 24 runtime")
+
+
 def setup_environment(workspace: Path, *, solution: str, module_root: str = "",
                       dapr: bool = False, browsers: bool = False, registry: bool = False,
                       npm_workspaces: list[str] | None = None, dotnet_tools: bool = False,
-                      aspire: bool = False) -> None:
+                      aspire: bool = False, prerequisites: dict | None = None,
+                      additional_projects: list[str] | None = None) -> None:
     """Perform each enabled setup before hooks, with no disabled tool calls."""
     npm_workspaces = [] if npm_workspaces is None else npm_workspaces
+    additional_projects = [] if additional_projects is None else additional_projects
+    if not isinstance(additional_projects, list):
+        raise PipelineError("additional-projects must be a JSON array")
+    prerequisites = validate_prerequisites({} if prerequisites is None else prerequisites)
     if solution == "none":
-        if npm_workspaces or dotnet_tools:
-            raise PipelineError("npmWorkspaces and dotnetTools must be disabled when solution is none")
+        if npm_workspaces or dotnet_tools or prerequisites or additional_projects:
+            raise PipelineError("npmWorkspaces, dotnetTools, prerequisites and additional projects must be disabled when solution is none")
         return
-    if not any((dapr, browsers, registry, npm_workspaces, dotnet_tools, aspire)):
+    if additional_projects:
+        module = contained_path(workspace.resolve(), module_root, kind="module-root") if module_root else workspace.resolve()
+        additional_project_paths(module, additional_projects)
+    if not any((dapr, browsers, registry, npm_workspaces, dotnet_tools, aspire, prerequisites)):
         return
     if platform.system() != "Linux" or platform.machine() not in ("x86_64", "AMD64"):
         raise PipelineError("shared environment setup requires Linux x86_64")
@@ -524,9 +652,12 @@ def setup_environment(workspace: Path, *, solution: str, module_root: str = "",
     if aspire and not dapr:
         raise PipelineError("native Aspire setup requires dapr=true")
     directories, manifest = preparation_inputs(root, npm_workspaces, dotnet_tools)
+    require_node_versions(root, prerequisites, npm_required=bool(directories))
+    if prerequisites.get("apt") or prerequisites.get("tlsTrust"):
+        setup_apt(root)
+    if prerequisites.get("tlsTrust"):
+        setup_tls_trust(root)
     if directories:
-        if re.fullmatch(r"v24\.[0-9]+\.[0-9]+\s*", run_command(["node", "--version"], root, capture=True)) is None:
-            raise PipelineError("npm preparation requires the trusted Node 24 runtime")
         for directory in directories:
             run_command(["npm", "ci", "--ignore-scripts"], directory)
             run_command(["npm", "audit", "signatures"], directory)
@@ -538,7 +669,7 @@ def setup_environment(workspace: Path, *, solution: str, module_root: str = "",
     if aspire:
         setup_aspire(root)
     if browsers:
-        dotnet_browsers = playwright_tools(root, solution_path.relative_to(root).as_posix())
+        dotnet_browsers = playwright_tools(root, solution_path.relative_to(root).as_posix(), tuple(additional_projects))
         npm_browsers = [(directory, npm_playwright(directory)) for directory in directories]
         if not dotnet_browsers and not any(cli for _, cli in npm_browsers):
             raise PipelineError("browsers requested but no built Playwright tooling or locked npm tooling exists")
@@ -562,21 +693,52 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace", type=Path, default=os.environ.get("GITHUB_WORKSPACE", "."))
     parser.add_argument("--module-root", default=os.environ.get("CI_MODULE_ROOT", ""))
+    parser.add_argument("--phase", choices=("inputs", "setup"), default="setup")
     parser.add_argument("--solution", default=os.environ.get("CI_ENVIRONMENT_SOLUTION"), required=not os.environ.get("CI_ENVIRONMENT_SOLUTION"))
     for name in ("dapr", "browsers", "registry", "aspire"):
         parser.add_argument(f"--{name}", type=boolean, default=os.environ.get(f"CI_ENVIRONMENT_{name.upper()}", "false"))
     parser.add_argument("--dotnet-tools", type=boolean, default=os.environ.get("CI_ENVIRONMENT_DOTNET_TOOLS", "false"))
     parser.add_argument("--npm-workspaces", default=os.environ.get("CI_ENVIRONMENT_NPM_WORKSPACES", "[]"))
+    parser.add_argument("--prerequisites", default=os.environ.get("CI_ENVIRONMENT_PREREQUISITES", "{}"))
+    parser.add_argument("--additional-projects", default=os.environ.get("CI_ENVIRONMENT_ADDITIONAL_PROJECTS", "[]"))
     args = parser.parse_args()
     try:
         if sys.version_info < (3, 12):
             raise PipelineError("Python 3.12 or later is required")
+        prerequisites = validate_prerequisites(json.loads(args.prerequisites))
         workspaces = json.loads(args.npm_workspaces)
         if not isinstance(workspaces, list):
             raise PipelineError("npmWorkspaces must be a JSON array")
+        additional = json.loads(args.additional_projects)
+        if not isinstance(additional, list):
+            raise PipelineError("additional-projects must be a JSON array")
+        if additional:
+            if args.solution == "none":
+                raise PipelineError("additional projects must be disabled when solution is none")
+            workspace = args.workspace.resolve()
+            root = contained_path(workspace, args.module_root, kind="module-root") if args.module_root else workspace
+            additional_project_paths(root, additional)
+        if args.phase == "inputs":
+            if args.solution == "none" and prerequisites:
+                raise PipelineError("prerequisites must be disabled when solution is none")
+            if "nodeVersion" in prerequisites:
+                if args.registry and not all(os.environ.get(name) for name in (
+                        "REGISTRY_PULL_USERNAME", "REGISTRY_PULL_PASSWORD")):
+                    raise PipelineError("registry setup requires the dedicated pull-only username and password")
+                if args.aspire and not args.dapr:
+                    raise PipelineError("native Aspire setup requires dapr=true")
+                workspace = args.workspace.resolve()
+                root = contained_path(workspace, args.module_root, kind="module-root") if args.module_root else workspace
+                solution = contained_path(workspace, args.solution, kind="solution")
+                if not root.is_dir() or not solution.is_file() or not solution.is_relative_to(root):
+                    raise PipelineError("environment solution must exist within the module root")
+                preparation_inputs(root, workspaces, args.dotnet_tools)
+            publish_outputs({"node-version": prerequisites.get("nodeVersion", "")})
+            return 0
         setup_environment(args.workspace, solution=args.solution, module_root=args.module_root,
                           dapr=args.dapr, browsers=args.browsers, registry=args.registry, aspire=args.aspire,
-                          npm_workspaces=workspaces, dotnet_tools=args.dotnet_tools)
+                          npm_workspaces=workspaces, dotnet_tools=args.dotnet_tools, prerequisites=prerequisites,
+                          additional_projects=additional)
         return 0
     except (ConfigError, ValueError) as error:
         print(error, file=sys.stderr)

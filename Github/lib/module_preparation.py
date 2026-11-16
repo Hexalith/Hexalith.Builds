@@ -58,6 +58,8 @@ def _digest(data: bytes) -> str:
 
 
 def _real(path: Path) -> Path:
+    if ".." in path.parts or any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in str(path)):
+        raise ConfigError("producer path contains traversal or control characters")
     for part in (path, *path.parents):
         if part.is_symlink() or (part.exists() and getattr(part.lstat(), "st_file_attributes", 0) & 1024):
             raise ConfigError("producer path traverses a symbolic link or reparse point")
@@ -220,6 +222,7 @@ def _prepare_environment(prepared, authority: dict, temporary_root: Path, *, fet
                          qualification: bool = False) -> BuildEnvironment:
     if not enabled(prepared):
         return BuildEnvironment(None, {}, {}, {}, {})
+    temporary_root = _real(temporary_root)
     if fetch_tags:
         for path in (("references/Hexalith.Builds",) if prepared.document.get("publishedBuilds") else ("references/Hexalith.Builds", "references/Hexalith.Platform")):
             _git(prepared.root / path, "fetch", "--no-recurse-submodules", "--no-tags", "origin", "refs/tags/*:refs/tags/*")
@@ -230,7 +233,6 @@ def _prepare_environment(prepared, authority: dict, temporary_root: Path, *, fet
         raise ConfigError("ambient producer import overrides are forbidden before preparation")
     if os.environ.get("Configuration") not in (None, "", "Release"):
         raise ConfigError("managed preparation requires Release")
-    temporary_root = _real(temporary_root)
     private = Path(tempfile.mkdtemp(prefix="hexalith-module-preparation-", dir=temporary_root))
     try:
         if prepared.document.get("publishedBuilds"):

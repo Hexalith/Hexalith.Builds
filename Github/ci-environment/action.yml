@@ -22,9 +22,36 @@ inputs:
   aspire:
     description: Literal validated native Aspire toolchain flag.
     default: 'false'
+  prerequisites:
+    description: Validated JSON object selecting exact Node/npm pins and shared APT/TLS trust.
+    default: '{}'
+  additional-projects:
+    description: Validated JSON array of additional built test projects outside the solution.
+    default: '[]'
 runs:
   using: composite
   steps:
+    - name: Validate shared prerequisite selections
+      id: prerequisites
+      shell: bash
+      env:
+        CI_ENVIRONMENT_SOLUTION: ${{ inputs.solution }}
+        CI_ENVIRONMENT_PREREQUISITES: ${{ inputs.prerequisites }}
+        CI_ENVIRONMENT_NPM_WORKSPACES: ${{ inputs.npm-workspaces }}
+        CI_ENVIRONMENT_DOTNET_TOOLS: ${{ inputs.dotnet-tools }}
+        CI_ENVIRONMENT_DAPR: ${{ inputs.dapr }}
+        CI_ENVIRONMENT_ASPIRE: ${{ inputs.aspire }}
+        CI_ENVIRONMENT_REGISTRY: ${{ inputs.registry }}
+        CI_ENVIRONMENT_ADDITIONAL_PROJECTS: ${{ inputs.additional-projects }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_environment.py" --phase inputs
+
+    - name: Install selected exact Node runtime
+      if: steps.prerequisites.outputs.node-version != ''
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ steps.prerequisites.outputs.node-version }}
+        package-manager-cache: false
+
     - name: Set up enabled environment tools
       shell: bash
       env:
@@ -35,4 +62,6 @@ runs:
         CI_ENVIRONMENT_NPM_WORKSPACES: ${{ inputs.npm-workspaces }}
         CI_ENVIRONMENT_DOTNET_TOOLS: ${{ inputs.dotnet-tools }}
         CI_ENVIRONMENT_ASPIRE: ${{ inputs.aspire }}
+        CI_ENVIRONMENT_PREREQUISITES: ${{ inputs.prerequisites }}
+        CI_ENVIRONMENT_ADDITIONAL_PROJECTS: ${{ inputs.additional-projects }}
       run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_environment.py"
