@@ -335,7 +335,7 @@ if name=="npm":
         (output/"cli.js").write_text("// locked tooling")
 elif name=="dotnet":
     assert args[:2]==["tool","restore"], args
-    assert args[args.index("--configfile")+1].endswith("Hexalith.Builds/NuGet.ci.Config")
+    assert pathlib.Path(args[args.index("--configfile")+1]) == pathlib.Path(os.environ["PREPARE_EXPECTED_NUGET_CONFIG"])
 elif name=="node":
     assert pathlib.Path(args[0]).is_file()
     assert args[1:]==["install","--with-deps"], args
@@ -347,7 +347,8 @@ if os.environ.get("PREPARE_FAIL")==name+":"+args[0]:
             executable.write_text(body)
             executable.chmod(0o755)
         self.environment = dict(os.environ, PATH=str(self.bin)+os.pathsep+os.environ["PATH"],
-                                PREPARE_FIXTURE_ROOT=str(self.root))
+                                PREPARE_FIXTURE_ROOT=str(self.root),
+                                PREPARE_EXPECTED_NUGET_CONFIG=str(ENV.NUGET_CONFIG))
 
     def invoke(self, *, tools=True, browsers=True, workspaces=None, environment=None):
         with mock.patch.dict(os.environ, environment or self.environment, clear=True), \
