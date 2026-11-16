@@ -1,20 +1,19 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "a2a67299a0c21d5acdfb91ab6f4b80ce66232a4f",
+  "generatedFromRevision": "4869e69d55fd8a62ce00f5e54e0dff1b2975641a",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "a5bbe3e7bfd78903ba3b7282885c087fc5cfda09e70dd53ca9ec0583066e2ccd",
-  "catalogRawSha256": "d538cf8539fd785be58111ce2e4562a7b1a1aed9fc92a1ab03fe84f1b850718e",
+  "catalogSha256": "7c76e92b8986c9470154e1502b3395df019d29f61853de934cf35db73a41a54b",
+  "catalogRawSha256": "7a786be8def06cef4ce7ab795ecfb80ea2f0b7b1bb295b95a7b7a2ad99af180c",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-16T18:37:09.8534737+00:00",
+    "auditedAtUtc": "2026-11-16T19:00:13.0139431+00:00",
     "refreshedFamilies": [
-      "xunit"
+      "dotnet-10"
     ],
     "preservedFamilies": [
       "aspire",
       "bunit-html",
       "dapr",
-      "dotnet-10",
       "fluent-ui",
       "hexalith-applications",
       "hexalith-chatbot",
@@ -166,7 +165,8 @@
       "package:threenine.data",
       "package:yamldotnet",
       "roslyn",
-      "verify"
+      "verify",
+      "xunit"
     ]
   },
   "sources": [
@@ -182,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "a2a67299a0c21d5acdfb91ab6f4b80ce66232a4f",
+    "repositoryRevision": "4869e69d55fd8a62ce00f5e54e0dff1b2975641a",
     "sha256": "65e04fa2cdbeb7ca289ae3936be7d0461904871398fe6557ddfaac70ee7ee484",
     "entries": [
       {
@@ -3493,8 +3493,8 @@
         "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-14T10:59:51.4604427+00:00",
-        "generatedFromRevision": "0230aefd0502775b034a38c3b037c32c79f20fd7",
+        "auditedAtUtc": "2026-11-16T19:00:13.0139431+00:00",
+        "generatedFromRevision": "4869e69d55fd8a62ce00f5e54e0dff1b2975641a",
         "familySelectionSha256": "a14bd753eb55463be8ce7dccf0f998b0dd3d9ed9e48ea1921e5a98b33c076c8b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9a79ebc20733a059e80b2993f984570778306d67bf2a81d75c5726ff101347c5",
