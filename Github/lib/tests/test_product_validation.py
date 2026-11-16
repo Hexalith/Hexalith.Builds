@@ -18,13 +18,32 @@ SPEC = importlib.util.spec_from_file_location("product_validation", SCRIPT)
 RUNNER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RUNNER)
 
+FAKE_OPENSSL = r'''
+import json, os, pathlib, sys
+root = pathlib.Path(os.environ["PRODUCT_TEST_ROOT"])
+data = json.loads((root / "sdk.json").read_text())
+args = sys.argv[1:]
+with (root / "commands.jsonl").open("a") as log:
+    log.write(json.dumps({"args":["openssl",*args],"cwd":str(pathlib.Path.cwd())})+"\n")
+if data.get("identity_failure"):
+    sys.exit(37)
+if args[0] == "verify":
+    sys.exit(43 if data.get("expired_candidate") else 0)
+output = pathlib.Path(args[args.index("-out")+1])
+if args[0] == "req":
+    pathlib.Path(args[args.index("-keyout")+1]).write_bytes(b"private test key")
+    output.write_bytes(os.urandom(32))
+else:
+    output.write_bytes(pathlib.Path(args[args.index("-in")+1]).read_bytes())
+'''
+
 FAKE_DOTNET = r'''
-import json, os, pathlib, shutil, sys, xml.etree.ElementTree as ET, zipfile
+import hashlib, json, os, pathlib, shutil, signal, sys, xml.etree.ElementTree as ET, zipfile
 root = pathlib.Path(os.environ["PRODUCT_TEST_ROOT"])
 data = json.loads((root / "sdk.json").read_text())
 args = sys.argv[1:]
 cwd = pathlib.Path.cwd()
-record = {"args":args, "cwd":str(cwd), "cache":os.environ.get("NUGET_PACKAGES")}
+record = {"args":args, "cwd":str(cwd), "cache":os.environ.get("NUGET_PACKAGES"), "pid":os.getpid()}
 with (root / "commands.jsonl").open("a") as log:
     log.write(json.dumps(record)+"\n")
 version = data.get("version", "2.3.4-preview.7")
@@ -59,6 +78,15 @@ elif args[0] == "restore":
     config=ET.parse(args[args.index("--configfile")+1])
     assert config.find("./config/add[@key='signatureValidationMode']").get("value")=="require"
     feed=pathlib.Path(config.find("./packageSources/add[@key='candidate']").get("value"))
+    assert not (feed.parent / "signer").exists(), "keys must be removed before consumers"
+    author=config.find("./trustedSigners/author[@name='hexalith-private-validation-job']/certificate")
+    assert author is not None and author.get("allowUntrustedRoot")=="true"
+    assert author.get("hashAlgorithm")=="SHA256"
+    for archive in feed.glob("*.nupkg"):
+        with zipfile.ZipFile(archive) as package_archive:
+            assert package_archive.read(".signature.p7s").decode()==author.get("fingerprint")
+    ledger="".join(hashlib.sha256(path.read_bytes()).hexdigest()+"  "+path.name+"\n" for path in sorted(feed.iterdir()) if path.suffix in (".nupkg",".snupkg"))
+    assert (feed / "release-artifacts.sha256").read_text()==ledger
     assert sorted(n.get("pattern") for n in config.findall("./packageSourceMapping/packageSource[@key='candidate']/package")) == sorted(data["ids"])
     assert "-p:NuGetAudit=true" in args and "-p:NuGetAuditMode=all" in args
     candidates=[package] + ([data["ids"][0]] if package != data["ids"][0] else [])
@@ -86,6 +114,38 @@ elif args[0] == "restore":
         shutil.copyfile(archive,copy)
         archive.unlink()
         archive.symlink_to(copy)
+elif args[:2] == ["nuget", "sign"]:
+    assert (root / "archive-checked").exists(), "product validator must precede signing"
+    if data.get("signing_failure"):
+        sys.exit(41)
+    assert args[args.index("--timestamper")+1] == "http://timestamp.digicert.com"
+    assert args[args.index("--timestamp-hash-algorithm")+1] == "SHA256"
+    if data.get("timestamp_failure"):
+        sys.exit(47)
+    pfx=pathlib.Path(args[args.index("--certificate-path")+1])
+    assert pfx.stat().st_mode & 0o777 == 0o600
+    assert pfx.parent.stat().st_mode & 0o777 == 0o700
+    if data.get("terminate_signing"):
+        os.kill(os.getppid(), signal.SIGTERM)
+        signal.pause()
+    if not data.get("unsigned_candidate"):
+        fingerprint=hashlib.sha256(pfx.read_bytes()).hexdigest().upper()
+        with zipfile.ZipFile(args[2], "a") as archive:
+            archive.writestr(".signature.p7s", "wrong" if data.get("wrong_signer") else fingerprint)
+            if data.get("rewrite_payload"):
+                archive.writestr("unexpected.txt", b"changed payload")
+    if data.get("rewrite_symbols"):
+        next(pathlib.Path(args[2]).parent.glob("*.snupkg")).write_bytes(b"changed symbols")
+    if data.get("rewrite_output_during_signing"):
+        next(root.glob("src/*/bin/Release/net10.0/*.dll")).write_bytes(b"changed original assembly")
+elif args[:2] == ["nuget", "verify"]:
+    try:
+        with zipfile.ZipFile(args[2]) as archive:
+            fingerprint=archive.read(".signature.p7s").decode()
+    except KeyError:
+        sys.exit(43)
+    if fingerprint != args[args.index("--certificate-fingerprint")+1]:
+        sys.exit(43)
 elif args[0] == "build":
     assert cwd != root, "main module must never be rebuilt"
     package=ET.parse(cwd / "Consumer.csproj").find(".//PackageReference").get("Include")
@@ -134,11 +194,14 @@ class ProductValidationTests(unittest.TestCase):
         self.contract = {"schema": "hexalith.product-validation.v1", "manifest": "packages.json",
                          "archiveValidator": "validate.py", "targetFramework": "net10.0", "consumers": consumers}
         (self.root / "global.json").write_text('{"sdk":{"version":"11.0.100"}}')
-        (self.root / "validate.py").write_text('''import json, os, pathlib, sys
+        (self.root / "validate.py").write_text('''import json, os, pathlib, sys, zipfile
 root=pathlib.Path(os.environ["PRODUCT_TEST_ROOT"])
 data=json.loads((root / "sdk.json").read_text())
 (root / "archive-checked").write_text("product assertions executed")
 assert len(list(pathlib.Path(sys.argv[1]).glob("*.nupkg")))==6
+for path in pathlib.Path(sys.argv[1]).glob("*.nupkg"):
+    with zipfile.ZipFile(path) as archive:
+        assert ".signature.p7s" not in archive.namelist()
 sys.exit(31 if data.get("validator_failure") else 0)
 ''')
         self.bin = self.scratch / "bin"
@@ -146,6 +209,9 @@ sys.exit(31 if data.get("validator_failure") else 0)
         executable = self.bin / "dotnet"
         executable.write_text("#!" + sys.executable + "\n" + FAKE_DOTNET)
         executable.chmod(0o755)
+        openssl = self.bin / "openssl"
+        openssl.write_text("#!" + sys.executable + "\n" + FAKE_OPENSSL)
+        openssl.chmod(0o755)
         self.environment = os.environ.copy()
         self.environment.update(PATH=str(self.bin) + os.pathsep + self.environment["PATH"],
                                 PRODUCT_TEST_ROOT=str(self.root), TMPDIR=str(self.scratch))
@@ -157,7 +223,7 @@ sys.exit(31 if data.get("validator_failure") else 0)
         (self.root / "sdk.json").write_text(json.dumps(self.data))
         return subprocess.run([sys.executable, "-I", "-S", str(SCRIPT), "--workspace", str(self.root),
                                "--contract", "contract.json"], env=self.environment,
-                              capture_output=True, text=True, check=False)
+                              capture_output=True, text=True, check=False, timeout=60)
 
     def commands(self):
         path = self.root / "commands.jsonl"
@@ -184,6 +250,55 @@ sys.exit(31 if data.get("validator_failure") else 0)
         self.assertTrue(all(item["cwd"] != str(self.root) for item in builds))
         self.assertTrue((self.root / "archive-checked").is_file())
         self.assertFalse(list(self.scratch.glob("hexalith-product-validation-*")))
+        signs = [item for item in commands if item["args"][:2] == ["nuget", "sign"]]
+        verifies = [item for item in commands if item["args"][:2] == ["nuget", "verify"]]
+        self.assertEqual((len(signs), len(verifies)), (6, 6))
+        self.assertTrue(all(item["args"][2].endswith(".nupkg") for item in signs))
+        self.assertTrue(all("--certificate-password" not in item["args"] for item in commands))
+
+    def test_identity_creation_failure_stops_before_signing_or_consumers_and_cleans_keys(self):
+        self.data["identity_failure"] = True
+        self.assert_refused("failed (37)")
+        self.assertFalse(any(item["args"][:2] == ["nuget", "sign"] for item in self.commands()))
+
+    def test_first_signing_failure_stops_before_any_consumer(self):
+        self.data["signing_failure"] = True
+        self.assert_refused("failed (41)")
+        self.assertFalse(any(item["args"][0] == "restore" for item in self.commands()))
+
+    def test_timestamp_refusal_stops_before_verification_or_consumers_and_cleans_keys(self):
+        self.data["timestamp_failure"] = True
+        self.assert_refused("failed (47)")
+        self.assertFalse(any(item["args"][:2] == ["nuget", "verify"] or item["args"][0] == "restore"
+                             for item in self.commands()))
+
+    def test_unauthenticated_candidates_stop_before_every_consumer(self):
+        for failure in ("unsigned_candidate", "wrong_signer", "expired_candidate"):
+            with self.subTest(failure=failure):
+                self.data = {"ids": self.ids, failure: True}
+                self.assert_refused("failed (43)")
+                self.assertFalse(any(item["args"][0] == "restore" for item in self.commands()))
+
+    def test_signing_cannot_change_validated_payload(self):
+        self.data["rewrite_payload"] = True
+        self.assert_refused("signing changed candidate ZIP payload")
+
+    def test_signing_cannot_change_symbols(self):
+        self.data["rewrite_symbols"] = True
+        self.assert_refused("signing changed unselected feed bytes")
+
+    def test_signing_cannot_change_original_build_outputs(self):
+        self.data["rewrite_output_during_signing"] = True
+        self.assert_refused("existing Release assembly/symbol outputs changed")
+
+    def test_termination_during_signing_cleans_identity_and_waits_for_child(self):
+        self.data["terminate_signing"] = True
+        result = self.invoke()
+        self.assertEqual(result.returncode, 143, result.stderr)
+        self.assertFalse(list(self.scratch.glob("hexalith-product-validation-*")))
+        child = next(item["pid"] for item in self.commands() if item["args"][:2] == ["nuget", "sign"])
+        with self.assertRaises(ProcessLookupError):
+            os.kill(child, 0)
 
     def test_missing_consumer_refuses_before_any_sdk_command(self):
         self.contract["consumers"].pop(self.ids[0])
@@ -295,9 +410,14 @@ sys.exit(31 if data.get("validator_failure") else 0)
 
     def test_shared_signature_and_trusted_signer_policy_survives_local_feed_configuration(self):
         destination = self.scratch / "NuGet.Config"
-        RUNNER.consumer_config(destination, self.scratch / "feed", self.manifest["packages"], RUNNER.NUGET_CONFIG)
+        RUNNER.consumer_config(destination, self.scratch / "feed", self.manifest["packages"], RUNNER.NUGET_CONFIG, "A" * 64)
         baseline = ET.parse(RUNNER.NUGET_CONFIG).getroot()
         actual = ET.parse(destination).getroot()
+        author = actual.find("./trustedSigners/author")
+        self.assertEqual(author.attrib, {"name": RUNNER.JOB_AUTHOR})
+        self.assertEqual(author.find("certificate").attrib,
+                         {"fingerprint": "A" * 64, "hashAlgorithm": "SHA256", "allowUntrustedRoot": "true"})
+        actual.find("trustedSigners").remove(author)
         for name in ("config", "trustedSigners", "disabledPackageSources", "fallbackPackageFolders"):
             self.assertEqual(ET.tostring(actual.find(name)), ET.tostring(baseline.find(name)))
 
@@ -305,7 +425,18 @@ sys.exit(31 if data.get("validator_failure") else 0)
         config = self.scratch / "weakened.config"
         config.write_text('<configuration><packageSources/><packageSourceMapping/></configuration>')
         with self.assertRaisesRegex(RUNNER.ValidationError, "strict NuGet signature"):
-            RUNNER.consumer_config(self.scratch / "candidate.config", self.scratch / "feed", self.manifest["packages"], config)
+            RUNNER.consumer_config(self.scratch / "candidate.config", self.scratch / "feed", self.manifest["packages"], config, "A" * 64)
+
+    def test_private_trust_refuses_invalid_fingerprint_and_duplicate_job_author(self):
+        config = self.scratch / "base.config"
+        document = ET.parse(RUNNER.NUGET_CONFIG)
+        ET.SubElement(document.getroot().find("trustedSigners"), "author", name=RUNNER.JOB_AUTHOR)
+        document.write(config)
+        for base, fingerprint in ((RUNNER.NUGET_CONFIG, "*"), (config, "A" * 64)):
+            with self.subTest(base=base, fingerprint=fingerprint):
+                with self.assertRaisesRegex(RUNNER.ValidationError, "strict NuGet signature"):
+                    RUNNER.consumer_config(self.scratch / "candidate.config", self.scratch / "feed",
+                                           self.manifest["packages"], base, fingerprint)
 
 
 if __name__ == "__main__":

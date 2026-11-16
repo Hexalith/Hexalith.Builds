@@ -15,6 +15,8 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,6 +31,9 @@ FRAMEWORK = re.compile(r"net[0-9]+\.[0-9]+\Z")
 PROPERTIES = ("PackageId", "PackageVersion", "IsPackable", "TargetFramework", "TargetFrameworks", "TargetPath", "AssemblyName")
 FLAGS = ("-noAutoResponse", "-p:Configuration=Release", "-p:UseHexalithProjectReferences=false",
          "-p:ShouldUnsetParentConfigurationAndPlatform=false", "-warnaserror")
+JOB_AUTHOR = "hexalith-private-validation-job"
+SIGNATURE = ".signature.p7s"
+TIMESTAMPER = "http://timestamp.digicert.com"
 
 
 class ValidationError(ValueError):
@@ -180,23 +185,101 @@ def archive_inventory(feed: Path, rows: list[dict], version: str) -> None:
             if (len(identity) != 1 or len(versions) != 1 or versions[0].text != version
                     or path.name != f"{identity[0].text}.{version}{path.suffix}"):
                 raise ValidationError(f"package identity/version mismatch: {path.name}")
+    write_ledger(feed)
+
+
+def write_ledger(feed: Path) -> None:
     (feed / "release-artifacts.sha256").write_text(
-        "".join(f"{digest(path)}  {path.name}\n" for path in sorted(feed.iterdir())), encoding="utf-8")
+        "".join(f"{digest(path)}  {path.name}\n" for path in sorted(feed.iterdir())
+                if path.suffix in (".nupkg", ".snupkg")), encoding="utf-8")
 
 
-def consumer_config(destination: Path, feed: Path, rows: list[dict], base: Path) -> None:
-    """Keep the shared signature/trusted-signer policy and map only exact product IDs."""
+def job_signer(scratch: Path, environment: dict[str, str]) -> tuple[Path, str]:
+    """Create a one-day code-signing identity, contained by the private job lifetime.
+
+    The PFX has an empty password: confidentiality comes from the private scratch
+    directory and owner-only files, with no secret in argv, environment or logs.
+    Nothing is imported into an OS certificate store or used for publication.
+    """
+    directory = scratch / "signer"
+    directory.mkdir(mode=0o700)
+    key, certificate, der, pfx = (directory / name for name in ("key.pem", "certificate.pem", "certificate.der", "signer.pfx"))
+    # Pre-create owner-only outputs, including the PFX, before tools write them.
+    for path in (key, certificate, der, pfx):
+        path.touch(mode=0o600)
+    run_command(["openssl", "req", "-x509", "-newkey", "rsa:3072", "-noenc", "-sha256", "-days", "1",
+                 "-subj", "/CN=Hexalith private candidate validation", "-keyout", str(key), "-out", str(certificate),
+                 "-addext", "basicConstraints=critical,CA:FALSE", "-addext", "keyUsage=critical,digitalSignature",
+                 "-addext", "extendedKeyUsage=codeSigning"], scratch, environment, capture=True)
+    run_command(["openssl", "pkcs12", "-export", "-inkey", str(key), "-in", str(certificate),
+                 "-out", str(pfx), "-passout", "pass:"], scratch, environment, capture=True)
+    run_command(["openssl", "x509", "-in", str(certificate), "-outform", "DER", "-out", str(der)],
+                scratch, environment, capture=True)
+    return pfx, digest(der).upper()
+
+
+def package_payload(path: Path) -> dict[str, str]:
+    """Snapshot every uncompressed entry, rejecting ambiguous signed inventories."""
+    with zipfile.ZipFile(path) as archive:
+        names = archive.namelist()
+        if len(names) != len(set(names)):
+            raise ValidationError(f"duplicate package ZIP entries: {path.name}")
+        return {name: hashlib.sha256(archive.read(name)).hexdigest() for name in names}
+
+
+def sign_candidates(feed: Path, rows: list[dict], version: str, pfx: Path, fingerprint: str,
+                    config: Path, environment: dict[str, str]) -> None:
+    """Sign exactly the validated regular archives, authenticating before admission."""
+    frozen = fingerprints(feed)
+    for row in rows:
+        path = feed / f"{row['id']}.{version}.nupkg"
+        payload = package_payload(path)
+        if SIGNATURE in payload:
+            raise ValidationError(f"candidate is already signed before job authentication: {path.name}")
+        run_command(["dotnet", "nuget", "sign", str(path), "--certificate-path", str(pfx),
+                     "--hash-algorithm", "SHA256", "--allow-untrusted-root", "--timestamper", TIMESTAMPER,
+                     "--timestamp-hash-algorithm", "SHA256", "--verbosity", "minimal"],
+                    feed.parent, environment, capture=True)
+        authenticate_candidate(path, pfx.with_name("certificate.pem"), fingerprint, config, environment)
+        signed = package_payload(path)
+        if (set(signed) != set(payload) | {SIGNATURE}
+                or any(signed.get(name) != original for name, original in payload.items())):
+            raise ValidationError(f"signing changed candidate ZIP payload: {path.name}")
+        frozen[path.name] = digest(path)
+        if fingerprints(feed) != frozen:
+            raise ValidationError("signing changed unselected feed bytes")
+    write_ledger(feed)
+
+
+def authenticate_candidate(path: Path, certificate: Path, fingerprint: str, config: Path,
+                           environment: dict[str, str]) -> None:
+    # Timestamped signatures outlive their certificate; untimestamped expiration
+    # can also be warning NU3037. Job admission requires a currently valid
+    # certificate as well as the exact authenticated package fingerprint.
+    run_command(["openssl", "verify", "-trusted", str(certificate), "-check_ss_sig", str(certificate)],
+                path.parent.parent, environment, capture=True)
+    run_command(["dotnet", "nuget", "verify", str(path), "--all", "--certificate-fingerprint", fingerprint,
+                 "--configfile", str(config), "--verbosity", "minimal"], path.parent.parent, environment, capture=True)
+
+
+def consumer_config(destination: Path, feed: Path, rows: list[dict], base: Path, fingerprint: str) -> None:
+    """Preserve public policy, adding exact candidate mappings and one job author."""
     document = ET.parse(base)
     root = document.getroot()
     sources = root.find("packageSources")
     mappings = root.find("packageSourceMapping")
+    signers = root.find("trustedSigners")
     if (sources is None or mappings is None or any(node.get("key") == "candidate" for node in sources)
+            or signers is None or any(node.get("name") == JOB_AUTHOR for node in signers)
+            or re.fullmatch(r"[A-F0-9]{64}", fingerprint) is None
             or root.find("./config/add[@key='signatureValidationMode'][@value='require']") is None):
         raise ValidationError("shared strict NuGet signature/source configuration is required")
     ET.SubElement(sources, "add", key="candidate", value=str(feed))
     candidate = ET.SubElement(mappings, "packageSource", key="candidate")
     for row in rows:
         ET.SubElement(candidate, "package", pattern=row["id"])
+    author = ET.SubElement(signers, "author", name=JOB_AUTHOR)
+    ET.SubElement(author, "certificate", fingerprint=fingerprint, hashAlgorithm="SHA256", allowUntrustedRoot="true")
     document.write(destination, encoding="utf-8", xml_declaration=True)
 
 
@@ -252,7 +335,8 @@ def run(root: Path, contract_path: str, *, nuget_config: Path = NUGET_CONFIG) ->
                 "usehexalithprojectreferences", "usenugetdeps", "msbuildsdkspath", "msbuildextensionspath",
                 "directorybuildpropspath", "directorybuildtargetspath", "directorypackagespropspath"}:
             environment.pop(key)
-    environment.update(DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER="1", MSBUILDDISABLENODEREUSE="1")
+    environment.update(DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER="1", MSBUILDDISABLENODEREUSE="1",
+                       DOTNET_GENERATE_ASPNET_CERTIFICATE="false")
     evaluated = [evaluated_package(root, row, framework, environment) for row in rows]
     versions = {values["PackageVersion"] for values in evaluated}
     if len(versions) != 1:
@@ -264,6 +348,7 @@ def run(root: Path, contract_path: str, *, nuget_config: Path = NUGET_CONFIG) ->
         scratch = Path(temporary)
         if scratch.resolve().is_relative_to(root):
             raise ValidationError("consumer scratch must be outside the module repository")
+        (scratch / "global.json").write_bytes((root / "global.json").read_bytes())
         feed = scratch / "feed"
         feed.mkdir()
         for row in rows:
@@ -276,6 +361,14 @@ def run(root: Path, contract_path: str, *, nuget_config: Path = NUGET_CONFIG) ->
         frozen = fingerprints(feed)
         run_command([sys.executable, str(source_path(root, contract["archiveValidator"], ".py")), str(feed)], root, environment)
         require_unchanged(feed, frozen, outputs)
+        signing = dict(environment, DOTNET_CLI_HOME=str(scratch / "signing-cli-home"))
+        pfx, fingerprint = job_signer(scratch, signing)
+        config = scratch / "NuGet.Config"
+        consumer_config(config, feed, rows, nuget_config, fingerprint)
+        sign_candidates(feed, rows, version, pfx, fingerprint, config, signing)
+        shutil.rmtree(pfx.parent)
+        frozen = fingerprints(feed)
+        require_unchanged(feed, frozen, outputs)
         for number, (row, values) in enumerate(zip(rows, evaluated, strict=True)):
             consumer = scratch / ("consumer-" + str(number))
             consumer.mkdir()
@@ -283,7 +376,7 @@ def run(root: Path, contract_path: str, *, nuget_config: Path = NUGET_CONFIG) ->
             consumer_project(consumer, source_path(root, contract["consumers"][row["id"]], ".cs").read_text(encoding="utf-8"),
                              row["id"], values["AssemblyName"], framework, version)
             config = consumer / "NuGet.Config"
-            consumer_config(config, feed, rows, nuget_config)
+            consumer_config(config, feed, rows, nuget_config, fingerprint)
             private = deepcopy(environment)
             private.update(NUGET_PACKAGES=str(consumer / "packages"), NUGET_HTTP_CACHE_PATH=str(consumer / "http-cache"),
                            NUGET_PLUGINS_CACHE_PATH=str(consumer / "plugins-cache"), DOTNET_CLI_HOME=str(consumer / "cli-home"))
@@ -305,6 +398,14 @@ def main() -> int:
     parser.add_argument("--workspace", type=Path, default=os.environ.get("GITHUB_WORKSPACE", "."))
     parser.add_argument("--contract", required=True)
     arguments = parser.parse_args()
+    # Unwind TemporaryDirectory on ordinary termination as well as exceptions
+    # and Ctrl-C; subprocess.run kills and waits for its child while unwinding.
+    def terminate(signum: int, _frame: object) -> None:
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGTERM, terminate)
+    if hasattr(signal, "SIGHUP"):
+        signal.signal(signal.SIGHUP, terminate)
     try:
         run(arguments.workspace, arguments.contract)
         return 0
