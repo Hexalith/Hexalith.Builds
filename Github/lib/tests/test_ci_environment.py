@@ -90,7 +90,7 @@ class CompositeHarness:
 
     def __init__(self, root, environment, *, module_root="", expected_source="", secrets=None,
                  dapr_archive=None, mutate_workflow=None, runner_os="Linux", external_action=None,
-                 event_name="workflow_dispatch", event=None, repository=FIXTURE.BUILDS):
+                 event_name="workflow_dispatch", event=None, repository=FIXTURE.BUILDS, runner_environment="github-hosted"):
         self.root = root
         self.environment = dict(environment, GITHUB_WORKSPACE=str(root))
         self.environment.pop("CI_EVENT_NAME", None)
@@ -106,6 +106,8 @@ class CompositeHarness:
         runner_temp = root / "runner-temp"
         runner_temp.mkdir(exist_ok=True)
         self.environment["RUNNER_TEMP"] = str(runner_temp)
+        self.environment["GIT_CONFIG_GLOBAL"] = str(runner_temp / "git-global-config")
+        self.environment["GIT_CONFIG_NOSYSTEM"] = "1"
         if dapr_archive is not None:
             # Instrument only the environment Python process. The actual action
             # command, inputs, stdlib script and extracted executable still run.
@@ -135,7 +137,7 @@ os.execv(sys.executable, [sys.executable, *args])
         self.environment.update(GITHUB_EVENT_NAME=event_name, GITHUB_EVENT_PATH=str(event_path))
         self.context = {"github": {"repository": repository, "event_name": event_name,
                                     "event": {} if event is None else event},
-                        "runner": {"temp": str(runner_temp), "os": runner_os},
+                        "runner": {"temp": str(runner_temp), "os": runner_os, "environment": runner_environment},
                         "inputs": {"module-root": module_root, "expected-source": expected_source},
                         "secrets": secrets or {"registry-pull-username": "", "registry-pull-password": ""},
                         "steps": {}}

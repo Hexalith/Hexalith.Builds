@@ -15,7 +15,9 @@ bundle comparison, managed runtime/namespace probes and hash-locked Python setup
 Other consumers retain disabled native setup unless they opt in. Dependent Windows and macOS jobs each prepare
 a separate Release build and run the root `sample-windows` and `sample-macos`
 actions respectively. Both platform suites assert their actual operating system
-before exercising the sample product. These actions execute built tests only.
+before exercising the sample product. The Windows suite also reads an actual
+tracked path beyond MAX_PATH, proving pre-checkout long-path preparation on its
+disposable hosted runner. These actions execute built tests only.
 The configuration delegates those projects through `tests.exclude`, so they do
 not also run in shared stages. Only this configuration enables the sample actions.
 

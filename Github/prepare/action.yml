@@ -16,6 +16,16 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Enable long Git paths on disposable Windows runners
+      if: runner.os == 'Windows' && runner.environment == 'github-hosted'
+      shell: pwsh
+      run: |
+        git config --global core.longpaths true
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $configured = git config --global --type=bool --get core.longpaths
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if ($configured -ne 'true') { throw 'Windows checkout requires core.longpaths=true.' }
+
     - name: Checkout module
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:

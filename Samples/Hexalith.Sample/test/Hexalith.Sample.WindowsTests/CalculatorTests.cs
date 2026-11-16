@@ -21,4 +21,21 @@ public sealed class CalculatorTests
         Assert.True(OperatingSystem.IsWindows());
         Assert.Equal(42, Calculator.Add(19, 23));
     }
+
+    /// <summary>Proves the shared prepare action checked out a tracked path beyond MAX_PATH.</summary>
+    [Fact]
+    public void ChecksOutTrackedLongPathsOnWindows()
+    {
+        Assert.True(OperatingSystem.IsWindows());
+        DirectoryInfo? directory = new(AppContext.BaseDirectory);
+        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "fixtures", "windows-checkout")))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        string path = Path.Combine(directory.FullName, "fixtures", "windows-checkout", "segment-0-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "segment-1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "segment-2-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "segment-3-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "segment-4-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "checkout-proof.txt");
+        Assert.True(path.Length > 260);
+        Assert.Equal("tracked long-path checkout proof", File.ReadAllText(path).Trim());
+    }
 }
