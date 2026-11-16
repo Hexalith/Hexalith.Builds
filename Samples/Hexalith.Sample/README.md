@@ -9,7 +9,10 @@ surface rather than infrastructure.
 Builds CI calls shared CI with `module-root: Samples/Hexalith.Sample` and
 `expected-source: Samples/Hexalith.Sample/expected-source`. It restores and builds
 once after guard succeeds, runs unit tests, the enabled root `after-unit-tests`
-action, and integration tests. Dependent Windows and macOS jobs each prepare
+action, and integration tests. Its Linux stage enables Dapr and the native Aspire
+environment so hosted CI exercises the authenticated installer, complete embedded
+bundle comparison, managed runtime/namespace probes and hash-locked Python setup.
+Other consumers retain disabled native setup unless they opt in. Dependent Windows and macOS jobs each prepare
 a separate Release build and run the root `sample-windows` and `sample-macos`
 actions respectively. Both platform suites assert their actual operating system
 before exercising the sample product. These actions execute built tests only.

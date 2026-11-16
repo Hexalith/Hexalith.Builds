@@ -2,7 +2,7 @@
   "schema": "hexalith.ci.v1",
   "buildsTag": "v4.46.0",
   "solution": "solutions/Hexalith.Sample.slnx",
-  "dapr": false,
+  "dapr": true,
   "browsers": false,
   "registry": false,
   "codeql": [
@@ -27,5 +27,6 @@
       "runner": "macos-latest"
     }
   },
-  "submodules": []
+  "submodules": [],
+  "aspire": true
 }
