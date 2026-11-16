@@ -28,6 +28,7 @@ ACTION_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 SECRET_NAME = re.compile(r"[A-Z_][A-Z0-9_]*")
 RESOURCE_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 STABLE_TAG = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
+BUILD_VERSIONS = frozenset(("HexalithEventStoreVersion", "HexalithTenantsVersion", "HexalithMemoriesVersion"))
 SDK_VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 
 
@@ -124,7 +125,7 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     if "schema" in document and document["schema"] != schema_identity():
         value = document["schema"]
         raise ConfigError(f"{source}: unsupported schema {value}. CI/CD is owned by Hexalith.CiCd.")
-    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes", "moduleManifest", "windowsCheckout", "additionalSdkVersion")), "$")
+    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes", "moduleManifest", "windowsCheckout", "additionalSdkVersion", "publishedBuilds", "buildProjects")), "$")
     if "additionalSdkVersion" in document:
         version = document["additionalSdkVersion"]
         if not isinstance(version, str) or SDK_VERSION.fullmatch(version) is None:
@@ -138,7 +139,38 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         path(document["solution"], "$/solution", ".slnx")
     if document.get("moduleManifest") is not None:
         path(document["moduleManifest"], "$/moduleManifest", ".json")
+    if document.get("publishedBuilds") is not None:
+        path(document["publishedBuilds"], "$/publishedBuilds", ".json")
+        if document.get("moduleManifest"):
+            fail("$/publishedBuilds", "mutually exclusive with moduleManifest")
+    cases = document.get("buildProjects", [])
+    array(cases, "$/buildProjects")
+    if len(cases) > 32:
+        fail("$/buildProjects", "at most 32 projects are supported")
+    identifiers, selections = set(), set()
+    for index, case in enumerate(cases):
+        location = f"$/buildProjects/{index}"
+        closed(case, frozenset(("id", "project", "versions")), frozenset(), location)
+        name(case["id"], location + "/id")
+        path(case["project"], location + "/project", ".csproj")
+        if (case["project"].startswith(("references/", ".github/", ".git/"))
+                or any(char in case["project"] for char in ':;,%$@*?<>"|')):
+            fail(location + "/project", "unsafe or foreign compatibility project")
+        versions = case["versions"]
+        if not isinstance(versions, dict) or not versions or versions.keys() - BUILD_VERSIONS:
+            fail(location + "/versions", "only finite named EventStore/Tenants/Memories catalog versions are supported")
+        for key, value in versions.items():
+            if not isinstance(value, str) or SDK_VERSION.fullmatch(value) is None:
+                fail(location + "/versions/" + key, "expected an exact stable version")
+        selection = (case["project"].casefold(), tuple(sorted(versions.items())))
+        if case["id"] in identifiers or selection in selections:
+            fail(location, "duplicate id or project/version selection")
+        identifiers.add(case["id"])
+        selections.add(selection)
+    if cases and not (document.get("moduleManifest") or document.get("publishedBuilds")):
+        fail("$/buildProjects", "requires authenticated producer preparation")
     for key in ("dapr", "browsers", "registry", "dotnetTools"):
+
         if type(document[key]) is not bool:
             fail(f"$/{key}", "expected a boolean")
     if "aspire" in document and type(document["aspire"]) is not bool:
@@ -218,6 +250,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
             closed(options, frozenset(("runner",)), frozenset(), location)
             if options["runner"] not in ("windows-latest", "macos-latest"):
                 fail(f"{location}/runner", "expected windows-latest or macos-latest")
+    if (cases or document.get("publishedBuilds")) and any(options.get("trigger") != "manual" for options in jobs.values()):
+        fail("$/jobs", "published preparation and buildProjects support Linux jobs only")
     for project, action in tests["exclude"].items():
         location = f"$/tests/exclude/{project}"
         path(project, location, ".csproj")
@@ -228,14 +262,18 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         "global.json", ".gitmodules", ".github", "references/Hexalith.Builds",
         *([document["solution"]] if document["solution"] != "none" else []),
         *([document["moduleManifest"]] if document.get("moduleManifest") else []),
+        *([document["publishedBuilds"]] if document.get("publishedBuilds") else []),
+        *(case["project"] for case in cases),
         *document["submodules"], *tests["integration"], *tests["exclude"],
     ), source=source)
     if document["solution"] == "none":
         if document.get("aspire"):
             fail("$/aspire", "must be false when solution is none")
-        for key in ("moduleManifest", "windowsCheckout"):
+        for key in ("moduleManifest", "publishedBuilds", "windowsCheckout"):
             if document.get(key) is not None:
                 fail(f"$/{key}", "must be null when solution is none")
+        if cases:
+            fail("$/buildProjects", "must be empty when solution is none")
         for key in ("dapr", "browsers", "hooks", "jobs", "npmWorkspaces", "dotnetTools"):
             if document[key]:
                 fail(f"$/{key}", "must be empty or false when solution is none")

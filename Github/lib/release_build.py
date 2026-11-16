@@ -24,7 +24,7 @@ from release_state import SHA, STABLE
 
 TARGETS = Path(__file__).resolve().parents[1] / "release-build/release.targets"
 PROPERTIES = ("TargetFramework", "TargetFrameworks", "IsCrossTargetingBuild", "IsTestProject",
-              "IsPackable", "PackageId", "HexalithPublishContainer", "ContainerRepository",
+              "IsPackable", "PackageId", "HexalithVerifyPublishedPackage", "HexalithPublishContainer", "ContainerRepository",
               "AssemblyName", "RuntimeIdentifier", "RuntimeIdentifiers", "ContainerRuntimeIdentifier",
               "ContainerRuntimeIdentifiers", "NETCoreSdkPortableRuntimeIdentifier")
 AUDIT = re.compile(r"\b(?:warning|error)\s+(NU190[0345])\s*:", re.IGNORECASE)
@@ -40,6 +40,7 @@ class Project:
     framework: str
     runtimes: tuple[str, ...]
     restore_runtimes: tuple[str, ...] = ()
+    verify_published: bool = False
 
 
 def release_flags(version: str, sha: str, repository: str) -> list[str]:
@@ -115,7 +116,10 @@ def runtime_ids(values: dict[str, str]) -> tuple[str, ...]:
 def discover_projects(prepared: PreparedConfig, flags: list[str]) -> tuple[Project, ...]:
     """Evaluate imports and each inner TFM; reject ambiguous publish identities."""
     result, packages, containers = [], set(), set()
+    compatibility = {case["project"] for case in prepared.document.get("buildProjects", [])}
     for path in solution_projects(prepared.root, prepared.document["solution"]):
+        if path in compatibility:
+            continue
         outer = evaluated_properties(prepared.root, path, properties=PROPERTIES, flags=flags)
         frameworks = target_frameworks(outer)
         if outer["IsCrossTargetingBuild"].lower() == "true" and not frameworks:
@@ -123,7 +127,7 @@ def discover_projects(prepared: PreparedConfig, flags: list[str]) -> tuple[Proje
         values = [evaluated_properties(prepared.root, path, framework=framework,
                   properties=PROPERTIES, flags=flags) for framework in frameworks] or [outer]
         for value in [outer, *values]:
-            for name in ("IsPackable", "IsTestProject", "HexalithPublishContainer", "IsCrossTargetingBuild"):
+            for name in ("IsPackable", "IsTestProject", "HexalithPublishContainer", "IsCrossTargetingBuild", "HexalithVerifyPublishedPackage"):
                 if value[name].lower() not in ("", "true", "false"):
                     raise PipelineError(f"{path}: invalid {name}")
         identities = [(value["IsPackable"].lower() == "true", value["PackageId"],
@@ -131,7 +135,13 @@ def discover_projects(prepared: PreparedConfig, flags: list[str]) -> tuple[Proje
                        value["ContainerRepository"] or value["AssemblyName"]) for value in values]
         if len(set(identities)) != 1:
             raise PipelineError(f"{path}: release identities differ across target frameworks")
+        policies = {value["HexalithVerifyPublishedPackage"].lower() == "true" for value in [outer, *values]}
+        if len(policies) != 1:
+            raise PipelineError(f"{path}: published package verification differs across target frameworks")
+        verify_published = policies.pop()
         packable, package, test, container, name = identities[0]
+        if verify_published and (not packable or test):
+            raise PipelineError(f"{path}: published package verification requires a real packable non-test project")
         package = package if packable else ""
         enabled_container = container and not test
         name = ""
@@ -159,7 +169,7 @@ def discover_projects(prepared: PreparedConfig, flags: list[str]) -> tuple[Proje
             packages.add(package.casefold())
         if name:
             containers.add(name)
-        result.append(Project(path, package, name, values[0]["TargetFramework"] if name else "", rids, restore_rids))
+        result.append(Project(path, package, name, values[0]["TargetFramework"] if name else "", rids, restore_rids, verify_published))
     return tuple(result)
 
 
@@ -207,6 +217,8 @@ def build_release(prepared: PreparedConfig, output: Path, *, version: str, sha: 
                 restore_flags = ['-p:RuntimeIdentifiers="' + ";".join(runtimes) + '"'] if runtimes else []
                 audited_command(["dotnet", "restore", solution, *flags, *restore_flags], prepared.root, version)
                 audited_command(["dotnet", "build", solution, "--no-restore", *flags], prepared.root, version)
+                from build_projects import build_declared
+                build_declared(prepared, flags, lambda arguments, root: audited_command(arguments, root, version))
                 with tempfile.TemporaryDirectory(prefix="hexalith-release-publish-") as temporary:
                     work = Path(temporary)
                     for index, project in enumerate(projects):
@@ -222,7 +234,10 @@ def build_release(prepared: PreparedConfig, output: Path, *, version: str, sha: 
                             destination = output / "packages" / f"{project.package}.{version}.nupkg"
                             destination.parent.mkdir(exist_ok=True)
                             destination.write_bytes(payloads[0].read_bytes())
-                            manifest["packages"].append({"id": project.package, "path": destination.relative_to(output).as_posix()})
+                            item = {"id": project.package, "path": destination.relative_to(output).as_posix()}
+                            if project.verify_published:
+                                item["verifyPublishedPackage"] = True
+                            manifest["packages"].append(item)
                         if project.container:
                             archives = []
                             for runtime in project.runtimes:

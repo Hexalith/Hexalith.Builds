@@ -144,6 +144,12 @@ def prepare_config(workspace: Path, *, repository: str, module_root: str = "",
             if candidate.is_symlink() or getattr(candidate.lstat(), "st_file_attributes", 0) & 1024:
                 raise PipelineError("module manifest traverses a symbolic link or reparse point")
         _read_json(manifest)
+    if config.get("publishedBuilds"):
+        binding_path = contained_path(root, config["publishedBuilds"], kind="published Builds binding")
+        from module_preparation import _real
+        _real(root / config["publishedBuilds"])
+        import published_builds
+        published_builds.validate_binding(_read_json(binding_path))
     global_json = root / "global.json"
     sdk = _read_json(global_json)
     if (not isinstance(sdk, dict) or not isinstance(sdk.get("sdk"), dict)
@@ -306,6 +312,8 @@ def restore_and_build(prepared: PreparedConfig) -> None:
     solution = prepared.document["solution"]
     run_command(["dotnet", "restore", solution, *build_flags()], prepared.root)
     run_command(["dotnet", "build", solution, "--no-restore", *build_flags()], prepared.root)
+    from build_projects import build_declared
+    build_declared(prepared, build_flags(), run_command)
 
 
 def preparation_environment(value: str) -> bool:
@@ -540,7 +548,7 @@ def main() -> int:
         if args.phase in ("prepare", "all"):
             initialize_submodules(prepared)
             write_outputs(prepared, repository=args.repository)
-        if args.phase in ("build", "unit", "integration", "all") and prepared.document.get("moduleManifest"):
+        if args.phase in ("build", "unit", "integration", "all") and (prepared.document.get("moduleManifest") or prepared.document.get("publishedBuilds")):
             from module_preparation import ensure_for_job
             ensure_for_job(prepared, repository=args.repository)
         if args.phase in ("build", "all"):

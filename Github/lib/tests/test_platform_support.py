@@ -1,0 +1,456 @@
+"""Source qualification for historical preparation, finite cases and strict archives.
+
+Synthetic producer bytes/process controls prove protocol boundaries, not product
+or signature qualification. Real SDK and unsigned-verifier probes are separate.
+"""
+from __future__ import annotations
+import copy
+import hashlib
+import io
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+import zipfile
+
+from jsonschema import Draft202012Validator
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import build_projects as cases
+import ci_config
+import ci_pipeline as pipeline
+import module_preparation as preparation
+import package_archive
+import published_builds as published
+import release_build
+import release_draft
+import release_publish
+from release_state import ReleaseError
+from test_release_draft import artifact, digest, package, zip_bytes
+
+ROOT = Path(__file__).resolve().parents[3]
+VERSIONS = ("3.130.0", "3.130.1", "3.130.2", "3.132.1", "4.1.0", "4.2.0")
+SHA = "a" * 40
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def git(root, *arguments):
+    return subprocess.check_output(["git", "-C", str(root), *arguments], stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+
+
+def initialize(root):
+    root.mkdir(parents=True, exist_ok=True)
+    git(root, "init", "--quiet", "--initial-branch=main")
+    git(root, "config", "user.name", "Fixture")
+    git(root, "config", "user.email", "fixture@example.invalid")
+
+
+def commit(root):
+    git(root, "add", ".")
+    git(root, "commit", "--quiet", "-m", "test: source fixture")
+    return git(root, "rev-parse", "HEAD")
+
+
+def config():
+    value = copy.deepcopy(json.loads((ROOT / "Github/lib/tests/fixtures/contract.json").read_text())[0]["document"])
+    value.update(buildsTag="v6.0.6", publishedBuilds="eng/tuple.json", jobs={})
+    return value
+
+
+def binding(source="1" * 40, blob="2" * 40, catalog="3" * 64, archive="4" * 64, tooling="5" * 64):
+    version = "6.0.5"
+    manifest = json.dumps({"sha": source, "version": version, "packages": [
+        {"id": identity, "path": f"packages/{identity}.{version}.nupkg"}
+        for identity in ("Hexalith.Builds.Evidence.Cli", "Hexalith.Builds.Module.Cli")], "containers": []})
+    body = "\n".join(("hexalith-release: " + source, "hexalith-release-run: 11",
+        "hexalith-release-artifact: 12 sha256:" + "6" * 64,
+        "hexalith-release-packages: Hexalith.Builds.Evidence.Cli,Hexalith.Builds.Module.Cli", "hexalith-release-containers: ")) + "\n"
+    value = {"schemaVersion": 1, "candidateAcceptance": False, "producer": {
+        "repository": "https://github.com/Hexalith/Hexalith.Builds.git", "sourceRevision": source,
+        "catalog": {"path": "Props/Directory.Packages.props", "blob": blob, "sha256": catalog}},
+        "publication": {"kind": "shared-release-handoff/v1", "version": version, "sourceRevision": source,
+        "releaseTag": "v" + version, "catalogSha256": catalog, "archiveSha256": archive, "toolingSha256": tooling,
+        "releaseId": 10, "runId": 11, "artifactId": 12, "artifactSha256": "6" * 64,
+        "releaseBodySha256": sha(body.encode()), "manifestJson": manifest, "manifestSha256": sha(manifest.encode())}}
+    metadata = {"releases/10": {"id": 10, "tag_name": "v6.0.5", "draft": False, "prerelease": False,
+        "published_at": "2026-11-16T00:00:00Z", "body": body},
+        "git/ref/tags/v6.0.5": {"object": {"type": "commit", "sha": source}},
+        "actions/runs/11": {"id": 11, "head_sha": source, "status": "completed", "conclusion": "success",
+            "path": ".github/workflows/builds-release.yml"}}
+    return value, metadata
+
+
+class ContractTests(unittest.TestCase):
+    def test_defaults_closed_fields_and_semantic_refusals(self):
+        schema = json.loads((ROOT / "schemas/hexalith.ci.v1.json").read_text())
+        validator = Draft202012Validator(schema)
+        base = config()
+        case = {"id": "sdk-420", "project": "compat/Consumer.csproj", "versions": {"HexalithEventStoreVersion": "4.2.0"}}
+        for extra in ({}, {"publishedBuilds": None}, {"buildProjects": []}, {"buildProjects": [case]}):
+            value = dict(base, **extra)
+            validator.validate(value)
+            self.assertIs(value, ci_config.validate_config(value, repository="Example/Fixture"))
+        self.assertIsNone(schema["properties"]["publishedBuilds"]["default"])
+        self.assertEqual([], schema["properties"]["buildProjects"]["default"])
+        invalid = [{"moduleManifest": "module.json"}, {"publishedBuilds": "../tuple.json"},
+            {"publishedBuilds": {"url": "https://foreign.invalid"}}, {"solution": "none"},
+            {"buildProjects": [dict(case, hiddenCommand="build")]},
+            {"buildProjects": [dict(case, versions={"NuGetAudit": "false"})]},
+            {"buildProjects": [dict(case, versions={"HexalithEventStoreVersion": "4.2.*"})]},
+            {"buildProjects": [case] * 33}, {"buildProjects": [case], "publishedBuilds": None},
+            {"jobs": {"windows": {"runner": "windows-latest"}}}]
+        for extra in invalid:
+            value = dict(base, **extra)
+            with self.subTest(extra=extra):
+                self.assertFalse(validator.is_valid(value))
+                with self.assertRaises(ValueError):
+                    ci_config.validate_config(value, repository="Example/Fixture")
+        for project in ("references/Foreign/C.csproj", "compat/x;C.csproj", "compat/link.csproj"):
+            if project.endswith("link.csproj"):
+                continue
+            with self.assertRaises(ValueError):
+                ci_config.validate_config(dict(base, buildProjects=[dict(case, project=project)]), repository="Example/Fixture")
+        for extra_case in (dict(case, project="compat/Other.csproj"), dict(case, id="other")):
+            with self.assertRaisesRegex(ValueError, "duplicate"):
+                ci_config.validate_config(dict(base, buildProjects=[case, extra_case]), repository="Example/Fixture")
+
+
+class HistoricalTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="historical-source-")
+        self.addCleanup(self.temporary.cleanup)
+        self.base = Path(self.temporary.name)
+        self.root = self.base / "module"
+        initialize(self.root)
+        self.builds = self.root / "references/Hexalith.Builds"
+        initialize(self.builds)
+        (self.builds / "Props").mkdir()
+        self.catalog = self.builds / "Props/Directory.Packages.props"
+        self.catalog.write_text("<Project><!-- historical --></Project>\n")
+        self.old = commit(self.builds)
+        git(self.builds, "tag", "v6.0.5")
+        blob = git(self.builds, "rev-parse", "HEAD:Props/Directory.Packages.props")
+        catalog_sha = sha(self.catalog.read_bytes())
+        self.catalog.write_text("<Project><!-- active independently accepted --></Project>\n")
+        self.active = commit(self.builds)
+        git(self.builds, "tag", "v6.0.6")
+        tooling = b"synthetic Tooling control"
+        self.payload = zip_bytes([("tools/net11.0/any/Hexalith.Builds.Tooling.dll", tooling),
+            ("tools/net11.0/any/Hexalith.Builds.Module.Cli.dll", b"synthetic executable control"),
+            ("tools/net11.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll", b"host"),
+            (".signature.p7s", b"synthetic signature control")])
+        self.value, self.metadata = binding(self.old, blob, catalog_sha, sha(self.payload), sha(tooling))
+        (self.root / "eng").mkdir()
+        (self.root / ".config").mkdir()
+        (self.root / ".github").mkdir()
+        (self.root / "eng/tuple.json").write_text(json.dumps(self.value))
+        (self.root / ".config/dotnet-tools.json").write_text(json.dumps({"isRoot": True, "tools": {
+            "hexalith.builds.module.cli": {"version": "6.0.5", "rollForward": False, "commands": ["hexalith-module"]}}}))
+        (self.root / ".gitmodules").write_text('[submodule "references/Hexalith.Builds"]\npath = references/Hexalith.Builds\nurl = https://github.com/Hexalith/Hexalith.Builds.git\n')
+        self.prepared = SimpleNamespace(root=self.root, document=config())
+        (self.root / ".github/hexalith-ci.json").write_text(json.dumps(self.prepared.document))
+        self.head = commit(self.root)
+        comparison = SimpleNamespace(require_clean=lambda: None, actual=SimpleNamespace(read=lambda _: (self.root / ".github/hexalith-ci.json").read_bytes()),
+            delivered_sha="7" * 40, document={"accepted": "control"})
+        self.authority = preparation.accepted_authority(self.prepared, repository="Example/Fixture", comparison=comparison)
+        self.clean_environment = patch.dict(os.environ, {key: value for key, value in os.environ.items()
+            if key not in (*preparation.VALIDATOR.KEYS, "HexalithBuildsPublishedToolRoot", cases.VARIABLE, preparation.STATE_VARIABLE)}, clear=True)
+        self.clean_environment.start()
+        self.addCleanup(self.clean_environment.stop)
+
+    def runner(self, arguments, **kwargs):
+        self.assertFalse(any("TOKEN" in key or "KEY" in key or key in ("PYTHONPATH", "NUGET_PACKAGES") for key in kwargs["env"]))
+        if arguments[1:3] == ["nuget", "verify"]:
+            return SimpleNamespace(returncode=0, stdout=b"synthetic signature verifier control")
+        return SimpleNamespace(returncode=0, stdout=("6.0.5+" + self.old).encode())
+
+    def prepare(self, payload=None):
+        real_prepare = published.prepare
+        with patch.object(published, "prepare", side_effect=lambda prepared, workspace: real_prepare(prepared, workspace,
+                read=lambda path: self.metadata[path], download=lambda url: self.payload if payload is None else payload, run=self.runner)):
+            return preparation.prepare_environment(self.prepared, self.authority, self.base)
+
+    def test_independent_catalogs_historical_bytes_and_one_lifetime(self):
+        inputs = preparation._inputs(self.prepared, self.authority)
+        self.assertNotEqual(inputs["activeCatalogSha256"], inputs["historicalCatalogSha256"])
+        self.assertEqual(self.old, inputs["historicalSource"])
+        environment = self.prepare()
+        self.assertEqual(preparation.PUBLISHED_KEYS, environment.values.keys())
+        with preparation.applied(self.prepared, self.authority, environment):
+            self.assertTrue((Path(os.environ["HexalithBuildsPublishedToolRoot"]) / "Hexalith.Builds.Tooling.dll").is_file())
+            preparation.verify_environment(self.prepared, self.authority, environment)
+        self.assertNotIn("HexalithBuildsPublishedToolRoot", os.environ)
+        Path(environment.values["HexalithBuildsPublishedToolRoot"], "Hexalith.Builds.Tooling.dll").write_bytes(b"changed")
+        with self.assertRaisesRegex(ValueError, "changed"):
+            preparation.verify_environment(self.prepared, self.authority, environment)
+
+    def test_wrong_changed_unsigned_unavailable_producers_export_nothing(self):
+        for kind in ("digest", "metadata", "signature", "tooling", "host", "version"):
+            with self.subTest(kind=kind):
+                with patch.object(published, "verify_handoff", side_effect=ValueError("unavailable authority") if kind == "metadata" else None), \
+                     patch.object(published, "verify_signature", side_effect=ValueError("unsigned") if kind == "signature" else None), \
+                     patch.object(published, "members", wraps=package_archive.members) as parse:
+                    if kind == "digest":
+                        payload = self.payload + b"changed"
+                    else:
+                        payload = self.payload
+                    if kind in ("tooling", "host"):
+                        files = package_archive.members(self.payload)
+                        if kind == "tooling":
+                            files["tools/net11.0/any/Hexalith.Builds.Tooling.dll"] = b"changed"
+                        else:
+                            del files["tools/net11.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll"]
+                        parse.return_value = files
+                        parse.side_effect = lambda *_args, **_kwargs: files
+                    with patch.object(self, "runner", return_value=SimpleNamespace(returncode=0, stdout=b"wrong")) if kind == "version" else patch.dict(os.environ, {}):
+                        with self.assertRaises(ValueError):
+                            self.prepare(payload)
+                self.assertFalse(list(self.base.glob("hexalith-module-preparation-*")))
+                self.assertNotIn("HexalithBuildsPublishedToolRoot", os.environ)
+
+    def test_source_binding_tool_and_active_identity_revalidated(self):
+        environment = self.prepare()
+        for path in (self.root / "eng/tuple.json", self.root / ".config/dotnet-tools.json", self.catalog):
+            original = path.read_bytes()
+            path.write_bytes(original + b" ")
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                preparation.verify_environment(self.prepared, self.authority, environment)
+            path.write_bytes(original)
+        with self.assertRaisesRegex(ValueError, "accepted-delivery"):
+            preparation.prepare_environment(self.prepared, dict(self.authority, kind="candidate-qualification"), self.base)
+
+    def test_job_reuse_prepares_once_and_mapping_conflicts_fail(self):
+        real_prepare = published.prepare
+        calls = []
+        def controlled(prepared, workspace):
+            calls.append(workspace)
+            return real_prepare(prepared, workspace, read=lambda p: self.metadata[p], download=lambda _: self.payload, run=self.runner)
+        with patch.object(preparation, "accepted_authority", return_value=self.authority), patch.object(published, "prepare", side_effect=controlled), \
+             patch.dict(os.environ, {"RUNNER_TEMP": str(self.base), "GITHUB_ENV": str(self.base / "environment")}):
+            first = preparation.ensure_for_job(self.prepared, repository="Example/Fixture")
+            second = preparation.ensure_for_job(self.prepared, repository="Example/Fixture")
+            self.assertEqual(first, second)
+            self.assertEqual(1, len(calls))
+            with patch.dict(os.environ, {"HexalithBuildsPublishedToolRoot": "/changed"}):
+                with self.assertRaisesRegex(ValueError, "conflict"):
+                    preparation.ensure_for_job(self.prepared, repository="Example/Fixture")
+
+    def test_official_markers_run_tag_manifest_and_closed_binding_refuse_changes(self):
+        for key in self.metadata:
+            values = copy.deepcopy(self.metadata)
+            if key.startswith("releases"):
+                values[key]["body"] += "changed"
+            elif key.startswith("git"):
+                values[key]["object"]["sha"] = "0" * 40
+            else:
+                values[key]["conclusion"] = "failure"
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                published.verify_handoff(self.value, read=lambda p: values[p])
+        for mutate in (lambda v: v.update(candidateAcceptance=True), lambda v: v.update(extra="forbidden"),
+                       lambda v: v["publication"].update(manifestJson="{}"),
+                       lambda v: v["producer"].update(repository="https://foreign.invalid")):
+            value = copy.deepcopy(self.value)
+            mutate(value)
+            with self.assertRaises(ValueError):
+                published.validate_binding(value)
+
+
+class DeclaredProjectTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="declared-sdk-")
+        self.addCleanup(self.temporary.cleanup)
+        self.base = Path(self.temporary.name)
+        self.root = self.base / "source"
+        initialize(self.root)
+        (self.root / "global.json").write_text('{"sdk":{"version":"10.0.404","rollForward":"disable"}}')
+        (self.root / "compat").mkdir()
+        self.project = self.root / "compat/Consumer.csproj"
+        self.project.write_text('''<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>
+<IsPackable>false</IsPackable></PropertyGroup><Target Name="ObserveSelection" AfterTargets="Build">
+<WriteLinesToFile File="$(ArtifactsPath)/selection.txt" Lines="$(HexalithEventStoreVersion)" Overwrite="true" />
+<Error Condition="'$(UseHexalithProjectReferences)' != 'false'" Text="Package mode required" />
+</Target></Project>''')
+        (self.root / "compat/Consumer.cs").write_text("public class Consumer {}")
+        commit(self.root)
+        self.prepared = SimpleNamespace(root=self.root, document={"moduleManifest": "module.json", "buildProjects": [
+            {"id": "sdk-" + v.replace(".", "-"), "project": "compat/Consumer.csproj", "versions": {"HexalithEventStoreVersion": v}} for v in VERSIONS]})
+        workspace = self.base / "preparation/producer"
+        workspace.mkdir(parents=True)
+        self.environment = preparation.BuildEnvironment(workspace, {}, {}, {}, {})
+        self.addCleanup(cases._MAPPINGS.clear)
+        self.addCleanup(cases._ENVIRONMENTS.clear)
+        # This suite qualifies real SDK isolation; authenticated producer state
+        # is independently exercised by HistoricalTests above.
+        validation = patch.object(preparation, "verify_environment")
+        validation.start()
+        self.addCleanup(validation.stop)
+
+    def test_real_sdk_six_exact_selections_and_disjoint_outputs(self):
+        with cases.output_scope(self.prepared, self.environment):
+            mapping = json.loads(os.environ[cases.VARIABLE])
+            cases.build_declared(self.prepared, pipeline.build_flags(), pipeline.run_command)
+            self.assertEqual(6, len({value["artifactsPath"] for value in mapping.values()}))
+            for entry in mapping.values():
+                directory = Path(entry["artifactsPath"])
+                self.assertEqual(entry["versions"]["HexalithEventStoreVersion"], (directory / "selection.txt").read_text().strip())
+                self.assertEqual(1, len(list((directory / "bin").rglob("Consumer.dll"))))
+                self.assertTrue(list((directory / "obj").rglob("project.assets.json")))
+            self.assertFalse((self.root / "compat/bin").exists())
+            self.assertFalse((self.root / "compat/obj").exists())
+        self.assertNotIn(cases.VARIABLE, os.environ)
+        self.assertFalse((self.environment.workspace.parent / "build-projects").exists())
+
+    def test_failure_stops_successors_and_retains_release_policy(self):
+        events = []
+        def fail(arguments, root):
+            events.append(arguments)
+            if arguments[1] == "build":
+                raise pipeline.PipelineError("controlled case build failure", 37)
+        values = {name: "" for name in ("TargetFramework", "TargetFrameworks", "IsTestProject", "XunitTestProject", *ci_config.BUILD_VERSIONS)}
+        values["HexalithEventStoreVersion"] = VERSIONS[0]
+        flags = release_build.release_flags("1.2.3", SHA, "Example/Fixture")
+        with cases.output_scope(self.prepared, self.environment), patch.object(pipeline, "evaluated_properties", side_effect=lambda *_a, **kw: dict(values, **dict(f[3:].split("=", 1) for f in kw["flags"] if f.startswith("-p:")))):
+            with self.assertRaisesRegex(ValueError, "controlled case") as error:
+                cases.build_declared(self.prepared, flags, fail)
+        self.assertEqual(37, error.exception.returncode)
+        self.assertEqual(["restore", "build"], [command[1] for command in events])
+        for command in events:
+            self.assertTrue(set(flags) <= set(command))
+            self.assertIn("-p:NuGetAudit=true", command)
+            self.assertIn("-p:CustomAfterMicrosoftCommonTargets=" + str(release_build.TARGETS), command)
+
+    def test_uncommitted_foreign_symlink_policy_import_and_test_inputs_fail(self):
+        for xml in ('<PropertyGroup><NuGetAudit>false</NuGetAudit></PropertyGroup>',
+                    '<PropertyGroup><IsTestProject>true</IsTestProject></PropertyGroup>',
+                    '<Import Project="/foreign/targets" />', '<Import Project="$(Foreign)/targets" />'):
+            original = self.project.read_text()
+            self.project.write_text(original.replace("</Project>", xml + "</Project>"))
+            commit(self.root)
+            with self.subTest(xml=xml), self.assertRaises(ValueError):
+                cases.validate_project(self.root, "compat/Consumer.csproj")
+            self.project.write_text(original)
+            commit(self.root)
+        (self.root / "compat/Untracked.csproj").write_text("<Project />")
+        with self.assertRaisesRegex(ValueError, "committed"):
+            cases.validate_project(self.root, "compat/Untracked.csproj")
+        link = self.root / "compat/Linked.csproj"
+        link.symlink_to(self.project)
+        with self.assertRaisesRegex(ValueError, "symbolic"):
+            cases.validate_project(self.root, "compat/Linked.csproj")
+        with cases.output_scope(self.prepared, self.environment):
+            mapping = json.loads(os.environ[cases.VARIABLE])
+            mapping[next(iter(mapping))]["artifactsPath"] = "/arbitrary/build-projects/sdk-3-130-0"
+            with patch.dict(os.environ, {cases.VARIABLE: json.dumps(mapping)}), self.assertRaisesRegex(ValueError, "mapping"):
+                cases.build_declared(self.prepared, pipeline.build_flags(), pipeline.run_command)
+
+
+class StrictPackageTests(unittest.TestCase):
+    def test_authenticated_manifest_round_trip_and_strict_public_payload(self):
+        original = package(SHA)
+        manifest = {"sha": SHA, "version": "2.3.5", "packages": [{"id": "Fixture.Package", "path": "packages/Fixture.Package.2.3.5.nupkg", "verifyPublishedPackage": True}], "containers": []}
+        payload = artifact(SHA, manifest=manifest)
+        policies, files = {}, {}
+        inventory = release_draft.artifact_inventory(payload, sha=SHA, version="2.3.5", digest=digest(payload),
+            repository="Example/Fixture", files=files, package_policies=policies)
+        self.assertEqual({"Fixture.Package": package_archive.body_inventory(original)}, policies)
+        values = {"inventory": inventory, "package-policies": policies, "version": "2.3.5", "sha": SHA}
+        public_files = package_archive.members(original)
+        public_files[".signature.p7s"] = b"controlled signature"
+        signed = zip_bytes(list(public_files.items()))
+        commands = []
+        def command(arguments, **kwargs):
+            commands.append((arguments, kwargs))
+            return SimpleNamespace(returncode=0)
+        def download(data):
+            response = io.BytesIO(data)
+            response.status = 200
+            response.headers = {}
+            return lambda *_args, **_kwargs: response
+        with patch.dict(os.environ, {"NUGET_API_KEY": "secret-control", "GITHUB_TOKEN": "secret-control", "PYTHONPATH": "/module"}):
+            release_publish.verify_packages(values, open_url=download(signed), attempts=1, interval=0, run=command)
+        self.assertEqual(1, len(commands))
+        args, kwargs = commands[0]
+        self.assertEqual(["dotnet", "nuget", "verify"], args[:3])
+        self.assertEqual("--all", args[-1])
+        self.assertFalse(any("TOKEN" in key or "KEY" in key or key == "PYTHONPATH" for key in kwargs["env"]))
+        self.assertFalse(Path(kwargs["cwd"]).exists())
+        for change in ("unsigned", "changed", "removed", "added", "duplicate", "unsafe", "signature"):
+            members = dict(public_files)
+            if change == "unsigned":
+                del members[".signature.p7s"]
+            elif change == "changed":
+                members["lib/net10.0/Fixture.dll"] = b"changed"
+            elif change == "removed":
+                del members["lib/net10.0/Fixture.dll"]
+            elif change == "added":
+                members["lib/net10.0/Other.dll"] = b"added"
+            elif change == "unsafe":
+                members["../unsafe"] = b"unsafe"
+            data = zip_bytes([*members.items(), *(([("lib/net10.0/Fixture.dll", b"duplicate")]) if change == "duplicate" else [])])
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                release_publish.verify_packages(values, open_url=download(data), attempts=1, interval=0,
+                    run=lambda *_a, **_k: SimpleNamespace(returncode=1 if change == "signature" else 0))
+        manifest["packages"][0]["verifyPublishedPackage"] = False
+        payload = artifact(SHA, manifest=manifest)
+        with self.assertRaises(ValueError):
+            release_draft.artifact_inventory(payload, sha=SHA, version="2.3.5", digest=digest(payload), repository="Example/Fixture")
+
+    def test_real_evaluated_opt_in_opt_out_and_discovery_exclusion(self):
+        from test_release_build import fixture
+        with tempfile.TemporaryDirectory(prefix="strict-evaluated-") as temporary:
+            base = Path(temporary)
+            prepared = fixture(base / "source")
+            props = prepared.root / "Package.props"
+            original = props.read_text()
+            flags = release_build.release_flags("2.3.5", SHA, "Hexalith/Hexalith.Builds")
+            for value in ("", "false", "False", "true"):
+                props.write_text(original.replace("</PropertyGroup>",
+                    "<HexalithVerifyPublishedPackage>" + value + "</HexalithVerifyPublishedPackage></PropertyGroup>"))
+                projects = release_build.discover_projects(prepared, flags)
+                self.assertEqual(value == "true", projects[0].verify_published)
+            # A real release with false has exactly the legacy entry keys.
+            props.write_text(original.replace("</PropertyGroup>",
+                "<HexalithVerifyPublishedPackage>false</HexalithVerifyPublishedPackage></PropertyGroup>"))
+            manifest = release_build.build_release(prepared, base / "legacy", version="2.3.5", sha=SHA,
+                repository="Hexalith/Hexalith.Builds")
+            self.assertEqual({"id", "path"}, set(manifest["packages"][0]))
+            props.write_text(original.replace("</PropertyGroup>",
+                "<HexalithVerifyPublishedPackage>true</HexalithVerifyPublishedPackage></PropertyGroup>"))
+            manifest = release_build.build_release(prepared, base / "enrolled", version="2.3.5", sha=SHA,
+                repository="Hexalith/Hexalith.Builds")
+            self.assertIs(True, manifest["packages"][0]["verifyPublishedPackage"])
+            excluded = SimpleNamespace(root=prepared.root, document=dict(prepared.document, buildProjects=[{
+                "id": "auxiliary", "project": projects[0].path, "versions": {"HexalithEventStoreVersion": "4.2.0"}}]))
+            self.assertEqual((), release_build.discover_projects(excluded, flags))
+            props.write_text(original.replace("</PropertyGroup>",
+                "<HexalithVerifyPublishedPackage Condition=\"'$(TargetFramework)' == 'net10.0'\">true</HexalithVerifyPublishedPackage></PropertyGroup>"))
+            with self.assertRaisesRegex(ValueError, "differs across"):
+                release_build.discover_projects(prepared, flags)
+
+    def test_real_dotnet_rejects_invalid_signature(self):
+        data = zip_bytes([*package_archive.members(package(SHA)).items(), (".signature.p7s", b"invalid cryptographic signature")])
+        with self.assertRaisesRegex(ValueError, "signature verification failed"):
+            package_archive.verify_signature(data)
+
+    def test_legacy_manifest_and_legacy_verification_have_no_new_policy(self):
+        payload = artifact(SHA)
+        policies = {}
+        inventory = release_draft.artifact_inventory(payload, sha=SHA, version="2.3.5", digest=digest(payload), repository="Example/Fixture", package_policies=policies)
+        self.assertEqual({}, policies)
+        response = io.BytesIO(package(SHA))
+        response.status = 200
+        response.headers = {}
+        with patch.object(package_archive, "verify_signature", side_effect=AssertionError("unexpected strict verification")):
+            release_publish.verify_packages({"inventory": inventory, "version": "2.3.5", "sha": SHA},
+                open_url=lambda *_a, **_k: response, attempts=1, interval=0)
+
+
+if __name__ == "__main__":
+    unittest.main()

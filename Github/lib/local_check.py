@@ -169,7 +169,7 @@ def run(workspace: Path, *, transport=None, tool_factory=guard.Tools) -> None:
                            emit=lambda values: None, transport=transport, tool_factory=tool_factory)
     revalidate(git, head, snapshot, paths, tag)
     prepared = ci_pipeline.prepare_config(git.root, repository=repository)
-    if not prepared.document.get("moduleManifest"):
+    if not (prepared.document.get("moduleManifest") or prepared.document.get("publishedBuilds")):
         ci_pipeline.restore_and_build(prepared)
         revalidate(git, head, snapshot, paths, tag)
         ci_pipeline.run_unit_tests(prepared, repository=repository)

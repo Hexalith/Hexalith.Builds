@@ -32,6 +32,13 @@ FROZEN = Path(__file__).resolve().parents[1] / "prepare-module-build/prepare_mod
 SPEC = importlib.util.spec_from_file_location("_frozen_preparation_validation", FROZEN)
 VALIDATOR = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(VALIDATOR)
+PUBLISHED_KEYS = frozenset(("HexalithBuildsPublishedToolRoot", "Configuration"))
+
+
+def enabled(prepared):
+    return bool(prepared.document.get("moduleManifest") or prepared.document.get("publishedBuilds"))
+
+
 STATE_VARIABLE = "HEXALITH_CI_PREPARATION_STATE"
 
 
@@ -100,7 +107,7 @@ def _tool(root: Path) -> str:
 def accepted_authority(prepared, *, repository: str, comparison=None, fetch_tags: bool = False,
                        delivered_sha: str = "") -> dict:
     """Bind an authenticated guard comparison to actual initialized identities."""
-    if not prepared.document.get("moduleManifest"):
+    if not enabled(prepared):
         return {}
     root = _real(prepared.root)
     if not _same_git_root(root, _git(root, "rev-parse", "--show-toplevel")) or _git(root, "rev-parse", "--show-superproject-working-tree"):
@@ -115,12 +122,20 @@ def accepted_authority(prepared, *, repository: str, comparison=None, fetch_tags
     if _read_json(root / ".github/hexalith-ci.json") != prepared.document or config_bytes != (root / ".github/hexalith-ci.json").read_bytes():
         raise ConfigError("accepted configuration differs from the actual prepared inputs")
     builds = _real(root / "references/Hexalith.Builds")
-    platform = _real(root / "references/Hexalith.Platform")
-    for path in (builds, platform):
+    published = bool(prepared.document.get("publishedBuilds"))
+    platform = None if published else _real(root / "references/Hexalith.Platform")
+    for path in ((builds,) if published else (builds, platform)):
         if not _same_git_root(path, _git(path, "rev-parse", "--show-toplevel")):
             raise ConfigError("initialize the exact direct identity checkout before managed preparation")
         if fetch_tags:
             _git(path, "fetch", "--no-recurse-submodules", "--no-tags", "origin", "refs/tags/*:refs/tags/*")
+    if published:
+        return {"schema": "hexalith.published-build.v1", "kind": "accepted-delivery", "repository": repository,
+            "moduleRoot": str(root), "moduleHead": head, "originalBuildsGitlink": _pin(root, "references/Hexalith.Builds"),
+            "buildsTag": prepared.document["buildsTag"], "buildsCommit": _git(builds, "rev-parse", "HEAD"),
+            "buildsRoot": str(builds), "deliveredSha": comparison.delivered_sha,
+            "configurationDigest": _digest(config_bytes), "perimeterDigest": digest_document(comparison.document),
+            "producerPin": _tool(root)}
     platform_commit = _pin(root, "references/Hexalith.Platform")
     tags = sorted(tag for tag in _git(platform, "tag", "--points-at", platform_commit).splitlines()
                   if re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?", tag))
@@ -136,6 +151,11 @@ def accepted_authority(prepared, *, repository: str, comparison=None, fetch_tags
 
 
 def _inputs(prepared, authority: dict, *, qualification: bool = False) -> dict[str, str]:
+    if prepared.document.get("publishedBuilds"):
+        if qualification:
+            raise ConfigError("published preparation rejects candidate qualification")
+        import published_builds
+        return published_builds.inputs(prepared, authority, git=_git, real=_real, pin=_pin, tool=_tool, digest=digest_document)
     root = _real(prepared.root)
     kind = "candidate-qualification" if qualification else "accepted-delivery"
     if (authority.get("schema") != "hexalith.managed-build.v1" or authority.get("kind") != kind
@@ -198,19 +218,28 @@ def prepare_qualified_environment(prepared, authority: dict, temporary_root: Pat
 
 def _prepare_environment(prepared, authority: dict, temporary_root: Path, *, fetch_tags: bool = False,
                          qualification: bool = False) -> BuildEnvironment:
-    if not prepared.document.get("moduleManifest"):
+    if not enabled(prepared):
         return BuildEnvironment(None, {}, {}, {}, {})
     if fetch_tags:
-        for path in ("references/Hexalith.Builds", "references/Hexalith.Platform"):
+        for path in (("references/Hexalith.Builds",) if prepared.document.get("publishedBuilds") else ("references/Hexalith.Builds", "references/Hexalith.Platform")):
             _git(prepared.root / path, "fetch", "--no-recurse-submodules", "--no-tags", "origin", "refs/tags/*:refs/tags/*")
+    if prepared.document.get("publishedBuilds") and sys.platform != "linux":
+        raise ConfigError("published preparation supports Linux only")
     inputs = _inputs(prepared, authority, qualification=qualification)
-    if any(os.environ.get(name) for name in VALIDATOR.IMPORTS):
+    if any(os.environ.get(name) for name in (*VALIDATOR.IMPORTS, "HexalithBuildsPublishedToolRoot")):
         raise ConfigError("ambient producer import overrides are forbidden before preparation")
     if os.environ.get("Configuration") not in (None, "", "Release"):
         raise ConfigError("managed preparation requires Release")
     temporary_root = _real(temporary_root)
     private = Path(tempfile.mkdtemp(prefix="hexalith-module-preparation-", dir=temporary_root))
     try:
+        if prepared.document.get("publishedBuilds"):
+            import published_builds
+            workspace = private / "producer"
+            values = published_builds.prepare(prepared, workspace)
+            environment = BuildEnvironment(workspace, values, authority, inputs, _files(workspace))
+            _verify_environment(prepared, authority, environment, qualification=qualification)
+            return environment
         receipt = private / "authority.json"
         receipt.write_text(json.dumps(authority, sort_keys=True), encoding="utf-8")
         if os.name != "nt":
@@ -246,9 +275,20 @@ def verify_environment(prepared, authority: dict, environment: BuildEnvironment)
 
 
 def _verify_environment(prepared, authority: dict, environment: BuildEnvironment, *, qualification: bool = False) -> None:
-    if not prepared.document.get("moduleManifest"):
+    if not enabled(prepared):
         if environment != BuildEnvironment(None, {}, {}, {}, {}):
             raise ConfigError("disabled preparation cannot consume a producer state")
+        return
+    if prepared.document.get("publishedBuilds"):
+        if (qualification or environment.workspace is None or environment.authority != authority
+                or _inputs(prepared, authority) != environment.inputs or _files(environment.workspace) != environment.files
+                or set(environment.values) != PUBLISHED_KEYS or environment.values.get("Configuration") != "Release"):
+            raise ConfigError("published preparation state, identities or producer bytes changed")
+        import published_builds
+        version = published_builds.binding(prepared)["publication"]["version"]
+        framework = "net11.0" if version.startswith(("5.", "6.")) else "net10.0"
+        if environment.values["HexalithBuildsPublishedToolRoot"] != str(environment.workspace / "published" / "tools" / framework / "any"):
+            raise ConfigError("published tool root differs from verified workspace")
         return
     if (environment.workspace is None or environment.authority != authority or _inputs(prepared, authority, qualification=qualification) != environment.inputs
             or _files(environment.workspace) != environment.files or set(environment.values) != VALIDATOR.KEYS):
@@ -267,7 +307,9 @@ def applied(prepared, authority: dict, environment: BuildEnvironment):
     previous = {key: os.environ.get(key) for key in environment.values}
     os.environ.update(environment.values)
     try:
-        yield environment
+        from build_projects import output_scope
+        with output_scope(prepared, environment):
+            yield environment
         verify_environment(prepared, authority, environment)
     finally:
         for key, value in previous.items():
@@ -296,7 +338,7 @@ def applied_qualification(prepared, authority: dict, environment: BuildEnvironme
 
 def ensure_for_job(prepared, *, repository: str, authority: dict | None = None) -> BuildEnvironment:
     """Reuse a private runner receipt across independent stage processes."""
-    if not prepared.document.get("moduleManifest"):
+    if not enabled(prepared):
         return BuildEnvironment(None, {}, {}, {}, {})
     state = os.environ.get(STATE_VARIABLE)
     if state:
@@ -308,31 +350,51 @@ def ensure_for_job(prepared, *, repository: str, authority: dict | None = None) 
         verify_environment(prepared, environment.authority, environment)
         if any(os.environ.get(key) not in (None, "", value) for key, value in environment.values.items()):
             raise ConfigError("ambient producer values conflict with the private preparation receipt")
+        from build_projects import VARIABLE, mapping_value
+        mapping = mapping_value(prepared, environment)
+        if mapping and os.environ.get(VARIABLE) not in (None, "", mapping):
+            raise ConfigError("declared build output mapping changed")
         os.environ.update(environment.values)
+        if mapping:
+            os.environ[VARIABLE] = mapping
         return environment
+    if prepared.document.get("buildProjects") and os.environ.get("HexalithBuildProjects"):
+        raise ConfigError("ambient declared build output override is forbidden")
     if authority is None:
         authority = accepted_authority(prepared, repository=repository, fetch_tags=True)
     else:
+        if prepared.document.get("publishedBuilds"):
+            raise ConfigError("published preparation supports Linux entry points only")
         if authority.get("kind") != "accepted-delivery" or authority.get("repository") != repository:
             raise ConfigError("Windows preparation accepts only CI's accepted-delivery authority")
         authority = {**authority, "moduleRoot": str(prepared.root),
                      "buildsRoot": str(prepared.root / "references/Hexalith.Builds")}
-        for path in ("references/Hexalith.Builds", "references/Hexalith.Platform"):
+        for path in (("references/Hexalith.Builds",) if prepared.document.get("publishedBuilds") else ("references/Hexalith.Builds", "references/Hexalith.Platform")):
             _git(prepared.root / path, "fetch", "--no-recurse-submodules", "--no-tags", "origin", "refs/tags/*:refs/tags/*")
     environment = prepare_environment(prepared, authority, Path(os.environ["RUNNER_TEMP"]))
-    receipt = environment.workspace.parent / "state.json"
-    receipt.write_text(json.dumps({"workspace": str(environment.workspace), "values": environment.values,
-        "authority": environment.authority, "inputs": environment.inputs, "files": environment.files}, sort_keys=True), encoding="utf-8")
-    if os.name != "nt":
-        receipt.chmod(0o600)
-    exported = {**environment.values, STATE_VARIABLE: str(receipt)}
-    # Every value is validated before writing any environment command.
-    if any("\n" in value or "\r" in value for value in exported.values()):
-        raise ConfigError("invalid managed environment channel value")
-    with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8", newline="\n") as stream:
-        stream.write("".join(key + "=" + value + "\n" for key, value in sorted(exported.items())))
-    os.environ.update(exported)
-    return environment
+    try:
+        receipt = environment.workspace.parent / "state.json"
+        receipt.write_text(json.dumps({"workspace": str(environment.workspace), "values": environment.values,
+            "authority": environment.authority, "inputs": environment.inputs, "files": environment.files}, sort_keys=True), encoding="utf-8")
+        if os.name != "nt":
+            receipt.chmod(0o600)
+        exported = {**environment.values, STATE_VARIABLE: str(receipt)}
+        from build_projects import VARIABLE, mapping_value
+        mapping = mapping_value(prepared, environment)
+        if mapping:
+            if os.environ.get(VARIABLE):
+                raise ConfigError("ambient declared build output override is forbidden")
+            exported[VARIABLE] = mapping
+        # Every value is validated before writing any environment command.
+        if any("\n" in value or "\r" in value for value in exported.values()):
+            raise ConfigError("invalid managed environment channel value")
+        with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8", newline="\n") as stream:
+            stream.write("".join(key + "=" + value + "\n" for key, value in sorted(exported.items())))
+        os.environ.update(exported)
+        return environment
+    except BaseException:
+        shutil.rmtree(environment.workspace.parent)
+        raise
 
 
 def main() -> int:

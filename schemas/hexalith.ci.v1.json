@@ -282,6 +282,60 @@
       "type": "string",
       "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])",
       "description": "Optional exact SDK for older targeting packs and isolated package-consumer fixtures. Forwarded to shared CI preparation, never installed by a module action."
+    },
+    "publishedBuilds": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/jsonPath"
+        }
+      ],
+      "default": null,
+      "description": "Committed historical signed Builds shared-release handoff; mutually exclusive with moduleManifest."
+    },
+    "buildProjects": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "project",
+          "versions"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/actionName"
+          },
+          "project": {
+            "$ref": "#/$defs/projectPath"
+          },
+          "versions": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "HexalithEventStoreVersion": {
+                "type": "string",
+                "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
+              },
+              "HexalithTenantsVersion": {
+                "type": "string",
+                "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
+              },
+              "HexalithMemoriesVersion": {
+                "type": "string",
+                "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "allOf": [
@@ -354,6 +408,12 @@
           },
           "windowsCheckout": {
             "const": null
+          },
+          "publishedBuilds": {
+            "const": null
+          },
+          "buildProjects": {
+            "const": []
           }
         }
       },
@@ -363,6 +423,100 @@
             "default": [
               "csharp"
             ]
+          }
+        }
+      }
+    },
+    {
+      "not": {
+        "required": [
+          "moduleManifest",
+          "publishedBuilds"
+        ],
+        "properties": {
+          "moduleManifest": {
+            "type": "string"
+          },
+          "publishedBuilds": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "buildProjects"
+        ],
+        "properties": {
+          "buildProjects": {
+            "minItems": 1
+          }
+        }
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "moduleManifest"
+            ],
+            "properties": {
+              "moduleManifest": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "required": [
+              "publishedBuilds"
+            ],
+            "properties": {
+              "publishedBuilds": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "properties": {
+          "jobs": {
+            "additionalProperties": {
+              "required": [
+                "trigger"
+              ],
+              "properties": {
+                "trigger": {
+                  "const": "manual"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "publishedBuilds"
+        ],
+        "properties": {
+          "publishedBuilds": {
+            "type": "string"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "jobs": {
+            "additionalProperties": {
+              "required": [
+                "trigger"
+              ],
+              "properties": {
+                "trigger": {
+                  "const": "manual"
+                }
+              }
+            }
           }
         }
       }

@@ -170,9 +170,13 @@ def authenticate(git, api, values, directory, workflow_ref, *, registry=Registry
     artifact_metadata(metadata, artifact_id=positive(values["artifact-id"]), run_id=positive(values["artifact-run"]),
                       digest=values["artifact-digest"], sha=values["sha"])
     payload = api.artifact_bytes(positive(values["artifact-id"]))
-    files = {}
+    files, policies = {}, {}
     values["inventory"] = artifact_inventory(payload, sha=values["sha"], version=values["version"],
-        digest=values["artifact-digest"], repository=api.repository, files=files)
+        digest=values["artifact-digest"], repository=api.repository, files=files, package_policies=policies)
+    if policies:
+        values["package-policies"] = policies
+    else:
+        values.pop("package-policies", None)
     live = api.get(f"/repos/{api.repository}/releases/{values['draft-id']}", deadline=api.clock() + 120)
     validate_release(live, values, draft=True)
     values["body"] = live["body"]
@@ -233,7 +237,7 @@ def push_packages(directory, values, key, *, run=subprocess.run):
 
 
 def verify_packages(values, *, open_url=urllib.request.urlopen, clock=time.monotonic, sleep=time.sleep,
-                    attempts=180, interval=10):
+                    attempts=180, interval=10, run=None):
     """Verify the authenticated package inventory on nuget.org before finalization.
 
     Duplicate pushes are successful only when the indexed package has the
@@ -265,6 +269,14 @@ def verify_packages(values, *, open_url=urllib.request.urlopen, clock=time.monot
             except (OSError, http.client.HTTPException):
                 continue
             package_identity(data, package_id=package_id, version=version, sha=values["sha"])
+            if package_id in values.get("package-policies", {}):
+                from package_archive import body_inventory, verify_signature
+                try:
+                    if body_inventory(data) != values["package-policies"][package_id]:
+                        raise ValueError("public package nonsignature body differs from original artifact")
+                    verify_signature(data, run=run)
+                except ValueError as error:
+                    raise ReleaseError(str(error)) from error
             pending.remove(package_id)
             print(f"Verified NuGet package {package_id} {version}", flush=True)
         if not pending:

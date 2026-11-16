@@ -295,7 +295,7 @@ def package_identity(data, *, package_id, version, sha):
         raise ReleaseError("invalid package metadata") from error
 
 
-def artifact_inventory(payload, *, sha, version, digest, repository, files=None):
+def artifact_inventory(payload, *, sha, version, digest, repository, files=None, package_policies=None):
     """Read bounded ZIP members in memory; inventory never supplies executable code."""
     if len(payload) > MAX_ARCHIVE or "sha256:" + hashlib.sha256(payload).hexdigest() != digest:
         raise ReleaseError("downloaded artifact digest mismatch")
@@ -326,7 +326,7 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None)
             if (not isinstance(manifest, dict) or set(manifest) != {"sha", "version", "packages", "containers"}
                     or manifest["sha"] != sha or manifest["version"] != version):
                 raise ReleaseError("release manifest source/version mismatch")
-            expected, result, validated = {"release-manifest.json"}, {}, {}
+            expected, result, validated, policies = {"release-manifest.json"}, {}, {}, {}
             for kind, key, expression, suffix in (("packages", "id", PACKAGE_ID, ".nupkg"),
                                                   ("containers", "name", CONTAINER_NAME, ".tar")):
                 values = manifest[kind]
@@ -334,7 +334,8 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None)
                     raise ReleaseError("release manifest inventory must be an array")
                 identities = []
                 for item in values:
-                    if (not isinstance(item, dict) or set(item) != {key, "path"}
+                    if (not isinstance(item, dict) or set(item) not in ({key, "path"}, {key, "path", "verifyPublishedPackage"} if kind == "packages" else {key, "path"})
+                            or ("verifyPublishedPackage" in item and item["verifyPublishedPackage"] is not True)
                             or not isinstance(item[key], str) or not expression.fullmatch(item[key])
                             or not safe_member(item["path"]) or not item["path"].startswith(kind + "/")
                             or item["path"].count("/") != 1 or not item["path"].endswith(suffix)
@@ -347,6 +348,12 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None)
                     validated[item["path"]] = data
                     if kind == "packages":
                         package_identity(data, package_id=item[key], version=version, sha=sha)
+                        if item.get("verifyPublishedPackage"):
+                            from package_archive import body_inventory
+                            try:
+                                policies[item[key]] = body_inventory(data)
+                            except ValueError as error:
+                                raise ReleaseError("invalid strict original package archive") from error
                     else:
                         from oci_archive import inspect_archive
                         try:
@@ -360,6 +367,8 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None)
             # Expose original bytes only after the entire archive has passed.
             if files is not None:
                 files.update(validated)
+            if package_policies is not None:
+                package_policies.update(policies)
             return result
     except (zipfile.BadZipFile, OSError, RuntimeError) as error:
         raise ReleaseError("invalid release artifact archive") from error

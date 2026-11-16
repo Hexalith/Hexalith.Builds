@@ -162,6 +162,8 @@ class SharedContractTests(unittest.TestCase):
             with self.subTest(solution=solution):
                 defaults = []
                 for rule in SCHEMA["allOf"]:
+                    if "if" not in rule:
+                        continue
                     branch = "then" if Draft202012Validator(rule["if"]).is_valid({"solution": solution}) else "else"
                     codeql = rule.get(branch, {}).get("properties", {}).get("codeql", {})
                     if "default" in codeql:
