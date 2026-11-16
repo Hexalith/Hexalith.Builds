@@ -14,6 +14,7 @@ import subprocess
 import sys
 import threading
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -23,7 +24,7 @@ import oci_archive as oci
 import test_release_oci as oci_fixture
 from release_state import Git, ReleaseError
 from release_outcome import validate_outcome
-from test_release_draft import ARTIFACT, RUN, VERSION, REPOSITORY, DraftApiFixture, History, artifact, digest, git_command, zip_bytes
+from test_release_draft import ARTIFACT, RUN, VERSION, REPOSITORY, DraftApiFixture, History, artifact, digest, git_command, package, zip_bytes
 from actions_expressions import run_composite
 
 
@@ -100,6 +101,15 @@ def api_http(control, *, tls=None):
                 self.send_header("Content-Length", str(len(control.payload)))
                 self.end_headers()
                 self.wfile.write(control.payload)
+            elif self.path.startswith("/nuget/"):
+                if getattr(control, "nuget_status", 200) != 200:
+                    self.respond(control.nuget_status, {})
+                    return
+                data = getattr(control, "nuget_payload", package(control.values["sha"]))
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
             else:
                 self.respond(200, control.get(self.path))
         def do_PATCH(self):
@@ -367,6 +377,89 @@ def draft_files(payload):
         return [(name, archive.read(name)) for name in archive.namelist()]
 
 
+class NuGetVerificationTests(unittest.TestCase):
+    def setUp(self):
+        self.sha = "a" * 40
+        self.values = {"sha": self.sha, "version": VERSION,
+                       "inventory": {"packages": ["Fixture.One", "Fixture.Two"], "containers": []}}
+
+    def response(self, payload):
+        response = io.BytesIO(payload)
+        response.status, response.headers = 200, {"Content-Length": str(len(payload))}
+        return response
+
+    def test_inventory_is_generic_complete_and_credential_free(self):
+        requests = []
+        def read(url, **kwargs):
+            requests.append((url, kwargs))
+            identity = "Fixture.One" if "/fixture.one/" in url else "Fixture.Two"
+            return self.response(package(self.sha, package_id=identity))
+        publish.verify_packages(self.values, open_url=read, attempts=1)
+        self.assertEqual([url for url, _ in requests], [
+            f"https://api.nuget.org/v3-flatcontainer/{name}/{VERSION}/{name}.{VERSION}.nupkg"
+            for name in ("fixture.one", "fixture.two")])
+        self.assertTrue(all(set(arguments) == {"timeout"} for _, arguments in requests))
+
+    def test_indexing_delay_and_transient_errors_retry_only_pending_packages(self):
+        requests, pauses = [], []
+        failures = [404, 408, 429, 503, urllib.error.URLError("unavailable"), TimeoutError()]
+        def read(url, **_kwargs):
+            requests.append(url)
+            if "/fixture.two/" in url and failures:
+                error = failures.pop(0)
+                if isinstance(error, int):
+                    raise urllib.error.HTTPError(url, error, "transient", {}, None)
+                raise error
+            identity = "Fixture.One" if "/fixture.one/" in url else "Fixture.Two"
+            return self.response(package(self.sha, package_id=identity))
+        publish.verify_packages(self.values, open_url=read, attempts=7, interval=2, sleep=pauses.append)
+        self.assertEqual(sum("/fixture.one/" in url for url in requests), 1)
+        self.assertEqual(sum("/fixture.two/" in url for url in requests), 7)
+        self.assertEqual(pauses, [2] * 6)
+
+    def test_missing_packages_exhaust_bounds_and_identity_conflicts_fail_immediately(self):
+        requests, pauses = [], []
+        def missing(url, **_kwargs):
+            requests.append(url)
+            raise urllib.error.HTTPError(url, 404, "missing", {}, None)
+        with self.assertRaisesRegex(ReleaseError, "NuGet publication incomplete: Fixture.One, Fixture.Two"):
+            publish.verify_packages(self.values, open_url=missing, attempts=2, interval=1, sleep=pauses.append)
+        self.assertEqual(len(requests), 4)
+        self.assertEqual(pauses, [1])
+        self.values["inventory"]["packages"] = ["Fixture.One"]
+        for payload in (package("b" * 40, package_id="Fixture.One"),
+                        package(self.sha, package_id="Fixture.Other"),
+                        package(self.sha, package_id="Fixture.One", version="9.9.9"), b"not a package"):
+            with self.subTest(payload=payload[:20]), self.assertRaises(ReleaseError):
+                publish.verify_packages(self.values, open_url=lambda *args, **kwargs: self.response(payload),
+                                        sleep=lambda _: self.fail("conflicts must not retry"))
+
+    def test_authorization_errors_are_not_retried_and_empty_inventory_needs_no_network(self):
+        for status in (401, 403):
+            def forbidden(url, **_kwargs):
+                raise urllib.error.HTTPError(url, status, "denied", {}, None)
+            with self.subTest(status=status), self.assertRaisesRegex(ReleaseError, f"HTTP {status}"):
+                publish.verify_packages(self.values, open_url=forbidden,
+                                        sleep=lambda _: self.fail("authorization must not retry"))
+        self.values["inventory"]["packages"] = []
+        publish.verify_packages(self.values, open_url=lambda *_args, **_kwargs: self.fail("feed read"))
+
+    def test_response_size_and_whole_verification_deadline_are_bounded(self):
+        def oversized(*_args, **_kwargs):
+            response = self.response(b"")
+            response.headers["Content-Length"] = str(draft.MAX_ARCHIVE + 1)
+            return response
+        with self.assertRaisesRegex(ReleaseError, "size limit"):
+            publish.verify_packages(self.values, open_url=oversized)
+        now = [0]
+        def unavailable(url, **_kwargs):
+            now[0] = 1799
+            raise urllib.error.HTTPError(url, 404, "missing", {}, None)
+        with self.assertRaisesRegex(ReleaseError, "incomplete"):
+            publish.verify_packages(self.values, open_url=unavailable, clock=lambda: now[0],
+                                    sleep=lambda _: self.fail("deadline must stop retries"))
+
+
 class PublishCompositeTests(History):
     control = PublisherTests.control
     def test_actual_composite_one_outcome_for_success_login_push_api_and_malformed_handoff(self):
@@ -401,6 +494,24 @@ with pathlib.Path({str(work / "pushes")!r}).open('a') as log:
     log.write(hashlib.sha256(path.read_bytes()).hexdigest() + '\\n')
 raise SystemExit({0})
 ''')
+        # Run the real publisher with only its feed transport redirected to the
+        # local fixture. Keep retries small so missing-feed failures are real
+        # composite outcomes without a thirty-minute test delay.
+        (binaries / "python3").write_text(f'''#!{sys.executable}
+import os, runpy, sys, urllib.request
+arguments = [value for value in sys.argv[1:] if value != '-I']
+path, *sys.argv = arguments
+sys.argv.insert(0, path)
+original = urllib.request.urlopen
+def local_feed(url, **kwargs):
+    assert isinstance(url, str) and url.startswith('https://api.nuget.org/v3-flatcontainer/')
+    return original(os.environ['NUGET_TEST_URL'] + '/nuget/' + url.rsplit('/', 1)[-1], **kwargs)
+urllib.request.urlopen = local_feed
+module = runpy.run_path(path)
+verify = module['verify_packages']
+module['main'].__globals__['verify_packages'] = lambda values: verify(values, attempts=3, interval=0)
+raise SystemExit(module['main']())
+''')
         for executable in binaries.iterdir():
             executable.chmod(0o755)
         (work / "NuGet.Config").write_text("poison")
@@ -410,7 +521,7 @@ raise SystemExit({0})
         state_faults = {"state-missing", "state-truncated", "state-invalid"}
         for scenario in ("success", "login", "push", "api", "malformed", "empty", "patch",
                          *sorted(tag_conflicts), "tag-correct-lightweight", "tag-correct-annotated",
-                         *sorted(state_faults), "ready"):
+                         *sorted(state_faults), "ready", "nuget-missing", "nuget-source", "nuget-authorization"):
             with self.subTest(scenario=scenario):
                 if git_command(self.root, "tag", "--list", "v" + VERSION):
                     git_command(self.root, "tag", "-d", "v" + VERSION)
@@ -437,6 +548,12 @@ raise SystemExit({0})
                     control.errors[f"/repos/{REPOSITORY}/git/matching-refs/tags/v{VERSION}"] = 403
                 if scenario == "patch":
                     control.patch_status = 403
+                if scenario == "nuget-missing":
+                    control.nuget_status = 404
+                if scenario == "nuget-source":
+                    control.nuget_payload = package("b" * 40)
+                if scenario == "nuget-authorization":
+                    control.nuget_status = 403
                 if scenario == "ready":
                     (self.root / ".github/workflows/new.yml").write_text("new workflow")
                     environment["GITHUB_SHA"] = self.commit("ci: advance caller workflows")
@@ -478,6 +595,7 @@ raise SystemExit({0})
                 with api_http(control, tls=tls) as signed, api_http(control) as base:
                     control.location = signed + "/archive"
                     environment["GITHUB_API_URL"] = base
+                    environment["NUGET_TEST_URL"] = base
                     result, processes = run_composite(action, inputs, environment, cwd=work, runner_temp=work, external=external)
                 tool.write_text(contents)
                 self.assertEqual(len(uploads), 1, "\n".join(process.stderr for process in processes))
@@ -504,6 +622,7 @@ raise SystemExit({0})
                 self.assertNotIn("temporary-key-marker", "".join(process.stdout + process.stderr for process in processes))
                 self.assertFalse(any(Path(line.split("=", 1)[1]).exists() for line in output.read_text().splitlines() if line.startswith("state=")))
                 self.assertTrue(all(auth is None for method, path, auth in control.requests if path == "/archive"))
+                self.assertTrue(all(auth is None for method, path, auth in control.requests if path.startswith("/nuget/")))
 
 
 if __name__ == "__main__":

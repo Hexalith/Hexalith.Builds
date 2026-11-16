@@ -14,15 +14,16 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.error
 import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from oci_archive import inspect_archive
 from oci_publish import Registry, publish as publish_oci
-from release_draft import (DIGEST, MARKERS, MAX_JSON, RESERVED, DraftApi, artifact_inventory,
+from release_draft import (DIGEST, MARKERS, MAX_ARCHIVE, MAX_JSON, RESERVED, DraftApi, artifact_inventory,
                            artifact_metadata, bounded, limited_read, release_body, release_trailers,
-                           strict_json, workflows_match)
+                           package_identity, strict_json, workflows_match)
 from release_outcome import outcome_document, validate_outcome, write_document
 from release_state import Git, ReleaseError, SHA, STABLE, outputs
 
@@ -231,6 +232,51 @@ def push_packages(directory, values, key, *, run=subprocess.run):
             print("NuGet package push completed", flush=True)
 
 
+def verify_packages(values, *, open_url=urllib.request.urlopen, clock=time.monotonic, sleep=time.sleep,
+                    attempts=180, interval=10):
+    """Verify the authenticated package inventory on nuget.org before finalization.
+
+    Duplicate pushes are successful only when the indexed package has the
+    original artifact's ID, version and source commit. Missing/indexing-delayed
+    packages get bounded retries; a conflicting package fails immediately.
+    Feed reads never receive the temporary push key or GitHub credentials.
+    """
+    if type(attempts) is not int or attempts < 1 or interval < 0:
+        raise ReleaseError("invalid NuGet verification retry bounds")
+    pending = set(values["inventory"]["packages"])
+    deadline = clock() + 1800
+    for attempt in range(attempts):
+        for package_id in sorted(pending):
+            name, version = package_id.lower(), values["version"]
+            url = f"https://api.nuget.org/v3-flatcontainer/{name}/{version}/{name}.{version}.nupkg"
+            def download():
+                with open_url(url, timeout=min(30, max(0.001, deadline - clock()))) as response:
+                    if response.status != 200:
+                        raise ReleaseError("NuGet verification did not return HTTP 200")
+                    return limited_read(response, MAX_ARCHIVE)
+            try:
+                data = bounded(download, deadline=deadline, clock=clock)
+            except urllib.error.HTTPError as error:
+                status = error.code
+                error.close()
+                if status not in (404, 408, 429) and not 500 <= status <= 599:
+                    raise ReleaseError(f"NuGet verification returned HTTP {status}") from error
+                continue
+            except (OSError, http.client.HTTPException):
+                continue
+            package_identity(data, package_id=package_id, version=version, sha=values["sha"])
+            pending.remove(package_id)
+            print(f"Verified NuGet package {package_id} {version}", flush=True)
+        if not pending:
+            return
+        if attempt + 1 < attempts:
+            remaining = deadline - clock()
+            if remaining <= interval:
+                break
+            sleep(interval)
+    raise ReleaseError("NuGet publication incomplete: " + ", ".join(sorted(pending)))
+
+
 def finalize_release(git, api, values, *, refresh=workflows_match):
     equal = refresh(git, api.repository, values["sha"])
     validate_source(git, values)
@@ -300,6 +346,7 @@ def main():
             state = strict_json((directory / "state.json").read_bytes())
             values = state["values"]
             push_packages(directory, values, os.environ.get("NUGET_API_KEY", ""))
+            verify_packages(values)
             for item in values["containers"]:
                 publish_oci(directory / item["path"], item["name"], values["version"], item["graph"],
                             os.environ.get("REGISTRY_USERNAME", ""), os.environ.get("REGISTRY_PASSWORD", ""))
