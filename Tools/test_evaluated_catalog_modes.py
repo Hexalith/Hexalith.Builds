@@ -41,8 +41,8 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
                 self.assertEqual("false", properties["HexalithTimesheetsNet10CatalogView"])
                 self.assertEqual("3.0.0", versions["Hexalith.Commons.UniqueIds"])
                 self.assertEqual("2.0.0", versions["Hexalith.PolymorphicSerializations"])
-                self.assertEqual("5.1.1", versions["Hexalith.EventStore.Client"])
-                self.assertEqual("8.0.0", versions["Hexalith.Tenants.Contracts"])
+                self.assertEqual("5.2.0", versions["Hexalith.EventStore.Client"])
+                self.assertEqual("8.0.1", versions["Hexalith.Tenants.Contracts"])
                 for package in ("Microsoft.AspNetCore.Authentication.JwtBearer", "Microsoft.AspNetCore.Mvc.Testing", "Microsoft.AspNetCore.TestHost"):
                     self.assertEqual("11.0.0", versions[package])
 
@@ -50,7 +50,7 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="catalog-timesheets-explicit-") as directory:
             root = Path(directory)
             for name, options, expected in (
-                    ("Hexalith.Timesheets", {"HexalithCommonsVersion": "3.0.0", "HexalithEventStoreVersion": "5.1.1"}, "10.0.15"),
+                    ("Hexalith.Timesheets", {"HexalithCommonsVersion": "3.0.0", "HexalithEventStoreVersion": "5.2.0"}, "10.0.15"),
                     ("Hexalith.Timesheets", {"HexalithTimesheetsNet10CatalogView": "false"}, "11.0.0"),
                     ("Unrelated", {"HexalithTimesheetsNet10CatalogView": "true"}, "10.0.15")):
                 with self.subTest(name=name, options=options):
@@ -82,7 +82,7 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
 
     def test_unknown_snapshot_retains_the_unqualified_current_catalog(self):
         _, versions = evaluate_catalog(CATALOG, consumer_project_name="Hexalith.Platform.EventStoreHost.Future")
-        self.assertEqual("5.1.1", versions["Hexalith.EventStore.Gateway"])
+        self.assertEqual("5.2.0", versions["Hexalith.EventStore.Gateway"])
         self.assertEqual("3.0.0", versions["Hexalith.McpCli.Abstractions"])
         self.assertEqual("11.0.0", versions["Microsoft.AspNetCore.OpenApi"])
         self.assertEqual("3.11.0", versions["Microsoft.OpenApi"])
@@ -100,7 +100,7 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
             versions = {item["Identity"]: item["Version"] for item in json.loads(result.stdout)["Items"]["PackageVersion"]}
             self.assertEqual("11.0.0", versions["Microsoft.AspNetCore.OpenApi"])
             self.assertEqual("3.11.0", versions["Microsoft.OpenApi"])
-            self.assertEqual("5.1.1", versions["Hexalith.EventStore.Gateway"])
+            self.assertEqual("5.2.0", versions["Hexalith.EventStore.Gateway"])
             self.assertEqual("3.0.0", versions["Hexalith.McpCli.Abstractions"])
 
     def test_project_sdk_inspection_preserves_its_source_context(self):
