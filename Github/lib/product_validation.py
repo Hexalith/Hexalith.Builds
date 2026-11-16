@@ -32,7 +32,7 @@ VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?
 FRAMEWORK = re.compile(r"net[0-9]+\.[0-9]+\Z")
 PROPERTIES = ("PackageId", "PackageVersion", "IsPackable", "TargetFramework", "TargetFrameworks", "TargetPath", "AssemblyName")
 FLAGS = ("-noAutoResponse", "-p:Configuration=Release", "-p:UseHexalithProjectReferences=false",
-         "-p:ShouldUnsetParentConfigurationAndPlatform=false", "-warnaserror")
+         "-p:ShouldUnsetParentConfigurationAndPlatform=false", "-p:UseSharedCompilation=false", "-warnaserror")
 JOB_AUTHOR = "hexalith-private-validation-job"
 SIGNATURE = ".signature.p7s"
 TIMESTAMPER = "http://timestamp.digicert.com"

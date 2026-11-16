@@ -288,6 +288,9 @@ sys.exit(31 if data.get("validator_failure") else 0)
         self.assertEqual((len(packs), len(restores), len(builds), len(executions)), (6, 6, 6, 6))
         self.assertTrue(all("--no-build" in item["args"] and "--no-restore" in item["args"] for item in packs))
         self.assertTrue(all("-p:PackageVersion=2.3.4-preview.7" in item["args"] for item in packs))
+        sdk = [item for item in commands if item["args"][0] in {"msbuild", "pack", "restore", "build"}]
+        self.assertTrue(all("-p:UseSharedCompilation=false" in item["args"] and "-warnaserror" in item["args"]
+                            for item in sdk))
         self.assertEqual(len({item["cache"] for item in restores}), 6)
         self.assertTrue(all(item["cwd"] != str(self.root) for item in builds))
         self.assertTrue((self.root / "archive-checked").is_file())
