@@ -377,6 +377,33 @@ def draft_files(payload):
         return [(name, archive.read(name)) for name in archive.namelist()]
 
 
+def use_local_nuget_feed(binaries):
+    """Keep real publication verification, redirecting only its public feed read.
+
+    Recovery and publisher composites both execute real scripts through this
+    adapter. Missing-feed regressions retain bounded retries without a live
+    network dependency or a thirty-minute fixture delay.
+    """
+    executable = binaries / "python3"
+    executable.write_text(f'''#!{sys.executable}
+import os, runpy, sys, urllib.request
+arguments = [value for value in sys.argv[1:] if value != '-I']
+path, *sys.argv = arguments
+sys.argv.insert(0, path)
+original = urllib.request.urlopen
+def local_feed(url, **kwargs):
+    assert isinstance(url, str) and url.startswith('https://api.nuget.org/v3-flatcontainer/')
+    return original(os.environ['NUGET_TEST_URL'] + '/nuget/' + url.rsplit('/', 1)[-1], **kwargs)
+urllib.request.urlopen = local_feed
+module = runpy.run_path(path)
+if 'verify_packages' in module:
+    verify = module['verify_packages']
+    module['main'].__globals__['verify_packages'] = lambda values: verify(values, attempts=3, interval=0)
+raise SystemExit(module['main']())
+''')
+    executable.chmod(0o755)
+
+
 class NuGetVerificationTests(unittest.TestCase):
     def setUp(self):
         self.sha = "a" * 40
@@ -494,24 +521,7 @@ with pathlib.Path({str(work / "pushes")!r}).open('a') as log:
     log.write(hashlib.sha256(path.read_bytes()).hexdigest() + '\\n')
 raise SystemExit({0})
 ''')
-        # Run the real publisher with only its feed transport redirected to the
-        # local fixture. Keep retries small so missing-feed failures are real
-        # composite outcomes without a thirty-minute test delay.
-        (binaries / "python3").write_text(f'''#!{sys.executable}
-import os, runpy, sys, urllib.request
-arguments = [value for value in sys.argv[1:] if value != '-I']
-path, *sys.argv = arguments
-sys.argv.insert(0, path)
-original = urllib.request.urlopen
-def local_feed(url, **kwargs):
-    assert isinstance(url, str) and url.startswith('https://api.nuget.org/v3-flatcontainer/')
-    return original(os.environ['NUGET_TEST_URL'] + '/nuget/' + url.rsplit('/', 1)[-1], **kwargs)
-urllib.request.urlopen = local_feed
-module = runpy.run_path(path)
-verify = module['verify_packages']
-module['main'].__globals__['verify_packages'] = lambda values: verify(values, attempts=3, interval=0)
-raise SystemExit(module['main']())
-''')
+        use_local_nuget_feed(binaries)
         for executable in binaries.iterdir():
             executable.chmod(0o755)
         (work / "NuGet.Config").write_text("poison")

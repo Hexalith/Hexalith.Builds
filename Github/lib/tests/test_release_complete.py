@@ -26,7 +26,7 @@ import release_publish as publisher
 import oci_publish
 from release_state import NoRedirect, ReleaseError
 from test_release_draft import ARTIFACT, RUN, VERSION, REPOSITORY, History, artifact, digest, git_command
-from test_release_publish import PublishFixture, draft_files
+from test_release_publish import PublishFixture, draft_files, use_local_nuget_feed
 from actions_expressions import run_composite
 
 WORKFLOW_REF = REPOSITORY + "/.github/workflows/release.yml@refs/heads/main"
@@ -392,6 +392,9 @@ def recovery_http(control, *, tls=None):
                 self.end_headers()
             elif self.path == "/archive":
                 self.send_data(getattr(control, "signed_status", 200), control.payload)
+            elif self.path.startswith("/nuget/"):
+                package = getattr(control, "nuget_packages", {}).get(self.path)
+                self.send_data(200 if package is not None else 404, package or b"")
             elif self.path.startswith(f"/repos/{REPOSITORY}/releases?"):
                 self.send_data(200, json.dumps(list(control.pages(self.path))).encode())
             else:
@@ -717,6 +720,9 @@ raise SystemExit(subprocess.call([{shutil.which('git')!r}, *args]))
     def test_original_recovery_handoff_retries_actual_publisher_with_identical_package_bytes(self):
         control = self.control()
         package_bytes = dict(draft_files(control.payload))["packages/Fixture.Package." + VERSION + ".nupkg"]
+        feed_path = "/nuget/fixture.package." + VERSION + ".nupkg"
+        control.nuget_packages = {feed_path: package_bytes}
+        use_local_nuget_feed(self.binaries)
         observed = self.work / "package-digests"
         marker = self.work / "retry-ready"
         (self.binaries / "dotnet").write_text(f'''#!{sys.executable}
@@ -750,16 +756,20 @@ print('already exists')
                     result, publisher_processes = run_composite(published_action, {
                         **{key: handoff[key] for key in control.values}, "nuget-user": "fixture",
                         "registry-username": "push-user", "registry-password": "push-secret"},
-                        {**self.environment, "GITHUB_API_URL": base}, cwd=self.work, runner_temp=self.work, external=external)
+                        {**self.environment, "GITHUB_API_URL": base, "NUGET_TEST_URL": base},
+                        cwd=self.work, runner_temp=self.work, external=external)
                 self.assertEqual(outcomes[-1]["outcome"], "failed" if attempt == 0 else "published")
                 self.assertEqual(control.release["draft"], attempt == 0)
                 self.assertEqual(len(control.writes), attempt)
                 self.assertNotIn("temporary-key-marker", "".join(p.stdout + p.stderr for p in publisher_processes))
+                self.assertEqual([path for method, path, _auth in control.requests if path.startswith("/nuget/")],
+                                 [feed_path] * attempt)
         self.assertEqual(len(outcomes), 2)
         self.assertEqual(observed.read_text().splitlines(), [digest(package_bytes)[7:]] * 2)
         self.assertEqual(git_command(self.root, "rev-parse", "v" + VERSION + "^{commit}"), self.sha)
         self.assertEqual(control.deletes, [])
-        self.assertTrue(all(auth is None for _, path, auth in control.requests if path == "/archive"))
+        self.assertTrue(all(auth is None for _, path, auth in control.requests
+                            if path == "/archive" or path.startswith("/nuget/")))
 
 
 if __name__ == "__main__":
