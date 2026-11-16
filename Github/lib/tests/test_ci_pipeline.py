@@ -35,7 +35,7 @@ EXPECTED_MTP_FLAGS = ("-p:TreatWarningsAsErrors=true", "-p:MSBuildTreatWarningsA
 
 def configuration(solution="Fixture.slnx"):
     return {"schema": "hexalith.ci.v1", "solution": solution, "dapr": False,
-            "browsers": False, "registry": False, "codeql": [],
+            "browsers": False, "registry": False, "ciTimeoutMinutes": 30, "codeql": [],
             "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False}, "hooks": [], "jobs": {}, "submodules": []}
 
 

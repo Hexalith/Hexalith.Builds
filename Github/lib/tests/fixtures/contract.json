@@ -20,7 +20,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -43,7 +44,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -65,7 +67,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -108,7 +111,8 @@
       "submodules": [
         "references/Fixture.Library",
         "dependencies/Fixture Tools"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -140,7 +144,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -162,7 +167,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -190,7 +196,8 @@
       "jobs": {},
       "submodules": [
         "lib/\u00e9quipe"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -214,7 +221,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -238,7 +246,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -261,7 +270,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -284,7 +294,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -307,7 +318,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -330,7 +342,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -353,7 +366,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -374,7 +388,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -392,7 +407,8 @@
       ],
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -415,7 +431,8 @@
         "failSkips": false
       },
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -438,7 +455,8 @@
         "failSkips": false
       },
       "hooks": [],
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -461,7 +479,8 @@
         "failSkips": false
       },
       "hooks": [],
-      "jobs": {}
+      "jobs": {},
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -486,7 +505,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "surprise": false
+      "surprise": false,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -511,7 +531,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -535,7 +556,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -559,7 +581,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -583,7 +606,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -607,7 +631,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -631,7 +656,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -655,7 +681,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -679,7 +706,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -703,7 +731,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -727,7 +756,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -751,7 +781,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -775,7 +806,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -799,7 +831,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -821,7 +854,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -843,7 +877,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -865,7 +900,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -887,7 +923,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -911,7 +948,8 @@
       },
       "hooks": "",
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -935,7 +973,8 @@
       },
       "hooks": {},
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -959,7 +998,8 @@
       },
       "hooks": false,
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -983,7 +1023,8 @@
       },
       "hooks": null,
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1007,7 +1048,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": ""
+      "submodules": "",
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1031,7 +1073,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": {}
+      "submodules": {},
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1055,7 +1098,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": false
+      "submodules": false,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1079,7 +1123,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": null
+      "submodules": null,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1098,7 +1143,8 @@
       "tests": [],
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1122,7 +1168,8 @@
       },
       "hooks": [],
       "jobs": [],
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1146,7 +1193,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1170,7 +1218,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1194,7 +1243,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1218,7 +1268,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1241,7 +1292,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1264,7 +1316,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1288,7 +1341,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1312,7 +1366,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1338,7 +1393,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1364,7 +1420,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1390,7 +1447,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1417,7 +1475,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1444,7 +1503,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1469,7 +1529,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1496,7 +1557,8 @@
       "submodules": [
         "references/Fixture",
         "references/Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1520,7 +1582,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1544,7 +1607,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1568,7 +1632,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1592,7 +1657,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1616,7 +1682,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1642,7 +1709,8 @@
         "unknown"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1668,7 +1736,8 @@
         "after-build"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1694,7 +1763,8 @@
         "nightly\n"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1720,7 +1790,8 @@
         {}
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1746,7 +1817,8 @@
         true
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1774,7 +1846,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1802,7 +1875,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1830,7 +1904,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1858,7 +1933,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1886,7 +1962,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1914,7 +1991,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1942,7 +2020,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1970,7 +2049,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -1998,7 +2078,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2026,7 +2107,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2054,7 +2136,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2082,7 +2165,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2108,7 +2192,8 @@
       "jobs": {
         "windows-tests": {}
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2136,7 +2221,8 @@
           "runner": "ubuntu-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2165,7 +2251,8 @@
           "extra": true
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2193,7 +2280,8 @@
           "runner": false
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2219,7 +2307,8 @@
       "jobs": {
         "windows-tests": null
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2243,7 +2332,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2267,7 +2357,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2291,7 +2382,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2315,7 +2407,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2339,7 +2432,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2363,7 +2457,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2387,7 +2482,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2411,7 +2507,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2435,7 +2532,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2459,7 +2557,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2483,7 +2582,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2507,7 +2607,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2531,7 +2632,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2555,7 +2657,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2579,7 +2682,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2605,7 +2709,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2633,7 +2738,8 @@
           "runner": "windows-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2659,7 +2765,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2687,7 +2794,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2711,7 +2819,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2737,7 +2846,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2765,7 +2875,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2791,7 +2902,8 @@
       "jobs": {},
       "submodules": [
         ""
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2815,7 +2927,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2841,7 +2954,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2869,7 +2983,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2895,7 +3010,8 @@
       "jobs": {},
       "submodules": [
         "/absolute/Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2919,7 +3035,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2945,7 +3062,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2973,7 +3091,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -2999,7 +3118,8 @@
       "jobs": {},
       "submodules": [
         "C:/Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3023,7 +3143,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3049,7 +3170,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3077,7 +3199,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3103,7 +3226,8 @@
       "jobs": {},
       "submodules": [
         "C:Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3127,7 +3251,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3153,7 +3278,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3181,7 +3307,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3207,7 +3334,8 @@
       "jobs": {},
       "submodules": [
         "folder\\Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3231,7 +3359,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3257,7 +3386,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3285,7 +3415,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3311,7 +3442,8 @@
       "jobs": {},
       "submodules": [
         "../Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3335,7 +3467,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3361,7 +3494,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3389,7 +3523,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3415,7 +3550,8 @@
       "jobs": {},
       "submodules": [
         "./Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3439,7 +3575,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3465,7 +3602,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3493,7 +3631,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3519,7 +3658,8 @@
       "jobs": {},
       "submodules": [
         "folder/../Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3543,7 +3683,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3569,7 +3710,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3597,7 +3739,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3623,7 +3766,8 @@
       "jobs": {},
       "submodules": [
         "folder/./Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3647,7 +3791,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3673,7 +3818,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3701,7 +3847,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3727,7 +3874,8 @@
       "jobs": {},
       "submodules": [
         "folder//Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3751,7 +3899,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3777,7 +3926,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3805,7 +3955,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3831,7 +3982,8 @@
       "jobs": {},
       "submodules": [
         "folder/Fixture/"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3855,7 +4007,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3881,7 +4034,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3909,7 +4063,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3935,7 +4090,8 @@
       "jobs": {},
       "submodules": [
         "folder/Fixture\n"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3959,7 +4115,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -3985,7 +4142,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4013,7 +4171,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4039,7 +4198,8 @@
       "jobs": {},
       "submodules": [
         "folder/Fixture\u0000"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4063,7 +4223,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4089,7 +4250,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4117,7 +4279,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4143,7 +4306,8 @@
       "jobs": {},
       "submodules": [
         "folder/Fixture\u007f"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4167,7 +4331,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4193,7 +4358,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4221,7 +4387,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4247,7 +4414,8 @@
       "jobs": {},
       "submodules": [
         "folder/Fixture\u0085"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4271,7 +4439,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4297,7 +4466,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4325,7 +4495,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4351,7 +4522,8 @@
       "jobs": {},
       "submodules": [
         "folder/${{github.ref}}/Fixture"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4375,7 +4547,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4401,7 +4574,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4429,7 +4603,8 @@
         "nightly"
       ],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4481,7 +4656,8 @@
         "references/..\u2029",
         "references/\u2028",
         "references/\u2029"
-      ]
+      ],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4507,7 +4683,8 @@
       "jobs": {},
       "submodules": [],
       "aspire": true,
-      "job-timeout-minutes": 360
+      "job-timeout-minutes": 360,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4532,7 +4709,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "aspire": false
+      "aspire": false,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4557,7 +4735,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "aspire": true
+      "aspire": true,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4582,7 +4761,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "aspire": true
+      "aspire": true,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4610,7 +4790,8 @@
           "runner": "macos-latest"
         }
       },
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4635,7 +4816,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": 1
+      "job-timeout-minutes": 1,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4660,7 +4842,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": 0
+      "job-timeout-minutes": 0,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4685,7 +4868,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": 361
+      "job-timeout-minutes": 361,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4710,7 +4894,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": 30.5
+      "job-timeout-minutes": 30.5,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4735,7 +4920,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": true
+      "job-timeout-minutes": true,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4760,7 +4946,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": "360"
+      "job-timeout-minutes": "360",
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4785,7 +4972,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": null
+      "job-timeout-minutes": null,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4810,7 +4998,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "aspire": 1
+      "aspire": 1,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4835,7 +5024,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "aspire": "true"
+      "aspire": "true",
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4860,7 +5050,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "aspire": null
+      "aspire": null,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4885,7 +5076,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "aspire": {}
+      "aspire": {},
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4910,7 +5102,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "aspire": []
+      "aspire": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4935,7 +5128,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": 1.0
+      "job-timeout-minutes": 1.0,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4960,7 +5154,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": 30.0
+      "job-timeout-minutes": 30.0,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -4985,7 +5180,8 @@
       "hooks": [],
       "jobs": {},
       "submodules": [],
-      "job-timeout-minutes": 360.0
+      "job-timeout-minutes": 360.0,
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5009,7 +5205,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5033,7 +5230,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5057,7 +5255,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5083,7 +5282,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5109,7 +5309,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5135,7 +5336,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5161,7 +5363,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5187,7 +5390,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5211,7 +5415,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5235,7 +5440,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5259,7 +5465,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5283,7 +5490,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5306,7 +5514,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5329,7 +5538,8 @@
       },
       "hooks": [],
       "jobs": {},
-      "submodules": []
+      "submodules": [],
+      "ciTimeoutMinutes": 30
     }
   },
   {
@@ -5352,6 +5562,281 @@
           "test/A.csproj": 529
         },
         "failSkips": true
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 30
+    }
+  },
+  {
+    "name": "ci-timeout-minimum",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 1
+    }
+  },
+  {
+    "name": "ci-timeout-maximum",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 360
+    }
+  },
+  {
+    "name": "ci-timeout-custom",
+    "valid": true,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 120
+    }
+  },
+  {
+    "name": "ci-timeout-zero",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 0
+    }
+  },
+  {
+    "name": "ci-timeout-negative",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": -1
+    }
+  },
+  {
+    "name": "ci-timeout-too-large",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 361
+    }
+  },
+  {
+    "name": "ci-timeout-fraction",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 30.5
+    }
+  },
+  {
+    "name": "ci-timeout-boolean",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": true
+    }
+  },
+  {
+    "name": "ci-timeout-string",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": "60"
+    }
+  },
+  {
+    "name": "ci-timeout-null",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": null
+    }
+  },
+  {
+    "name": "missing-ci-timeout",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "Fixture.slnx",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
       },
       "hooks": [],
       "jobs": {},

@@ -15,7 +15,8 @@
     "tests",
     "hooks",
     "jobs",
-    "submodules"
+    "submodules",
+    "ciTimeoutMinutes"
   ],
   "properties": {
     "schema": {
@@ -186,6 +187,13 @@
       },
       "default": [],
       "description": "Additional direct submodule paths relative to the repository. Builds checkout is implicit. No nested or recursive initialization."
+    },
+    "ciTimeoutMinutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 360,
+      "default": 30,
+      "description": "Maximum shared CI build/test job duration, forwarded to job-timeout-minutes."
     }
   },
   "allOf": [

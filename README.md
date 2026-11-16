@@ -75,6 +75,8 @@ This repository:
 
 ### GitHub Composite Actions
 
+- [`Github/ci-environment/`](Github/ci-environment/README.md): Prepare the shared
+  CI tools and export private Dapr initialization evidence for product hooks.
 - [`Github/create-release/`](Github/create-release/README.md): Run
   semantic-release without hard-coding package behavior; repositories may
   configure their own verified package lifecycle (legacy — modules use

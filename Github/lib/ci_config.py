@@ -23,7 +23,7 @@ HOOKS = frozenset(("after-unit-tests", "after-integration-tests", "nightly"))
 LANGUAGES = frozenset(("c-cpp", "csharp", "go", "java-kotlin", "javascript-typescript",
                        "python", "ruby", "rust", "swift"))
 REQUIRED = frozenset(("schema", "solution", "dapr", "browsers", "registry", "codeql",
-                      "tests", "hooks", "jobs", "submodules"))
+                      "tests", "hooks", "jobs", "submodules", "ciTimeoutMinutes"))
 ACTION_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 STABLE_TAG = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 
@@ -141,6 +141,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         if (type(minutes) not in (int, float) or not 1 <= minutes <= 360
                 or (type(minutes) is float and not minutes.is_integer())):
             fail("$/job-timeout-minutes", "expected an integer from 1 to 360")
+    if type(document["ciTimeoutMinutes"]) is not int or not 1 <= document["ciTimeoutMinutes"] <= 360:
+        fail("$/ciTimeoutMinutes", "expected an integer from 1 to 360")
     for key in ("codeql", "hooks", "submodules"):
         array(document[key], f"$/{key}")
     for index, language in enumerate(document["codeql"]):

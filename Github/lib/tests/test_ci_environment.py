@@ -142,6 +142,7 @@ os.execv(sys.executable, [sys.executable, *args])
                         "secrets": secrets or {"registry-pull-username": "", "registry-pull-password": ""},
                         "steps": {}}
         self.counter = 0
+        self.exported_environment = {}
 
     def result(self, code):
         return subprocess.CompletedProcess([], code, "".join(self.stdout), "".join(self.stderr))
@@ -179,6 +180,7 @@ os.execv(sys.executable, [sys.executable, *args])
             if "if" in step and not self.enabled(step["if"], context):
                 continue
             env = dict(environment)
+            env.update(self.exported_environment)
             env["PATH"] = self.path
             env.update({name: self.expand(value, context) for name, value in step.get("env", {}).items()})
             outputs = {}
@@ -220,9 +222,11 @@ os.execv(sys.executable, [sys.executable, *args])
                 self.counter += 1
                 output = self.root / f"action-output-{self.counter}"
                 path = self.root / f"action-path-{self.counter}"
+                exported = self.root / f"action-env-{self.counter}"
                 output.unlink(missing_ok=True)
                 path.unlink(missing_ok=True)
-                env.update(GITHUB_OUTPUT=str(output), GITHUB_PATH=str(path))
+                exported.unlink(missing_ok=True)
+                env.update(GITHUB_OUTPUT=str(output), GITHUB_PATH=str(path), GITHUB_ENV=str(exported))
                 if step.get("shell", "bash") == "pwsh":
                     # A dotnet-tool installation of pwsh can launch through
                     # dotnet on PATH. Bootstrap the real shell first, then
@@ -243,6 +247,8 @@ os.execv(sys.executable, [sys.executable, *args])
                     outputs = dict(line.split("=", 1) for line in output.read_text().splitlines())
                 if path.exists():
                     self.path = os.pathsep.join(path.read_text().splitlines()) + os.pathsep + self.path
+                if exported.exists():
+                    self.exported_environment.update(line.split("=", 1) for line in exported.read_text().splitlines())
                 if "id" in step:
                     context["steps"][step["id"]] = {"outputs": outputs}
                 if result.returncode:
@@ -292,15 +298,41 @@ class EnvironmentTests(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.root = self.fixture.root
         self.effects = self.root / "environment-effects.jsonl"
+        self.fixture.environment.update(GITHUB_REPOSITORY=FIXTURE.BUILDS, GITHUB_RUN_ID="1234",
+                                        GITHUB_RUN_ATTEMPT="2", GITHUB_JOB="ci")
         # Real subprocess doubles record observable effects, not Python call counts.
         for name in ("pwsh", "docker"):
             script = self.fixture.bin / name
             script.write_text(f"#!{sys.executable}\n" + r'''
-import json, os, pathlib, sys
+import datetime, json, os, pathlib, sys
 root=pathlib.Path.cwd()
 name=pathlib.Path(sys.argv[0]).name
-assert (root / "build-completed").read_text()=="Release"
 args=sys.argv[1:]
+if name=="docker":
+    now=datetime.datetime.now(datetime.timezone.utc).isoformat()
+    if args[:2]==["volume", "ls"]:
+        print("old-volume")
+        sys.exit(0)
+    if args[:2]==["ps", "--all"]:
+        print("a"*64)
+        if (root / "dapr-initialized").exists() or (root / "dapr-init").exists():
+            print("b"*64)
+        sys.exit(0)
+    if args[0]=="inspect":
+        record={"Id":"b"*64,"Name":"/dapr_redis","Created":now,"State":{"Running":True},
+                "Config":{"Image":"redis:7","Env":["private-marker"]},
+                "Mounts":[{"Type":"volume","Name":"fresh-volume","Source":"/var/lib/docker/volumes/fresh-volume/_data",
+                           "Destination":"/data","RW":True}]}
+        print(json.dumps([record]))
+        if os.environ.get("FAIL_DOCKER_INSPECT"):
+            print("private-marker-from-inspect-stderr", file=sys.stderr)
+            sys.exit(55)
+        sys.exit(0)
+    if args[:2]==["volume", "inspect"]:
+        print(json.dumps([{"Name":"fresh-volume","Driver":"local","Scope":"local","CreatedAt":now,
+                           "Mountpoint":"/var/lib/docker/volumes/fresh-volume/_data"}]))
+        sys.exit(0)
+assert (root / "build-completed").read_text()=="Release"
 with (root / "environment-effects.jsonl").open("a") as stream:
     stream.write(json.dumps([name,args,sys.stdin.read() if name=="docker" else ""])+"\n")
 if name=="pwsh":
@@ -356,6 +388,11 @@ with (root / "dapr-events").open("a") as stream:
     stream.write(" ".join(args)+"\n")
 if args[0]=="init":
     assert args==["init", "--runtime-version", "1.19.1"]
+    import json
+    receipt=pathlib.Path(os.environ["RUNNER_TEMP"]) / "hexalith-dapr-initialization.json"
+    document=json.loads(receipt.read_text())
+    assert document["status"]=="initializing" and document["preexistingVolumes"]==["old-volume"]
+    assert "HEXALITH_DAPR_INITIALIZATION_RECEIPT" not in os.environ
     if os.environ.get("FAIL_DAPR_INIT"):
         sys.exit(37)
     (root / "dapr-initialized").touch()
@@ -379,7 +416,10 @@ else:
         document = yaml.safe_load(path.read_text())
         document["runs"]["steps"].insert(0, {"shell": "bash", "run":
             "python3 -c \"import os, pathlib, shutil; "
-            "assert pathlib.Path(shutil.which('dapr')).is_relative_to(pathlib.Path(os.environ['RUNNER_TEMP']))\" && dapr probe"})
+            "assert pathlib.Path(shutil.which('dapr')).is_relative_to(pathlib.Path(os.environ['RUNNER_TEMP'])); "
+            "import json; p=pathlib.Path(os.environ['HEXALITH_DAPR_INITIALIZATION_RECEIPT']); "
+            "assert p.is_relative_to(pathlib.Path(os.environ['RUNNER_TEMP'])); "
+            "assert json.loads(p.read_text())['status']=='complete'\" && dapr probe"})
         path.write_text(yaml.safe_dump(document))
 
     def test_disabled_flags_make_no_sdk_download_or_tool_calls(self):
@@ -509,9 +549,12 @@ else:
             with self.assertRaisesRegex(ENV.PipelineError, "regular dapr executable"):
                 ENV.install_dapr_cli(invalid, hashlib.sha256(invalid).hexdigest(), self.root / "rejected")
         path = self.root / "github-path"
+        runner = self.root / "first-dapr-runner"
+        runner.mkdir()
+        environment = dict(self.fixture.environment, GITHUB_PATH=str(path), RUNNER_TEMP=str(runner))
         with mock.patch.object(ENV, "urlopen", return_value=io.BytesIO(valid)) as download, \
                 mock.patch.dict(ENV.DAPR_CLI_DIGESTS, {"1.19.1": hashlib.sha256(valid).hexdigest()}), \
-                mock.patch.dict(os.environ, {"GITHUB_PATH": str(path), "RUNNER_TEMP": str(self.root)}):
+                mock.patch.dict(os.environ, environment):
             ENV.setup_dapr(self.root)
         self.assertEqual("init --runtime-version 1.19.1", (self.root / "dapr-init").read_text())
         self.assertTrue(Path(path.read_text().strip(), "dapr").is_file())
@@ -527,7 +570,9 @@ else:
         self.built_playwright()
         self.save_fixture()
         (self.root / "build-completed").write_text("Release")
-        environment = dict(self.fixture.environment, GITHUB_PATH=str(path), RUNNER_TEMP=str(self.root),
+        runner = self.root / "second-dapr-runner"
+        runner.mkdir()
+        environment = dict(self.fixture.environment, GITHUB_PATH=str(path), RUNNER_TEMP=str(runner),
                            REGISTRY_PULL_USERNAME="pull-user", REGISTRY_PULL_PASSWORD="pull-secret")
         with mock.patch.object(ENV, "urlopen", return_value=io.BytesIO(valid)) as download, \
                 mock.patch.dict(ENV.DAPR_CLI_DIGESTS, {"1.19.1": hashlib.sha256(valid).hexdigest()}), \
@@ -563,6 +608,135 @@ else:
         self.assertEqual(1, sum(command[0] == "restore" for command in commands))
         self.assertEqual(1, sum(command[0] == "build" for command in commands))
         self.assertEqual(3, sum(command[0] == "test" for command in commands))
+
+    def receipt_fixture(self, **extra):
+        runner = self.root / "receipt-runner"
+        runner.mkdir(exist_ok=True)
+        archive = self.controlled_dapr_archive()
+        binary = ENV.install_dapr_cli(archive, hashlib.sha256(archive).hexdigest(), self.root / "receipt-bin")
+        environment = dict(self.fixture.environment, RUNNER_TEMP=str(runner),
+                           GITHUB_ENV=str(runner / "github-env"), **extra)
+        return runner, binary, environment
+
+    def test_receipt_precedes_init_and_exports_only_selected_actual_resource_metadata(self):
+        runner, binary, environment = self.receipt_fixture()
+        with mock.patch.dict(os.environ, environment):
+            receipt = ENV.initialize_dapr(binary, "1.19.1", self.root)
+            self.assertEqual(str(receipt), os.environ[ENV.DAPR_RECEIPT_ENV])
+        document = json.loads(receipt.read_text())
+        self.assertEqual("hexalith.dapr-initialization.v1", document["schema"])
+        self.assertEqual("complete", document["status"])
+        self.assertEqual({"repository": FIXTURE.BUILDS, "runId": "1234", "runAttempt": "2", "job": "ci"},
+                         document["identity"])
+        self.assertEqual(["old-volume"], document["preexistingVolumes"])
+        self.assertEqual(["a" * 64], document["preexistingContainerIds"])
+        self.assertEqual(["b" * 64], [item["Id"] for item in document["createdContainers"]])
+        container = document["createdContainers"][0]
+        self.assertEqual("/dapr_redis", container["Name"])
+        self.assertTrue(container["Running"])
+        self.assertEqual("fresh-volume", container["Mounts"][0]["Name"])
+        volume = document["mountedVolumes"][0]
+        self.assertEqual(("fresh-volume", "local", "local"), (volume["Name"], volume["Driver"], volume["Scope"]))
+        self.assertLessEqual(document["startedAt"], container["Created"])
+        self.assertLessEqual(container["Created"], document["completedAt"])
+        self.assertLessEqual(volume["CreatedAt"], document["completedAt"])
+        self.assertEqual(0o600, receipt.stat().st_mode & 0o777)
+        self.assertNotIn("private-marker", receipt.read_text())
+        self.assertEqual(f"{ENV.DAPR_RECEIPT_ENV}={receipt}\n", (runner / "github-env").read_text())
+        self.assertEqual(["init --runtime-version 1.19.1"], (self.root / "dapr-events").read_text().splitlines())
+
+    def test_retained_old_malformed_mismatched_and_symlink_receipts_are_never_overwritten(self):
+        runner, binary, environment = self.receipt_fixture()
+        receipt = runner / ENV.DAPR_RECEIPT_NAME
+        for retained in (b"", b"{malformed", b'{"status":"complete","identity":{"runId":"old"}}'):
+            with self.subTest(retained=retained), mock.patch.dict(os.environ, environment):
+                receipt.write_bytes(retained)
+                with self.assertRaisesRegex(ENV.PipelineError, "exclusively create"):
+                    ENV.initialize_dapr(binary, "1.19.1", self.root)
+                self.assertEqual(retained, receipt.read_bytes())
+                receipt.unlink()
+        target = runner / "private-evidence"
+        target.write_text("retain")
+        receipt.symlink_to(target)
+        with mock.patch.dict(os.environ, environment), self.assertRaisesRegex(ENV.PipelineError, "exclusively create"):
+            ENV.initialize_dapr(binary, "1.19.1", self.root)
+        self.assertEqual("retain", target.read_text())
+        self.assertFalse((self.root / "dapr-events").exists())
+        self.assertFalse((runner / "github-env").exists())
+
+    def test_repeated_init_and_supplied_receipt_paths_refuse_before_another_init(self):
+        runner, binary, environment = self.receipt_fixture()
+        with mock.patch.dict(os.environ, environment):
+            receipt = ENV.initialize_dapr(binary, "1.19.1", self.root)
+            original = receipt.read_bytes()
+            with self.assertRaisesRegex(ENV.PipelineError, "already supplied"):
+                ENV.initialize_dapr(binary, "1.19.1", self.root)
+            os.environ.pop(ENV.DAPR_RECEIPT_ENV)
+            with self.assertRaisesRegex(ENV.PipelineError, "exclusively create"):
+                ENV.initialize_dapr(binary, "1.19.1", self.root)
+            self.assertEqual(original, receipt.read_bytes())
+        self.assertEqual(1, len((self.root / "dapr-events").read_text().splitlines()))
+
+    def test_missing_or_noncanonical_job_identity_refuses_before_receipt_or_init(self):
+        runner, binary, environment = self.receipt_fixture()
+        for variable, invalid in (("GITHUB_REPOSITORY", "missing"), ("GITHUB_RUN_ID", "0"),
+                                  ("GITHUB_RUN_ATTEMPT", "01"), ("GITHUB_JOB", "ci\nother")):
+            with self.subTest(variable=variable), mock.patch.dict(os.environ, dict(environment, **{variable: invalid})):
+                with self.assertRaisesRegex(ENV.PipelineError, variable):
+                    ENV.initialize_dapr(binary, "1.19.1", self.root)
+        with mock.patch.dict(os.environ, environment):
+            os.environ.pop("GITHUB_RUN_ID", None)
+            with self.assertRaisesRegex(ENV.PipelineError, "GITHUB_RUN_ID"):
+                ENV.initialize_dapr(binary, "1.19.1", self.root)
+        self.assertFalse((runner / ENV.DAPR_RECEIPT_NAME).exists())
+        self.assertFalse((self.root / "dapr-events").exists())
+
+    def test_failed_init_or_metadata_inspection_leaves_unpublished_incomplete_receipt(self):
+        runner, binary, environment = self.receipt_fixture(FAIL_DAPR_INIT="true")
+        with mock.patch.dict(os.environ, environment):
+            with self.assertRaises(ENV.PipelineError) as caught:
+                ENV.initialize_dapr(binary, "1.19.1", self.root)
+            self.assertEqual(37, caught.exception.returncode)
+            self.assertNotIn(ENV.DAPR_RECEIPT_ENV, os.environ)
+        receipt = runner / ENV.DAPR_RECEIPT_NAME
+        self.assertEqual("initializing", json.loads(receipt.read_text())["status"])
+        self.assertFalse((runner / "github-env").exists())
+        receipt.unlink()
+        environment.pop("FAIL_DAPR_INIT")
+        with mock.patch.dict(os.environ, environment), \
+                mock.patch.object(ENV, "dapr_created_resources", side_effect=ENV.PipelineError("malformed metadata")):
+            with self.assertRaisesRegex(ENV.PipelineError, "malformed metadata"):
+                ENV.initialize_dapr(binary, "1.19.1", self.root)
+            self.assertNotIn(ENV.DAPR_RECEIPT_ENV, os.environ)
+        self.assertEqual("initializing", json.loads(receipt.read_text())["status"])
+        self.assertFalse((runner / "github-env").exists())
+
+    def test_malformed_docker_inventories_and_metadata_fail_closed(self):
+        with mock.patch.object(ENV, "docker_output", return_value="duplicate\nduplicate\n"):
+            with self.assertRaisesRegex(ENV.PipelineError, "malformed Docker inventory"):
+                ENV.docker_inventory(self.root, ["volume", "ls"], r"[a-z]+")
+        for raw in ("{malformed", "{}", "[null]"):
+            with self.subTest(raw=raw), mock.patch.object(ENV, "docker_output", return_value=raw):
+                with self.assertRaisesRegex(ENV.PipelineError, "malformed Docker metadata"):
+                    ENV.docker_records(self.root, ["inspect", "b" * 64])
+        for created in (None, "yesterday", "2026-11-16T10:00:00", "2026-11-16T10:00:00+01:00"):
+            with self.subTest(created=created), self.assertRaisesRegex(ENV.PipelineError, "creation time"):
+                ENV.docker_created(created)
+
+    def test_partial_failed_inspection_never_logs_private_metadata_or_exports_a_receipt(self):
+        self.fixture.document.update(dapr=True, hooks=["after-unit-tests"])
+        self.dapr_hook()
+        self.fixture.environment["FAIL_DOCKER_INSPECT"] = "true"
+        result = self.harness(dapr_archive=self.controlled_dapr_archive())
+        self.assertEqual(55, result.returncode, result.stdout + result.stderr)
+        self.assertIn("Docker container inspection failed (55)", result.stderr)
+        self.assertNotIn("private-marker", result.stdout + result.stderr)
+        receipt = self.root / "runner-temp" / ENV.DAPR_RECEIPT_NAME
+        self.assertEqual("initializing", json.loads(receipt.read_text())["status"])
+        self.assertNotIn("private-marker", receipt.read_text())
+        self.assertFalse((self.root / "hook-after-unit-tests").exists())
+        for path in self.root.glob("action-env-*"):
+            self.assertNotIn(ENV.DAPR_RECEIPT_ENV, path.read_text())
 
     def test_enabled_dapr_reaches_actual_action_and_hook_path_and_dropped_forwarding_fails(self):
         self.fixture.document.update(dapr=True, hooks=["after-unit-tests", "after-integration-tests"])

@@ -10,8 +10,10 @@ from __future__ import annotations
 import argparse
 import ctypes
 import ctypes.util
+from datetime import datetime, timezone
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import platform
@@ -35,6 +37,170 @@ BUILDS_ROOT = Path(__file__).resolve().parents[2]
 # Official release asset digest, independently checked against GitHub's asset
 # metadata. Versions still come exclusively from the executing Builds Props.
 DAPR_CLI_DIGESTS = {"1.19.1": "6e9a339d261e430e5914909cc4443572573c197c174c3e14504c34116831de3b"}
+DAPR_RECEIPT_ENV = "HEXALITH_DAPR_INITIALIZATION_RECEIPT"
+DAPR_RECEIPT_NAME = "hexalith-dapr-initialization.json"
+
+
+def dapr_job_identity() -> dict[str, str]:
+    """Bind a receipt to the actual shared Actions job, independent of its name."""
+    fields = {"repository": ("GITHUB_REPOSITORY", r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+"),
+              "runId": ("GITHUB_RUN_ID", r"[1-9][0-9]*"),
+              "runAttempt": ("GITHUB_RUN_ATTEMPT", r"[1-9][0-9]*"),
+              "job": ("GITHUB_JOB", r"[A-Za-z_][A-Za-z0-9_-]*")}
+    identity = {}
+    for key, (variable, pattern) in fields.items():
+        value = os.environ.get(variable, "")
+        if re.fullmatch(pattern, value) is None:
+            raise PipelineError(f"Dapr initialization requires a valid {variable}")
+        identity[key] = value
+    return identity
+
+
+def docker_output(root: Path, arguments: list[str]) -> str:
+    """Keep partial inspect output private even when Docker returns failure."""
+    operation = ("volume inspection" if arguments[:2] == ["volume", "inspect"] else
+                 "container inspection" if arguments[:1] == ["inspect"] else "resource inventory")
+    try:
+        result = subprocess.run(["docker", *arguments], cwd=root, capture_output=True,
+                                text=True, timeout=60, check=False)
+    except (OSError, UnicodeError, subprocess.TimeoutExpired) as error:
+        # TimeoutExpired may carry partial Config.Env too; never log the error
+        # object or either output stream from a failed metadata operation.
+        raise PipelineError(f"Dapr initialization Docker {operation} unavailable") from error
+    if result.returncode:
+        raise PipelineError(f"Dapr initialization Docker {operation} failed ({result.returncode})",
+                            result.returncode)
+    return result.stdout
+
+
+def docker_inventory(root: Path, arguments: list[str], pattern: str) -> list[str]:
+    """Read canonical unique Docker names/IDs without accepting option injection."""
+    values = docker_output(root, arguments).splitlines()
+    if (len(values) != len(set(values))
+            or any(re.fullmatch(pattern, value) is None for value in values)):
+        raise PipelineError("Dapr initialization received a malformed Docker inventory")
+    return sorted(values)
+
+
+def docker_records(root: Path, arguments: list[str]) -> list[dict]:
+    """Require a JSON object array; never export raw Docker configuration/secrets."""
+    raw = docker_output(root, arguments)
+    try:
+        records = json.loads(raw)
+    except (ValueError, RecursionError) as error:
+        raise PipelineError("Dapr initialization received malformed Docker metadata") from error
+    if not isinstance(records, list) or any(not isinstance(item, dict) for item in records):
+        raise PipelineError("Dapr initialization received malformed Docker metadata")
+    return records
+
+
+def docker_created(value: object) -> str:
+    """Require the UTC creation time supplied by Docker, retaining its precision."""
+    try:
+        if not isinstance(value, str) or re.fullmatch(
+                r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?(?:Z|\+00:00)", value) is None:
+            raise ValueError("not UTC")
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise PipelineError("Dapr initialization received an invalid Docker creation time") from error
+    return value
+
+
+def dapr_created_resources(root: Path, preexisting: list[str]) -> tuple[list[dict], list[dict]]:
+    """Record only newly observed containers and their actual mounts/volumes."""
+    identifiers = docker_inventory(root, ["ps", "--all", "--quiet", "--no-trunc"], r"[0-9a-f]{64}")
+    created = sorted(set(identifiers) - set(preexisting))
+    containers, volume_names = [], set()
+    records = docker_records(root, ["inspect", *created]) if created else []
+    if (len(records) != len(created) or any(not isinstance(record.get("Id"), str) for record in records)
+            or sorted(record["Id"] for record in records) != created):
+        raise PipelineError("Dapr initialization container identities changed during inspection")
+    for record in sorted(records, key=lambda item: item["Id"]):
+        name, mounts, state = record.get("Name"), record.get("Mounts"), record.get("State")
+        config = record.get("Config")
+        image = config.get("Image") if isinstance(config, dict) else None
+        if (not isinstance(name, str) or re.fullmatch(r"/[A-Za-z0-9][A-Za-z0-9_.-]*", name) is None
+                or not isinstance(image, str) or not image or not isinstance(mounts, list)
+                or not isinstance(state, dict) or type(state.get("Running")) is not bool):
+            raise PipelineError("Dapr initialization received malformed container metadata")
+        selected = []
+        for mount in mounts:
+            if (not isinstance(mount, dict) or mount.get("Type") not in ("volume", "bind", "tmpfs")
+                    or not isinstance(mount.get("Source"), str)
+                    or not isinstance(mount.get("Destination"), str) or not mount["Destination"].startswith("/")
+                    or type(mount.get("RW")) is not bool):
+                raise PipelineError("Dapr initialization received malformed container mounts")
+            entry = {key: mount[key] for key in ("Type", "Source", "Destination", "RW")}
+            if mount["Type"] == "volume":
+                name = mount.get("Name")
+                if not isinstance(name, str) or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name) is None:
+                    raise PipelineError("Dapr initialization received an invalid volume identity")
+                entry["Name"] = name
+                volume_names.add(name)
+            selected.append(entry)
+        containers.append({"Id": record["Id"], "Name": record["Name"], "Image": image,
+                           "Created": docker_created(record.get("Created")), "Running": state["Running"],
+                           "Mounts": selected})
+    volumes = docker_records(root, ["volume", "inspect", *sorted(volume_names)]) if volume_names else []
+    if (len(volumes) != len(volume_names)
+            or any(not isinstance(record.get("Name"), str) for record in volumes)
+            or sorted(record["Name"] for record in volumes) != sorted(volume_names)):
+        raise PipelineError("Dapr initialization volume identities changed during inspection")
+    selected_volumes = []
+    for record in sorted(volumes, key=lambda item: item["Name"]):
+        if any(not isinstance(record.get(key), str) or not record[key] for key in ("Driver", "Scope", "Mountpoint")):
+            raise PipelineError("Dapr initialization received malformed volume metadata")
+        selected_volumes.append({**{key: record[key] for key in ("Name", "Driver", "Scope", "Mountpoint")},
+                                 "CreatedAt": docker_created(record.get("CreatedAt"))})
+    return containers, selected_volumes
+
+
+def initialize_dapr(binary: Path, runtime: str, root: Path) -> Path:
+    """Create evidence exclusively before init; publish its path only on success.
+
+    A retained, stale, malformed or symlink receipt is never overwritten. A
+    failed initialization/inspection leaves an unpublished initializing receipt,
+    so callers cannot mistake partial evidence for fresh backend ownership.
+    """
+    if os.environ.get(DAPR_RECEIPT_ENV):
+        raise PipelineError("Dapr initialization receipt is already supplied; refusing reuse")
+    identity = dapr_job_identity()
+    temporary = Path(os.environ.get("RUNNER_TEMP", ""))
+    if (not temporary.is_absolute() or not temporary.is_dir()
+            or temporary.resolve() != temporary
+            or any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in str(temporary))):
+        raise PipelineError("Dapr initialization requires a real absolute RUNNER_TEMP directory")
+    receipt = temporary / DAPR_RECEIPT_NAME
+    try:
+        descriptor = os.open(receipt, os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    except OSError as error:
+        raise PipelineError("cannot exclusively create Dapr initialization receipt; refusing reuse") from error
+    with os.fdopen(descriptor, "w+", encoding="utf-8") as stream:
+        volumes = docker_inventory(root, ["volume", "ls", "--format", "{{.Name}}"], r"[A-Za-z0-9][A-Za-z0-9_.-]*")
+        containers = docker_inventory(root, ["ps", "--all", "--quiet", "--no-trunc"], r"[0-9a-f]{64}")
+        document = {"schema": "hexalith.dapr-initialization.v1", "status": "initializing",
+                    "identity": identity, "runtimeVersion": runtime,
+                    "startedAt": datetime.now(timezone.utc).isoformat(),
+                    "preexistingVolumes": volumes, "preexistingContainerIds": containers}
+        stream.write(json.dumps(document, sort_keys=True) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+        run_command([str(binary), "init", "--runtime-version", runtime], root)
+        created_containers, mounted_volumes = dapr_created_resources(root, containers)
+        document.update(status="complete", completedAt=datetime.now(timezone.utc).isoformat(),
+                        createdContainers=created_containers, mountedVolumes=mounted_volumes)
+        stream.seek(0)
+        stream.write(json.dumps(document, sort_keys=True) + "\n")
+        stream.truncate()
+        stream.flush()
+        os.fsync(stream.fileno())
+    if os.environ.get("GITHUB_ENV"):
+        with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
+            stream.write(f"{DAPR_RECEIPT_ENV}={receipt}\n")
+    os.environ[DAPR_RECEIPT_ENV] = str(receipt)
+    return receipt
+
+
 # Trusted native toolchain. A module may enable it but cannot choose executable
 # URLs, checksums or dependencies. The CLI embeds the DCP/dashboard bundle.
 ASPIRE_VERSION = "13.6.5"
@@ -207,7 +373,7 @@ def setup_dapr(root: Path) -> None:
     binary = install_dapr_cli(archive, digest, directory)
     # Subsequent hook actions and integration tests use this exact executable.
     export_path(directory)
-    run_command([str(binary), "init", "--runtime-version", runtime], root)
+    initialize_dapr(binary, runtime, root)
 
 
 def playwright_tools(root: Path, solution: str) -> tuple[Path, ...]:

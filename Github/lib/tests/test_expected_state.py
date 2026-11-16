@@ -19,11 +19,12 @@ import expected_state as state
 REAL_GIT = shutil.which("git")
 REPOSITORY = "Example/Fixture"
 BUILDS = "Hexalith/Hexalith.Builds"
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def configuration(**changes):
     return {"schema": "hexalith.ci.v1", "buildsTag": "v1.2.3", "solution": "Fixture.slnx",
-            "dapr": False, "browsers": False, "registry": False, "codeql": [],
+            "dapr": False, "browsers": False, "registry": False, "ciTimeoutMinutes": 30, "codeql": [],
             "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False}, "hooks": [], "jobs": {},
             "submodules": [], **changes}
 
@@ -436,6 +437,36 @@ raise SystemExit(subprocess.call([{REAL_GIT!r}, *arguments]))
     def test_index_snapshot_is_unavailable_at_the_shared_runtime_boundary(self):
         with self.assertRaisesRegex(state.ExpectedStateError, "committed Git tree"):
             self.compare(ref="index")
+
+
+class CheckedInSampleTests(unittest.TestCase):
+    def test_actual_sample_document_matches_committed_expectation_and_timeout_drift_is_rejected(self):
+        with tempfile.TemporaryDirectory(prefix="checked-in-sample-") as directory:
+            repository = Repository(Path(directory) / "builds")
+            sample = state.SAMPLE_ROOT
+            paths = (sample + "/.github/hexalith-ci.json",
+                     sample + "/expected-source/rendered/Hexalith.Sample/.github/hexalith-ci.json",
+                     sample + "/expected-source/rendered/Hexalith.Sample.perimeter.json")
+            for relative in paths:
+                repository.write(relative, (ROOT / relative).read_bytes())
+            repository.commit()
+
+            def compare():
+                return state.compare_repository(state.Git(repository.root), repository=BUILDS,
+                    module_root=sample, expected_source=sample + "/expected-source")
+
+            with patch.object(state.AnonymousTransport, "clone", side_effect=AssertionError("sample remote")), \
+                    patch.object(state.AnonymousTransport, "builds", side_effect=AssertionError("sample remote")):
+                result = compare()
+                result.require_clean()
+                actual = state.load_ci(result.actual, repository=BUILDS, module_root=sample)
+                self.assertEqual(30, actual["ciTimeoutMinutes"])
+                self.assertEqual([{"kind": "whole", "path": ".github/hexalith-ci.json"}], result.document["entries"])
+                actual["ciTimeoutMinutes"] = 60
+                repository.write(paths[0], json.dumps(actual))
+                repository.commit()
+                with self.assertRaisesRegex(state.ExpectedStateError, "hexalith-ci.json"):
+                    compare().require_clean()
 
 
 if __name__ == "__main__":

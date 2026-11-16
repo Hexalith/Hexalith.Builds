@@ -5,6 +5,7 @@
   "dapr": true,
   "browsers": false,
   "registry": false,
+  "ciTimeoutMinutes": 30,
   "codeql": [
     "csharp"
   ],
