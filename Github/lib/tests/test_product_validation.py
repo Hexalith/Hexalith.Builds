@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 
@@ -24,7 +25,11 @@ root = pathlib.Path(os.environ["PRODUCT_TEST_ROOT"])
 data = json.loads((root / "sdk.json").read_text())
 args = sys.argv[1:]
 with (root / "commands.jsonl").open("a") as log:
-    log.write(json.dumps({"args":["openssl",*args],"cwd":str(pathlib.Path.cwd())})+"\n")
+    log.write(json.dumps({"args":["openssl",*args],"cwd":str(pathlib.Path.cwd()),
+                          "temps":{key:os.environ.get(key) for key in ("TMPDIR","TMP","TEMP")}})+"\n")
+private_temp=pathlib.Path(os.environ["TMPDIR"])
+assert all(os.environ.get(key)==str(private_temp) for key in ("TMP","TEMP"))
+assert private_temp.name=="signing-temp" and private_temp.stat().st_mode & 0o777 == 0o700
 if data.get("identity_failure"):
     sys.exit(37)
 if args[0] == "verify":
@@ -38,15 +43,22 @@ else:
 '''
 
 FAKE_DOTNET = r'''
-import hashlib, json, os, pathlib, shutil, signal, sys, xml.etree.ElementTree as ET, zipfile
+import hashlib, json, os, pathlib, shutil, signal, subprocess, sys, tempfile, time, xml.etree.ElementTree as ET, zipfile
 root = pathlib.Path(os.environ["PRODUCT_TEST_ROOT"])
 data = json.loads((root / "sdk.json").read_text())
 args = sys.argv[1:]
 cwd = pathlib.Path.cwd()
-record = {"args":args, "cwd":str(cwd), "cache":os.environ.get("NUGET_PACKAGES"), "pid":os.getpid()}
+record = {"args":args, "cwd":str(cwd), "cache":os.environ.get("NUGET_PACKAGES"), "pid":os.getpid(),
+          "temps":{key:os.environ.get(key) for key in ("TMPDIR","TMP","TEMP")}}
 with (root / "commands.jsonl").open("a") as log:
     log.write(json.dumps(record)+"\n")
 version = data.get("version", "2.3.4-preview.7")
+if args[0] == "nuget":
+    private_temp=pathlib.Path(tempfile.gettempdir())
+    assert all(os.environ.get(key)==str(private_temp) for key in ("TMPDIR","TMP","TEMP"))
+    assert private_temp.name=="signing-temp" and private_temp.stat().st_mode & 0o777 == 0o700
+    with tempfile.NamedTemporaryFile(delete=False) as intermediate:
+        intermediate.write(b"intermediate signing archive")
 if args[0] == "msbuild":
     package = pathlib.Path(args[1]).stem
     target = root / pathlib.Path(args[1]).parent / "bin/Release/net10.0" / (package+".dll")
@@ -126,6 +138,24 @@ elif args[:2] == ["nuget", "sign"]:
     assert pfx.stat().st_mode & 0o777 == 0o600
     assert pfx.parent.stat().st_mode & 0o777 == 0o700
     if data.get("terminate_signing"):
+        worker = r"""
+import json, os, pathlib, signal, sys
+root, pfx = map(pathlib.Path, sys.argv[1:])
+def terminating(_signum, _frame):
+    (root / "forwarded-child-termination.json").write_text(json.dumps({
+        "key_exists":pfx.is_file(), "scratch_exists":pfx.parent.parent.is_dir(),
+        "temp_exists":pathlib.Path(os.environ["TMPDIR"]).is_dir()}))
+signal.signal(signal.SIGTERM, terminating)
+signal.alarm(10)
+(root / "forwarded-child.json").write_text(json.dumps({"pid":os.getpid(),"group":os.getpgrp()}))
+while True:
+    signal.pause()
+"""
+        subprocess.Popen([sys.executable, "-c", worker, str(root), str(pfx)])
+        deadline=time.monotonic()+5
+        while not (root / "forwarded-child.json").exists():
+            assert time.monotonic()<deadline, "forwarded child did not become ready"
+            time.sleep(0.01)
         os.kill(os.getppid(), signal.SIGTERM)
         signal.pause()
     if not data.get("unsigned_candidate"):
@@ -134,6 +164,18 @@ elif args[:2] == ["nuget", "sign"]:
             archive.writestr(".signature.p7s", "wrong" if data.get("wrong_signer") else fingerprint)
             if data.get("rewrite_payload"):
                 archive.writestr("unexpected.txt", b"changed payload")
+        if data.get("rewrite_existing_payload"):
+            with zipfile.ZipFile(args[2]) as archive:
+                entries=[(entry,archive.read(entry)) for entry in archive.infolist()]
+            existing=next(entry.filename for entry,payload in entries if entry.filename.endswith(".dll"))
+            replacement=private_temp / "rewritten.nupkg"
+            with zipfile.ZipFile(replacement, "w") as archive:
+                for entry,payload in entries:
+                    archive.writestr(entry, b"changed existing payload" if entry.filename==existing else payload)
+            os.replace(replacement, args[2])
+            with zipfile.ZipFile(args[2]) as archive:
+                (root / "rewritten-payload.json").write_text(json.dumps({
+                    "before":[entry.filename for entry,payload in entries],"after":archive.namelist(),"changed":existing}))
     if data.get("rewrite_symbols"):
         next(pathlib.Path(args[2]).parent.glob("*.snupkg")).write_bytes(b"changed symbols")
     if data.get("rewrite_output_during_signing"):
@@ -255,6 +297,21 @@ sys.exit(31 if data.get("validator_failure") else 0)
         self.assertEqual((len(signs), len(verifies)), (6, 6))
         self.assertTrue(all(item["args"][2].endswith(".nupkg") for item in signs))
         self.assertTrue(all("--certificate-password" not in item["args"] for item in commands))
+        signing = [item for item in commands if item["args"][0] == "openssl" or item["args"][0] == "nuget"]
+        self.assertEqual(len({item["temps"]["TMPDIR"] for item in signing}), 1)
+        for item in signing:
+            self.assertEqual(len(set(item["temps"].values())), 1)
+            directory = Path(item["temps"]["TMPDIR"])
+            self.assertEqual(directory.name, "signing-temp")
+            self.assertTrue(directory.parent.name.startswith("hexalith-product-validation-"))
+            self.assertFalse(directory.exists(), "signing intermediate files leaked")
+
+    def test_unsupported_platforms_refuse_before_any_sdk_command_or_pack(self):
+        for platform in ("win32", "darwin"):
+            with self.subTest(platform=platform), patch.object(RUNNER.sys, "platform", platform):
+                with self.assertRaisesRegex(RUNNER.ValidationError, "Linux only; refusing before packing"):
+                    RUNNER.run(self.root, "contract.json")
+        self.assertEqual(self.commands(), [])
 
     def test_identity_creation_failure_stops_before_signing_or_consumers_and_cleans_keys(self):
         self.data["identity_failure"] = True
@@ -283,6 +340,15 @@ sys.exit(31 if data.get("validator_failure") else 0)
         self.data["rewrite_payload"] = True
         self.assert_refused("signing changed candidate ZIP payload")
 
+    def test_authenticated_signature_cannot_hide_changed_existing_entry_bytes(self):
+        self.data["rewrite_existing_payload"] = True
+        self.assert_refused("signing changed candidate ZIP payload")
+        inventory = json.loads((self.root / "rewritten-payload.json").read_text())
+        self.assertEqual(inventory["before"], inventory["after"])
+        self.assertTrue(inventory["changed"].endswith(".dll"))
+        self.assertEqual(len([item for item in self.commands() if item["args"][:2] == ["nuget", "verify"]]), 1)
+        self.assertFalse(any(item["args"][0] == "restore" for item in self.commands()))
+
     def test_signing_cannot_change_symbols(self):
         self.data["rewrite_symbols"] = True
         self.assert_refused("signing changed unselected feed bytes")
@@ -291,7 +357,29 @@ sys.exit(31 if data.get("validator_failure") else 0)
         self.data["rewrite_output_during_signing"] = True
         self.assert_refused("existing Release assembly/symbol outputs changed")
 
-    def test_termination_during_signing_cleans_identity_and_waits_for_child(self):
+    def test_termination_during_signing_reaps_forwarded_child_before_removing_keys(self):
+        # Adopt/reap a leaked fixture child on test failure too; a regression
+        # must not leave an orphan behind in the test runner's environment.
+        libc = RUNNER.ctypes.CDLL(None)
+        previous = RUNNER.ctypes.c_int()
+        self.assertEqual(libc.prctl(37, RUNNER.ctypes.byref(previous), 0, 0, 0), 0)
+        self.assertEqual(libc.prctl(36, 1, 0, 0, 0), 0)
+        self.addCleanup(libc.prctl, 36, previous.value, 0, 0, 0)
+
+        def reap_fixture():
+            path = self.root / "forwarded-child.json"
+            if path.exists():
+                child = json.loads(path.read_text())["pid"]
+                try:
+                    os.kill(child, RUNNER.signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                try:
+                    os.waitpid(child, 0)
+                except ChildProcessError:
+                    pass
+
+        self.addCleanup(reap_fixture)
         self.data["terminate_signing"] = True
         result = self.invoke()
         self.assertEqual(result.returncode, 143, result.stderr)
@@ -299,6 +387,12 @@ sys.exit(31 if data.get("validator_failure") else 0)
         child = next(item["pid"] for item in self.commands() if item["args"][:2] == ["nuget", "sign"])
         with self.assertRaises(ProcessLookupError):
             os.kill(child, 0)
+        forwarded = json.loads((self.root / "forwarded-child.json").read_text())
+        self.assertEqual(forwarded["group"], child)
+        with self.assertRaises(ProcessLookupError):
+            os.kill(forwarded["pid"], 0)
+        self.assertEqual(json.loads((self.root / "forwarded-child-termination.json").read_text()),
+                         {"key_exists": True, "scratch_exists": True, "temp_exists": True})
 
     def test_missing_consumer_refuses_before_any_sdk_command(self):
         self.contract["consumers"].pop(self.ids[0])

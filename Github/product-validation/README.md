@@ -8,6 +8,14 @@ the build's package version, requires its assembly and symbols to exist, and
 asserts that each restored assembly's informational version matches that version.
 It never compiles the module again.
 
+The qualified signing path is Linux with OpenSSL 3 and .NET SDK `11.0.100`,
+selected by the module's `global.json` (including its allowed SDK patch roll
+forward). Install those tools and allow access to nuget.org and the timestamp
+authority below. Other operating systems fail before any SDK command or packing:
+PFX key storage containment is not qualified there. Linux process-group and
+child-subreaper support must be available; inability to establish containment
+also fails closed. The runner does not change machine or user certificate stores.
+
 The module supplies a JSON contract through the `contract` input:
 
 ```json
@@ -45,6 +53,9 @@ certificate and empty-password PFX stay in an owner-only scratch directory, with
 owner-only files. No private material or password is put in logs, environment
 variables or command arguments. OpenSSL and the selected .NET SDK supply the
 tools; no machine or user certificate store is changed.
+Signing children receive an owner-only job directory for `TMPDIR`, `TMP` and
+`TEMP`, containing NuGet's intermediate signing archives. That directory and
+the explicit signing files are cleaned with the job.
 
 The runner signs only the exact manifest-selected regular `.nupkg` files at the
 evaluated built version. The SDK requests SHA-256 RFC3161 timestamps from
@@ -79,7 +90,10 @@ The runner verifies local-feed provenance, restored candidate bytes and versions
 that the feed and existing Release assembly/symbol outputs remain unchanged
 throughout validation. The first failed pack, archive check, restore, consumer
 build or execution stops subsequent work. All temporary files are cleaned on
-success, failure, Ctrl-C and ordinary termination; child commands are waited for.
+success, failure, Ctrl-C and ordinary termination. Every command runs in a
+private process group; termination stops that group, escalates to SIGKILL when
+necessary, and observes/reaps forwarded descendants before scratch or keys are
+removed.
 Set `TMPDIR` outside the module repository; `run-with-temp` does this for local
 checks. Forced process kills and host loss rely on the enclosing disposable job's
 scratch cleanup.

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 from copy import deepcopy
+import ctypes
 import hashlib
 import json
 import os
@@ -20,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -102,17 +104,72 @@ def load_contract(root: Path, relative: str) -> tuple[dict, list[dict]]:
     return contract, rows
 
 
+def stop_command_tree(process: subprocess.Popen) -> None:
+    """Stop the private process group and reap adopted forwarded children."""
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        process.wait()
+        return
+    deadline = time.monotonic() + 0.5
+    while True:
+        if process.poll() is not None:
+            while True:
+                try:
+                    child, _status = os.waitpid(-process.pid, os.WNOHANG)
+                except ChildProcessError:
+                    break
+                if child == 0:
+                    break
+        try:
+            os.killpg(process.pid, 0)
+        except ProcessLookupError:
+            process.wait()
+            return
+        if time.monotonic() >= deadline:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        time.sleep(0.01)
+
+
 def run_command(arguments: list[str], root: Path, environment: dict[str, str], *, capture: bool = False) -> str:
-    """Use argv, propagate the first failure, and never invoke a shell."""
-    result = subprocess.run(arguments, cwd=root, env=environment, check=False, text=True,
-                            stdout=subprocess.PIPE if capture else None,
-                            stderr=subprocess.PIPE if capture else None)
-    if result.returncode:
+    """Use argv and contain/reap the command's process tree before returning."""
+    # Linux subreaping lets us wait for forwarded grandchildren after their
+    # immediate parent exits; process-group signals alone leave orphan zombies.
+    libc = ctypes.CDLL(None, use_errno=True)
+    previous = ctypes.c_int()
+    if (libc.prctl(37, ctypes.byref(previous), 0, 0, 0) != 0
+            or libc.prctl(36, 1, 0, 0, 0) != 0):
+        raise OSError(ctypes.get_errno(), "cannot contain the command's forwarded children")
+    process = None
+    try:
+        process = subprocess.Popen(arguments, cwd=root, env=environment, text=True, start_new_session=True,
+                                   stdout=subprocess.PIPE if capture else None,
+                                   stderr=subprocess.PIPE if capture else None)
+        stdout, stderr = process.communicate()
+    finally:
+        # A second cancellation must not interrupt tree cleanup or restore the
+        # subreaper state before all owned descendants have been observed gone.
+        mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT, signal.SIGHUP})
+        try:
+            if process is not None:
+                stop_command_tree(process)
+                for stream in (process.stdout, process.stderr):
+                    if stream is not None:
+                        stream.close()
+        finally:
+            restored = libc.prctl(36, previous.value, 0, 0, 0)
+            signal.pthread_sigmask(signal.SIG_SETMASK, mask)
+            if restored != 0:
+                raise OSError(ctypes.get_errno(), "cannot restore command containment state")
+    if process.returncode:
         if capture:
-            print(result.stdout, end="", file=sys.stderr)
-            print(result.stderr, end="", file=sys.stderr)
-        raise ValidationError(f"{arguments[0]} {arguments[1]} failed ({result.returncode})")
-    return result.stdout if capture else ""
+            print(stdout, end="", file=sys.stderr)
+            print(stderr, end="", file=sys.stderr)
+        raise ValidationError(f"{arguments[0]} {arguments[1]} failed ({process.returncode})")
+    return stdout if capture else ""
 
 
 def evaluated_package(root: Path, row: dict, framework: str, environment: dict[str, str]) -> dict:
@@ -326,6 +383,8 @@ if (__hexalithProductVersion?.Split('+')[0] != "{version}")
 
 
 def run(root: Path, contract_path: str, *, nuget_config: Path = NUGET_CONFIG) -> None:
+    if sys.platform != "linux":
+        raise ValidationError("candidate signing is qualified on Linux only; refusing before packing")
     root = root.resolve()
     contract, rows = load_contract(root, contract_path)
     framework = contract["targetFramework"]
@@ -361,7 +420,10 @@ def run(root: Path, contract_path: str, *, nuget_config: Path = NUGET_CONFIG) ->
         frozen = fingerprints(feed)
         run_command([sys.executable, str(source_path(root, contract["archiveValidator"], ".py")), str(feed)], root, environment)
         require_unchanged(feed, frozen, outputs)
-        signing = dict(environment, DOTNET_CLI_HOME=str(scratch / "signing-cli-home"))
+        signing_temp = scratch / "signing-temp"
+        signing_temp.mkdir(mode=0o700)
+        signing = dict(environment, DOTNET_CLI_HOME=str(scratch / "signing-cli-home"),
+                       TMPDIR=str(signing_temp), TMP=str(signing_temp), TEMP=str(signing_temp))
         pfx, fingerprint = job_signer(scratch, signing)
         config = scratch / "NuGet.Config"
         consumer_config(config, feed, rows, nuget_config, fingerprint)
@@ -399,7 +461,7 @@ def main() -> int:
     parser.add_argument("--contract", required=True)
     arguments = parser.parse_args()
     # Unwind TemporaryDirectory on ordinary termination as well as exceptions
-    # and Ctrl-C; subprocess.run kills and waits for its child while unwinding.
+    # and Ctrl-C; run_command stops and observes the complete command group.
     def terminate(signum: int, _frame: object) -> None:
         raise SystemExit(128 + signum)
 
