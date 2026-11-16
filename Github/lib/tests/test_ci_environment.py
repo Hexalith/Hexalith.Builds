@@ -395,6 +395,16 @@ if os.environ.get("PREPARE_FAIL")==name+":"+args[0]:
             self.invoke(tools=False, environment=dict(self.environment, PREPARE_NODE_VERSION="v22.0.0"))
         self.assertEqual([], self.effects())
 
+    def test_cli_rejects_null_scalar_and_malformed_workspace_outputs(self):
+        for value in ("null", "true", '"tests/e2e"', "not-json"):
+            with self.subTest(value=value):
+                result = subprocess.run([sys.executable, "-I", str(SCRIPT), "--workspace", str(self.root),
+                    "--solution", "Fixture.slnx", "--npm-workspaces", value], env=self.environment,
+                    text=True, capture_output=True, check=False)
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+        self.assertEqual([], self.effects())
+
     def test_each_installation_failure_preserves_status_and_stops_successors(self):
         for failing, count in (("npm:ci",1), ("npm:audit",2), ("dotnet:tool",3), ("node:"+str(
                 self.workspace / "node_modules/@playwright/test/cli.js"),4)):

@@ -32,7 +32,7 @@ class ResolveAdapterTests(unittest.TestCase):
         self.git('init', '-b', 'main')
         self.git('config', 'user.name', 'Fixture')
         self.git('config', 'user.email', 'fixture@example.com')
-        self.config = {'schema': 'hexalith.ci.v1', 'solution': 'Fixture.slnx', 'dapr': False,
+        self.config = {'schema': 'hexalith.ci.v1', 'npmWorkspaces': [], 'dotnetTools': False, 'solution': 'Fixture.slnx', 'dapr': False,
                        'browsers': False, 'registry': False, 'codeql': [], 'hooks': [], 'jobs': {},
                        'tests': {'integration': [], 'exclude': {}}, 'submodules': []}
         self.commit_config()

@@ -6,7 +6,6 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -77,6 +76,16 @@ elif args[0] == "restore":
         libraries[item+"/"+actual]={"type":"project" if item == data.get("source_reference") else "package"}
     (cwd / "obj").mkdir()
     (cwd / "obj/project.assets.json").write_text(json.dumps({"libraries":libraries}))
+    if data.get("mutate_feed"):
+        next(feed.glob("*.nupkg")).write_bytes(b"changed after restore")
+    if data.get("mutate_feed_directory"):
+        (feed / "unexpected-directory").mkdir()
+    if data.get("mutate_feed_symlink"):
+        archive=next(feed.glob("*.nupkg"))
+        copy=feed.parent / archive.name
+        shutil.copyfile(archive,copy)
+        archive.unlink()
+        archive.symlink_to(copy)
 elif args[0] == "build":
     assert cwd != root, "main module must never be rebuilt"
     package=ET.parse(cwd / "Consumer.csproj").find(".//PackageReference").get("Include")
@@ -248,6 +257,18 @@ sys.exit(31 if data.get("validator_failure") else 0)
     def test_wrong_restored_archive_bytes_refuse(self):
         self.data["wrong_restored_bytes"] = self.ids[0]
         self.assert_refused("restored candidate bytes differ")
+
+    def test_candidate_feed_mutation_refuses_even_after_a_successful_restore(self):
+        self.data["mutate_feed"] = True
+        self.assert_refused("candidate feed changed during validation")
+
+    def test_candidate_feed_directory_addition_refuses_after_restore(self):
+        self.data["mutate_feed_directory"] = True
+        self.assert_refused("nonregular or symlink entry")
+
+    def test_byte_identical_feed_symlink_replacement_refuses_after_restore(self):
+        self.data["mutate_feed_symlink"] = True
+        self.assert_refused("nonregular or symlink entry")
 
     def test_same_bytes_from_another_feed_refuse(self):
         self.data["wrong_restored_source"] = self.ids[0]

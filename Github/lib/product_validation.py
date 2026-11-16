@@ -136,6 +136,24 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def fingerprints(directory: Path) -> dict[str, str]:
+    if directory.is_symlink():
+        raise ValidationError("candidate feed must not be a symlink")
+    result = {}
+    for path in directory.iterdir():
+        if path.is_symlink() or not path.is_file():
+            raise ValidationError("candidate feed contains a nonregular or symlink entry")
+        result[path.name] = digest(path)
+    return result
+
+
+def require_unchanged(feed: Path, expected: dict[str, str], outputs: dict[Path, str]) -> None:
+    if fingerprints(feed) != expected:
+        raise ValidationError("candidate feed changed during validation")
+    if any(digest(path) != original for path, original in outputs.items()):
+        raise ValidationError("existing Release assembly/symbol outputs changed during validation")
+
+
 def archive_inventory(feed: Path, rows: list[dict], version: str) -> None:
     """The product validator handles payload/dependency boundaries after this check."""
     expected = {row["id"] + "." + version + "." + suffix
@@ -255,7 +273,9 @@ def run(root: Path, contract_path: str, *, nuget_config: Path = NUGET_CONFIG) ->
         if any(digest(path) != original for path, original in outputs.items()):
             raise ValidationError("packing changed the existing Release assembly/symbol outputs")
         archive_inventory(feed, rows, version)
+        frozen = fingerprints(feed)
         run_command([sys.executable, str(source_path(root, contract["archiveValidator"], ".py")), str(feed)], root, environment)
+        require_unchanged(feed, frozen, outputs)
         for number, (row, values) in enumerate(zip(rows, evaluated, strict=True)):
             consumer = scratch / ("consumer-" + str(number))
             consumer.mkdir()
@@ -269,11 +289,14 @@ def run(root: Path, contract_path: str, *, nuget_config: Path = NUGET_CONFIG) ->
                            NUGET_PLUGINS_CACHE_PATH=str(consumer / "plugins-cache"), DOTNET_CLI_HOME=str(consumer / "cli-home"))
             run_command(["dotnet", "restore", "Consumer.csproj", "--configfile", str(config), *FLAGS,
                          "-p:NuGetAudit=true", "-p:NuGetAuditMode=all"], consumer, private)
+            require_unchanged(feed, frozen, outputs)
             restored_candidates(read_json(consumer / "obj/project.assets.json"), Path(private["NUGET_PACKAGES"]),
                                 feed, rows, version, row["id"])
             run_command(["dotnet", "build", "Consumer.csproj", "--no-restore", *FLAGS,
                          "-p:NuGetAudit=true", "-p:NuGetAuditMode=all"], consumer, private)
+            require_unchanged(feed, frozen, outputs)
             run_command(["dotnet", str(consumer / "bin/Release" / framework / "Consumer.dll")], consumer, private)
+            require_unchanged(feed, frozen, outputs)
             print(f"{row['id']} {version}: isolated consumer passed", flush=True)
 
 
@@ -285,7 +308,7 @@ def main() -> int:
     try:
         run(arguments.workspace, arguments.contract)
         return 0
-    except (ValidationError, OSError, KeyError, TypeError, json.JSONDecodeError, ET.ParseError, zipfile.BadZipFile) as error:
+    except (ValueError, OSError, KeyError, TypeError, ET.ParseError, zipfile.BadZipFile) as error:
         print(f"Product validation failed: {error}", file=sys.stderr)
         return 1
 

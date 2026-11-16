@@ -401,9 +401,12 @@ def main() -> int:
     try:
         if sys.version_info < (3, 12):
             raise PipelineError("Python 3.12 or later is required")
+        workspaces = json.loads(args.npm_workspaces)
+        if not isinstance(workspaces, list):
+            raise PipelineError("npmWorkspaces must be a JSON array")
         setup_environment(args.workspace, solution=args.solution, module_root=args.module_root,
                           dapr=args.dapr, browsers=args.browsers, registry=args.registry, aspire=args.aspire,
-                          npm_workspaces=json.loads(args.npm_workspaces), dotnet_tools=args.dotnet_tools)
+                          npm_workspaces=workspaces, dotnet_tools=args.dotnet_tools)
         return 0
     except (ConfigError, ValueError) as error:
         print(error, file=sys.stderr)
