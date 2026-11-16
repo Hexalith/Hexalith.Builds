@@ -79,6 +79,8 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateResultValidationCommand(standardOutput, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreatePrepareBuildCommand(standardOutput, operationStarted));
+        rootCommand.Subcommands.Add(CreateManagedPrepareBuildCommand(standardOutput, operationStarted, qualification: false));
+        rootCommand.Subcommands.Add(CreateManagedPrepareBuildCommand(standardOutput, operationStarted, qualification: true));
         rootCommand.Subcommands.Add(CreateListCommand(standardOutput, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateAttachCommand(standardOutput, compositionOptions, operationStarted, attacherContext));
         return rootCommand;
@@ -156,6 +158,38 @@ internal static class ModuleCommandApplication
                     parsed.GetValue(mode) == "package" ? WorkspaceMode.Package : WorkspaceMode.Source,
                     parsed.GetValue(workspace)!,
                     cancellation).ConfigureAwait(false);
+                await ToolDiagnosticFormatter.WriteAsync(output, result, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
+                return (int)result.Outcome.ExitCode;
+            }
+        });
+        return command;
+    }
+
+    private static Command CreateManagedPrepareBuildCommand(TextWriter output, Action<Task<int>> operationStarted, bool qualification)
+    {
+        Command command = new(
+            qualification ? "prepare-qualified-build" : "prepare-managed-build",
+            qualification ? "Qualifies exact candidate package inputs locally without granting production authority." : "Prepares package imports from authenticated accepted delivery.");
+        Option<string> manifest = new("--manifest") { Required = true };
+        Option<string> authority = new("--authority") { Required = true };
+        Option<string> workspace = new("--workspace") { Required = true };
+        Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
+        _ = format.AcceptOnlyFromAmong("human", "json");
+        foreach (Option option in new Option[] { manifest, authority, workspace, format })
+        {
+            command.Options.Add(option);
+        }
+
+        command.SetAction((parsed, token) =>
+        {
+            Task<int> execution = ExecuteAsync(token);
+            operationStarted(execution);
+            return execution;
+
+            async Task<int> ExecuteAsync(CancellationToken cancellation)
+            {
+                ToolCommandResult result = await ManagedBuildPreparationService.PrepareAsync(
+                    parsed.GetValue(manifest)!, parsed.GetValue(authority)!, parsed.GetValue(workspace)!, qualification, cancellation).ConfigureAwait(false);
                 await ToolDiagnosticFormatter.WriteAsync(output, result, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
                 return (int)result.Outcome.ExitCode;
             }

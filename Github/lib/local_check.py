@@ -10,6 +10,7 @@ import argparse
 from pathlib import Path
 import re
 import sys
+import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ci_pipeline
@@ -164,14 +165,26 @@ def run(workspace: Path, *, transport=None, tool_factory=guard.Tools) -> None:
     if git.run("rev-parse", "--is-shallow-repository").strip() != b"false":
         raise ci_pipeline.PipelineError("module history is shallow; fetch --unshallow origin with complete history "
                                         "before checking origin/main..HEAD")
-    guard.run(git.root, repository=repository, ref=head, commit_range=(base, head),
-              emit=lambda values: None, transport=transport, tool_factory=tool_factory)
+    comparison = guard.run(git.root, repository=repository, ref=head, commit_range=(base, head),
+                           emit=lambda values: None, transport=transport, tool_factory=tool_factory)
     revalidate(git, head, snapshot, paths, tag)
     prepared = ci_pipeline.prepare_config(git.root, repository=repository)
-    ci_pipeline.restore_and_build(prepared)
-    revalidate(git, head, snapshot, paths, tag)
-    ci_pipeline.run_unit_tests(prepared, repository=repository)
-    revalidate(git, head, snapshot, paths, tag)
+    if not prepared.document.get("moduleManifest"):
+        ci_pipeline.restore_and_build(prepared)
+        revalidate(git, head, snapshot, paths, tag)
+        ci_pipeline.run_unit_tests(prepared, repository=repository)
+        revalidate(git, head, snapshot, paths, tag)
+        return
+    from module_preparation import accepted_authority, applied, prepare_environment
+    with tempfile.TemporaryDirectory(prefix="hexalith-local-preparation-") as temporary:
+        authority = accepted_authority(prepared, repository=repository, comparison=comparison)
+        environment = prepare_environment(prepared, authority, Path(temporary))
+        revalidate(git, head, snapshot, paths, tag)
+        with applied(prepared, authority, environment):
+            ci_pipeline.restore_and_build(prepared)
+            revalidate(git, head, snapshot, paths, tag)
+            ci_pipeline.run_unit_tests(prepared, repository=repository)
+            revalidate(git, head, snapshot, paths, tag)
 
 
 def main() -> int:

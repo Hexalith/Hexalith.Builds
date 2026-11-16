@@ -18,7 +18,17 @@ public static class BuildPreparationService
     /// <param name="workspace">A nonexistent output directory beneath an existing real parent.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The structured preparation outcome and verified environment on success.</returns>
-    public static async Task<ToolCommandResult> PrepareAsync(string manifestPath, WorkspaceMode mode, string workspace, CancellationToken cancellationToken)
+    public static Task<ToolCommandResult> PrepareAsync(string manifestPath, WorkspaceMode mode, string workspace, CancellationToken cancellationToken)
+        => PrepareCoreAsync(manifestPath, mode, workspace, cancellationToken);
+
+    /// <summary>Prepares imports using a separately authenticated mapping resolver.</summary>
+    /// <param name="manifestPath">The declaration path.</param>
+    /// <param name="mode">The existing source/package selection.</param>
+    /// <param name="workspace">The fresh producer workspace.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="resolve">The explicit managed resolver; absent preserves legacy behavior.</param>
+    /// <returns>The runtime-free preparation outcome.</returns>
+    internal static async Task<ToolCommandResult> PrepareCoreAsync(string manifestPath, WorkspaceMode mode, string workspace, CancellationToken cancellationToken, Func<Task<SourceMapping>>? resolve = null)
     {
         string? owned = null;
         try
@@ -38,7 +48,7 @@ public static class BuildPreparationService
                 return new ToolCommandResult("failed", ToolOutcome.Passed().Fail(first.Phase, first.Category, first.RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
             }
 
-            SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+            SourceMapping mapping = await (resolve is null ? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken) : resolve()).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             ValidateOutput(output);
             string temporary = Path.Combine(Path.GetDirectoryName(output)!, ".hexalith-build-" + Guid.NewGuid().ToString("N"));

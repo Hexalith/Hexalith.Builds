@@ -75,13 +75,15 @@ internal static partial class PlatformIdentityResolver
     /// <param name="recorded">Staged gitlinks.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <param name="toolVersionOverride">Optional version seam for tests.</param>
+    /// <param name="managedAuthority">Explicit checked active catalog authority; absent retains legacy tuple validation.</param>
     /// <returns>The identity and all findings.</returns>
     internal static async Task<(PlatformIdentity? Identity, IReadOnlyList<PlatformIdentityFinding> Findings)> ResolveAsync(
         string root,
         IReadOnlyList<string> references,
         IReadOnlyDictionary<string, string> recorded,
         CancellationToken cancellationToken,
-        string? toolVersionOverride = null)
+        string? toolVersionOverride = null,
+        ManagedBuildAuthority? managedAuthority = null)
     {
         List<PlatformIdentityFinding> findings = [];
         string head = (await GitAsync(root, cancellationToken, "rev-parse", "HEAD").ConfigureAwait(false)).Output.Trim();
@@ -183,21 +185,23 @@ internal static partial class PlatformIdentityResolver
             }
         }
 
-        string buildsPath = Path.Combine(root, _buildsReference.Replace('/', Path.DirectorySeparatorChar));
+        string buildsPath = managedAuthority?.BuildsRoot ?? Path.Combine(root, _buildsReference.Replace('/', Path.DirectorySeparatorChar));
         string? buildsStaged = recorded.GetValueOrDefault(_buildsReference);
         string? buildsHead = await TryCheckoutHeadAsync(findings, buildsPath, cancellationToken).ConfigureAwait(false);
         CompositionProcessResult? buildsStatus = buildsHead is null ? null : await TryGitAsync(findings, buildsPath, cancellationToken, "status", "--porcelain", "-z", "--ignore-submodules=all", "--untracked-files=all").ConfigureAwait(false);
         bool buildsDirty = buildsStatus?.Output.Length > 0;
+        string? selectedCatalog = managedAuthority?.BuildsCommit ?? catalogCommit;
+        string? recordedBuilds = managedAuthority?.OriginalBuildsGitlink ?? catalogCommit;
         if (buildsStaged is null || buildsHead is null || buildsDirty
-            || (catalogCommit is not null && !string.Equals(buildsStaged, catalogCommit, StringComparison.OrdinalIgnoreCase))
-            || !string.Equals(buildsHead, buildsStaged, StringComparison.OrdinalIgnoreCase))
+            || (recordedBuilds is not null && !string.Equals(buildsStaged, recordedBuilds, StringComparison.OrdinalIgnoreCase))
+            || !string.Equals(buildsHead, managedAuthority?.BuildsCommit ?? buildsStaged, StringComparison.OrdinalIgnoreCase))
         {
             findings.Add(new PlatformIdentityFinding("HXW009", $"Builds catalog '{buildsPath}' is staged {buildsStaged ?? "absent"}, checked out {buildsHead ?? "absent"}{(buildsDirty ? ", dirty" : string.Empty)}; Platform {identityCommit ?? "unavailable"} pins {catalogCommit ?? "unavailable"}.", buildsPath));
         }
 
-        if (catalogCommit is not null && buildsHead is not null)
+        if (selectedCatalog is not null && buildsHead is not null)
         {
-            _ = await TryGitAsync(findings, buildsPath, cancellationToken, "show", catalogCommit + ":Props/Directory.Packages.props").ConfigureAwait(false);
+            _ = await TryGitAsync(findings, buildsPath, cancellationToken, "show", selectedCatalog + ":Props/Directory.Packages.props").ConfigureAwait(false);
         }
 
         string version = toolVersionOverride ?? ToolVersion;

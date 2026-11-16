@@ -10,6 +10,18 @@ outputs:
   global-json:
     description: Workspace-relative module global.json path, empty for solution none.
     value: ${{ steps.prepare.outputs.global-json }}
+  module-manifest:
+    description: Validated module manifest path, empty when disabled.
+    value: ${{ steps.prepare.outputs.module-manifest }}
+  windows-checkout:
+    description: Validated immutable archive checkout JSON, or null.
+    value: ${{ steps.prepare.outputs.windows-checkout }}
+  source-revision:
+    description: Exact source commit bound to protected Windows checkout inputs.
+    value: ${{ steps.prepare.outputs.source-revision }}
+  module-authority:
+    description: Exact accepted-delivery authority for Windows producer preparation.
+    value: ${{ steps.prepare.outputs.module-authority }}
 runs:
   using: composite
   steps:

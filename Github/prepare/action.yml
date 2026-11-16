@@ -10,6 +10,18 @@ inputs:
   global-json:
     description: Validated workspace-relative SDK path from shared CI (Windows/macOS).
     default: global.json
+  module-manifest:
+    description: Validated workspace-relative producer manifest, empty when disabled.
+    default: ''
+  windows-checkout:
+    description: Validated immutable archive checkout JSON from shared CI.
+    default: 'null'
+  source-revision:
+    description: Exact validated source commit required for protected Windows checkout.
+    default: ''
+  module-authority:
+    description: Validated accepted-delivery authority from the successful shared CI job.
+    default: ''
   module-root:
     description: Test-only module fixture root in the Builds repository (Linux only).
     default: ''
@@ -27,10 +39,25 @@ runs:
         if ($configured -ne 'true') { throw 'Windows checkout requires core.longpaths=true.' }
 
     - name: Checkout module
+      if: runner.os != 'Windows' || inputs.windows-checkout == '' || inputs.windows-checkout == 'null'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         submodules: false
         persist-credentials: false
+
+    - name: Protected Windows checkout and direct dependencies
+      if: runner.os == 'Windows' && inputs.windows-checkout != '' && inputs.windows-checkout != 'null'
+      shell: pwsh
+      env:
+        CI_PREPARE_SOLUTION: ${{ inputs.solution }}
+        CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
+        CI_PREPARE_MODULE_MANIFEST: ${{ inputs.module-manifest }}
+        CI_PREPARE_WINDOWS_CHECKOUT: ${{ inputs.windows-checkout }}
+        CI_PREPARE_REVISION: ${{ inputs.source-revision }}
+        CI_PREPARE_SUBMODULES_JSON: ${{ inputs.submodules }}
+      run: |
+        & python -I "$env:GITHUB_ACTION_PATH/prepare_windows_checkout.py"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Validate Linux configuration and direct dependencies
       id: linux
@@ -48,6 +75,7 @@ runs:
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
+        CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Validate'
 
     - name: Set up Linux module SDK
@@ -55,6 +83,16 @@ runs:
       uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
       with:
         global-json-file: ${{ steps.linux.outputs.global-json }}
+
+    - name: Initialize Windows direct dependencies
+      if: runner.os == 'Windows' && inputs.solution != 'none'
+      shell: pwsh
+      env:
+        CI_PREPARE_SOLUTION: ${{ inputs.solution }}
+        CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
+        CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
+        CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
+      run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Dependencies'
 
     - name: Set up platform module SDK
       if: runner.os != 'Linux' && inputs.solution != 'none'
@@ -78,6 +116,18 @@ runs:
         node-version: '24'
         package-manager-cache: false
 
+    - name: Prepare Windows producer imports
+      if: runner.os == 'Windows' && inputs.solution != 'none' && inputs.module-manifest != ''
+      shell: pwsh
+      env:
+        CI_PREPARE_SOLUTION: ${{ inputs.solution }}
+        CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
+        CI_PREPARE_MODULE_MANIFEST: ${{ inputs.module-manifest }}
+        CI_PREPARE_MODULE_AUTHORITY: ${{ inputs.module-authority }}
+      run: |
+        & python -I "$env:GITHUB_ACTION_PATH/../lib/module_preparation.py" --windows
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
     - name: Prepare Linux environment
       if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none'
       uses: $/Github/ci-environment
@@ -99,4 +149,6 @@ runs:
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
+        CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
+        CI_PREPARE_DEPENDENCIES_READY: 'true'
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Build'

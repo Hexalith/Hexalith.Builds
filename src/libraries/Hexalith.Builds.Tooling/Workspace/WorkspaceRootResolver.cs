@@ -27,14 +27,26 @@ public static class WorkspaceRootResolver
         return await ResolveAsync(manifest, mode, probe, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Resolves only preinitialized identities after explicit authority verification.</summary>
+    /// <param name="manifestPath">The validated declaration.</param>
+    /// <param name="authority">The independently checked managed authority.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The package mapping with truthful provenance.</returns>
+    internal static async Task<SourceMapping> ResolveManagedAsync(string manifestPath, ManagedBuildAuthority authority, CancellationToken cancellationToken)
+    {
+        CompositionProcessResult probe = await GitWorkspaceProcess.RunAsync(authority.ModuleRoot, cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
+        return await ResolveAsync(manifestPath, WorkspaceMode.Package, probe, cancellationToken, authority).ConfigureAwait(false);
+    }
+
     /// <summary>Resolves from a completed initial Git probe, including an unavailable executable.</summary>
     /// <param name="manifestPath">The validated manifest path.</param>
     /// <param name="mode">The tool-selected mode.</param>
     /// <param name="probe">The initial Git probe result.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="managedAuthority">Explicit preverified managed authority; absent preserves legacy initialization.</param>
     /// <returns>The mapping.</returns>
     /// <exception cref="WorkspaceMappingException">The active root or a required reference is invalid.</exception>
-    internal static async Task<SourceMapping> ResolveAsync(string manifestPath, WorkspaceMode mode, CompositionProcessResult probe, CancellationToken cancellationToken)
+    internal static async Task<SourceMapping> ResolveAsync(string manifestPath, WorkspaceMode mode, CompositionProcessResult probe, CancellationToken cancellationToken, ManagedBuildAuthority? managedAuthority = null)
     {
         string manifest = Path.GetFullPath(manifestPath);
         string directory = ExistingAncestor(Path.GetDirectoryName(manifest)!);
@@ -206,6 +218,16 @@ public static class WorkspaceRootResolver
             string checkout = Path.Combine(root, reference.Replace('/', Path.DirectorySeparatorChar));
             if (recordedGitlinks.ContainsKey(reference) && !SubmoduleInitializer.IsInitialized(checkout))
             {
+                if (managedAuthority is not null)
+                {
+                    if (reference == "references/Hexalith.Builds" && managedAuthority.Kind == "candidate-qualification")
+                    {
+                        continue;
+                    }
+
+                    throw Failure("HXW012", "Managed preparation requires exact preinitialized direct identities; no initialization is permitted.", checkout);
+                }
+
                 try
                 {
                     await SubmoduleInitializer.InitializeDirectAsync(root, [reference], cancellationToken).ConfigureAwait(false);
@@ -218,7 +240,7 @@ public static class WorkspaceRootResolver
         }
 
         (PlatformIdentity? platformIdentity, IReadOnlyList<PlatformIdentityFinding> findings) =
-            await PlatformIdentityResolver.ResolveAsync(root, references, recordedGitlinks, cancellationToken).ConfigureAwait(false);
+            await PlatformIdentityResolver.ResolveAsync(root, references, recordedGitlinks, cancellationToken, managedAuthority: managedAuthority).ConfigureAwait(false);
         if (!references.Contains("references/Hexalith.Platform", StringComparer.Ordinal) && platformIdentity?.IsPlatformRepository != true)
         {
             throw MissingPlatformReference(root, findings, mode);
@@ -264,6 +286,7 @@ public static class WorkspaceRootResolver
             {
                 PlatformIdentity = platformIdentity,
                 IdentityFindings = findings,
+                ManagedAuthority = managedAuthority,
             };
         }
         catch (WorkspaceMappingException exception) when (mode == WorkspaceMode.Source && findings.Count > 0)

@@ -367,13 +367,15 @@ class SubprocessPipelineTests(unittest.TestCase):
         self.environment["GITHUB_OUTPUT"] = str(output)
         result = self.invoke("--phase", "prepare")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertEqual(["solution=Fixture.slnx", "global-json=global.json", "submodules=[]"],
+        self.assertEqual(["solution=Fixture.slnx", "global-json=global.json", "submodules=[]",
+                          "module-manifest=", "windows-checkout=null", "source-revision=", "module-authority="],
                          output.read_text().splitlines())
         output.unlink()
         self.document["solution"] = "none"
         result = self.invoke("--phase", "prepare")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertEqual(["solution=none", "global-json=", "submodules=[]"], output.read_text().splitlines())
+        self.assertEqual(["solution=none", "global-json=", "submodules=[]",
+                          "module-manifest=", "windows-checkout=null", "source-revision=", "module-authority="], output.read_text().splitlines())
         self.assertEqual([], self.commands())
 
     def test_unit_outputs_are_published_only_on_success_and_include_e2e_inference(self):
@@ -463,7 +465,8 @@ class SubprocessPipelineTests(unittest.TestCase):
         result = prepare()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual(["solution=Samples/Fixture/Fixture.slnx", "global-json=Samples/Fixture/global.json",
-                          "submodules=[]"], output.read_text().splitlines())
+                          "submodules=[]", "module-manifest=", "windows-checkout=null",
+                          "source-revision=", "module-authority="], output.read_text().splitlines())
         environment["CI_REPOSITORY"] = "Example/Module"
         result = prepare()
         self.assertEqual(1, result.returncode, result.stdout + result.stderr)

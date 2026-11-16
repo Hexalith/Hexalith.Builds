@@ -357,8 +357,8 @@ def install_dapr_cli(archive: bytes, expected_digest: str, directory: Path) -> P
     return binary
 
 
-def setup_dapr(root: Path) -> None:
-    """Install the verified pinned CLI and initialize its pinned runtime once."""
+def download_dapr_cli(directory: Path) -> tuple[Path, str]:
+    """Install the same digest-verified CLI for CI or isolated local qualification."""
     runtime, cli = dapr_versions()
     digest = DAPR_CLI_DIGESTS.get(cli)
     if digest is None:
@@ -369,8 +369,13 @@ def setup_dapr(root: Path) -> None:
             archive = response.read()
     except (OSError, URLError) as error:
         raise PipelineError(f"cannot download Dapr CLI {cli}: {error}") from error
+    return install_dapr_cli(archive, digest, directory), runtime
+
+
+def setup_dapr(root: Path) -> None:
+    """Install the verified pinned CLI and initialize its pinned runtime once."""
     directory = Path(tempfile.mkdtemp(prefix="hexalith-ci-dapr-", dir=os.environ.get("RUNNER_TEMP")))
-    binary = install_dapr_cli(archive, digest, directory)
+    binary, runtime = download_dapr_cli(directory)
     # Subsequent hook actions and integration tests use this exact executable.
     export_path(directory)
     initialize_dapr(binary, runtime, root)

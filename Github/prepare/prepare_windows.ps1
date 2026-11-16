@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Validate', 'Build')]
+    [ValidateSet('Validate', 'Dependencies', 'Build')]
     [string]$Phase
 )
 
@@ -96,7 +96,7 @@ try {
                     throw "Declared submodule is not a direct root gitlink: $path"
                 }
             }
-            if ($Phase -eq 'Build') {
+            if ($Phase -in @('Dependencies', 'Build') -and $env:CI_PREPARE_PROTECTED_CHECKOUT -cne 'true' -and $env:CI_PREPARE_DEPENDENCIES_READY -cne 'true') {
                 Invoke-Checked git (@('--literal-pathspecs', '-c', 'protocol.file.allow=never', '-c', 'submodule.recurse=false',
                     'submodule', 'update', '--init', '--checkout', '--') + $submodules)
             }
@@ -105,7 +105,7 @@ try {
     finally {
         Pop-Location
     }
-    if ($Phase -eq 'Validate') {
+    if ($Phase -in @('Validate', 'Dependencies')) {
         exit 0
     }
     $nugetConfig = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../NuGet.ci.Config'))

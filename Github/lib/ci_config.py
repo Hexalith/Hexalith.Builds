@@ -121,7 +121,7 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     if "schema" in document and document["schema"] != schema_identity():
         value = document["schema"]
         raise ConfigError(f"{source}: unsupported schema {value}. CI/CD is owned by Hexalith.CiCd.")
-    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes")), "$")
+    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes", "moduleManifest", "windowsCheckout")), "$")
     if "buildsTag" not in document:
         if repository != BUILDS_REPOSITORY or module_root:
             fail("$/buildsTag", "required outside Builds' own repository, including samples")
@@ -129,6 +129,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         fail("$/buildsTag", "expected an exact stable vMAJOR.MINOR.PATCH release tag")
     if document["solution"] != "none":
         path(document["solution"], "$/solution", ".slnx")
+    if document.get("moduleManifest") is not None:
+        path(document["moduleManifest"], "$/moduleManifest", ".json")
     for key in ("dapr", "browsers", "registry", "dotnetTools"):
         if type(document[key]) is not bool:
             fail(f"$/{key}", "expected a boolean")
@@ -190,15 +192,65 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         name(action, location)
         if action not in document["hooks"] and action not in jobs:
             fail(location, f"{action!r} is not an enabled hook or job")
+    validate_windows_checkout(document.get("windowsCheckout"), protected=(
+        "global.json", ".gitmodules", ".github", "references/Hexalith.Builds",
+        *([document["solution"]] if document["solution"] != "none" else []),
+        *([document["moduleManifest"]] if document.get("moduleManifest") else []),
+        *document["submodules"], *tests["integration"], *tests["exclude"],
+    ), source=source)
     if document["solution"] == "none":
         if document.get("aspire"):
             fail("$/aspire", "must be false when solution is none")
+        for key in ("moduleManifest", "windowsCheckout"):
+            if document.get(key) is not None:
+                fail(f"$/{key}", "must be null when solution is none")
         for key in ("dapr", "browsers", "hooks", "jobs", "npmWorkspaces", "dotnetTools"):
             if document[key]:
                 fail(f"$/{key}", "must be empty or false when solution is none")
         if tests["integration"] or tests["exclude"] or tests["minimumExpectedTests"] or tests["failSkips"]:
             fail("$/tests", "test collections must be empty and failSkips false when solution is none")
     return document
+
+
+def validate_windows_checkout(value: Any, *, protected: tuple[str, ...] = (),
+                              source: str = "windows-checkout") -> Any:
+    """Validate the closed, immutable archive exclusion contract without defaults.
+
+    This same function validates CI documents and the trusted Windows input.
+    Object/tree bindings and product-path coverage require Git metadata at checkout.
+    """
+    def fail(message: str) -> None:
+        raise ConfigError(f"{source}: $/windowsCheckout: {message}")
+
+    if value is None:
+        return value
+    if not isinstance(value, dict) or set(value) != {"exclude"}:
+        fail("expected only an exclude array")
+    exclusions = value["exclude"]
+    if not isinstance(exclusions, list) or not exclusions:
+        fail("exclude must be a nonempty array")
+    paths = []
+    for entry in exclusions:
+        if not isinstance(entry, dict) or set(entry) != {"path", "tree"}:
+            fail("each exclusion requires only path and tree")
+        path, tree = entry["path"], entry["tree"]
+        if not isinstance(path, str) or not path or "${{" in path:
+            fail("expected a safe repository-relative directory path")
+        for part in path.split("/"):
+            if (not part or part in (".", "..") or part.endswith((".", " "))
+                    or any(char in part for char in '\\:<>"|?*')
+                    or any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in part)
+                    or re.fullmatch(r"(?i)(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\..*)?", part)
+                    or part.lower() == ".git"):
+                fail(f"unsafe Windows directory path: {path!r}")
+        if not isinstance(tree, str) or re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", tree) is None:
+            fail("tree must be a full lowercase Git object ID")
+        for other in [*paths, *protected]:
+            first, second = path.casefold(), other.casefold()
+            if first == second or first.startswith(second + "/") or second.startswith(first + "/"):
+                fail(f"overlapping, aliased or protected exclusion: {path!r} and {other!r}")
+        paths.append(path)
+    return value
 
 
 def load_config(path: str | Path, *, repository: str, module_root: str = "") -> dict[str, Any]:

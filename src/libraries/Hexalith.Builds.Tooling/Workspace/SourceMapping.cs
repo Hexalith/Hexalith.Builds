@@ -7,6 +7,7 @@ namespace Hexalith.Builds.Tooling.Workspace;
 
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using Hexalith.Builds.Tooling.Filesystem;
 
@@ -26,20 +27,23 @@ public sealed record SourceMapping(
     /// <summary>Gets the resolved Platform identity, when one is available.</summary>
     public PlatformIdentity? PlatformIdentity { get; init; }
 
+    /// <summary>Gets explicit authority only for the managed runtime-free entry points.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ManagedBuildAuthority? ManagedAuthority { get; init; }
+
+    /// <summary>Gets the authenticated active catalog without relabelling Platform provenance.</summary>
+    [JsonIgnore]
+    public string? EffectiveCatalogCommit => ManagedAuthority?.BuildsCommit ?? PlatformIdentity?.CatalogCommit;
+
+    /// <summary>Gets the real selected Builds root, including an external qualified checkout.</summary>
+    [JsonIgnore]
+    public string EffectiveBuildsRoot => ManagedAuthority?.BuildsRoot ?? Path.Combine(Root, "references", "Hexalith.Builds");
+
     /// <summary>Gets non-fatal identity findings for source mode.</summary>
     public IReadOnlyList<PlatformIdentityFinding> IdentityFindings { get; init; } = [];
 
     /// <summary>Gets a content hash shared by the plan and all project builds.</summary>
-    public string ContentHash => Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
-    {
-        Mode,
-        Root,
-        ActiveModule,
-        Entries,
-        HasGit,
-        PlatformIdentity,
-        IdentityFindings,
-    })));
+    public string ContentHash => Convert.ToHexStringLower(SHA256.HashData(HashPayload()));
 
     /// <summary>Loads persisted mapping only when its content matches the command's hash.</summary>
     /// <param name="path">The persisted mapping file.</param>
@@ -81,4 +85,35 @@ public sealed record SourceMapping(
             : identity;
         return new string([.. name.Where(character => char.IsAsciiLetterOrDigit(character) || character == '_')]);
     }
+
+    /// <summary>Gets the actual selected root for one mapping entry.</summary>
+    /// <param name="entry">The original recorded dependency choice.</param>
+    /// <returns>The truthful selected filesystem root.</returns>
+    internal string SelectionRoot(SourceMappingEntry entry) => entry.Identity.Equals("Hexalith.Builds", StringComparison.OrdinalIgnoreCase)
+        ? EffectiveBuildsRoot
+        : entry.Path ?? Path.Combine(Root, "references", entry.Identity);
+
+    private byte[] HashPayload() => ManagedAuthority is null
+        ? JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            Mode,
+            Root,
+            ActiveModule,
+            Entries,
+            HasGit,
+            PlatformIdentity,
+            IdentityFindings,
+        })
+        : JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            Mode,
+            Root,
+            ActiveModule,
+            Entries,
+            HasGit,
+            PlatformIdentity,
+            IdentityFindings,
+            ManagedAuthority,
+            EffectiveCatalogCommit,
+        });
 }

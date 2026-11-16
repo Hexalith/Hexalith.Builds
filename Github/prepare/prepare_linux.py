@@ -27,8 +27,11 @@ def main() -> int:
                                   repository=repository, module_root=module_root)
         if args.phase == "prepare":
             initialize_submodules(prepared)
-            write_outputs(prepared)
+            write_outputs(prepared, repository=repository)
         else:
+            if prepared.document.get("moduleManifest"):
+                from module_preparation import ensure_for_job
+                ensure_for_job(prepared, repository=repository)
             restore_and_build(prepared)
             classified = classified_projects(prepared, repository=repository, module_root=module_root)
             write_stage_outputs(prepared, classified)

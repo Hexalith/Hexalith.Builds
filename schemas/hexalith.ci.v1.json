@@ -210,6 +210,30 @@
       "type": "boolean",
       "default": false,
       "description": "Restore the module-owned exact-version .config/dotnet-tools.json through the trusted Builds NuGet configuration."
+    },
+    "moduleManifest": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/jsonPath"
+        }
+      ],
+      "default": null,
+      "description": "Opt in to producer-owned package-mode build preparation before project evaluation."
+    },
+    "windowsCheckout": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/windowsCheckout"
+        }
+      ],
+      "default": null,
+      "description": "Centrally reviewed immutable archive trees excluded only from protected Windows checkout."
     }
   },
   "allOf": [
@@ -276,6 +300,12 @@
           },
           "dotnetTools": {
             "const": false
+          },
+          "moduleManifest": {
+            "const": null
+          },
+          "windowsCheckout": {
+            "const": null
           }
         }
       },
@@ -319,6 +349,55 @@
     "actionName": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])"
+    },
+    "jsonPath": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        {
+          "pattern": "\\.json(?![\\s\\S])"
+        }
+      ]
+    },
+    "windowsCheckout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exclude"
+      ],
+      "properties": {
+        "exclude": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "tree"
+            ],
+            "properties": {
+              "path": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/repositoryPath"
+                  },
+                  {
+                    "pattern": "^(?![\\s\\S]*[\\\\:<>\"|?*])(?![\\s\\S]*[. ](?:/|(?![\\s\\S])))[\\s\\S]+(?![\\s\\S])"
+                  }
+                ]
+              },
+              "tree": {
+                "type": "string",
+                "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})(?![\\s\\S])"
+              }
+            }
+          },
+          "description": "The loader additionally rejects case aliases, overlaps, reserved Windows names and protected product paths."
+        }
+      }
     }
   }
 }

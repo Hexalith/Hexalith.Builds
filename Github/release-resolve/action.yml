@@ -14,6 +14,9 @@ inputs:
     description: Test-only Builds sample delivered-layout fixture, paired with module-root.
     default: ''
 outputs:
+  accepted-delivered-sha:
+    description: Exact successfully compared accepted delivery revision for the frozen source.
+    value: ${{ steps.resolve.outputs.accepted-delivered-sha }}
   sha:
     description: Frozen full release SHA.
     value: ${{ steps.resolve.outputs.sha }}
