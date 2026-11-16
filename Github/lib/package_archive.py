@@ -6,6 +6,8 @@ import io
 import os
 from pathlib import Path
 import re
+import selectors
+import signal
 import subprocess
 import tempfile
 import time
@@ -67,20 +69,39 @@ def private_environment(directory: Path) -> dict[str, str]:
 
 def bounded_process(arguments, *, cwd, env, capture_output=True, check=False, timeout=120):
     """Bound process output as well as wall time; never emit untrusted output."""
-    from release_draft import bounded
+    if os.name != "posix":
+        raise ValueError("bounded verification requires POSIX process containment")
     deadline = time.monotonic() + timeout
-    process = subprocess.Popen(arguments, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen(arguments, cwd=cwd, env=env, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, start_new_session=True)
+    output = bytearray()
     try:
-        output = bounded(lambda: process.stdout.read(1024 * 1024 + 1), deadline=deadline)
-        if len(output) > 1024 * 1024:
-            raise ValueError("verification process output exceeds bound")
+        os.set_blocking(process.stdout.fileno(), False)
+        with selectors.DefaultSelector() as selector:
+            selector.register(process.stdout, selectors.EVENT_READ)
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(arguments, timeout)
+                if not selector.select(min(remaining, 0.1)):
+                    continue
+                chunk = os.read(process.stdout.fileno(), 65536)
+                if not chunk:
+                    break
+                output.extend(chunk)
+                if len(output) > 1024 * 1024:
+                    raise ValueError("verification process output exceeds bound")
         code = process.wait(timeout=max(0.001, deadline - time.monotonic()))
-        return SimpleNamespace(returncode=code, stdout=output)
+        return SimpleNamespace(returncode=code, stdout=bytes(output))
     finally:
-        if process.poll() is None:
-            process.kill()
-        process.wait()
+        # A completed leader can leave a child holding stdout. Kill the entire
+        # owned group before closing the pipe; no reader thread can block close.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         process.stdout.close()
+        process.wait(timeout=1)
 
 
 def verify_signature(data: bytes, *, run=None) -> None:

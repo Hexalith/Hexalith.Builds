@@ -317,6 +317,8 @@ def restore_and_build(prepared: PreparedConfig) -> None:
     """Restore once, then build Release with analyzers and mandatory settings."""
     if prepared.solution == "none":
         return
+    from build_projects import preflight
+    preflight(prepared)
     solution = prepared.document["solution"]
     run_command(["dotnet", "restore", solution, *build_flags()], prepared.root)
     run_command(["dotnet", "build", solution, "--no-restore", *build_flags()], prepared.root)

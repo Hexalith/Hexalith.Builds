@@ -803,12 +803,14 @@
         "properties": {
           "jobs": {
             "additionalProperties": {
-              "required": [
-                "trigger"
-              ],
               "properties": {
-                "trigger": {
-                  "const": "manual"
+                "runner": {
+                  "not": {
+                    "enum": [
+                      "windows-latest",
+                      "macos-latest"
+                    ]
+                  }
                 }
               }
             }
@@ -831,12 +833,14 @@
         "properties": {
           "jobs": {
             "additionalProperties": {
-              "required": [
-                "trigger"
-              ],
               "properties": {
-                "trigger": {
-                  "const": "manual"
+                "runner": {
+                  "not": {
+                    "enum": [
+                      "windows-latest",
+                      "macos-latest"
+                    ]
+                  }
                 }
               }
             }

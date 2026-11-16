@@ -208,6 +208,8 @@ def build_release(prepared: PreparedConfig, output: Path, *, version: str, sha: 
                                            delivered_sha=os.environ.get("RELEASE_ACCEPTED_DELIVERED_SHA", ""))
             environment = prepare_environment(prepared, authority, Path(preparation_root))
             with applied(prepared, authority, environment):
+                from build_projects import preflight
+                preflight(prepared)
                 projects = discover_projects(prepared, flags)
                 solution = str(contained_path(prepared.root, prepared.document["solution"], kind="solution"))
                 runtimes = sorted({runtime for project in projects for runtime in project.restore_runtimes})

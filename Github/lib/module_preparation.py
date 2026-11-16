@@ -40,6 +40,7 @@ def enabled(prepared):
 
 
 STATE_VARIABLE = "HEXALITH_CI_PREPARATION_STATE"
+_OWNED = {}
 
 
 @dataclass(frozen=True)
@@ -58,7 +59,7 @@ def _digest(data: bytes) -> str:
 
 
 def _real(path: Path) -> Path:
-    if ".." in path.parts or any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in str(path)):
+    if any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in str(path)):
         raise ConfigError("producer path contains traversal or control characters")
     for part in (path, *path.parents):
         if part.is_symlink() or (part.exists() and getattr(part.lstat(), "st_file_attributes", 0) & 1024):
@@ -206,6 +207,81 @@ def _files(workspace: Path) -> dict[str, str]:
     return result
 
 
+def _register_owned(prepared, environment):
+    private = environment.workspace.parent
+    info = private.stat()
+    from build_projects import VARIABLE, output_mapping
+    mapping = output_mapping(prepared, environment)
+    exports = dict(environment.values)
+    if mapping:
+        exports[VARIABLE] = json.dumps(mapping, sort_keys=True, separators=(",", ":"))
+    exports[STATE_VARIABLE] = str(private / "state.json")
+    ownership = {"moduleRoot": str(prepared.root), "device": info.st_dev, "inode": info.st_ino, "exports": exports, "previous": {key: os.environ.get(key) for key in exports}}
+    _OWNED[str(private)] = ownership
+    marker = private / "ownership.json"
+    marker.write_text(json.dumps(ownership), encoding="utf-8")
+    marker.chmod(0o600)
+
+
+def _cleanup_owned(prepared, environment=None, *, state=None):
+    """Discard only a recognized private lifetime and its unchanged exports."""
+    private = environment.workspace.parent if environment is not None and environment.workspace is not None else None
+    if state is not None:
+        candidate = Path(state)
+        if candidate.name != "state.json":
+            return
+        private = candidate.parent
+    if private is None:
+        return
+    ownership = _OWNED.get(str(private))
+    if ownership is None:
+        # Separate CI processes may recognize only the receipt's own private
+        # runner directory, never an arbitrary workspace supplied inside JSON.
+        try:
+            runner = _real(Path(os.environ["RUNNER_TEMP"]))
+            if _real(private).parent != runner or not private.name.startswith("hexalith-module-preparation-"):
+                return
+            ownership = _read_json(_real(private / "ownership.json"))
+        except (OSError, ValueError, KeyError):
+            return
+    if not isinstance(ownership, dict) or ownership.get("moduleRoot") != str(prepared.root):
+        return
+    try:
+        info = private.lstat()
+        physical = (_real(private) == private and (info.st_dev, info.st_ino) == (ownership.get("device"), ownership.get("inode"))
+                    and (os.name == "nt" or (info.st_uid == os.getuid() and info.st_mode & 0o077 == 0)))
+    except (OSError, ValueError):
+        physical = False
+    def owned_path(value):
+        return isinstance(value, str) and Path(value).is_absolute() and Path(os.path.abspath(value)).is_relative_to(private)
+    def owned_mapping(value):
+        try:
+            mapping = json.loads(value)
+            return isinstance(mapping, dict) and any(isinstance(item, dict) and owned_path(item.get("artifactsPath")) for item in mapping.values())
+        except (ValueError, TypeError):
+            return False
+    removed = []
+    for key, value in ownership.get("exports", {}).items():
+        current = os.environ.get(key)
+        ours = current == value or (owned_mapping(current) if key == "HexalithBuildProjects" else owned_path(current))
+        if key in {*VALIDATOR.KEYS, *PUBLISHED_KEYS, STATE_VARIABLE, "HexalithBuildProjects"} and ours:
+            previous = ownership.get("previous", {}).get(key)
+            if previous is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = previous
+            removed.append(key)
+    from build_projects import _MAPPINGS, _ENVIRONMENTS
+    _MAPPINGS.pop(str(prepared.root), None)
+    _ENVIRONMENTS.pop(str(prepared.root), None)
+    if removed and os.environ.get("GITHUB_ENV"):
+        with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
+            stream.write("".join(key + "=" + os.environ.get(key, "") + "\n" for key in sorted(removed)))
+    _OWNED.pop(str(private), None)
+    if physical:
+        shutil.rmtree(private)
+
+
 def prepare_environment(prepared, authority: dict, temporary_root: Path, *, fetch_tags: bool = False) -> BuildEnvironment:
     """Restore and invoke the exact released tool once; export nothing on failure."""
     return _prepare_environment(prepared, authority, temporary_root, fetch_tags=fetch_tags)
@@ -222,6 +298,8 @@ def _prepare_environment(prepared, authority: dict, temporary_root: Path, *, fet
                          qualification: bool = False) -> BuildEnvironment:
     if not enabled(prepared):
         return BuildEnvironment(None, {}, {}, {}, {})
+    if ".." in temporary_root.parts:
+        raise ConfigError("producer scratch path contains traversal")
     temporary_root = _real(temporary_root)
     if fetch_tags:
         for path in (("references/Hexalith.Builds",) if prepared.document.get("publishedBuilds") else ("references/Hexalith.Builds", "references/Hexalith.Platform")):
@@ -241,6 +319,7 @@ def _prepare_environment(prepared, authority: dict, temporary_root: Path, *, fet
             values = published_builds.prepare(prepared, workspace)
             environment = BuildEnvironment(workspace, values, authority, inputs, _files(workspace))
             _verify_environment(prepared, authority, environment, qualification=qualification)
+            _register_owned(prepared, environment)
             return environment
         receipt = private / "authority.json"
         receipt.write_text(json.dumps(authority, sort_keys=True), encoding="utf-8")
@@ -263,6 +342,7 @@ def _prepare_environment(prepared, authority: dict, temporary_root: Path, *, fet
             raise ConfigError("managed inputs changed while producer was running")
         environment = BuildEnvironment(workspace, values, authority, inputs, _files(workspace))
         _verify_environment(prepared, authority, environment, qualification=qualification)
+        _register_owned(prepared, environment)
         return environment
     except BaseException as error:
         shutil.rmtree(private)
@@ -273,7 +353,11 @@ def _prepare_environment(prepared, authority: dict, temporary_root: Path, *, fet
 
 def verify_environment(prepared, authority: dict, environment: BuildEnvironment) -> None:
     """Revalidate exact original identities and all producer bytes before reuse."""
-    _verify_environment(prepared, authority, environment)
+    try:
+        _verify_environment(prepared, authority, environment)
+    except BaseException:
+        _cleanup_owned(prepared, environment)
+        raise
 
 
 def _verify_environment(prepared, authority: dict, environment: BuildEnvironment, *, qualification: bool = False) -> None:
@@ -282,6 +366,10 @@ def _verify_environment(prepared, authority: dict, environment: BuildEnvironment
             raise ConfigError("disabled preparation cannot consume a producer state")
         return
     if prepared.document.get("publishedBuilds"):
+        if any(os.environ.get(key) for key in set(VALIDATOR.KEYS) - {"Configuration"}):
+            raise ConfigError("ambient managed producer imports are forbidden for published preparation")
+        if any(os.environ.get(key) not in (None, "", value) for key, value in environment.values.items()):
+            raise ConfigError("ambient published producer exports conflict with the verified preparation")
         if (qualification or environment.workspace is None or environment.authority != authority
                 or _inputs(prepared, authority) != environment.inputs or _files(environment.workspace) != environment.files
                 or set(environment.values) != PUBLISHED_KEYS or environment.values.get("Configuration") != "Release"):
@@ -308,17 +396,25 @@ def applied(prepared, authority: dict, environment: BuildEnvironment):
     verify_environment(prepared, authority, environment)
     previous = {key: os.environ.get(key) for key in environment.values}
     os.environ.update(environment.values)
+    discarded = False
     try:
         from build_projects import output_scope
         with output_scope(prepared, environment):
             yield environment
         verify_environment(prepared, authority, environment)
+    except BaseException:
+        discarded = True
+        _cleanup_owned(prepared, environment)
+        raise
     finally:
         for key, value in previous.items():
+            if discarded and value == environment.values[key]:
+                continue
             if value is None:
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = value
+
 
 
 @contextmanager
@@ -344,22 +440,26 @@ def ensure_for_job(prepared, *, repository: str, authority: dict | None = None) 
         return BuildEnvironment(None, {}, {}, {}, {})
     state = os.environ.get(STATE_VARIABLE)
     if state:
-        path = _real(Path(state))
-        saved = _read_json(path)
-        if not isinstance(saved, dict) or set(saved) != {"workspace", "values", "authority", "inputs", "files"}:
-            raise ConfigError("invalid private managed preparation receipt")
-        environment = BuildEnvironment(Path(saved["workspace"]), saved["values"], saved["authority"], saved["inputs"], saved["files"])
-        verify_environment(prepared, environment.authority, environment)
-        if any(os.environ.get(key) not in (None, "", value) for key, value in environment.values.items()):
-            raise ConfigError("ambient producer values conflict with the private preparation receipt")
-        from build_projects import VARIABLE, mapping_value
-        mapping = mapping_value(prepared, environment)
-        if mapping and os.environ.get(VARIABLE) not in (None, "", mapping):
-            raise ConfigError("declared build output mapping changed")
-        os.environ.update(environment.values)
-        if mapping:
-            os.environ[VARIABLE] = mapping
-        return environment
+        try:
+            path = _real(Path(state))
+            saved = _read_json(path)
+            if not isinstance(saved, dict) or set(saved) != {"workspace", "values", "authority", "inputs", "files"}:
+                raise ConfigError("invalid private managed preparation receipt")
+            environment = BuildEnvironment(Path(saved["workspace"]), saved["values"], saved["authority"], saved["inputs"], saved["files"])
+            verify_environment(prepared, environment.authority, environment)
+            if any(os.environ.get(key) not in (None, "", value) for key, value in environment.values.items()):
+                raise ConfigError("ambient producer values conflict with the private preparation receipt")
+            from build_projects import VARIABLE, mapping_value
+            mapping = mapping_value(prepared, environment)
+            if mapping and os.environ.get(VARIABLE) not in (None, "", mapping):
+                raise ConfigError("declared build output mapping changed")
+            os.environ.update(environment.values)
+            if mapping:
+                os.environ[VARIABLE] = mapping
+            return environment
+        except BaseException:
+            _cleanup_owned(prepared, state=state)
+            raise
     if prepared.document.get("buildProjects") and os.environ.get("HexalithBuildProjects"):
         raise ConfigError("ambient declared build output override is forbidden")
     if authority is None:

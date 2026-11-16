@@ -412,7 +412,7 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         if not ready:
             fail("$/jobs", "custom job dependencies contain a cycle")
         pending -= ready
-    if (cases or document.get("publishedBuilds")) and any(options.get("trigger") != "manual" for options in jobs.values()):
+    if (cases or document.get("publishedBuilds")) and any(options["runner"] in ("windows-latest", "macos-latest") for options in jobs.values()):
         fail("$/jobs", "published preparation and buildProjects support Linux jobs only")
     for project, action in tests["exclude"].items():
         location = f"$/tests/exclude/{project}"

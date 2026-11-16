@@ -60,50 +60,173 @@ def output_scope(prepared, environment):
             os.environ[VARIABLE] = previous
 
 
-def validate_project(root, project, visited=None):
-    """Check committed case/import/reference inputs before SDK evaluation."""
-    from module_preparation import _git, _real
-    visited = set() if visited is None else visited
+CATALOG_PACKAGES = {"HexalithEventStoreVersion": "hexalith.eventstore", "HexalithTenantsVersion": "hexalith.tenants", "HexalithMemoriesVersion": "hexalith.memories"}
+CHILD_PROPERTIES = frozenset(("AdditionalProperties", "GlobalPropertiesToRemove", "UndefineProperties", "SetConfiguration", "SetPlatform", "SetTargetFramework", "Properties", "Targets"))
+DIAGNOSTIC_TASKS = frozenset(("Error", "Warning", "Message", "WriteLinesToFile"))
+
+
+def _source_path(root, base, name, *, producer=False):
+    from module_preparation import _real
+    if not isinstance(name, str):
+        raise ConfigError("unsupported declared input path")
+    name = name.replace("$(MSBuildThisFileDirectory)", str(base) + "/").replace("$(MSBuildProjectDirectory)", str(base))
+    tool = os.environ.get("HexalithBuildsPublishedToolRoot")
+    if producer and tool:
+        name = name.replace("$(HexalithBuildsPublishedToolRoot)", tool)
+    if any(char in name for char in "$%*?;@") or "\\" in name:
+        raise ConfigError("unsupported indirect declared input path")
     try:
-        path = _real(root / project)
+        path = _real(base / name)
     except OSError as error:
         raise ConfigError("declared project/import is unavailable") from error
-    if not path.is_file() or not path.is_relative_to(root) or project.startswith(("references/", ".git/", ".github/")):
-        raise ConfigError("declared project/import is unsafe or foreign")
-    if project in visited:
-        return
-    visited.add(project)
-    row = _git(root, "ls-tree", "-z", "HEAD", "--", project)
-    if not re.fullmatch(r"100(?:644|755) blob [0-9a-f]{40,64}\t" + re.escape(project) + "\x00", row):
+    if producer and tool and path in (Path(tool) / "Hexalith.Builds.Tooling.dll",
+            Path(tool) / "g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll"):
+        return path
+    if not path.is_relative_to(root) or path.relative_to(root).parts[0] in ("references", ".git", ".github"):
+        raise ConfigError("declared input is unsafe or foreign")
+    _committed(root, path)
+    return path
+
+
+def _committed(root, path):
+    from module_preparation import _git
+    name = path.relative_to(root).as_posix()
+    row = _git(root, "ls-tree", "-z", "HEAD", "--", name)
+    if not path.is_file() or not re.fullmatch(r"100(?:644|755) blob [0-9a-f]{40,64}\t" + re.escape(name) + "\x00", row):
         raise ConfigError("declared project/import must be a committed regular file")
-    _git(root, "diff", "--exit-code", "HEAD", "--", project)
+    _git(root, "diff", "--exit-code", "HEAD", "--", name)
+
+
+def _implicit_files(root, project):
+    for filename in ("Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props"):
+        for directory in (project.parent, *project.parent.parents):
+            candidate = directory / filename
+            if candidate.exists() or candidate.is_symlink():
+                if not candidate.is_relative_to(root):
+                    raise ConfigError("declared project has a foreign implicit import")
+                yield candidate
+                break
+
+
+def validate_project(root, project, visited=None):
+    """Validate finite authored case inputs before the SDK can execute them."""
+    from module_preparation import _real
+    root = _real(root)
+    visited = set() if visited is None else visited
+    path = _source_path(root, root, project)
+    if path in visited:
+        return
+    visited.add(path)
     try:
         tree = ET.fromstring(path.read_bytes())
     except ET.ParseError as error:
         raise ConfigError("invalid declared project XML") from error
+    if set(tree.attrib) - {"Sdk"}:
+        raise ConfigError("declared project root has unsupported execution attributes")
+    sdk = tree.get("Sdk")
+    if sdk not in (None, "Microsoft.NET.Sdk") or (path.suffix == ".csproj" and sdk != "Microsoft.NET.Sdk"):
+        raise ConfigError("declared consumers support only the unversioned Microsoft.NET.Sdk")
     for element in tree.iter():
         tag = element.tag.rsplit("}", 1)[-1]
         if any(name.lower() == "treataslocalproperty" for name in element.attrib):
             raise ConfigError("declared project cannot demote global build policy")
-        if tag in ("MSBuild", "Exec", "CallTarget", "AdditionalProperties", "GlobalPropertiesToRemove", "UndefineProperties", "SetConfiguration", "SetPlatform"):
-            raise ConfigError("declared project contains hidden execution or global policy metadata")
+        if tag in ("Sdk", "UsingTask", "MSBuild", "Exec", "CallTarget", *CHILD_PROPERTIES):
+            raise ConfigError("declared project contains hidden execution or child property metadata")
+        if any(name in CHILD_PROPERTIES for name in element.attrib):
+            raise ConfigError("declared input changes child global properties")
         if tag == "PropertyGroup":
             for prop in element:
                 if POLICY.fullmatch(prop.tag.rsplit("}", 1)[-1]):
                     raise ConfigError("declared project cannot override build/import/source/audit policy")
+        if tag == "Target":
+            if any(child.tag.rsplit("}", 1)[-1] not in DIAGNOSTIC_TASKS for child in element):
+                raise ConfigError("declared targets support only diagnostic/output observation tasks")
+            for child in element:
+                if child.tag.rsplit("}", 1)[-1] == "WriteLinesToFile" and re.fullmatch(r"\$\(ArtifactsPath\)/[A-Za-z0-9_-]+\.txt", child.get("File", "")) is None:
+                    raise ConfigError("declared output observations must stay in case artifacts")
+        if "$([" in ET.tostring(element, encoding="unicode"):
+            raise ConfigError("declared inputs cannot execute property functions")
+        if tag == "ProjectReference":
+            if set(element.attrib) - {"Include", "Condition", "ReferenceOutputAssembly"} or any(child.tag.rsplit("}", 1)[-1] not in ("ReferenceOutputAssembly", "PrivateAssets") for child in element):
+                raise ConfigError("unsupported child project property metadata")
+        if tag in ("PackageReference", "PackageVersion"):
+            if set(element.attrib) - {"Include", "Condition", "Version", "PrivateAssets"} or not re.fullmatch(r"[A-Za-z0-9_.-]+", element.get("Include", "")) or any(child.tag.rsplit("}", 1)[-1] not in ("Version", "PrivateAssets") for child in element):
+                raise ConfigError("unsupported inline package version or asset metadata")
+            if "VersionOverride" in element.attrib or any(child.tag.rsplit("}", 1)[-1] == "VersionOverride" for child in element):
+                raise ConfigError("declared package version overrides are forbidden")
+            identity = element.get("Include", "").lower()
+            for prop, prefix in CATALOG_PACKAGES.items():
+                if identity == prefix or identity.startswith(prefix + "."):
+                    version = element.get("Version")
+                    children = [child for child in element if child.tag.rsplit("}", 1)[-1] == "Version"]
+                    if children:
+                        if version is not None or len(children) != 1:
+                            raise ConfigError("ambiguous declared package version")
+                        version = children[0].text
+                    if version not in (None, "$(" + prop + ")"):
+                        raise ConfigError("declared package must consume its selected catalog version")
         if tag in ("Import", "ProjectReference"):
             name = element.get("Project" if tag == "Import" else "Include", "")
-            if not name or name.startswith("/") or re.match(r"[A-Za-z]:", name) or any(char in name for char in "$%*?;@") or "\\" in name:
-                raise ConfigError("declared project has an unsupported indirect import/reference")
-            try:
-                target = _real(path.parent / name)
-            except OSError as error:
-                raise ConfigError("declared project import/reference is unavailable") from error
-            if not target.is_relative_to(root):
-                raise ConfigError("declared project has a foreign import/reference")
-            if tag == "ProjectReference" and (any(key in element.attrib for key in ("AdditionalProperties", "GlobalPropertiesToRemove", "UndefineProperties")) or any(child.tag.rsplit("}", 1)[-1] in ("AdditionalProperties", "GlobalPropertiesToRemove", "UndefineProperties") for child in element)):
-                raise ConfigError("declared project reference changes global policy")
+            if tag == "Import" and "Sdk" in element.attrib:
+                raise ConfigError("declared imports cannot select another SDK")
+            # Authenticated Builds imports are shared policy, never module callbacks.
+            builds = root / "references/Hexalith.Builds"
+            expanded = name.replace("$(MSBuildThisFileDirectory)", str(path.parent) + "/")
+            candidate = path.parent / expanded
+            if tag == "Import" and candidate.exists() and _real(candidate).is_relative_to(builds):
+                _committed(builds, _real(candidate))
+                continue
+            target = _source_path(root, path.parent, name)
             validate_project(root, target.relative_to(root).as_posix(), visited)
+        if tag in ("Compile", "Analyzer"):
+            if set(element.attrib) - {"Include", "Condition", "Link"} or not element.get("Include"):
+                raise ConfigError("declared source/analyzer input must be explicit and contained")
+            _source_path(root, path.parent, element.get("Include"))
+        if tag == "Reference":
+            hints = [child.text for child in element if child.tag.rsplit("}", 1)[-1] == "HintPath"]
+            if len(hints) != 1:
+                raise ConfigError("declared assembly references require one contained HintPath")
+            _source_path(root, path.parent, hints[0], producer=True)
+    if path.suffix == ".csproj":
+        for implicit in _implicit_files(root, path):
+            validate_project(root, implicit.relative_to(root).as_posix(), visited)
+        # The SDK's default Compile glob must not follow source symlinks or
+        # consume uncommitted files. Explicit sibling files are handled above.
+        for source in path.parent.rglob("*.cs"):
+            if not {"bin", "obj"}.intersection(source.relative_to(path.parent).parts):
+                _source_path(root, path.parent, source.relative_to(path.parent).as_posix())
+
+
+def preflight(prepared):
+    for case in prepared.document.get("buildProjects", []):
+        validate_project(prepared.root, case["project"])
+
+
+def verify_packages(artifacts, versions):
+    """Check actual restored package bodies, including transitive family members."""
+    found = set()
+    assets = list(artifacts.rglob("project.assets.json"))
+    if not assets:
+        raise ConfigError("declared consumer produced no restored package assets")
+    for path in assets:
+        from module_preparation import _real
+        _real(path)
+        try:
+            libraries = json.loads(path.read_text())["libraries"]
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            raise ConfigError("invalid declared restored package assets") from error
+        for identity, metadata in libraries.items():
+            name, separator, version = identity.rpartition("/")
+            if not separator:
+                raise ConfigError("invalid restored package identity")
+            for prop, selected in versions.items():
+                prefix = CATALOG_PACKAGES[prop]
+                if name.lower() == prefix or name.lower().startswith(prefix + "."):
+                    if metadata.get("type") != "package" or version != selected:
+                        raise ConfigError("restored package differs from the declared catalog selection")
+                    found.add(prop)
+    if found != set(versions):
+        raise ConfigError("declared catalog selection has no actual restored package")
 
 
 def build_declared(prepared, flags, command):
@@ -155,5 +278,6 @@ def build_declared(prepared, flags, command):
             raise ConfigError("declared catalog selection or shared build policy was not preserved")
         project = str(_real(prepared.root / case["project"]))
         command(["dotnet", "restore", project, *selected], prepared.root)
+        verify_packages(path, case["versions"])
         command(["dotnet", "build", project, "--no-restore", *selected], prepared.root)
         verify_environment(prepared, environment.authority, environment)

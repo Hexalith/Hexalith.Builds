@@ -13,6 +13,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -105,7 +106,8 @@ class ContractTests(unittest.TestCase):
             {"buildProjects": [dict(case, versions={"NuGetAudit": "false"})]},
             {"buildProjects": [dict(case, versions={"HexalithEventStoreVersion": "4.2.*"})]},
             {"buildProjects": [case] * 33}, {"buildProjects": [case], "publishedBuilds": None},
-            {"jobs": {"windows": {"runner": "windows-latest"}}}]
+            {"jobs": {"windows": {"runner": "windows-latest"}}},
+            *({"jobs": {"platform": {"runner": runner, "trigger": "manual"}}} for runner in ("windows-latest", "macos-latest"))]
         for extra in invalid:
             value = dict(base, **extra)
             with self.subTest(extra=extra):
@@ -219,6 +221,7 @@ class HistoricalTests(unittest.TestCase):
     def test_source_binding_tool_and_active_identity_revalidated(self):
         environment = self.prepare()
         for path in (self.root / "eng/tuple.json", self.root / ".config/dotnet-tools.json", self.catalog):
+            environment = self.prepare()
             original = path.read_bytes()
             path.write_bytes(original + b" ")
             with self.subTest(path=path), self.assertRaises(ValueError):
@@ -283,6 +286,146 @@ class HistoricalTests(unittest.TestCase):
             self.assertEqual(["prepare", "evaluate"], calls)
             self.assertEqual([], manifest["packages"])
 
+    def test_published_apply_and_reuse_reject_overrides_and_clean_only_owned_state(self):
+        self.prepared.document["buildProjects"] = [{"id": "case", "project": "compat.csproj", "versions": {"HexalithEventStoreVersion": "4.2.0"}}]
+        (self.root / ".github/hexalith-ci.json").write_text(json.dumps(self.prepared.document))
+        self.head = commit(self.root)
+        self.authority = preparation.accepted_authority(self.prepared, repository="Example/Fixture", comparison=self.comparison)
+        for mode in ("apply", "reuse", "mapping"):
+            environment = self.prepare()
+            channel = self.base / (mode + "-env")
+            original = dict(os.environ)
+            with patch.dict(os.environ, {"RUNNER_TEMP": str(self.base), "GITHUB_ENV": str(channel)}, clear=False):
+                if mode == "apply":
+                    for key in preparation.VALIDATOR.KEYS - {"Configuration"}:
+                        # Each refusal destroys its own lifetime, so prepare the
+                        # next control after restoring the foreign environment.
+                        environment = self.prepare()
+                        with patch.dict(os.environ, {key: "/foreign/import", "UNRELATED": "preserve"}):
+                            with self.assertRaisesRegex(ValueError, "ambient"):
+                                with preparation.applied(self.prepared, self.authority, environment):
+                                    self.fail("overridden producer applied")
+                            self.assertEqual("/foreign/import", os.environ[key])
+                            self.assertEqual("preserve", os.environ["UNRELATED"])
+                            self.assertFalse(environment.workspace.parent.exists())
+                    continue
+                real_prepare = preparation.prepare_environment
+                with patch.object(preparation, "accepted_authority", return_value=self.authority), patch.object(preparation, "prepare_environment", return_value=environment):
+                    preparation.ensure_for_job(self.prepared, repository="Example/Fixture")
+                owned = environment.workspace.parent
+                if mode == "reuse":
+                    os.environ[next(iter(preparation.VALIDATOR.IMPORTS))] = "/foreign/import"
+                else:
+                    # Reuse must refuse a changed mapping and discard the
+                    # recorded producer even if the receipt is otherwise valid.
+                    changed = json.loads(os.environ[cases.VARIABLE])
+                    changed["case"]["versions"]["HexalithEventStoreVersion"] = "9.9.9"
+                    os.environ[cases.VARIABLE] = json.dumps(changed)
+                with self.assertRaises(ValueError):
+                    preparation.ensure_for_job(self.prepared, repository="Example/Fixture")
+                self.assertFalse(owned.exists())
+                self.assertNotIn(preparation.STATE_VARIABLE, os.environ)
+                self.assertNotIn("HexalithBuildsPublishedToolRoot", os.environ)
+                self.assertNotIn(cases.VARIABLE, os.environ)
+                os.environ.clear()
+                os.environ.update(original)
+        # A foreign receipt/producer path is never owned, even with a familiar
+        # file name. Its files and environment remain intact on refusal.
+        foreign = self.base / "foreign"
+        foreign.mkdir()
+        receipt = foreign / "state.json"
+        receipt.write_text("{}")
+        with patch.dict(os.environ, {preparation.STATE_VARIABLE: str(receipt), "HexalithBuildsPublishedToolRoot": str(foreign), "RUNNER_TEMP": str(self.base)}):
+            with self.assertRaises(ValueError):
+                preparation.ensure_for_job(self.prepared, repository="Example/Fixture")
+            self.assertTrue(receipt.exists())
+            self.assertEqual(str(foreign), os.environ["HexalithBuildsPublishedToolRoot"])
+
+    def test_nonempty_cohorts_run_through_ci_local_and_release_and_stop_on_failure(self):
+        import local_check
+        (self.root / "compat").mkdir()
+        (self.root / "compat/Consumer.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Hexalith.EventStore.Contracts" Version="$(HexalithEventStoreVersion)" /></ItemGroup></Project>')
+        (self.root / "Ship.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"/>')
+        (self.root / "Fixture.slnx").write_text('<Solution><Project Path="compat/Consumer.csproj" /></Solution>')
+        self.prepared.document["buildProjects"] = [{"id": "sdk-" + version.replace(".", "-"), "project": "compat/Consumer.csproj", "versions": {"HexalithEventStoreVersion": version}} for version in ("4.1.0", "4.2.0")]
+        (self.root / ".github/hexalith-ci.json").write_text(json.dumps(self.prepared.document))
+        self.head = commit(self.root)
+        self.authority = preparation.accepted_authority(self.prepared, repository="Example/Fixture", comparison=self.comparison)
+        real_prepare = published.prepare
+        def controlled(prepared, workspace):
+            return real_prepare(prepared, workspace, read=lambda p: self.metadata[p], download=lambda _: self.payload, run=self.runner)
+        def evaluate(*args, **kwargs):
+            values = {name: "" for name in kwargs["properties"]}
+            values.update(dict(flag[3:].split("=", 1) for flag in kwargs["flags"] if flag.startswith("-p:")))
+            values["TargetFramework"] = "net10.0"
+            return values
+        clean = dict(os.environ)
+        for route in ("ci", "local", "release"):
+            for fail in (False, True):
+                events = []
+                def outputs():
+                    mapping = json.loads(os.environ[cases.VARIABLE])
+                    for value in mapping.values():
+                        path = Path(value["artifactsPath"]) / "selection.txt"
+                        self.assertEqual(value["versions"]["HexalithEventStoreVersion"], path.read_text())
+                def command(arguments, root, *_rest, **_kwargs):
+                    action = arguments[1]
+                    artifact_flags = [flag for flag in arguments if flag.startswith("-p:ArtifactsPath=")]
+                    if artifact_flags:
+                        directory = Path(artifact_flags[0].split("=", 1)[1])
+                        version = next(flag.split("=", 1)[1] for flag in arguments if flag.startswith("-p:HexalithEventStoreVersion="))
+                        events.append(action + ":" + version)
+                        if action == "restore":
+                            (directory / "obj").mkdir(parents=True, exist_ok=True)
+                            (directory / "obj/project.assets.json").write_text(json.dumps({"libraries": {"Hexalith.EventStore.Contracts/" + version: {"type": "package"}}}))
+                        elif fail:
+                            raise pipeline.PipelineError("controlled cohort failure", 37)
+                        else:
+                            (directory / "selection.txt").write_text(version)
+                    elif action == "pack":
+                        outputs()
+                        events.append("pack")
+                        destination = Path(arguments[arguments.index("--output") + 1])
+                        destination.mkdir(parents=True)
+                        (destination / "Fixture.Package.1.2.3.nupkg").write_bytes(package(self.head, version="1.2.3"))
+                    return ""
+                def unit(*args, **kwargs):
+                    outputs()
+                    events.append("unit")
+                    return pipeline.TestProjects((), (), ())
+                with self.subTest(route=route, fail=fail), patch.dict(os.environ, dict(clean, RUNNER_TEMP=str(self.base), GITHUB_ENV=str(self.base / "cohort-env")), clear=True), \
+                     patch.object(published, "prepare", side_effect=controlled), patch.object(preparation, "accepted_authority", return_value=self.authority), \
+                     patch.object(pipeline, "evaluated_properties", side_effect=evaluate), patch.object(pipeline, "run_command", side_effect=command), \
+                     patch.object(pipeline, "run_unit_tests", side_effect=unit):
+                    if route == "ci":
+                        with patch.object(pipeline, "prepare_config", return_value=self.prepared), patch.object(pipeline, "write_outputs"), patch.object(pipeline, "initialize_submodules"), patch.object(pipeline, "write_stage_outputs"), patch.object(sys, "argv", ["ci", "--repository", "Example/Fixture", "--phase", "all"]):
+                            self.assertEqual(37 if fail else 0, pipeline.main())
+                    elif route == "local":
+                        fake = SimpleNamespace(root=self.root, run=lambda *args, **kwargs: (str(self.root).encode() + b"\n") if args[-1] == "--show-toplevel" else b"false")
+                        with patch.object(local_check, "git_at", return_value=fake), patch.object(local_check, "commit", side_effect=lambda git, ref, label: self.active if ref.startswith("refs/tags/") else self.head), patch.object(local_check.state, "tree_snapshot", return_value=SimpleNamespace(items={local_check.BUILDS_PATH: SimpleNamespace(oid=self.active)})), patch.object(local_check, "repository_identity", return_value="Example/Fixture"), patch.object(local_check, "checkout", return_value=SimpleNamespace(root=self.builds)), patch.object(local_check, "require_clean"), patch.object(local_check, "require_declarations"), patch.object(local_check, "revalidate"), patch.object(local_check.guard, "run", return_value=self.comparison), patch.object(pipeline, "prepare_config", return_value=self.prepared):
+                            if fail:
+                                with self.assertRaises(pipeline.PipelineError):
+                                    local_check.run(self.root)
+                            else:
+                                local_check.run(self.root)
+                    else:
+                        destination = self.base / ("payload-" + str(fail))
+                        with patch.object(release_build, "initialize_submodules"), patch.object(release_build, "discover_projects", return_value=(release_build.Project("Ship.csproj", "Fixture.Package", "", "", ()),)), patch.object(release_build, "audited_command", side_effect=command):
+                            if fail:
+                                with self.assertRaises(pipeline.PipelineError):
+                                    release_build.build_release(self.prepared, destination, version="1.2.3", sha=self.head, repository="Example/Fixture")
+                                self.assertFalse((destination / "release-manifest.json").exists())
+                            else:
+                                manifest = release_build.build_release(self.prepared, destination, version="1.2.3", sha=self.head, repository="Example/Fixture")
+                                self.assertEqual(1, len(manifest["packages"]))
+                    self.assertIn("build:4.1.0", events)
+                    if fail:
+                        self.assertNotIn("restore:4.2.0", events)
+                        self.assertFalse({"unit", "pack"}.intersection(events))
+                    else:
+                        self.assertIn("build:4.2.0", events)
+                        self.assertIn("pack" if route == "release" else "unit", events)
+
     def test_official_markers_run_tag_manifest_and_closed_binding_refuse_changes(self):
         for key in self.metadata:
             values = copy.deepcopy(self.metadata)
@@ -314,12 +457,23 @@ class DeclaredProjectTests(unittest.TestCase):
         (self.root / "compat").mkdir()
         self.project = self.root / "compat/Consumer.csproj"
         self.project.write_text('''<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>
-<IsPackable>false</IsPackable></PropertyGroup><Target Name="ObserveSelection" AfterTargets="Build">
+<IsPackable>false</IsPackable></PropertyGroup><ItemGroup><PackageReference Include="Hexalith.EventStore.Contracts" Version="$(HexalithEventStoreVersion)" /></ItemGroup><Target Name="ObserveSelection" AfterTargets="Build">
 <WriteLinesToFile File="$(ArtifactsPath)/selection.txt" Lines="$(HexalithEventStoreVersion)" Overwrite="true" />
 <Error Condition="'$(UseHexalithProjectReferences)' != 'false'" Text="Package mode required" />
 </Target></Project>''')
         (self.root / "compat/Consumer.cs").write_text("public class Consumer {}")
         commit(self.root)
+        # Synthetic package controls never share the user's genuine cache.
+        private_packages = patch.dict(os.environ, {"NUGET_PACKAGES": str(self.base / "packages")})
+        private_packages.start()
+        self.addCleanup(private_packages.stop)
+        self.feed = self.base / "feed"
+        self.feed.mkdir()
+        for version in VERSIONS:
+            data = zip_bytes([("Hexalith.EventStore.Contracts.nuspec", '<package><metadata><id>Hexalith.EventStore.Contracts</id><version>' + version + '</version><authors>Fixture</authors><description>Local source qualification</description></metadata></package>')])
+            (self.feed / ("Hexalith.EventStore.Contracts." + version + ".nupkg")).write_bytes(data)
+        self.nuget = self.base / "NuGet.Config"
+        self.nuget.write_text('<configuration><packageSources><clear/><add key="fixture" value="' + str(self.feed) + '"/></packageSources></configuration>')
         self.prepared = SimpleNamespace(root=self.root, document={"moduleManifest": "module.json", "buildProjects": [
             {"id": "sdk-" + v.replace(".", "-"), "project": "compat/Consumer.csproj", "versions": {"HexalithEventStoreVersion": v}} for v in VERSIONS]})
         workspace = self.base / "preparation/producer"
@@ -336,7 +490,7 @@ class DeclaredProjectTests(unittest.TestCase):
     def test_real_sdk_six_exact_selections_and_disjoint_outputs(self):
         with cases.output_scope(self.prepared, self.environment):
             mapping = json.loads(os.environ[cases.VARIABLE])
-            cases.build_declared(self.prepared, pipeline.build_flags(), pipeline.run_command)
+            cases.build_declared(self.prepared, pipeline.build_flags(self.nuget), pipeline.run_command)
             self.assertEqual(6, len({value["artifactsPath"] for value in mapping.values()}))
             for entry in mapping.values():
                 directory = Path(entry["artifactsPath"])
@@ -354,6 +508,9 @@ class DeclaredProjectTests(unittest.TestCase):
             events.append(arguments)
             if arguments[1] == "build":
                 raise pipeline.PipelineError("controlled case build failure", 37)
+            directory = Path(next(value.removeprefix("-p:ArtifactsPath=") for value in arguments if value.startswith("-p:ArtifactsPath="))) / "obj"
+            directory.mkdir(parents=True)
+            (directory / "project.assets.json").write_text(json.dumps({"libraries": {"Hexalith.EventStore.Contracts/" + VERSIONS[0]: {"type": "package"}}}))
         values = {name: "" for name in ("TargetFramework", "TargetFrameworks", "IsTestProject", "XunitTestProject", *ci_config.BUILD_VERSIONS)}
         values["HexalithEventStoreVersion"] = VERSIONS[0]
         flags = release_build.release_flags("1.2.3", SHA, "Example/Fixture")
@@ -366,6 +523,46 @@ class DeclaredProjectTests(unittest.TestCase):
             self.assertTrue(set(flags) <= set(command))
             self.assertIn("-p:NuGetAudit=true", command)
             self.assertIn("-p:CustomAfterMicrosoftCommonTargets=" + str(release_build.TARGETS), command)
+
+    def test_finite_input_preflight_and_restored_identity_refusals(self):
+        original = self.project.read_text()
+        shared = self.root / "Shared.props"
+        shared.write_text('<Project><PropertyGroup><Nullable>enable</Nullable></PropertyGroup></Project>')
+        self.project.write_text(original.replace('</Project>', '<Import Project="../Shared.props" /></Project>'))
+        commit(self.root)
+        cases.preflight(self.prepared)
+        for xml in ('<ItemGroup><ProjectReference Include="../Child.csproj"><SetTargetFramework>TargetFramework=net10.0;NuGetAudit=false</SetTargetFramework></ProjectReference></ItemGroup>',
+                    '<ItemGroup><Compile Include="../../foreign.cs" /></ItemGroup>',
+                    '<ItemGroup><Reference Include="Foreign"><HintPath>../../foreign.dll</HintPath></Reference></ItemGroup>',
+                    '<ItemGroup><Analyzer Include="../../foreign.dll" /></ItemGroup>',
+                    '<UsingTask TaskName="Hidden" AssemblyFile="foreign.dll" />',
+                    '<Target Name="Hidden"><CustomTask /></Target>',
+                    '<ItemGroup><PackageReference Include="Hexalith.EventStore.Contracts" VersionOverride="9.9.9" /></ItemGroup>',
+                    '<ItemGroup><PackageReference Include="Hexalith.EventStore.Contracts" Version="9.9.9" /></ItemGroup>'):
+            self.project.write_text(original.replace('</Project>', xml + '</Project>'))
+            commit(self.root)
+            with self.subTest(xml=xml), self.assertRaises(ValueError):
+                cases.preflight(self.prepared)
+        self.project.write_text(original.replace('Microsoft.NET.Sdk', 'Foreign.Sdk/1.2.3'))
+        commit(self.root)
+        with self.assertRaises(ValueError):
+            cases.preflight(self.prepared)
+        self.project.write_text(original)
+        implicit = self.root / "Directory.Build.targets"
+        implicit.write_text('<Project><Target Name="Disable" BeforeTargets="CoreCompile"><PropertyGroup><RunAnalyzers>false</RunAnalyzers></PropertyGroup></Target></Project>')
+        commit(self.root)
+        with patch.object(pipeline, "run_command") as command, self.assertRaises(ValueError):
+            prepared = SimpleNamespace(root=self.root, solution="Fixture.slnx", document=dict(self.prepared.document, solution="Fixture.slnx"))
+            pipeline.restore_and_build(prepared)
+        command.assert_not_called()
+        with patch.object(release_build, "discover_projects") as discover, patch.object(release_build, "initialize_submodules"), patch.object(preparation, "accepted_authority", return_value={}), patch.object(preparation, "prepare_environment", return_value=self.environment), patch.object(preparation, "applied", return_value=cases.output_scope(self.prepared, self.environment)), self.assertRaises(ValueError):
+            release_build.build_release(prepared, self.base / "blocked", version="1.2.3", sha=SHA, repository="Example/Fixture")
+        discover.assert_not_called()
+        artifacts = self.base / "wrong-assets"
+        artifacts.mkdir()
+        (artifacts / "project.assets.json").write_text(json.dumps({"libraries": {"Hexalith.EventStore.Contracts/9.9.9": {"type": "package"}}}))
+        with self.assertRaisesRegex(ValueError, "restored package differs"):
+            cases.verify_packages(artifacts, {"HexalithEventStoreVersion": "4.2.0"})
 
     def test_uncommitted_foreign_symlink_policy_import_and_test_inputs_fail(self):
         for xml in ('<PropertyGroup><NuGetAudit>false</NuGetAudit></PropertyGroup>',
@@ -389,7 +586,7 @@ class DeclaredProjectTests(unittest.TestCase):
             mapping = json.loads(os.environ[cases.VARIABLE])
             mapping[next(iter(mapping))]["artifactsPath"] = "/arbitrary/build-projects/sdk-3-130-0"
             with patch.dict(os.environ, {cases.VARIABLE: json.dumps(mapping)}), self.assertRaisesRegex(ValueError, "mapping"):
-                cases.build_declared(self.prepared, pipeline.build_flags(), pipeline.run_command)
+                cases.build_declared(self.prepared, pipeline.build_flags(self.nuget), pipeline.run_command)
 
 
 class StrictPackageTests(unittest.TestCase):
@@ -478,6 +675,23 @@ class StrictPackageTests(unittest.TestCase):
                 "<HexalithVerifyPublishedPackage Condition=\"'$(TargetFramework)' == 'net10.0'\">true</HexalithVerifyPublishedPackage></PropertyGroup>"))
             with self.assertRaisesRegex(ValueError, "differs across"):
                 release_build.discover_projects(prepared, flags)
+
+    def test_child_retaining_stdout_cannot_extend_process_deadline(self):
+        with tempfile.TemporaryDirectory(prefix="child-pipe-") as temporary:
+            directory = Path(temporary)
+            script = "import subprocess,sys; from pathlib import Path; child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(5)']); Path('child.pid').write_text(str(child.pid))"
+            started = time.monotonic()
+            with self.assertRaises(subprocess.TimeoutExpired):
+                package_archive.bounded_process([sys.executable, "-c", script], cwd=directory,
+                    env=package_archive.private_environment(directory), timeout=0.3)
+            self.assertLess(time.monotonic() - started, 2)
+            pid = int((directory / "child.pid").read_text())
+            status = Path('/proc') / str(pid) / 'stat'
+            deadline = time.monotonic() + 0.5
+            while status.exists() and status.read_text().split()[2] != 'Z' and time.monotonic() < deadline:
+                time.sleep(0.01)
+            if status.exists():
+                self.assertEqual('Z', status.read_text().split()[2])
 
     def test_real_dotnet_rejects_invalid_signature(self):
         data = zip_bytes([*package_archive.members(package(SHA)).items(), (".signature.p7s", b"invalid cryptographic signature")])

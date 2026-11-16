@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import copy
-from contextlib import contextmanager, redirect_stdout
+from contextlib import contextmanager, redirect_stdout, redirect_stderr
 import http.server
 import io
 import json
@@ -355,6 +355,54 @@ class PublisherTests(History):
                 publish.push_packages(self.root / "payload", values, "private-key", run=lambda args, **kwargs:
                                       subprocess.CompletedProcess(args, 0, stdout=output))
             self.assertEqual(recorded.getvalue(), expected + "\n")
+
+    def test_enrolled_artifact_policy_survives_real_authentication_state_and_publication(self):
+        import package_archive
+        manifest = {"sha": self.sha, "version": VERSION, "packages": [{"id": "Fixture.Package", "path": "packages/Fixture.Package." + VERSION + ".nupkg", "verifyPublishedPackage": True}], "containers": []}
+        payload = artifact(self.sha, manifest=manifest)
+        original_verify, original_push, original_finalize = publish.verify_packages, publish.push_packages, publish.finalize_release
+        for mutation in ("signed", "changed", "unsigned"):
+            with self.subTest(mutation=mutation):
+                control = self.control(payload)
+                directory = self.root / ("enrolled-" + mutation)
+                directory.mkdir()
+                public = package_archive.members(package(self.sha))
+                if mutation != "unsigned":
+                    public[".signature.p7s"] = b"controlled signature subprocess"
+                if mutation == "changed":
+                    public["lib/net10.0/Fixture.dll"] = b"changed public bytes"
+                response = io.BytesIO(zip_bytes(list(public.items())))
+                response.status, response.headers = 200, {}
+                environment = {"RELEASE_" + key.upper().replace("-", "_"): value for key, value in control.values.items()}
+                environment.update(GITHUB_EVENT_NAME="workflow_dispatch", GITHUB_REF="refs/heads/main", GITHUB_SHA=self.sha,
+                    GITHUB_REPOSITORY=REPOSITORY, GITHUB_WORKFLOW_REF=REPOSITORY + "/.github/workflows/release.yml@refs/heads/main",
+                    RELEASE_STATE=str(directory), NUGET_API_KEY="synthetic-publication-control")
+                def signature(arguments, **kwargs):
+                    self.assertFalse(any("TOKEN" in key or "KEY" in key for key in kwargs["env"]))
+                    return subprocess.CompletedProcess(arguments, 0, stdout=b"")
+                def verify(values):
+                    self.assertIn("Fixture.Package", values["package-policies"])
+                    return original_verify(values, open_url=lambda *_a, **_k: response, run=signature, attempts=1, interval=0)
+                with patch.dict(os.environ, environment), patch.object(publish, "private_directory", return_value=directory), \
+                     patch.object(publish, "PublishApi", return_value=control), patch.object(publish, "Git", return_value=self.git) as git_type, \
+                     patch.object(publish, "outputs"), patch.object(publish, "verify_packages", side_effect=verify) as verification, \
+                     patch.object(publish, "push_packages", side_effect=lambda directory, values, key: original_push(directory, values, key, run=lambda args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=b""))), \
+                     patch.object(publish, "finalize_release", side_effect=lambda git, api, values: original_finalize(git, api, values, refresh=self.refresh)) as finalization:
+                    git_type.fetch.return_value = self.git
+                    with patch.object(sys, "argv", ["publisher", "prepare"]):
+                        self.assertEqual(0, publish.main())
+                    state = json.loads((directory / "state.json").read_text())
+                    self.assertEqual(package_archive.body_inventory(package(self.sha)), state["values"]["package-policies"]["Fixture.Package"])
+                    with patch.object(sys, "argv", ["publisher", "publish"]), redirect_stderr(io.StringIO()):
+                        self.assertEqual(0 if mutation == "signed" else 1, publish.main())
+                    verification.assert_called_once()
+                    if mutation == "signed":
+                        finalization.assert_called_once()
+                        self.assertEqual("published", json.loads((directory / "state.json").read_text())["document"]["outcome"])
+                    else:
+                        finalization.assert_not_called()
+                        self.assertEqual([], control.writes)
+                        self.assertEqual("failed", json.loads((directory / "state.json").read_text())["document"]["outcome"])
 
     def test_interrupted_state_rewrite_preserves_previous_complete_document(self):
         directory = self.root / "state-writes"
