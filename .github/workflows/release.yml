@@ -80,6 +80,7 @@ jobs:
       version: ${{ steps.resolve.outputs.version }}
       draft-id: ${{ steps.resolve.outputs.draft-id }}
       last-tag: ${{ steps.resolve.outputs.last-tag }}
+      accepted-delivered-sha: ${{ steps.resolve.outputs.accepted-delivered-sha }}
     steps:
       - name: Read dispatch settings and freeze release source
         id: resolve
@@ -204,6 +205,7 @@ jobs:
         id: build
         uses: $/Github/release-build
         with:
+          accepted-delivered-sha: ${{ needs.resolve.outputs.accepted-delivered-sha }}
           sha: ${{ needs.resolve.outputs.sha }}
           version: ${{ needs.version.outputs.version }}
           module-root: ${{ inputs.module-root }}

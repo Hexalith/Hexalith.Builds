@@ -134,6 +134,16 @@ def prepare_config(workspace: Path, *, repository: str, module_root: str = "",
     solution = contained_path(root, config["solution"], kind="solution")
     if not solution.is_file():
         raise PipelineError(f"solution does not exist: {solution}")
+    if config.get("moduleManifest"):
+        manifest = contained_path(root, config["moduleManifest"], kind="module manifest")
+        if not manifest.is_file():
+            raise PipelineError(f"module manifest does not exist: {manifest}")
+        candidate = root
+        for part in config["moduleManifest"].split("/"):
+            candidate = candidate / part
+            if candidate.is_symlink() or getattr(candidate.lstat(), "st_file_attributes", 0) & 1024:
+                raise PipelineError("module manifest traverses a symbolic link or reparse point")
+        _read_json(manifest)
     global_json = root / "global.json"
     sdk = _read_json(global_json)
     if (not isinstance(sdk, dict) or not isinstance(sdk.get("sdk"), dict)
@@ -459,10 +469,27 @@ def write_stage_outputs(prepared: PreparedConfig, classified: TestProjects) -> N
     publish_outputs(values)
 
 
-def write_outputs(prepared: PreparedConfig) -> None:
+def write_outputs(prepared: PreparedConfig, *, repository: str = "") -> None:
     """Expose validated workspace-relative inputs for future Windows prepare."""
+    prefix = f"{prepared.root.relative_to(prepared.workspace).as_posix()}/" if prepared.root != prepared.workspace else ""
+    manifest = prepared.document.get("moduleManifest")
+    checkout = prepared.document.get("windowsCheckout")
+    revision = ""
+    if checkout is not None:
+        revision = run_command(["git", "rev-parse", "--verify", "HEAD^{commit}"], prepared.workspace, capture=True).strip()
+        if re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", revision) is None:
+            raise PipelineError("validated Windows checkout requires an exact committed source revision")
     values = {"solution": prepared.solution, "global-json": prepared.global_json,
-              "submodules": json.dumps(prepared.submodules)}
+              "submodules": json.dumps(prepared.submodules),
+              "module-manifest": prefix + manifest if manifest else "",
+              "windows-checkout": json.dumps(checkout, separators=(",", ":")),
+              "source-revision": revision}
+    if manifest:
+        from module_preparation import accepted_authority
+        values["module-authority"] = json.dumps(accepted_authority(prepared,
+            repository=repository or os.environ.get("CI_REPOSITORY", ""), fetch_tags=True), separators=(",", ":"))
+    else:
+        values["module-authority"] = ""
     publish_outputs(values)
 
 
@@ -493,7 +520,10 @@ def main() -> int:
                                   module_root=args.module_root, expected_source=args.expected_source)
         if args.phase in ("prepare", "all"):
             initialize_submodules(prepared)
-            write_outputs(prepared)
+            write_outputs(prepared, repository=args.repository)
+        if args.phase in ("build", "unit", "integration", "all") and prepared.document.get("moduleManifest"):
+            from module_preparation import ensure_for_job
+            ensure_for_job(prepared, repository=args.repository)
         if args.phase in ("build", "all"):
             restore_and_build(prepared)
         if args.phase in ("unit", "all"):

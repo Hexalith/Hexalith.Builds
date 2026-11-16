@@ -36,6 +36,18 @@ on:
       global-json:
         description: Validated workspace-relative module SDK path, empty for solution none.
         value: ${{ jobs.ci.outputs.global-json }}
+      module-manifest:
+        description: Validated module manifest path, empty when disabled.
+        value: ${{ jobs.ci.outputs.module-manifest }}
+      windows-checkout:
+        description: Validated immutable archive checkout JSON, or null.
+        value: ${{ jobs.ci.outputs.windows-checkout }}
+      source-revision:
+        description: Exact source commit bound to protected Windows checkout inputs.
+        value: ${{ jobs.ci.outputs.source-revision }}
+      module-authority:
+        description: Exact accepted-delivery authority for Windows producer preparation.
+        value: ${{ jobs.ci.outputs.module-authority }}
 
 permissions: {}
 
@@ -56,6 +68,10 @@ jobs:
       solution: ${{ steps.prepare.outputs.solution }}
       submodules: ${{ steps.prepare.outputs.submodules }}
       global-json: ${{ steps.prepare.outputs.global-json }}
+      module-manifest: ${{ steps.prepare.outputs.module-manifest }}
+      windows-checkout: ${{ steps.prepare.outputs.windows-checkout }}
+      source-revision: ${{ steps.prepare.outputs.source-revision }}
+      module-authority: ${{ steps.prepare.outputs.module-authority }}
     steps:
       - name: Checkout module
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

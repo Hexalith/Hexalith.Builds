@@ -1,6 +1,9 @@
 name: Build frozen release
 description: Audit, build, pack and upload the original versioned release payload without credentials or caches.
 inputs:
+  accepted-delivered-sha:
+    description: Frozen accepted delivery output from release resolve.
+    default: ''
   sha:
     description: Frozen full release commit.
     required: true
@@ -45,6 +48,7 @@ runs:
         RELEASE_VERSION: ${{ inputs.version }}
         RELEASE_MODULE_ROOT: ${{ inputs.module-root }}
         RELEASE_OUTPUT: ${{ runner.temp }}/hexalith-release-payload
+        RELEASE_ACCEPTED_DELIVERED_SHA: ${{ inputs.accepted-delivered-sha }}
       run: python3 -I "$GITHUB_ACTION_PATH/../lib/release_build.py" --phase build
     - name: Upload original release artifact
       id: upload

@@ -373,6 +373,7 @@ def resolve(git, api, *, sha, ref, switch, workflow="ci.yml", module_root="", de
             comparison.require_clean()
         except expected_state.ExpectedStateError as error:
             raise _ExpectedReleaseError(error) from error
+        emit({"accepted-delivered-sha": comparison.delivered_sha})
     if switch not in ("true", "false"):
         raise ReleaseError("HEXALITH_RELEASE_PUBLISH_ENABLED must be exactly true or false")
     emit({"enabled": switch})

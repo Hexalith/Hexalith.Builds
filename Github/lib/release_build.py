@@ -192,48 +192,54 @@ def build_release(prepared: PreparedConfig, output: Path, *, version: str, sha: 
     manifest = {"sha": sha, "version": version, "packages": [], "containers": []}
     if prepared.solution != "none":
         initialize_submodules(prepared)
-        projects = discover_projects(prepared, flags)
-        solution = str(contained_path(prepared.root, prepared.document["solution"], kind="solution"))
-        runtimes = sorted({runtime for project in projects for runtime in project.restore_runtimes})
-        # Prepare every selected container's assets in the one audited restore;
-        # SDK default/container-specific RIDs need not appear in RuntimeIdentifiers.
-        # Literal quotes preserve a list through MSBuild's command-line parser.
-        restore_flags = ['-p:RuntimeIdentifiers="' + ";".join(runtimes) + '"'] if runtimes else []
-        audited_command(["dotnet", "restore", solution, *flags, *restore_flags], prepared.root, version)
-        audited_command(["dotnet", "build", solution, "--no-restore", *flags], prepared.root, version)
-        with tempfile.TemporaryDirectory(prefix="hexalith-release-publish-") as temporary:
-            work = Path(temporary)
-            for index, project in enumerate(projects):
-                path = str(contained_path(prepared.root, project.path, kind="project"))
-                if project.package:
-                    package_dir = work / f"package-{index}"
-                    audited_command(["dotnet", "pack", path, "--no-build", "--no-restore", "--output", str(package_dir),
-                                     *flags], prepared.root, version)
-                    payloads = list(package_dir.iterdir()) if package_dir.is_dir() else []
-                    if len(payloads) != 1 or payloads[0].suffix != ".nupkg" or not payloads[0].is_file():
-                        raise PipelineError("expected exactly one versioned package per selected project")
-                    validate_package(payloads[0], identity=project.package, version=version, sha=sha)
-                    destination = output / "packages" / f"{project.package}.{version}.nupkg"
-                    destination.parent.mkdir(exist_ok=True)
-                    destination.write_bytes(payloads[0].read_bytes())
-                    manifest["packages"].append({"id": project.package, "path": destination.relative_to(output).as_posix()})
-                if project.container:
-                    archives = []
-                    for runtime in project.runtimes:
-                        destination = work / f"container-{index}-{runtime}.tar.gz"
-                        audited_command(["dotnet", "publish", path, "--no-restore", "-t:PublishContainer", "--runtime", runtime,
-                                         f"-p:TargetFramework={project.framework}", "-p:ContainerRuntimeIdentifiers=",
-                                         f"-p:ContainerRuntimeIdentifier={runtime}",
-                                         f"-p:ContainerArchiveOutputPath={destination}", *flags], prepared.root, version)
-                        archives.append((destination, platform_for_rid(runtime)))
-                    destination = output / "containers" / f"container-{index}.tar"
-                    destination.parent.mkdir(exist_ok=True)
-                    if destination.exists():
-                        raise PipelineError("conflicting container archive filename")
-                    combine_archives(archives, destination, revision=sha, version=version,
-                                     repository=repository, name=project.container)
-                    inspect_archive(destination, revision=sha, version=version, repository=repository, name=project.container)
-                    manifest["containers"].append({"name": project.container, "path": destination.relative_to(output).as_posix()})
+        from module_preparation import accepted_authority, applied, prepare_environment
+        with tempfile.TemporaryDirectory(prefix="hexalith-release-preparation-") as preparation_root:
+            authority = accepted_authority(prepared, repository=repository, fetch_tags=True,
+                                           delivered_sha=os.environ.get("RELEASE_ACCEPTED_DELIVERED_SHA", ""))
+            environment = prepare_environment(prepared, authority, Path(preparation_root))
+            with applied(prepared, authority, environment):
+                projects = discover_projects(prepared, flags)
+                solution = str(contained_path(prepared.root, prepared.document["solution"], kind="solution"))
+                runtimes = sorted({runtime for project in projects for runtime in project.restore_runtimes})
+                # Prepare every selected container's assets in the one audited restore;
+                # SDK default/container-specific RIDs need not appear in RuntimeIdentifiers.
+                # Literal quotes preserve a list through MSBuild's command-line parser.
+                restore_flags = ['-p:RuntimeIdentifiers="' + ";".join(runtimes) + '"'] if runtimes else []
+                audited_command(["dotnet", "restore", solution, *flags, *restore_flags], prepared.root, version)
+                audited_command(["dotnet", "build", solution, "--no-restore", *flags], prepared.root, version)
+                with tempfile.TemporaryDirectory(prefix="hexalith-release-publish-") as temporary:
+                    work = Path(temporary)
+                    for index, project in enumerate(projects):
+                        path = str(contained_path(prepared.root, project.path, kind="project"))
+                        if project.package:
+                            package_dir = work / f"package-{index}"
+                            audited_command(["dotnet", "pack", path, "--no-build", "--no-restore", "--output", str(package_dir),
+                                             *flags], prepared.root, version)
+                            payloads = list(package_dir.iterdir()) if package_dir.is_dir() else []
+                            if len(payloads) != 1 or payloads[0].suffix != ".nupkg" or not payloads[0].is_file():
+                                raise PipelineError("expected exactly one versioned package per selected project")
+                            validate_package(payloads[0], identity=project.package, version=version, sha=sha)
+                            destination = output / "packages" / f"{project.package}.{version}.nupkg"
+                            destination.parent.mkdir(exist_ok=True)
+                            destination.write_bytes(payloads[0].read_bytes())
+                            manifest["packages"].append({"id": project.package, "path": destination.relative_to(output).as_posix()})
+                        if project.container:
+                            archives = []
+                            for runtime in project.runtimes:
+                                destination = work / f"container-{index}-{runtime}.tar.gz"
+                                audited_command(["dotnet", "publish", path, "--no-restore", "-t:PublishContainer", "--runtime", runtime,
+                                                 f"-p:TargetFramework={project.framework}", "-p:ContainerRuntimeIdentifiers=",
+                                                 f"-p:ContainerRuntimeIdentifier={runtime}",
+                                                 f"-p:ContainerArchiveOutputPath={destination}", *flags], prepared.root, version)
+                                archives.append((destination, platform_for_rid(runtime)))
+                            destination = output / "containers" / f"container-{index}.tar"
+                            destination.parent.mkdir(exist_ok=True)
+                            if destination.exists():
+                                raise PipelineError("conflicting container archive filename")
+                            combine_archives(archives, destination, revision=sha, version=version,
+                                             repository=repository, name=project.container)
+                            inspect_archive(destination, revision=sha, version=version, repository=repository, name=project.container)
+                            manifest["containers"].append({"name": project.container, "path": destination.relative_to(output).as_posix()})
     manifest["packages"].sort(key=lambda value: value["id"])
     manifest["containers"].sort(key=lambda value: value["name"])
     expected = {value["path"] for kind in ("packages", "containers") for value in manifest[kind]}

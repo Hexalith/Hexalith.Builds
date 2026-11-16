@@ -53,6 +53,48 @@ class SharedContractTests(unittest.TestCase):
                 self.assertEqual(case["valid"], loader_valid)
                 self.assertEqual(original, document, "validation must not insert defaults or change values")
 
+    def test_optional_preparation_defaults_and_enabled_contract_agree(self):
+        base = next(copy.deepcopy(case["document"]) for case in CORPUS
+                    if case["valid"] and case["document"]["solution"] != "none")
+        for additions in ({}, {"moduleManifest": None, "windowsCheckout": None},
+                          {"moduleManifest": "module/manifest.json", "windowsCheckout": {
+                              "exclude": [{"path": "history/archive", "tree": "1" * 40}]}}):
+            document = dict(base, **additions)
+            original = copy.deepcopy(document)
+            with self.subTest(additions=additions):
+                self.validator.validate(document)
+                self.assertIs(document, CONFIG.validate_config(document, repository=BUILDS))
+                self.assertEqual(original, document)
+        for key in ("moduleManifest", "windowsCheckout"):
+            self.assertIsNone(SCHEMA["properties"][key]["default"])
+            self.assertNotIn(key, SCHEMA["required"])
+
+    def test_unsafe_preparation_shapes_and_paths_fail_both_contracts(self):
+        base = next(copy.deepcopy(case["document"]) for case in CORPUS
+                    if case["valid"] and case["document"]["solution"] != "none")
+        candidates = [{"moduleManifest": value} for value in (True, "../manifest.json", "module/file.xml", "module\\manifest.json", "bad\n.json")]
+        candidates.extend({"windowsCheckout": value} for value in ({}, {"exclude": []},
+            {"exclude": [{"path": "archive", "tree": "A" * 40}]},
+            {"exclude": [{"path": "../archive", "tree": "1" * 40}]},
+            {"exclude": [{"path": "C:/archive", "tree": "1" * 40}]}))
+        for additions in candidates:
+            document = dict(base, **additions)
+            with self.subTest(additions=additions):
+                self.assertFalse(self.validator.is_valid(document))
+                with self.assertRaises(CONFIG.ConfigError):
+                    CONFIG.validate_config(document, repository=BUILDS)
+
+    def test_archive_semantics_refuse_aliases_overlaps_and_product_paths(self):
+        base = next(copy.deepcopy(case["document"]) for case in CORPUS
+                    if case["valid"] and case["document"]["solution"] != "none")
+        candidates = (["archive", "Archive"], ["history", "history/cache"], [".github"],
+                      ["references/Hexalith.Builds"], ["global.json"], ["NUL"], ["module"])
+        for paths in candidates:
+            document = dict(base, moduleManifest="module/manifest.json", windowsCheckout={
+                "exclude": [{"path": path, "tree": "1" * 40} for path in paths]})
+            with self.subTest(paths=paths), self.assertRaises(CONFIG.ConfigError):
+                CONFIG.validate_config(document, repository=BUILDS)
+
     def test_builds_hand_written_configuration_validates_with_both_engines(self):
         path = ROOT / ".github/hexalith-ci.json"
         document = json.loads(path.read_text(encoding="utf-8"))

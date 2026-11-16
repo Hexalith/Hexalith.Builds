@@ -179,7 +179,7 @@ public static class SourceMappingMaterializer
             foreach (SourceMappingEntry entry in mapping.Entries)
             {
                 string suffix = SourceMapping.PropertySuffix(entry.Identity);
-                string selectedRoot = entry.Path ?? Path.Combine(mapping.Root, "references", entry.Identity);
+                string selectedRoot = mapping.SelectionRoot(entry);
                 Property(xml, "Hexalith" + suffix + "Root", selectedRoot);
                 if (initializeObserved)
                 {
@@ -232,7 +232,7 @@ public static class SourceMappingMaterializer
         {
             string suffix = SourceMapping.PropertySuffix(entry.Identity);
             string origin = entry.Origin == "source" ? "true" : "false";
-            yield return ("Hexalith" + suffix + "Root", entry.Path ?? Path.Combine(mapping.Root, "references", entry.Identity));
+            yield return ("Hexalith" + suffix + "Root", mapping.SelectionRoot(entry));
             yield return ("Hexalith" + suffix + "FromSource", origin);
             if (string.Equals(entry.Identity, "Hexalith.Tenants", StringComparison.OrdinalIgnoreCase))
             {
@@ -293,7 +293,7 @@ public static class SourceMappingMaterializer
         {
             string fromSource = entry.Origin == "source" ? "true" : "false";
             string rootProperty = "Hexalith" + SourceMapping.PropertySuffix(entry.Identity) + "Root";
-            string selectedRoot = entry.Path ?? Path.Combine(mapping.Root, "references", entry.Identity);
+            string selectedRoot = mapping.SelectionRoot(entry);
             GuardProperty(guard, rootProperty, selectedRoot);
             GuardProperty(guard, "_HXWObserved" + rootProperty, selectedRoot);
             GuardProperty(guard, "Hexalith" + SourceMapping.PropertySuffix(entry.Identity) + "FromSource", fromSource);
@@ -335,7 +335,7 @@ public static class SourceMappingMaterializer
             + "<Target Name=\"HexalithVerifyPreLateSourceMappingSelection\" BeforeTargets=\"Restore;_GenerateRestoreGraphProjectEntry;_GenerateRestoreProjectPathItemsPerFramework;_GenerateProjectRestoreGraphPerFramework;CollectPackageReferences;AssignProjectConfiguration;_SplitProjectReferencesByFileExistence;_GetProjectReferenceTargetFrameworkProperties;ResolveProjectReferences;ResolveReferences;CoreCompile\" Condition=\"" + condition + "\">" + preLateGuard + "</Target>"
             + "<Target Name=\"HexalithReconcileSourceMapping\" BeforeTargets=\"Restore;_GenerateRestoreGraphProjectEntry;_GenerateRestoreProjectPathItemsPerFramework;_GenerateProjectRestoreGraphPerFramework;CollectPackageReferences;AssignProjectConfiguration;_SplitProjectReferencesByFileExistence;_GetProjectReferenceTargetFrameworkProperties;ResolveReferences;ResolvePackageAssets\" Condition=\"" + condition + "\">"
             + guard
-            + "<SourceMappingReconciliationTask MappingFile=\"$(MSBuildThisFileDirectory)mapping.json\" MappingHash=\"$(HexalithSourceMappingHash)\" Projects=\"@(ProjectReference)\" Packages=\"@(PackageReference)\" PackageVersions=\"@(PackageVersion)\" Configuration=\"$(Configuration)\" Platform=\"$(Platform)\" TargetFramework=\"$(TargetFramework)\" ManagePackageVersionsCentrally=\"$(ManagePackageVersionsCentrally)\">"
+            + "<SourceMappingReconciliationTask MappingFile=\"$(MSBuildThisFileDirectory)mapping.json\" MappingHash=\"$(HexalithSourceMappingHash)\" Projects=\"@(ProjectReference)\" Packages=\"@(PackageReference)\" PackageVersions=\"@(PackageVersion)\" Configuration=\"$(Configuration)\" Platform=\"$(Platform)\" TargetFramework=\"$(TargetFramework)\" ManagePackageVersionsCentrally=\"$(ManagePackageVersionsCentrally)\" OwnerProject=\"$(MSBuildProjectFullPath)\" IsolatedAdapterState=\"$(IsTestProject);$(IsPackable);$(IsPublishable);$(EnableDefaultCompileItems)\" ParentCommonTargets=\"$(CustomAfterMicrosoftCommonTargets)\">"
             + "<Output TaskParameter=\"SelectedProjects\" ItemName=\"_HXWSelectedProjects\" /><Output TaskParameter=\"SelectedPackages\" ItemName=\"_HXWSelectedPackages\" />"
             + "</SourceMappingReconciliationTask><ItemGroup><ProjectReference Remove=\"@(ProjectReference)\" /><PackageReference Remove=\"@(PackageReference)\" />"
             + "<ProjectReference Include=\"@(_HXWSelectedProjects)\" /><PackageReference Include=\"@(_HXWSelectedPackages)\" /></ItemGroup></Target>"
@@ -367,7 +367,7 @@ public static class SourceMappingMaterializer
         {
             string suffix = SourceMapping.PropertySuffix(entry.Identity);
             string fromSource = entry.Origin == "source" ? "true" : "false";
-            GuardProperty(guard, "Hexalith" + suffix + "Root", entry.Path ?? Path.Combine(mapping.Root, "references", entry.Identity));
+            GuardProperty(guard, "Hexalith" + suffix + "Root", mapping.SelectionRoot(entry));
             GuardProperty(guard, "Hexalith" + suffix + "FromSource", fromSource);
             if (entry.Identity.Equals("Hexalith.Commons", StringComparison.OrdinalIgnoreCase))
             {
@@ -394,7 +394,7 @@ public static class SourceMappingMaterializer
         StringBuilder condition = new("!$([System.String]::Copy('$(MSBuildProjectFullPath)').StartsWith('");
         _ = condition.Append(ConditionLiteral(hostPrefix)).Append("', System.StringComparison.").Append(comparisonName).Append("))");
         foreach (string buildsRoot in mapping.Entries.Where(entry => mapping.Mode == WorkspaceMode.Package && entry.Identity.Equals("Hexalith.Builds", StringComparison.OrdinalIgnoreCase))
-            .Select(entry => entry.Path ?? Path.Combine(mapping.Root, "references", "Hexalith.Builds")))
+            .Select(mapping.SelectionRoot))
         {
             foreach (string host in new[] { "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.UiHost" })
             {

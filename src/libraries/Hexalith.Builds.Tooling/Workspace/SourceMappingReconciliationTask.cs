@@ -48,6 +48,15 @@ public sealed class SourceMappingReconciliationTask : ITask
     /// <summary>Gets or sets the selected target framework.</summary>
     public string TargetFramework { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the actual owner project's nonshipping adapter flags.</summary>
+    public string IsolatedAdapterState { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the actual owner project path.</summary>
+    public string OwnerProject { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the inherited common-targets chain that isolation must preserve.</summary>
+    public string ParentCommonTargets { get; set; } = string.Empty;
+
     /// <summary>Gets or sets a value indicating whether the consumer uses centrally managed package versions.</summary>
     public bool ManagePackageVersionsCentrally { get; set; }
 
@@ -335,6 +344,18 @@ public sealed class SourceMappingReconciliationTask : ITask
     private bool TryCanonicalizeRetainedProperties(SourceMapping mapping, ITaskItem project, string path, out string canonical)
     {
         canonical = project.GetMetadata("AdditionalProperties");
+        if (!string.IsNullOrEmpty(project.GetMetadata("HexalithIsolatedBuildContract")))
+        {
+            bool valid = IsolatedBuildReferenceContract.TryCanonicalize(mapping, project, OwnerProject, IsolatedAdapterState, TargetFramework, ParentCommonTargets, out canonical);
+            if (!valid)
+            {
+                BuildEngine.LogMessageEvent(new BuildMessageEventArgs("Isolated build-order reference refused: " + canonical, null, nameof(SourceMappingReconciliationTask), MessageImportance.High));
+                canonical = string.Empty;
+            }
+
+            return valid;
+        }
+
         if (string.IsNullOrWhiteSpace(canonical))
         {
             return true;
