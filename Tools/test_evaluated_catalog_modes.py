@@ -14,6 +14,32 @@ CATALOG = ROOT / "Props/Directory.Packages.props"
 
 
 class EvaluatedCatalogModeTests(unittest.TestCase):
+    def test_timesheets_package_roles_keep_the_net10_dependency_contract(self):
+        roles = ("Hexalith.Timesheets", "Hexalith.Timesheets.Works", "Hexalith.Timesheets.Works.Tests",
+                 "Hexalith.Timesheets.IntegrationTests", "Hexalith.Timesheets.Server.Tests")
+        expected = {"Hexalith.Commons.UniqueIds": "2.30.11", "Hexalith.PolymorphicSerializations": "1.19.9",
+                    "Hexalith.EventStore.Client": "4.2.0", "Hexalith.Tenants.Contracts": "7.0.7",
+                    "Microsoft.AspNetCore.Mvc.Testing": "10.0.15", "Microsoft.AspNetCore.TestHost": "10.0.15",
+                    "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.15",
+                    "Microsoft.AspNetCore.OpenApi": "10.0.15", "Microsoft.OpenApi": "2.13.0"}
+        for role in roles:
+            with self.subTest(role=role):
+                properties, versions = evaluate_catalog(CATALOG, target_framework="net10.0", consumer_project_name=role)
+                self.assertEqual("true", properties["HexalithTimesheetsNet10CatalogView"])
+                for package, version in expected.items():
+                    self.assertEqual(version, versions[package], package)
+
+    def test_timesheets_catalog_view_does_not_capture_other_or_future_projects(self):
+        for role in ("Unrelated", "Hexalith.Works.Contracts", "Hexalith.Timesheets.Works.Future"):
+            with self.subTest(role=role):
+                properties, versions = evaluate_catalog(CATALOG, consumer_project_name=role)
+                self.assertEqual("false", properties["HexalithTimesheetsNet10CatalogView"])
+                self.assertEqual("3.0.0", versions["Hexalith.Commons.UniqueIds"])
+                self.assertEqual("2.0.0", versions["Hexalith.PolymorphicSerializations"])
+                self.assertEqual("5.1.1", versions["Hexalith.EventStore.Client"])
+                self.assertEqual("8.0.0", versions["Hexalith.Tenants.Contracts"])
+                self.assertEqual("11.0.0", versions["Microsoft.AspNetCore.Mvc.Testing"])
+
     def test_named_package_snapshots_ignore_inherited_source_mode(self):
         with patch.dict(os.environ, {"UseHexalithProjectReferences": "true"}):
             for name in ("Hexalith.Parties", "Hexalith.Platform.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost"):
