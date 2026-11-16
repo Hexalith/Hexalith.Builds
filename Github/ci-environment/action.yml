@@ -13,6 +13,12 @@ inputs:
   registry:
     description: Literal validated pull-only registry login flag.
     default: 'false'
+  npm-workspaces:
+    description: Validated JSON array of repository-relative npm workspace directories.
+    default: '[]'
+  dotnet-tools:
+    description: Literal validated local .NET tool restore flag.
+    default: 'false'
   aspire:
     description: Literal validated native Aspire toolchain flag.
     default: 'false'
@@ -26,5 +32,7 @@ runs:
         CI_ENVIRONMENT_DAPR: ${{ inputs.dapr }}
         CI_ENVIRONMENT_BROWSERS: ${{ inputs.browsers }}
         CI_ENVIRONMENT_REGISTRY: ${{ inputs.registry }}
+        CI_ENVIRONMENT_NPM_WORKSPACES: ${{ inputs.npm-workspaces }}
+        CI_ENVIRONMENT_DOTNET_TOOLS: ${{ inputs.dotnet-tools }}
         CI_ENVIRONMENT_ASPIRE: ${{ inputs.aspire }}
       run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_environment.py"

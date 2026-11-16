@@ -30,5 +30,7 @@
     }
   },
   "submodules": [],
-  "aspire": true
+  "aspire": true,
+  "npmWorkspaces": [],
+  "dotnetTools": false
 }

@@ -13,6 +13,12 @@ outputs:
   registry:
     description: Validated pull-only registry setup flag after successful units.
     value: ${{ steps.unit.outputs.registry }}
+  npmWorkspaces:
+    description: Validated JSON npm workspace array after successful units.
+    value: ${{ steps.unit.outputs.npmWorkspaces }}
+  dotnetTools:
+    description: Validated local .NET tool restore flag after successful units.
+    value: ${{ steps.unit.outputs.dotnetTools }}
   after-unit-tests:
     description: Whether the workspace-root after-unit-tests action is enabled.
     value: ${{ steps.unit.outputs.after-unit-tests }}

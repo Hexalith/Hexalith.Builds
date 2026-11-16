@@ -15,5 +15,7 @@
   },
   "hooks": [],
   "jobs": {},
-  "submodules": []
+  "submodules": [],
+  "npmWorkspaces": [],
+  "dotnetTools": false
 }

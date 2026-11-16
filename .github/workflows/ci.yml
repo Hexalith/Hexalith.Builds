@@ -95,6 +95,13 @@ jobs:
         env:
           CI_STAGE_STATE: ${{ runner.temp }}/hexalith-ci-stage-state.json
 
+      - name: Set up Builds npm runtime
+        if: steps.prepare.outputs.solution != 'none' && steps.unit.outputs.npmWorkspaces != '[]' && env.CI_REPOSITORY == 'Hexalith/Hexalith.Builds' && env.CI_MODULE_ROOT == ''
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
       - name: Stage 4 environment setup
         if: steps.prepare.outputs.solution != 'none'
         uses: $/Github/ci-environment
@@ -103,6 +110,8 @@ jobs:
           dapr: ${{ steps.unit.outputs.dapr }}
           browsers: ${{ steps.unit.outputs.browsers }}
           registry: ${{ steps.unit.outputs.registry }}
+          npm-workspaces: ${{ steps.unit.outputs.npmWorkspaces }}
+          dotnet-tools: ${{ steps.unit.outputs.dotnetTools }}
           aspire: ${{ steps.unit.outputs.aspire }}
         env:
           REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}

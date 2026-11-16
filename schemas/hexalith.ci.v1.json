@@ -15,7 +15,9 @@
     "tests",
     "hooks",
     "jobs",
-    "submodules"
+    "submodules",
+    "npmWorkspaces",
+    "dotnetTools"
   ],
   "properties": {
     "schema": {
@@ -186,6 +188,20 @@
       },
       "default": [],
       "description": "Additional direct submodule paths relative to the repository. Builds checkout is implicit. No nested or recursive initialization."
+    },
+    "npmWorkspaces": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/repositoryPath"
+      },
+      "default": [],
+      "description": "Repository-relative npm workspace directories with committed package.json and package-lock.json. Prepared once without lifecycle scripts."
+    },
+    "dotnetTools": {
+      "type": "boolean",
+      "default": false,
+      "description": "Restore the module-owned exact-version .config/dotnet-tools.json through the trusted Builds NuGet configuration."
     }
   },
   "allOf": [
@@ -246,6 +262,12 @@
           },
           "codeql": {
             "default": []
+          },
+          "npmWorkspaces": {
+            "const": []
+          },
+          "dotnetTools": {
+            "const": false
           }
         }
       },

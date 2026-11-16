@@ -61,7 +61,8 @@ class TestProjects:
 def build_flags(nuget_config: Path = NUGET_CONFIG) -> list[str]:
     """Return mandatory flags shared by restore, build, evaluation and tests."""
     return ["-noAutoResponse", "-p:Configuration=Release", "-warnaserror",
-            "-p:UseHexalithProjectReferences=false", "-p:NuGetAudit=false",
+            "-p:UseHexalithProjectReferences=false", "-p:ShouldUnsetParentConfigurationAndPlatform=false",
+            "-p:NuGetAudit=false",
             f"-p:RestoreConfigFile={nuget_config.resolve()}",
             "-p:EnableNETAnalyzers=true", "-p:RunAnalyzers=true",
             "-p:RunAnalyzersDuringBuild=true"]
@@ -447,7 +448,8 @@ def write_stage_outputs(prepared: PreparedConfig, classified: TestProjects) -> N
     """Publish environment and hook gates only after successful unit execution."""
     active = prepared.solution != "none"
     document = prepared.document
-    values = {name: str(active and document[name]).lower() for name in ("dapr", "registry")}
+    values = {name: str(active and document[name]).lower() for name in ("dapr", "registry", "dotnetTools")}
+    values["npmWorkspaces"] = json.dumps(document["npmWorkspaces"] if active else [])
     # Optional additive capability: old complete v1 documents remain valid.
     values["aspire"] = str(active and document.get("aspire", False)).lower()
     values["browsers"] = str(active and (document["browsers"] or any(

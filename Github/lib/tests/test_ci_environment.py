@@ -45,6 +45,8 @@ ledger=pathlib.Path({str(ledger)!r})
 args=sys.argv[1:]
 name=pathlib.Path(sys.argv[0]).name
 cwd=pathlib.Path.cwd()
+if cwd.is_relative_to(workspace) and (workspace / "bin" / name).is_file():
+    os.execv(str(workspace / "bin" / name), [str(workspace / "bin" / name), *args])
 assert not cwd.is_relative_to(workspace), "tools installed inside module"
 assert not any(k.upper().startswith(("GITHUB_", "GH_", "NODE_")) for k in os.environ)
 assert {{k for k in os.environ if k.upper().startswith("GIT_")}} <= {{"GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", "GIT_TERMINAL_PROMPT"}}
@@ -283,6 +285,136 @@ os.execv(sys.executable, [sys.executable, *args])
         self.action_outputs = {name: self.expand(entry["value"], context)
                                for name, entry in document.get("outputs", {}).items()}
         return result
+
+
+class PreparationInputTests(unittest.TestCase):
+    """Validate inputs and execute real subprocess controls with no network use."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="ci-npm-tools-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        (self.root / "Fixture.slnx").write_text("<Solution />")
+        self.workspace = self.root / "tests/e2e"
+        self.workspace.mkdir(parents=True)
+        (self.workspace / "package.json").write_text('{"devDependencies":{"@playwright/test":"1.60.0"}}')
+        (self.workspace / "package-lock.json").write_text(json.dumps({"lockfileVersion": 3, "packages": {
+            "node_modules/@playwright/test": {"version": "1.60.0"}}}))
+        (self.root / ".config").mkdir()
+        self.manifest = self.root / ".config/dotnet-tools.json"
+        self.manifest.write_text(json.dumps({"version": 1, "isRoot": True, "tools": {
+            "hexalith.frontcomposer.cli": {"version": "6.0.0", "commands": ["frontcomposer"]}}}))
+        subprocess.run(["git", "init", "-q", str(self.root)], check=True)
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                        "-c", "core.hooksPath=" + os.devnull, "-c", "commit.gpgsign=false", "commit", "-qm", "fixture"], check=True)
+        self.bin = self.root / "bin"
+        self.bin.mkdir()
+        body = f"#!{sys.executable}\n" + r'''
+import json, os, pathlib, sys
+root=pathlib.Path(os.environ["PREPARE_FIXTURE_ROOT"])
+name=pathlib.Path(sys.argv[0]).name
+args=sys.argv[1:]
+if name=="node" and args==["--version"]:
+    print(os.environ.get("PREPARE_NODE_VERSION", "v24.11.0"))
+    sys.exit(0)
+with (root / "effects.jsonl").open("a") as stream:
+    stream.write(json.dumps([name,args,str(pathlib.Path.cwd())])+"\n")
+if name=="npm":
+    assert args in (["ci","--ignore-scripts"],["audit","signatures"]), args
+    if args[0]=="ci":
+        output=pathlib.Path.cwd()/"node_modules/@playwright/test"
+        output.mkdir(parents=True, exist_ok=True)
+        (output/"package.json").write_text('{"version":"1.60.0"}')
+        (output/"cli.js").write_text("// locked tooling")
+elif name=="dotnet":
+    assert args[:2]==["tool","restore"], args
+    assert args[args.index("--configfile")+1].endswith("Hexalith.Builds/NuGet.ci.Config")
+elif name=="node":
+    assert pathlib.Path(args[0]).is_file()
+    assert args[1:]==["install","--with-deps"], args
+if os.environ.get("PREPARE_FAIL")==name+":"+args[0]:
+    sys.exit(47)
+'''
+        for name in ("npm", "node", "dotnet"):
+            executable = self.bin / name
+            executable.write_text(body)
+            executable.chmod(0o755)
+        self.environment = dict(os.environ, PATH=str(self.bin)+os.pathsep+os.environ["PATH"],
+                                PREPARE_FIXTURE_ROOT=str(self.root))
+
+    def invoke(self, *, tools=True, browsers=True, workspaces=None, environment=None):
+        with mock.patch.dict(os.environ, environment or self.environment, clear=True), \
+                mock.patch.object(ENV, "playwright_tools", return_value=()):
+            ENV.setup_environment(self.root, solution="Fixture.slnx", browsers=browsers,
+                                  npm_workspaces=["tests/e2e"] if workspaces is None else workspaces,
+                                  dotnet_tools=tools)
+
+    def effects(self):
+        ledger = self.root / "effects.jsonl"
+        return [json.loads(line) for line in ledger.read_text().splitlines()] if ledger.exists() else []
+
+    def test_locked_setup_runs_once_and_never_builds_or_restores_solution(self):
+        self.invoke()
+        effects = self.effects()
+        self.assertEqual([("npm", "ci"), ("npm", "audit"), ("dotnet", "tool"), ("node", str(
+            self.workspace / "node_modules/@playwright/test/cli.js"))], [(name,args[0]) for name,args,_ in effects])
+        self.assertEqual([str(self.workspace), str(self.workspace), str(self.root), str(self.workspace)],
+                         [cwd for _,_,cwd in effects])
+
+    def test_environment_composite_forwards_nondefault_preparation_once_before_successor(self):
+        harness = CompositeHarness(self.root, self.environment)
+        result = harness.run_action(ROOT / "Github/ci-environment", {
+            "solution": "Fixture.slnx", "npm-workspaces": '["tests/e2e"]', "dotnet-tools": "true"})
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["npm", "npm", "dotnet"], [name for name,_,_ in self.effects()])
+        self.assertEqual(1, sum(args[:2] == ["ci", "--ignore-scripts"] for _,args,_ in self.effects()))
+        self.assertEqual(1, sum(args[:2] == ["tool", "restore"] for _,args,_ in self.effects()))
+
+    def test_missing_lock_untracked_manifest_and_unsafe_paths_fail_before_installation(self):
+        lock = self.workspace / "package-lock.json"
+        data = lock.read_text()
+        lock.unlink()
+        with self.assertRaisesRegex(ENV.PipelineError, "missing preparation input"):
+            self.invoke()
+        lock.write_text(data)
+        subprocess.run(["git", "-C", str(self.root), "rm", "--cached", "-q", "--", "tests/e2e/package-lock.json"], check=True)
+        with self.assertRaises(ENV.PipelineError):
+            self.invoke()
+        for value in (["../outside"], ["tests/e2e", "tests/e2e"], ["/absolute"]):
+            with self.subTest(value=value), self.assertRaises(ENV.PipelineError):
+                self.invoke(workspaces=value)
+        self.assertEqual([], self.effects())
+
+    def test_floating_tools_and_wrong_node_fail_before_installation(self):
+        for version in ("*", "6.*", "[6.0.0,7.0.0)", "latest"):
+            document = json.loads(self.manifest.read_text())
+            document["tools"]["hexalith.frontcomposer.cli"]["version"] = version
+            self.manifest.write_text(json.dumps(document))
+            with self.subTest(version=version), self.assertRaisesRegex(ENV.PipelineError, "exact versions"):
+                self.invoke()
+        with self.assertRaisesRegex(ENV.PipelineError, "Node 24"):
+            self.invoke(tools=False, environment=dict(self.environment, PREPARE_NODE_VERSION="v22.0.0"))
+        self.assertEqual([], self.effects())
+
+    def test_cli_rejects_null_scalar_and_malformed_workspace_outputs(self):
+        for value in ("null", "true", '"tests/e2e"', "not-json"):
+            with self.subTest(value=value):
+                result = subprocess.run([sys.executable, "-I", str(SCRIPT), "--workspace", str(self.root),
+                    "--solution", "Fixture.slnx", "--npm-workspaces", value], env=self.environment,
+                    text=True, capture_output=True, check=False)
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+        self.assertEqual([], self.effects())
+
+    def test_each_installation_failure_preserves_status_and_stops_successors(self):
+        for failing, count in (("npm:ci",1), ("npm:audit",2), ("dotnet:tool",3), ("node:"+str(
+                self.workspace / "node_modules/@playwright/test/cli.js"),4)):
+            with self.subTest(failing=failing), self.assertRaises(ENV.PipelineError) as caught:
+                self.invoke(environment=dict(self.environment, PREPARE_FAIL=failing))
+            self.assertEqual(47, caught.exception.returncode)
+            self.assertEqual(count, len(self.effects()))
+            (self.root / "effects.jsonl").unlink()
 
 
 class EnvironmentTests(unittest.TestCase):

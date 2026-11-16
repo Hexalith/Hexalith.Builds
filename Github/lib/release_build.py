@@ -49,6 +49,7 @@ def release_flags(version: str, sha: str, repository: str) -> list[str]:
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise PipelineError("invalid release repository")
     return ["-noAutoResponse", "-p:Configuration=Release", "-p:UseHexalithProjectReferences=false",
+            "-p:ShouldUnsetParentConfigurationAndPlatform=false",
             "-warnaserror:NU1900;NU1903;NU1904;NU1905", "-p:NuGetAudit=true", "-p:NuGetAuditMode=all",
             "-p:NuGetAuditLevel=low", f"-p:RestoreConfigFile={NUGET_CONFIG.resolve()}",
             "-p:EnableNETAnalyzers=true", "-p:RunAnalyzers=true", "-p:RunAnalyzersDuringBuild=true",

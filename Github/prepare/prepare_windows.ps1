@@ -110,7 +110,7 @@ try {
     }
     $nugetConfig = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../NuGet.ci.Config'))
     $flags = @('-noAutoResponse', '-p:Configuration=Release', '-warnaserror',
-        '-p:UseHexalithProjectReferences=false', '-p:NuGetAudit=false', "-p:RestoreConfigFile=$nugetConfig",
+        '-p:UseHexalithProjectReferences=false', '-p:ShouldUnsetParentConfigurationAndPlatform=false', '-p:NuGetAudit=false', "-p:RestoreConfigFile=$nugetConfig",
         '-p:EnableNETAnalyzers=true', '-p:RunAnalyzers=true', '-p:RunAnalyzersDuringBuild=true')
     $env:DOTNET_CLI_UI_LANGUAGE = 'en-US'
     $env:DOTNET_NOLOGO = '1'

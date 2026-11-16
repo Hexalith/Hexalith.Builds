@@ -12,6 +12,7 @@ import ctypes
 import ctypes.util
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import platform
@@ -28,7 +29,7 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ci_config import ConfigError, _read_json
 from ci_pipeline import (PipelineError, contained_path, evaluated_properties, run_command,
-                         solution_projects, target_frameworks)
+                         solution_projects, target_frameworks, NUGET_CONFIG)
 
 
 BUILDS_ROOT = Path(__file__).resolve().parents[2]
@@ -242,9 +243,75 @@ def playwright_tools(root: Path, solution: str) -> tuple[Path, ...]:
             if not isinstance(version, str) or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", version) is None:
                 raise PipelineError(f"{project}: built Playwright tooling has no valid package version")
             tools.setdefault(version, script)
-    if not tools:
-        raise PipelineError("browsers requested but no built Playwright tooling exists in evaluated solution outputs")
     return tuple(tools.values())
+
+
+def committed_file(root: Path, relative: str) -> Path:
+    """Require a regular contained tracked input, rejecting every symlink component."""
+    path = contained_path(root, relative, kind="preparation input")
+    current = root
+    for component in relative.split("/"):
+        current /= component
+        if current.is_symlink():
+            raise PipelineError(f"unsafe symlink preparation input: {relative}")
+    if not path.is_file():
+        raise PipelineError(f"missing preparation input: {relative}")
+    run_command(["git", "ls-files", "--error-unmatch", "--", ":(literal)" + relative], root, capture=True)
+    if run_command(["git", "cat-file", "-t", "HEAD:" + relative], root, capture=True).strip() != "blob":
+        raise PipelineError(f"preparation input is not a committed blob: {relative}")
+    return path
+
+
+def preparation_inputs(root: Path, workspaces: list[str], tools: bool) -> tuple[tuple[Path, ...], Path | None]:
+    """Validate all manifests before any installations, including exact tool versions."""
+    if (not isinstance(workspaces, list) or any(not isinstance(item, str) for item in workspaces)
+            or len(workspaces) != len(set(workspaces))):
+        raise PipelineError("npmWorkspaces must be a unique array of contained directories")
+    directories = []
+    for relative in workspaces:
+        directory = contained_path(root, relative, kind="npm workspace")
+        package = _read_json(committed_file(root, relative + "/package.json"))
+        lock = _read_json(committed_file(root, relative + "/package-lock.json"))
+        if (not isinstance(package, dict) or not isinstance(lock, dict)
+                or type(lock.get("lockfileVersion")) is not int or lock.get("lockfileVersion") not in (2, 3) or not isinstance(lock.get("packages"), dict)):
+            raise PipelineError(f"{relative}: expected an npm package manifest and version 2/3 lock")
+        directories.append(directory)
+    manifest = None
+    if tools:
+        manifest = committed_file(root, ".config/dotnet-tools.json")
+        document = _read_json(manifest)
+        entries = document.get("tools") if isinstance(document, dict) else None
+        if (not isinstance(document, dict) or document.get("version") != 1
+                or document.get("isRoot") is not True or not isinstance(entries, dict) or not entries):
+            raise PipelineError("dotnetTools requires a version 1 root manifest with pinned tools")
+        for name, entry in entries.items():
+            if (not re.fullmatch(r"[A-Za-z0-9_.-]+", name) or not isinstance(entry, dict)
+                    or not isinstance(entry.get("version"), str)
+                    or re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?", entry["version"]) is None
+                    or not isinstance(entry.get("commands"), list) or not entry["commands"]
+                    or any(not isinstance(command, str) or re.fullmatch(r"[A-Za-z0-9_.-]+", command) is None
+                           for command in entry["commands"])):
+                raise PipelineError(f"{name}: .NET tools require exact versions and literal commands")
+    return tuple(directories), manifest
+
+
+def npm_playwright(directory: Path) -> Path | None:
+    """Select only the locked, installed Playwright CLI, never npx resolution."""
+    lock = _read_json(directory / "package-lock.json")
+    packages = lock["packages"]
+    key = next((key for key in ("node_modules/@playwright/test", "node_modules/playwright")
+                if key in packages), None)
+    if key is None:
+        return None
+    version = packages[key].get("version")
+    metadata = directory / key / "package.json"
+    cli = directory / key / "cli.js"
+    if (not isinstance(version, str) or not metadata.is_file() or not cli.is_file()
+            or not cli.resolve().is_relative_to(directory.resolve())
+            or not metadata.resolve().is_relative_to(directory.resolve())
+            or _read_json(metadata).get("version") != version):
+        raise PipelineError(f"{directory}: locked installed Playwright tooling is missing or mismatched")
+    return cli
 
 
 def login_registry(root: Path) -> None:
@@ -264,9 +331,15 @@ def login_registry(root: Path) -> None:
 
 def setup_environment(workspace: Path, *, solution: str, module_root: str = "",
                       dapr: bool = False, browsers: bool = False, registry: bool = False,
+                      npm_workspaces: list[str] | None = None, dotnet_tools: bool = False,
                       aspire: bool = False) -> None:
     """Perform each enabled setup before hooks, with no disabled tool calls."""
-    if solution == "none" or not any((dapr, browsers, registry, aspire)):
+    npm_workspaces = [] if npm_workspaces is None else npm_workspaces
+    if solution == "none":
+        if npm_workspaces or dotnet_tools:
+            raise PipelineError("npmWorkspaces and dotnetTools must be disabled when solution is none")
+        return
+    if not any((dapr, browsers, registry, npm_workspaces, dotnet_tools, aspire)):
         return
     if platform.system() != "Linux" or platform.machine() not in ("x86_64", "AMD64"):
         raise PipelineError("shared environment setup requires Linux x86_64")
@@ -280,13 +353,30 @@ def setup_environment(workspace: Path, *, solution: str, module_root: str = "",
         raise PipelineError("registry setup requires the dedicated pull-only username and password")
     if aspire and not dapr:
         raise PipelineError("native Aspire setup requires dapr=true")
+    directories, manifest = preparation_inputs(root, npm_workspaces, dotnet_tools)
+    if directories:
+        if re.fullmatch(r"v24\.[0-9]+\.[0-9]+\s*", run_command(["node", "--version"], root, capture=True)) is None:
+            raise PipelineError("npm preparation requires the trusted Node 24 runtime")
+        for directory in directories:
+            run_command(["npm", "ci", "--ignore-scripts"], directory)
+            run_command(["npm", "audit", "signatures"], directory)
+    if manifest:
+        run_command(["dotnet", "tool", "restore", "--tool-manifest", str(manifest),
+                     "--configfile", str(NUGET_CONFIG)], root)
     if dapr:
         setup_dapr(root)
     if aspire:
         setup_aspire(root)
     if browsers:
-        for script in playwright_tools(root, solution_path.relative_to(root).as_posix()):
+        dotnet_browsers = playwright_tools(root, solution_path.relative_to(root).as_posix())
+        npm_browsers = [(directory, npm_playwright(directory)) for directory in directories]
+        if not dotnet_browsers and not any(cli for _, cli in npm_browsers):
+            raise PipelineError("browsers requested but no built Playwright tooling or locked npm tooling exists")
+        for script in dotnet_browsers:
             run_command(["pwsh", "-NoLogo", "-NoProfile", "-File", str(script), "install", "--with-deps"], root)
+        for directory, cli in npm_browsers:
+            if cli:
+                run_command(["node", str(cli), "install", "--with-deps"], directory)
     if registry:
         login_registry(root)
 
@@ -305,14 +395,20 @@ def main() -> int:
     parser.add_argument("--solution", default=os.environ.get("CI_ENVIRONMENT_SOLUTION"), required=not os.environ.get("CI_ENVIRONMENT_SOLUTION"))
     for name in ("dapr", "browsers", "registry", "aspire"):
         parser.add_argument(f"--{name}", type=boolean, default=os.environ.get(f"CI_ENVIRONMENT_{name.upper()}", "false"))
+    parser.add_argument("--dotnet-tools", type=boolean, default=os.environ.get("CI_ENVIRONMENT_DOTNET_TOOLS", "false"))
+    parser.add_argument("--npm-workspaces", default=os.environ.get("CI_ENVIRONMENT_NPM_WORKSPACES", "[]"))
     args = parser.parse_args()
     try:
         if sys.version_info < (3, 12):
             raise PipelineError("Python 3.12 or later is required")
+        workspaces = json.loads(args.npm_workspaces)
+        if not isinstance(workspaces, list):
+            raise PipelineError("npmWorkspaces must be a JSON array")
         setup_environment(args.workspace, solution=args.solution, module_root=args.module_root,
-                          dapr=args.dapr, browsers=args.browsers, registry=args.registry, aspire=args.aspire)
+                          dapr=args.dapr, browsers=args.browsers, registry=args.registry, aspire=args.aspire,
+                          npm_workspaces=workspaces, dotnet_tools=args.dotnet_tools)
         return 0
-    except ConfigError as error:
+    except (ConfigError, ValueError) as error:
         print(error, file=sys.stderr)
         return getattr(error, "returncode", 1)
 
