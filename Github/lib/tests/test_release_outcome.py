@@ -560,30 +560,33 @@ class ReleaseWorkflowGraphTests(unittest.TestCase):
         self.assertEqual("false", graph["outputs"]["publish"])
 
     def test_default_rules_and_every_handoff_reach_the_publisher_only_after_the_draft(self):
-        notes = "## 2.0.0 (2026-11-11)\n\n### Bug Fixes\n\n* **release:** multiline notes"
-        digest = "sha256:" + "c" * 64
-        draft_outputs = handoff("2.0.0")["draft"]["outputs"]
-        def build(values):
-            self.assertEqual({"sha": SELECTED_SHA, "version": "2.0.0", "module-root": ""}, values)
-            return "success", {"artifact-id": "123", "artifact-digest": digest}
-        def draft(values):
-            self.assertEqual({"mode": "create", "draft-id": "", "last-tag": "", "sha": SELECTED_SHA,
-                              "version": "2.0.0", "notes": notes, "artifact-id": "123",
-                              "artifact-digest": digest}, values)
-            return "success", draft_outputs
-        graph = self.run_graph(stages={"version": lambda values: (
-            "success", {"version": "2.0.0", "notes": notes, "last-tag": "v1.9.0", "no-version": "false"}),
-            "build": build, "draft": draft})
-        self.assertEqual("module", graph["executed"]["version"]["release-rules"])
-        self.assertEqual({"RELEASE_PUBLISH": "true", "RELEASE_VERSION": "2.0.0", "RELEASE_NOOP_REASON": ""},
-                         {key: graph["environment"][key] for key in ("RELEASE_PUBLISH", "RELEASE_VERSION",
-                                                                     "RELEASE_NOOP_REASON")})
-        self.assertEqual(0, graph["process"].returncode, graph["process"].stdout + graph["process"].stderr)
-        self.assertEqual("true", graph["recorded"]["publish"])
-        self.assertFalse(graph["uploaded"])
-        expected = {key: draft_outputs[key] for key in ("version", "last-tag", "draft-id", "artifact-id",
-                                                        "artifact-digest", "artifact-run")}
-        self.assertEqual(expected | {"sha": SELECTED_SHA, "mode": "create", "publish": "true"}, graph["outputs"])
+        for accepted in ("", "d" * 40):
+            with self.subTest(accepted_delivered_sha=accepted):
+                notes = "## 2.0.0 (2026-11-11)\n\n### Bug Fixes\n\n* **release:** multiline notes"
+                digest = "sha256:" + "c" * 64
+                draft_outputs = handoff("2.0.0")["draft"]["outputs"]
+                def build(values):
+                    self.assertEqual({"sha": SELECTED_SHA, "version": "2.0.0", "module-root": "",
+                                      "accepted-delivered-sha": accepted}, values)
+                    return "success", {"artifact-id": "123", "artifact-digest": digest}
+                def draft(values):
+                    self.assertEqual({"mode": "create", "draft-id": "", "last-tag": "", "sha": SELECTED_SHA,
+                                      "version": "2.0.0", "notes": notes, "artifact-id": "123",
+                                      "artifact-digest": digest}, values)
+                    return "success", draft_outputs
+                graph = self.run_graph(resolve={"accepted-delivered-sha": accepted}, stages={"version": lambda values: (
+                    "success", {"version": "2.0.0", "notes": notes, "last-tag": "v1.9.0", "no-version": "false"}),
+                    "build": build, "draft": draft})
+                self.assertEqual("module", graph["executed"]["version"]["release-rules"])
+                self.assertEqual({"RELEASE_PUBLISH": "true", "RELEASE_VERSION": "2.0.0", "RELEASE_NOOP_REASON": ""},
+                                 {key: graph["environment"][key] for key in ("RELEASE_PUBLISH", "RELEASE_VERSION",
+                                                                             "RELEASE_NOOP_REASON")})
+                self.assertEqual(0, graph["process"].returncode, graph["process"].stdout + graph["process"].stderr)
+                self.assertEqual("true", graph["recorded"]["publish"])
+                self.assertFalse(graph["uploaded"])
+                expected = {key: draft_outputs[key] for key in ("version", "last-tag", "draft-id", "artifact-id",
+                                                                "artifact-digest", "artifact-run")}
+                self.assertEqual(expected | {"sha": SELECTED_SHA, "mode": "create", "publish": "true"}, graph["outputs"])
 
     def test_build_failure_retains_the_version_and_never_authorizes_the_publisher(self):
         graph = self.run_graph(stages={"version": lambda values: (
