@@ -643,7 +643,8 @@ else:
     def test_override_and_enabled_exclusion_execute_no_project_twice(self):
         self.fixture.document.update(hooks=["after-unit-tests"], tests={
             "integration": ["test/Z.Tests/Z.Tests.csproj"],
-            "exclude": {"test/A space/A.Tests.csproj": "after-unit-tests"}})
+            "exclude": {"test/A space/A.Tests.csproj": "after-unit-tests"},
+            "minimumExpectedTests": {}, "failSkips": False})
         self.hook("after-unit-tests")
         result = self.harness()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
@@ -656,7 +657,8 @@ else:
         self.fixture.data["projects"][project] = True
         (self.root / project).write_text("<Project />")
         self.fixture.document.update(hooks=["after-unit-tests"], tests={
-            "integration": [], "exclude": {project: "after-unit-tests"}})
+            "integration": [], "exclude": {project: "after-unit-tests"},
+            "minimumExpectedTests": {}, "failSkips": False})
         self.hook("after-unit-tests")
         result = self.harness()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)

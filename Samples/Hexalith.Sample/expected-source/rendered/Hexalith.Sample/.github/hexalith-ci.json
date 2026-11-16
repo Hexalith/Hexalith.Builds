@@ -14,7 +14,9 @@
       "test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj": "after-unit-tests",
       "test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj": "sample-windows",
       "test/Hexalith.Sample.MacOSTests/Hexalith.Sample.MacOSTests.csproj": "sample-macos"
-    }
+    },
+    "minimumExpectedTests": {},
+    "failSkips": false
   },
   "hooks": [
     "after-unit-tests"

@@ -30,7 +30,7 @@ def configuration(*, codeql=None, nightly=False):
     return {"schema": "hexalith.ci.v1", "buildsTag": "v1.0.0", "solution": "Fixture.slnx",
             "dapr": False, "browsers": False, "registry": False,
             "codeql": ["csharp"] if codeql is None else codeql,
-            "tests": {"integration": [], "exclude": {}},
+            "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False},
             "hooks": ["nightly"] if nightly else [], "jobs": {}, "submodules": []}
 
 

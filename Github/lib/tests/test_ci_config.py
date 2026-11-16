@@ -64,7 +64,7 @@ class SharedContractTests(unittest.TestCase):
 
     def test_renderer_defaults_are_metadata_and_every_knob_remains_required(self):
         defaults = {"solution": "none", "dapr": False, "browsers": False, "registry": False,
-                    "tests": {"integration": [], "exclude": {}},
+                    "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False},
                     "hooks": [], "jobs": {}, "submodules": []}
         for key, value in defaults.items():
             with self.subTest(key=key):

@@ -3,6 +3,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
+    <!-- Central audit policy: low/moderate advisories remain warnings; high/critical and unavailable audits fail. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>
     <!-- The supplied Works wrapper declares these three items after importing this catalog.
          Defer only for its normal wrapper; an explicit alternate catalog keeps our defaults. -->
     <_HexalithWorksOwnsMSBuildPackageVersions>false</_HexalithWorksOwnsMSBuildPackageVersions>

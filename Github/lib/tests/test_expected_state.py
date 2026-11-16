@@ -24,7 +24,7 @@ BUILDS = "Hexalith/Hexalith.Builds"
 def configuration(**changes):
     return {"schema": "hexalith.ci.v1", "buildsTag": "v1.2.3", "solution": "Fixture.slnx",
             "dapr": False, "browsers": False, "registry": False, "codeql": [],
-            "tests": {"integration": [], "exclude": {}}, "hooks": [], "jobs": {},
+            "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False}, "hooks": [], "jobs": {},
             "submodules": [], **changes}
 
 

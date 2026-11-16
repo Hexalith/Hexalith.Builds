@@ -5,107 +5,290 @@
   "description": "Materialized configuration with required baseline fields and optional additive native capabilities. Defaults describe renderer output; readers never insert them. Repository identity and enabled exclusion targets are checked by the loader.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "solution", "dapr", "browsers", "registry", "codeql", "tests", "hooks", "jobs", "submodules"],
+  "required": [
+    "schema",
+    "solution",
+    "dapr",
+    "browsers",
+    "registry",
+    "codeql",
+    "tests",
+    "hooks",
+    "jobs",
+    "submodules"
+  ],
   "properties": {
-    "schema": { "const": "hexalith.ci.v1" },
+    "schema": {
+      "const": "hexalith.ci.v1"
+    },
     "buildsTag": {
       "type": "string",
       "description": "Exact stable release tag. Required by the loader outside Builds itself, including samples.",
       "pattern": "^v(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
     },
     "solution": {
-      "anyOf": [{ "const": "none" }, { "$ref": "#/$defs/solutionPath" }],
+      "anyOf": [
+        {
+          "const": "none"
+        },
+        {
+          "$ref": "#/$defs/solutionPath"
+        }
+      ],
       "default": "none"
     },
-    "dapr": { "type": "boolean", "default": false },
-    "browsers": { "type": "boolean", "default": false },
-    "registry": { "type": "boolean", "default": false },
+    "dapr": {
+      "type": "boolean",
+      "default": false
+    },
+    "browsers": {
+      "type": "boolean",
+      "default": false
+    },
+    "registry": {
+      "type": "boolean",
+      "default": false
+    },
     "aspire": {
       "type": "boolean",
       "description": "Enable the trusted Linux amd64 native Aspire toolchain. Omission preserves the existing disabled behavior. Requires dapr=true."
     },
     "job-timeout-minutes": {
-      "type": "integer", "minimum": 1, "maximum": 360,
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 360,
       "description": "Optional bound for the complete CI job. Omission preserves the shared 30-minute default."
     },
     "codeql": {
       "type": "array",
       "uniqueItems": true,
-      "items": { "enum": ["c-cpp", "csharp", "go", "java-kotlin", "javascript-typescript", "python", "ruby", "rust", "swift"] },
+      "items": {
+        "enum": [
+          "c-cpp",
+          "csharp",
+          "go",
+          "java-kotlin",
+          "javascript-typescript",
+          "python",
+          "ruby",
+          "rust",
+          "swift"
+        ]
+      },
       "description": "Renderer default is csharp with a solution, or empty with solution=none. An explicit empty list skips analysis; actions is forbidden."
     },
     "tests": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["integration", "exclude"],
+      "required": [
+        "integration",
+        "exclude",
+        "minimumExpectedTests",
+        "failSkips"
+      ],
       "properties": {
-        "integration": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/projectPath" }, "default": [] },
+        "integration": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/projectPath"
+          },
+          "default": []
+        },
         "exclude": {
           "type": "object",
-          "propertyNames": { "$ref": "#/$defs/projectPath" },
-          "additionalProperties": { "$ref": "#/$defs/actionName" },
+          "propertyNames": {
+            "$ref": "#/$defs/projectPath"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/actionName"
+          },
           "default": {},
           "description": "Project to enabled hook or job. The loader checks dynamic membership; an exclusion is never a plain skip."
+        },
+        "minimumExpectedTests": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/projectPath"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "default": {},
+          "description": "Minimum tests per discovered, nonexcluded project. Requires Microsoft.Testing.Platform with xUnit."
+        },
+        "failSkips": {
+          "type": "boolean",
+          "default": false
         }
       },
-      "default": { "integration": [], "exclude": {} }
+      "default": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
+      }
     },
     "hooks": {
       "type": "array",
       "uniqueItems": true,
-      "items": { "enum": ["after-unit-tests", "after-integration-tests", "nightly"] },
+      "items": {
+        "enum": [
+          "after-unit-tests",
+          "after-integration-tests",
+          "nightly"
+        ]
+      },
       "default": []
     },
     "jobs": {
       "type": "object",
       "propertyNames": {
         "allOf": [
-          { "$ref": "#/$defs/actionName" },
-          { "not": { "enum": ["ci", "after-unit-tests", "after-integration-tests", "nightly"] } }
+          {
+            "$ref": "#/$defs/actionName"
+          },
+          {
+            "not": {
+              "enum": [
+                "ci",
+                "after-unit-tests",
+                "after-integration-tests",
+                "nightly"
+              ]
+            }
+          }
         ]
       },
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["runner"],
-        "properties": { "runner": { "enum": ["windows-latest", "macos-latest"] } }
+        "required": [
+          "runner"
+        ],
+        "properties": {
+          "runner": {
+            "enum": [
+              "windows-latest",
+              "macos-latest"
+            ]
+          }
+        }
       },
       "default": {}
     },
     "submodules": {
       "type": "array",
       "uniqueItems": true,
-      "items": { "$ref": "#/$defs/repositoryPath" },
+      "items": {
+        "$ref": "#/$defs/repositoryPath"
+      },
       "default": [],
       "description": "Additional direct submodule paths relative to the repository. Builds checkout is implicit. No nested or recursive initialization."
     }
   },
-  "allOf": [{
-    "if": { "properties": { "aspire": { "const": true } }, "required": ["aspire"] },
-    "then": { "properties": { "dapr": { "const": true } } }
-  }, {
-    "if": { "properties": { "solution": { "const": "none" } }, "required": ["solution"] },
-    "then": {
-      "properties": {
-        "dapr": { "const": false },
-        "browsers": { "const": false },
-        "aspire": { "const": false },
-        "tests": { "const": { "integration": [], "exclude": {} } },
-        "hooks": { "const": [] },
-        "jobs": { "const": {} },
-        "codeql": { "default": [] }
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "aspire": {
+            "const": true
+          }
+        },
+        "required": [
+          "aspire"
+        ]
+      },
+      "then": {
+        "properties": {
+          "dapr": {
+            "const": true
+          }
+        }
       }
     },
-    "else": { "properties": { "codeql": { "default": ["csharp"] } } }
-  }],
+    {
+      "if": {
+        "properties": {
+          "solution": {
+            "const": "none"
+          }
+        },
+        "required": [
+          "solution"
+        ]
+      },
+      "then": {
+        "properties": {
+          "dapr": {
+            "const": false
+          },
+          "browsers": {
+            "const": false
+          },
+          "aspire": {
+            "const": false
+          },
+          "tests": {
+            "const": {
+              "integration": [],
+              "exclude": {},
+              "minimumExpectedTests": {},
+              "failSkips": false
+            }
+          },
+          "hooks": {
+            "const": []
+          },
+          "jobs": {
+            "const": {}
+          },
+          "codeql": {
+            "default": []
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "codeql": {
+            "default": [
+              "csharp"
+            ]
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "repositoryPath": {
       "type": "string",
       "minLength": 1,
       "pattern": "^(?!/)(?![A-Za-z]:)(?![\\s\\S]*\\\\)(?![\\s\\S]*//)(?![\\s\\S]*(?:^|/)\\.{1,2}(?:/|(?![\\s\\S])))(?![\\s\\S]*/(?![\\s\\S]))(?![\\s\\S]*[\\u0000-\\u001f\\u007f-\\u009f])(?![\\s\\S]*\\$\\{\\{)[\\s\\S]+(?![\\s\\S])"
     },
-    "solutionPath": { "allOf": [{ "$ref": "#/$defs/repositoryPath" }, { "pattern": "\\.slnx(?![\\s\\S])" }] },
-    "projectPath": { "allOf": [{ "$ref": "#/$defs/repositoryPath" }, { "pattern": "\\.csproj(?![\\s\\S])" }] },
-    "actionName": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])" }
+    "solutionPath": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        {
+          "pattern": "\\.slnx(?![\\s\\S])"
+        }
+      ]
+    },
+    "projectPath": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        {
+          "pattern": "\\.csproj(?![\\s\\S])"
+        }
+      ]
+    },
+    "actionName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])"
+    }
   }
 }
