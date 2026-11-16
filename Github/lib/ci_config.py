@@ -121,7 +121,7 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     if "schema" in document and document["schema"] != schema_identity():
         value = document["schema"]
         raise ConfigError(f"{source}: unsupported schema {value}. CI/CD is owned by Hexalith.CiCd.")
-    closed(document, REQUIRED, frozenset(("buildsTag",)), "$")
+    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes")), "$")
     if "buildsTag" not in document:
         if repository != BUILDS_REPOSITORY or module_root:
             fail("$/buildsTag", "required outside Builds' own repository, including samples")
@@ -132,6 +132,15 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     for key in ("dapr", "browsers", "registry"):
         if type(document[key]) is not bool:
             fail(f"$/{key}", "expected a boolean")
+    if "aspire" in document and type(document["aspire"]) is not bool:
+        fail("$/aspire", "expected a boolean")
+    if document.get("aspire") and not document["dapr"]:
+        fail("$/aspire", "requires dapr=true")
+    if "job-timeout-minutes" in document:
+        minutes = document["job-timeout-minutes"]
+        if (type(minutes) not in (int, float) or not 1 <= minutes <= 360
+                or (type(minutes) is float and not minutes.is_integer())):
+            fail("$/job-timeout-minutes", "expected an integer from 1 to 360")
     for key in ("codeql", "hooks", "submodules"):
         array(document[key], f"$/{key}")
     for index, language in enumerate(document["codeql"]):
@@ -158,8 +167,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         if job == "ci" or job in HOOKS:
             fail(location, "job name is reserved for CI or a fixed hook")
         closed(options, frozenset(("runner",)), frozenset(), location)
-        if options["runner"] != "windows-latest":
-            fail(f"{location}/runner", "expected windows-latest")
+        if options["runner"] not in ("windows-latest", "macos-latest"):
+            fail(f"{location}/runner", "expected windows-latest or macos-latest")
     for project, action in tests["exclude"].items():
         location = f"$/tests/exclude/{project}"
         path(project, location, ".csproj")
@@ -167,6 +176,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         if action not in document["hooks"] and action not in jobs:
             fail(location, f"{action!r} is not an enabled hook or job")
     if document["solution"] == "none":
+        if document.get("aspire"):
+            fail("$/aspire", "must be false when solution is none")
         for key in ("dapr", "browsers", "hooks", "jobs"):
             if document[key]:
                 fail(f"$/{key}", "must be empty or false when solution is none")

@@ -103,6 +103,7 @@ jobs:
           dapr: ${{ steps.unit.outputs.dapr }}
           browsers: ${{ steps.unit.outputs.browsers }}
           registry: ${{ steps.unit.outputs.registry }}
+          aspire: ${{ steps.unit.outputs.aspire }}
         env:
           REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}
           REGISTRY_PULL_PASSWORD: ${{ secrets.registry-pull-password }}

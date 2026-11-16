@@ -9,9 +9,10 @@ surface rather than infrastructure.
 Builds CI calls shared CI with `module-root: Samples/Hexalith.Sample` and
 `expected-source: Samples/Hexalith.Sample/expected-source`. It restores and builds
 once after guard succeeds, runs unit tests, the enabled root `after-unit-tests`
-action, and integration tests. A dependent Windows job prepares a separate
-Release build and runs the
-root `sample-windows` action. Both actions execute built test projects only.
+action, and integration tests. Dependent Windows and macOS jobs each prepare
+a separate Release build and run the root `sample-windows` and `sample-macos`
+actions respectively. Both platform suites assert their actual operating system
+before exercising the sample product. These actions execute built tests only.
 The configuration delegates those projects through `tests.exclude`, so they do
 not also run in shared stages. Only this configuration enables the sample actions.
 

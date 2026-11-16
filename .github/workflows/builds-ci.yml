@@ -65,6 +65,24 @@ jobs:
       - name: Run module action
         uses: ./.github/actions/sample-windows
 
+  sample-macos:
+    name: Sample macOS tests
+    needs: sample
+    runs-on: macos-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Prepare module
+        uses: $/Github/prepare
+        with:
+          solution: ${{ needs.sample.outputs.solution }}
+          submodules: ${{ needs.sample.outputs.submodules }}
+          global-json: ${{ needs.sample.outputs.global-json }}
+
+      - name: Run module action
+        uses: ./.github/actions/sample-macos
+
   catalog:
     runs-on: ubuntu-latest
     name: Package catalog contracts

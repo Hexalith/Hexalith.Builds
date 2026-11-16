@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hexalith.com/schemas/hexalith.ci.v1.json",
   "title": "Hexalith CI configuration v1",
-  "description": "Complete materialized configuration. Defaults describe renderer output; readers never insert them. Repository identity and enabled exclusion targets are checked by the loader.",
+  "description": "Materialized configuration with required baseline fields and optional additive native capabilities. Defaults describe renderer output; readers never insert them. Repository identity and enabled exclusion targets are checked by the loader.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "solution", "dapr", "browsers", "registry", "codeql", "tests", "hooks", "jobs", "submodules"],
@@ -20,6 +20,14 @@
     "dapr": { "type": "boolean", "default": false },
     "browsers": { "type": "boolean", "default": false },
     "registry": { "type": "boolean", "default": false },
+    "aspire": {
+      "type": "boolean",
+      "description": "Enable the trusted Linux amd64 native Aspire toolchain. Omission preserves the existing disabled behavior. Requires dapr=true."
+    },
+    "job-timeout-minutes": {
+      "type": "integer", "minimum": 1, "maximum": 360,
+      "description": "Optional bound for the complete CI job. Omission preserves the shared 30-minute default."
+    },
     "codeql": {
       "type": "array",
       "uniqueItems": true,
@@ -60,7 +68,7 @@
         "type": "object",
         "additionalProperties": false,
         "required": ["runner"],
-        "properties": { "runner": { "const": "windows-latest" } }
+        "properties": { "runner": { "enum": ["windows-latest", "macos-latest"] } }
       },
       "default": {}
     },
@@ -73,11 +81,15 @@
     }
   },
   "allOf": [{
+    "if": { "properties": { "aspire": { "const": true } }, "required": ["aspire"] },
+    "then": { "properties": { "dapr": { "const": true } } }
+  }, {
     "if": { "properties": { "solution": { "const": "none" } }, "required": ["solution"] },
     "then": {
       "properties": {
         "dapr": { "const": false },
         "browsers": { "const": false },
+        "aspire": { "const": false },
         "tests": { "const": { "integration": [], "exclude": {} } },
         "hooks": { "const": [] },
         "jobs": { "const": {} },

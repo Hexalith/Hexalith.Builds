@@ -4,4 +4,5 @@
   <Project Path="../test/Hexalith.Sample.IntegrationTests/Hexalith.Sample.IntegrationTests.csproj" />
   <Project Path="../test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj" />
   <Project Path="../test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj" />
+  <Project Path="../test/Hexalith.Sample.MacOSTests/Hexalith.Sample.MacOSTests.csproj" />
 </Solution>

@@ -1,14 +1,14 @@
 name: Prepare module job
-description: Checkout and prepare one Release build, reusing validated CI outputs on Windows.
+description: Checkout and prepare one Release build, reusing validated CI outputs on Windows and macOS.
 inputs:
   solution:
-    description: Validated workspace-relative solution output from shared CI, or none (Windows only).
+    description: Validated workspace-relative solution output from shared CI, or none (Windows/macOS).
     default: ''
   submodules:
-    description: Validated JSON array output of direct submodule paths from shared CI (Windows only).
+    description: Validated JSON array output of direct submodule paths from shared CI (Windows/macOS).
     default: '[]'
   global-json:
-    description: Validated workspace-relative SDK path from shared CI (Windows only).
+    description: Validated workspace-relative SDK path from shared CI (Windows/macOS).
     default: global.json
   module-root:
     description: Test-only module fixture root in the Builds repository (Linux only).
@@ -31,8 +31,8 @@ runs:
         CI_MODULE_ROOT: ${{ inputs.module-root }}
       run: python3 -I "$GITHUB_ACTION_PATH/prepare_linux.py" --phase prepare
 
-    - name: Validate Windows paths and direct dependencies
-      if: runner.os == 'Windows' && inputs.solution != 'none'
+    - name: Validate platform paths and direct dependencies
+      if: runner.os != 'Linux' && inputs.solution != 'none'
       shell: pwsh
       env:
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
@@ -46,8 +46,8 @@ runs:
       with:
         global-json-file: ${{ steps.linux.outputs.global-json }}
 
-    - name: Set up Windows module SDK
-      if: runner.os == 'Windows' && inputs.solution != 'none'
+    - name: Set up platform module SDK
+      if: runner.os != 'Linux' && inputs.solution != 'none'
       uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
       with:
         global-json-file: ${{ inputs.global-json }}
@@ -69,11 +69,12 @@ runs:
         dapr: ${{ steps.build.outputs.dapr }}
         browsers: ${{ steps.build.outputs.browsers }}
         registry: ${{ steps.build.outputs.registry }}
+        aspire: ${{ steps.build.outputs.aspire }}
       env:
         CI_MODULE_ROOT: ${{ inputs.module-root }}
 
-    - name: Initialize direct dependencies and build Windows module
-      if: runner.os == 'Windows' && inputs.solution != 'none'
+    - name: Initialize direct dependencies and build platform module
+      if: runner.os != 'Linux' && inputs.solution != 'none'
       shell: pwsh
       env:
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}

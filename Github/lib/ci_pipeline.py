@@ -412,6 +412,8 @@ def write_stage_outputs(prepared: PreparedConfig, classified: TestProjects) -> N
     active = prepared.solution != "none"
     document = prepared.document
     values = {name: str(active and document[name]).lower() for name in ("dapr", "registry")}
+    # Optional additive capability: old complete v1 documents remain valid.
+    values["aspire"] = str(active and document.get("aspire", False)).lower()
     values["browsers"] = str(active and (document["browsers"] or any(
         "E2E" in Path(project).stem for project in classified.integration))).lower()
     values.update({hook: str(active and hook in document["hooks"]).lower()

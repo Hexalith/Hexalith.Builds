@@ -13,6 +13,9 @@ inputs:
   registry:
     description: Literal validated pull-only registry login flag.
     default: 'false'
+  aspire:
+    description: Literal validated native Aspire toolchain flag.
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -23,4 +26,5 @@ runs:
         CI_ENVIRONMENT_DAPR: ${{ inputs.dapr }}
         CI_ENVIRONMENT_BROWSERS: ${{ inputs.browsers }}
         CI_ENVIRONMENT_REGISTRY: ${{ inputs.registry }}
+        CI_ENVIRONMENT_ASPIRE: ${{ inputs.aspire }}
       run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_environment.py"
