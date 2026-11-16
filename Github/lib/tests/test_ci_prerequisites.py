@@ -95,13 +95,19 @@ class PrerequisiteTests(unittest.TestCase):
         commands = []
         script = self.root / "built/playwright.ps1"
         with mock.patch.object(ENV, "run_command", side_effect=lambda args, root, **kw: commands.append(args) or ""), \
+                mock.patch.object(ENV, "use_https_ubuntu_sources",
+                                  side_effect=lambda root, sources: commands.append(["https-sources"])) as prepare_sources, \
                 mock.patch.object(ENV, "setup_tls_trust", side_effect=lambda root: commands.append(["tls-trust"])), \
                 mock.patch.object(ENV, "playwright_tools", return_value=(script,)):
             ENV.setup_environment(self.root, solution="Fixture.slnx", browsers=True,
                                   prerequisites={"apt": True, "tlsTrust": True})
         self.assertEqual(["bash", str(ROOT / "Github/initialize-apt/initialize-apt.sh")], commands[0])
-        self.assertEqual(["tls-trust"], commands[1])
-        self.assertEqual(["pwsh", "-NoLogo", "-NoProfile", "-File", str(script), "install", "--with-deps"], commands[2])
+        self.assertEqual(["https-sources"], commands[1])
+        self.assertEqual(["tls-trust"], commands[2])
+        self.assertEqual(["pwsh", "-NoLogo", "-NoProfile", "-File", str(script), "install", "--with-deps"], commands[3])
+        prepare_sources.assert_called_once()
+        self.assertEqual(self.root, prepare_sources.call_args.args[0])
+        self.assertIn(Path("/etc/apt/apt-mirrors.txt"), prepare_sources.call_args.args[1])
 
     def test_https_archive_preparation_preserves_signed_suites_and_other_sources(self):
         source = self.root / "ubuntu.sources"
