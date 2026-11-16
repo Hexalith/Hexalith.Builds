@@ -414,6 +414,7 @@ jobs:
         shell: bash
         env:
           PACKAGE_PREPARE_SCRIPT: ${{ inputs.package-prepare-script }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [[ ! "$PACKAGE_PREPARE_SCRIPT" =~ ^[A-Za-z0-9_./-]+\.sh$ || "$PACKAGE_PREPARE_SCRIPT" = /* || "$PACKAGE_PREPARE_SCRIPT" =~ (^|/)\.\.?(/|$) || ! -f "$PACKAGE_PREPARE_SCRIPT" ]]; then
@@ -1111,6 +1112,7 @@ jobs:
         shell: bash
         env:
           PACKAGE_PREPARE_SCRIPT: ${{ inputs.package-prepare-script }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [[ ! "$PACKAGE_PREPARE_SCRIPT" =~ ^[A-Za-z0-9_./-]+\.sh$ || "$PACKAGE_PREPARE_SCRIPT" = /* || "$PACKAGE_PREPARE_SCRIPT" =~ (^|/)\.\.?(/|$) || ! -f "$PACKAGE_PREPARE_SCRIPT" ]]; then
@@ -1302,6 +1304,7 @@ jobs:
         shell: bash
         env:
           PACKAGE_PREPARE_SCRIPT: ${{ inputs.package-prepare-script }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [[ ! "$PACKAGE_PREPARE_SCRIPT" =~ ^[A-Za-z0-9_./-]+\.sh$ || "$PACKAGE_PREPARE_SCRIPT" = /* || "$PACKAGE_PREPARE_SCRIPT" =~ (^|/)\.\.?(/|$) || ! -f "$PACKAGE_PREPARE_SCRIPT" ]]; then
