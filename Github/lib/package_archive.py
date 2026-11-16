@@ -25,16 +25,21 @@ def members(data: bytes, *, require_signature: bool = False) -> dict[str, bytes]
             entries = archive.infolist()
             if len(entries) > MAX_MEMBERS:
                 raise ValueError("package member count exceeds bound")
-            result, seen, total = {}, set(), 0
+            result, seen, file_names, total = {}, set(), set(), 0
             for entry in entries:
                 name = entry.filename.removesuffix("/") if entry.is_dir() else entry.filename
-                if (not name or name.startswith("/") or "\\" in name or ":" in name
+                if (entry.orig_filename != entry.filename or not name or name.startswith("/") or "\\" in name or ":" in name
                         or any(part in ("", ".", "..") for part in name.split("/"))
                         or any(ord(c) < 32 or ord(c) == 127 for c in name)
                         or name.casefold() in seen or entry.flag_bits & 1
                         or (entry.external_attr >> 16) & 0o170000 not in (0, 0o040000 if entry.is_dir() else 0o100000)):
                     raise ValueError("unsafe or duplicate package member")
+                parts = name.casefold().split("/")
+                if any("/".join(parts[:index]) in file_names for index in range(1, len(parts))) or (not entry.is_dir() and any(other.startswith(name.casefold() + "/") for other in seen)):
+                    raise ValueError("conflicting package file/directory members")
                 seen.add(name.casefold())
+                if not entry.is_dir():
+                    file_names.add(name.casefold())
                 total += entry.file_size
                 if entry.file_size > MAX_PACKAGE or total > MAX_PACKAGE:
                     raise ValueError("package expanded payload exceeds bound")

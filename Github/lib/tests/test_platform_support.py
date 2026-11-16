@@ -154,11 +154,12 @@ class HistoricalTests(unittest.TestCase):
         (self.root / ".config/dotnet-tools.json").write_text(json.dumps({"isRoot": True, "tools": {
             "hexalith.builds.module.cli": {"version": "6.0.5", "rollForward": False, "commands": ["hexalith-module"]}}}))
         (self.root / ".gitmodules").write_text('[submodule "references/Hexalith.Builds"]\npath = references/Hexalith.Builds\nurl = https://github.com/Hexalith/Hexalith.Builds.git\n')
-        self.prepared = SimpleNamespace(root=self.root, document=config())
+        self.prepared = SimpleNamespace(root=self.root, document=config(), workspace=self.root, solution="Fixture.slnx", global_json="global.json", submodules=())
         (self.root / ".github/hexalith-ci.json").write_text(json.dumps(self.prepared.document))
         self.head = commit(self.root)
         comparison = SimpleNamespace(require_clean=lambda: None, actual=SimpleNamespace(read=lambda _: (self.root / ".github/hexalith-ci.json").read_bytes()),
             delivered_sha="7" * 40, document={"accepted": "control"})
+        self.comparison = comparison
         self.authority = preparation.accepted_authority(self.prepared, repository="Example/Fixture", comparison=comparison)
         self.clean_environment = patch.dict(os.environ, {key: value for key, value in os.environ.items()
             if key not in (*preparation.VALIDATOR.KEYS, "HexalithBuildsPublishedToolRoot", cases.VARIABLE, preparation.STATE_VARIABLE)}, clear=True)
@@ -241,6 +242,46 @@ class HistoricalTests(unittest.TestCase):
             with patch.dict(os.environ, {"HexalithBuildsPublishedToolRoot": "/changed"}):
                 with self.assertRaisesRegex(ValueError, "conflict"):
                     preparation.ensure_for_job(self.prepared, repository="Example/Fixture")
+
+    def test_ci_local_and_release_prepare_before_first_evaluation(self):
+        import local_check
+        real_prepare = published.prepare
+        calls = []
+        def controlled(prepared, workspace):
+            calls.append("prepare")
+            return real_prepare(prepared, workspace, read=lambda p: self.metadata[p], download=lambda _: self.payload, run=self.runner)
+        def evaluate(*_args, **_kwargs):
+            calls.append("evaluate")
+            tool = Path(os.environ["HexalithBuildsPublishedToolRoot"])
+            self.assertTrue((tool / "Hexalith.Builds.Tooling.dll").is_file())
+            return ()
+        environment = {key: value for key, value in os.environ.items() if key not in (*preparation.PUBLISHED_KEYS, preparation.STATE_VARIABLE)}
+        with patch.object(published, "prepare", side_effect=controlled), patch.object(preparation, "accepted_authority", return_value=self.authority):
+            with patch.dict(os.environ, dict(environment, RUNNER_TEMP=str(self.base), GITHUB_ENV=str(self.base / "ci-environment")), clear=True), \
+                 patch.object(pipeline, "prepare_config", return_value=self.prepared), patch.object(pipeline, "initialize_submodules"), \
+                 patch.object(pipeline, "write_outputs"), patch.object(pipeline, "restore_and_build", side_effect=evaluate), \
+                 patch.object(pipeline, "run_unit_tests", return_value=pipeline.TestProjects((), (), ())), patch.object(pipeline, "write_stage_outputs"), \
+                 patch.object(sys, "argv", ["ci", "--repository", "Example/Fixture", "--phase", "all"]):
+                self.assertEqual(0, pipeline.main())
+            self.assertEqual(["prepare", "evaluate"], calls)
+            calls.clear()
+            fake_git = SimpleNamespace(root=self.root, run=lambda *args, **kwargs: (str(self.root).encode() + b"\n") if args[-1] == "--show-toplevel" else b"false")
+            fake_builds = SimpleNamespace(root=self.builds)
+            with patch.dict(os.environ, environment, clear=True), patch.object(local_check, "git_at", return_value=fake_git), \
+                 patch.object(local_check, "commit", side_effect=lambda git, ref, label: self.active if ref.startswith("refs/tags/") else self.head), \
+                 patch.object(local_check.state, "tree_snapshot", return_value=SimpleNamespace(items={local_check.BUILDS_PATH: SimpleNamespace(oid=self.active)})), \
+                 patch.object(local_check, "repository_identity", return_value="Example/Fixture"), patch.object(local_check, "checkout", return_value=fake_builds), \
+                 patch.object(local_check, "require_clean"), patch.object(local_check, "require_declarations"), patch.object(local_check, "revalidate"), \
+                 patch.object(local_check.guard, "run", return_value=self.comparison), patch.object(pipeline, "prepare_config", return_value=self.prepared), \
+                 patch.object(pipeline, "restore_and_build", side_effect=evaluate), patch.object(pipeline, "run_unit_tests"):
+                local_check.run(self.root)
+            self.assertEqual(["prepare", "evaluate"], calls)
+            calls.clear()
+            with patch.dict(os.environ, environment, clear=True), patch.object(release_build, "initialize_submodules"), \
+                 patch.object(release_build, "discover_projects", side_effect=evaluate), patch.object(release_build, "audited_command"):
+                manifest = release_build.build_release(self.prepared, self.base / "release-payload", version="1.2.3", sha=self.head, repository="Example/Fixture")
+            self.assertEqual(["prepare", "evaluate"], calls)
+            self.assertEqual([], manifest["packages"])
 
     def test_official_markers_run_tag_manifest_and_closed_binding_refuse_changes(self):
         for key in self.metadata:

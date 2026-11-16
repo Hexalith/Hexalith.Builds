@@ -134,7 +134,7 @@ def build_declared(prepared, flags, command):
         path = Path(entry["artifactsPath"])
         # The parent is private preparation scratch, never module source or a
         # caller-selected output directory. It is authenticated on every reuse.
-        if not path.is_absolute() or path.name != case["id"] or path.parent.name != "build-projects" or path.is_relative_to(prepared.root):
+        if any(char in str(path) for char in "\r\n;%$") or not path.is_absolute() or path.name != case["id"] or path.parent.name != "build-projects" or path.is_relative_to(prepared.root):
             raise ConfigError("unsafe declared build output path")
         if path in roots:
             raise ConfigError("overlapping declared build outputs")

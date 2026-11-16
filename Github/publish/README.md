@@ -92,3 +92,19 @@ Trusted Publishing policy; no production caller or API-key fallback was used.
 [Story 3-5 recovery verification](../../docs/cicd-3-5-release-complete-mode-results.md)
 records the original handoff and its failure/deletion boundaries. Its hosted
 probe omits the publisher and makes no publication claim.
+
+
+A packable non-test project may evaluate `HexalithVerifyPublishedPackage=true`,
+consistently in the outer and every inner target framework evaluation. Empty or
+`false` preserves the legacy manifest. Enabled packages alone carry
+`verifyPublishedPackage: true` in their original authenticated manifest entry.
+The artifact reader validates a bounded safe nonsignature body inventory and
+stores its SHA-256 mapping in private authenticated publisher state.
+
+For enrolled packages, public verification requires root `.signature.p7s` and a
+successful bounded `dotnet nuget verify --all`. Every other member name and body
+SHA-256 must equal the original artifact; ZIP encoding and signature bytes may
+differ. Added, removed, duplicate, unsafe or changed members fail immediately,
+while existing bounded feed-indexing retries remain in place. Verification uses
+a separate private directory/home with no push key, GitHub token, module source,
+configuration or callback. It never restores, rebuilds or repacks a package.
