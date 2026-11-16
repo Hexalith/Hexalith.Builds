@@ -35,8 +35,8 @@ EXPECTED_MTP_FLAGS = ("-p:TreatWarningsAsErrors=true", "-p:MSBuildTreatWarningsA
 
 def configuration(solution="Fixture.slnx"):
     return {"schema": "hexalith.ci.v1", "npmWorkspaces": [], "dotnetTools": False, "solution": solution, "dapr": False,
-            "browsers": False, "registry": False, "codeql": [],
-            "tests": {"integration": [], "exclude": {}}, "hooks": [], "jobs": {}, "submodules": []}
+            "browsers": False, "registry": False, "ciTimeoutMinutes": 30, "codeql": [],
+            "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False}, "hooks": [], "jobs": {}, "submodules": []}
 
 
 FAKE_DOTNET = r'''
@@ -87,6 +87,10 @@ elif command=="test":
     with (root / "tests-completed").open("a") as results:
         results.write(project+":failing-test-completed\n")
         results.write(project+":passing-test-completed\n")
+    if "--minimum-expected-tests" in args and data.get("test_count", 2)<int(args[args.index("--minimum-expected-tests")+1]):
+        sys.exit(24)
+    if "--fail-skips" in args and data.get("skipped", False):
+        sys.exit(25)
     if data.get("fail_project")==project:
         sys.exit(23)
 elif command=="build":
@@ -262,10 +266,53 @@ class SubprocessPipelineTests(unittest.TestCase):
         # An exclusion takes precedence over an integration-stage name.
         document = configuration()
         document.update(hooks=["after-unit-tests"],
-                        tests={"integration": [], "exclude": {"test/A.IntegrationTests.csproj": "after-unit-tests"}})
+                        tests={"integration": [], "exclude": {"test/A.IntegrationTests.csproj": "after-unit-tests"}, "minimumExpectedTests": {}, "failSkips": False})
         result = PIPE.classify_projects(("test/A.IntegrationTests.csproj", "test/B.Tests.csproj"), document,
                                         repository=BUILDS)
         self.assertEqual(PIPE.TestProjects(("test/B.Tests.csproj",), (), ("test/A.IntegrationTests.csproj",)), result)
+
+    def test_count_and_skip_policies_apply_once_and_keep_failure_order(self):
+        first = "test/A space/A.Tests.csproj"
+        self.document["tests"].update(minimumExpectedTests={first: 2}, failSkips=True)
+        result = self.invoke("--phase", "unit")
+        self.assertEqual(0, result.returncode, result.stderr)
+        tests = [call for call in self.commands() if call[0] == "test"]
+        self.assertEqual(2, len(tests))
+        self.assertEqual(1, tests[0].count("--minimum-expected-tests"))
+        self.assertEqual(["--stop-on-fail", "off", "--minimum-expected-tests", "2", "--fail-skips", "on"], tests[0][-6:])
+        for changes, expected in (({"test_count": 1}, 24), ({"skipped": True}, 25)):
+            with self.subTest(changes=changes):
+                (self.root / "commands.jsonl").unlink()
+                (self.root / "tests-completed").unlink()
+                self.data.update(changes)
+                result = self.invoke("--phase", "unit")
+                self.assertEqual(expected, result.returncode, result.stderr)
+                self.assertEqual([first], [call[2] for call in self.commands() if call[0] == "test"])
+                self.assertEqual(2, len((self.root / "tests-completed").read_text().splitlines()))
+                for key in changes:
+                    del self.data[key]
+
+    def test_unsupported_policy_and_unknown_or_excluded_minimum_fail_before_testing(self):
+        first = "test/A space/A.Tests.csproj"
+        self.document["tests"]["minimumExpectedTests"] = {first: 2}
+        for setup, diagnostic in (({"xunit": False}, "require Microsoft.Testing.Platform"),
+                                  ({"metadata": {"test/Fixture.IntegrationTests.csproj": {"XunitTestProject": "false"}}}, "require Microsoft.Testing.Platform")):
+            self.document["tests"]["failSkips"] = True
+            self.data.update(setup)
+            result = self.invoke("--phase", "unit")
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn(diagnostic, result.stderr)
+            self.assertFalse(any(call[0] == "test" for call in self.commands()))
+            for key in setup:
+                del self.data[key]
+        self.document["tests"]["minimumExpectedTests"] = {"test/Unknown.csproj": 1}
+        result = self.invoke()
+        self.assertIn("unknown test projects", result.stderr)
+        self.document["tests"].update(minimumExpectedTests={first: 1}, exclude={first: "after-unit-tests"})
+        self.document["hooks"] = ["after-unit-tests"]
+        result = self.invoke()
+        self.assertIn("excluded project", result.stderr)
+        self.assertFalse(any(call[0] == "test" for call in self.commands()))
 
     def test_broken_sdk_discovery_and_metadata_fail_closed(self):
         for option in ("broken_list", "broken_metadata"):
@@ -785,6 +832,8 @@ public sealed class ProbeTests
     }
 }
 '''.replace("NAME", name).replace("FAIL", 'Assert.Fail("intentional product failure");' if name == "A.Tests" else "")
+                if name == "Z.Tests":
+                    body = body.replace("public sealed class ProbeTests\n{", 'public sealed class ProbeTests\n{\n    [Fact(Skip = "intentional policy qualification")] public void SkippedTest() { }')
                 (directory / "ProbeTests.cs").write_text(body)
             project.write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup>{properties}</PropertyGroup>{references}</Project>')
             paths.append(project.relative_to(cls.root).as_posix())
@@ -872,6 +921,29 @@ public sealed class ProbeTests
                              prepared.root / "test dir/A.Tests/bin/Release/net10.0/xunit.runner.json"):
                     self.assertEqual(self.runner_configuration, path.read_bytes())
 
+    def test_real_mtp_fail_skips_finishes_the_entire_project(self):
+        project = "test dir/Z.Tests/Z.Tests.csproj"
+        marker = self.root / "skip-completed-tests"
+        with mock.patch.dict(os.environ, {"CI_TEST_MARKER": str(marker)}):
+            with self.assertRaises(PIPE.PipelineError):
+                PIPE.execute_test_projects(self.root, (project,), runner="Microsoft.Testing.Platform", stage="Qualification",
+                                           minimum_expected_tests={project: 3}, fail_skips=True)
+            self.assertEqual(3, len(marker.read_text().splitlines()))
+
+    def test_real_mtp_count_boundary_finishes_project_and_stops_successor(self):
+        project = "test dir/Fixture.IntegrationTests/Fixture.IntegrationTests.csproj"
+        marker = self.root / "floor-completed-tests"
+        with mock.patch.dict(os.environ, {"CI_TEST_MARKER": str(marker)}):
+            PIPE.execute_test_projects(self.root, (project,), runner="Microsoft.Testing.Platform", stage="Qualification",
+                                       minimum_expected_tests={project: 3}, fail_skips=True)
+            self.assertEqual(3, len(marker.read_text().splitlines()))
+            marker.unlink()
+            with self.assertRaises(PIPE.PipelineError):
+                PIPE.execute_test_projects(self.root, (project, "test dir/Z.Tests/Z.Tests.csproj"),
+                                           runner="Microsoft.Testing.Platform", stage="Qualification",
+                                           minimum_expected_tests={project: 4}, fail_skips=True)
+            self.assertEqual(3, len(marker.read_text().splitlines()))
+
     def test_real_integration_override_completes_failing_project_for_both_runners(self):
         from dataclasses import replace
 
@@ -880,7 +952,7 @@ public sealed class ProbeTests
                 marker = prepared.root / "integration-completed-tests"
                 document = dict(prepared.document, tests={"integration": ["test dir/A.Tests/A.Tests.csproj",
                                                                         "test dir/Z.Tests/Z.Tests.csproj"],
-                                                       "exclude": {}})
+                                                       "exclude": {}, "minimumExpectedTests": {}, "failSkips": False})
                 with mock.patch.dict(os.environ, {"CI_TEST_MARKER": str(marker)}):
                     with self.assertRaises(PIPE.PipelineError) as caught:
                         PIPE.run_integration_tests(replace(prepared, document=document), repository=BUILDS)

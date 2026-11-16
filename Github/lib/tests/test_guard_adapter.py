@@ -24,8 +24,8 @@ EXPECTED = SAMPLE + "/expected-source"
 
 def config(*, solution="none", actions=False):
     return {"schema": "hexalith.ci.v1", "npmWorkspaces": [], "dotnetTools": False, "buildsTag": "v1.0.0", "solution": solution,
-            "dapr": False, "browsers": False, "registry": False, "codeql": [],
-            "tests": {"integration": [], "exclude": {}}, "hooks": ["after-unit-tests"] if actions else [],
+            "dapr": False, "browsers": False, "registry": False, "ciTimeoutMinutes": 30, "codeql": [],
+            "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False}, "hooks": ["after-unit-tests"] if actions else [],
             "jobs": {"sample-windows": {"runner": "windows-latest"}} if actions else {}, "submodules": []}
 
 

@@ -171,7 +171,8 @@ else:
     def build_fixture(self, **changes):
         self.document.update(solution="Fixture.slnx", hooks=["after-unit-tests"],
                              tests={"integration": ["test/Custom.csproj"],
-                                    "exclude": {"test/Owned.csproj": "after-unit-tests"}})
+                                    "exclude": {"test/Owned.csproj": "after-unit-tests"},
+                                    "minimumExpectedTests": {}, "failSkips": False})
         self.module.write(".github/actions/after-unit-tests/action.yml", COMPOSITE)
         self.data = {"projects": {"test/Z.Tests.csproj": True, "src/Ordinary.csproj": False,
                                  "test/A.Tests.csproj": True, "test/Fixture.IntegrationTests.csproj": True,
@@ -510,6 +511,23 @@ else:
         self.assertEqual(23, raised.exception.returncode)
         self.assertEqual(["test/A.Tests.csproj:failing-test-completed", "test/A.Tests.csproj:passing-test-completed"],
                          (self.module.root / "tests-completed").read_text().splitlines())
+        self.assertEqual(before, self.unchanged())
+
+    def test_local_check_uses_identical_count_and_skip_policy_and_failure_order(self):
+        self.build_fixture(xunit=True, skipped=True)
+        global_json = json.loads((self.module.root / "global.json").read_text())
+        global_json["test"] = {"runner": "Microsoft.Testing.Platform"}
+        self.module.write("global.json", json.dumps(global_json))
+        self.document["tests"].update(minimumExpectedTests={"test/A.Tests.csproj": 2}, failSkips=True)
+        self.record()
+        before = self.unchanged()
+        with self.assertRaises(ci_pipeline.PipelineError) as raised:
+            self.run_check()
+        self.assertEqual(25, raised.exception.returncode)
+        tests = [command for command in self.commands() if command[0] == "test"]
+        self.assertEqual(1, len(tests))
+        self.assertEqual(["--stop-on-fail", "off", "--minimum-expected-tests", "2", "--fail-skips", "on"], tests[0][-6:])
+        self.assertEqual(2, len((self.module.root / "tests-completed").read_text().splitlines()))
         self.assertEqual(before, self.unchanged())
 
     def test_guard_and_build_failures_stop_successors(self):

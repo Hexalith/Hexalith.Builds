@@ -22,6 +22,13 @@ can set its numeric `job-timeout-minutes` input for a larger suite. Builds uses
 60 minutes for its full .NET catalog/workspace regression suite; sample jobs
 retain the shared default.
 
+The complete CI document materializes required `ciTimeoutMinutes` (1–360,
+renderer default 30). Adopted callers forward that value through CiCd's
+generated workflow; select a compatible published Builds release before
+adopting this contract. Builds' own document records its existing 60-minute
+allowance. The shared environment's private Dapr receipt contract is documented
+in [Github/ci-environment/README.md](Github/ci-environment/README.md).
+
 ## Verified package preparation in domain workflows
 
 Both domain CI and `Github/prepare-domain-release` accept the optional

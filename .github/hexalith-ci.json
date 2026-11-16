@@ -9,11 +9,14 @@
   ],
   "tests": {
     "integration": [],
-    "exclude": {}
+    "exclude": {},
+    "minimumExpectedTests": {},
+    "failSkips": false
   },
   "hooks": [],
   "jobs": {},
   "submodules": [],
+  "ciTimeoutMinutes": 60,
   "npmWorkspaces": [],
   "dotnetTools": false
 }

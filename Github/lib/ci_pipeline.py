@@ -272,7 +272,8 @@ def classify_projects(projects: tuple[str, ...], document: dict[str, Any], *,
     """Apply AD-13 names and only integration/enabled-action exclusions."""
     validate_config(document, repository=repository, module_root=module_root)
     known = set(projects)
-    overrides = set(document["tests"]["integration"]) | document["tests"]["exclude"].keys()
+    overrides = (set(document["tests"]["integration"]) | document["tests"]["exclude"].keys()
+                 | document["tests"]["minimumExpectedTests"].keys())
     if overrides - known:
         raise PipelineError("test overrides name unknown test projects: " + ", ".join(sorted(overrides - known)))
     unit, integration, excluded = [], [], []
@@ -337,10 +338,32 @@ def complete_xunit_vstest_configuration(root: Path, project: str, properties: di
             path.write_bytes(content)
 
 
-def execute_test_projects(root: Path, projects: tuple[str, ...], *, runner: str, stage: str) -> None:
+def validate_test_policy(root: Path, projects: tuple[str, ...], *, runner: str,
+                         minimum_expected_tests: dict[str, int], fail_skips: bool) -> None:
+    """Reject unsupported count/skip policies before any project starts testing."""
+    if (not isinstance(minimum_expected_tests, dict) or type(fail_skips) is not bool
+            or any(not isinstance(project, str) or type(minimum) is not int or minimum <= 0
+                   for project, minimum in minimum_expected_tests.items())):
+        raise PipelineError("invalid minimumExpectedTests or failSkips test policy")
+    selected = projects if fail_skips else tuple(project for project in projects if project in minimum_expected_tests)
+    if selected and runner != "Microsoft.Testing.Platform":
+        raise PipelineError("minimumExpectedTests and failSkips require Microsoft.Testing.Platform with xUnit")
+    for project in selected:
+        properties = evaluated_properties(root, project)
+        targets = [evaluated_properties(root, project, framework=framework)
+                   for framework in target_frameworks(properties)] or [properties]
+        if not all(values["XunitTestProject"].lower() == "true" for values in targets):
+            raise PipelineError(f"{project}: minimumExpectedTests and failSkips require Microsoft.Testing.Platform with xUnit")
+
+
+def execute_test_projects(root: Path, projects: tuple[str, ...], *, runner: str, stage: str,
+                          minimum_expected_tests: dict[str, int] | None = None, fail_skips: bool = False) -> None:
     """Finish every test in a project; stop before the next failing-project successor."""
     if runner not in ("VSTest", "Microsoft.Testing.Platform"):
         raise PipelineError(f"unsupported test runner: {runner!r}")
+    minimum_expected_tests = {} if minimum_expected_tests is None else minimum_expected_tests
+    validate_test_policy(root, projects, runner=runner,
+                         minimum_expected_tests=minimum_expected_tests, fail_skips=fail_skips)
     for project in sorted(projects):
         print(f"{stage} tests: {project}", flush=True)
         selector = ["--project", project] if runner == "Microsoft.Testing.Platform" else [project]
@@ -356,6 +379,10 @@ def execute_test_projects(root: Path, projects: tuple[str, ...], *, runner: str,
             # and leave non-xUnit applications free of framework-specific options.
             options = (["--stop-on-fail", "off"] if runner == "Microsoft.Testing.Platform"
                        else ["--", "xUnit.StopOnFail=false"])
+        if project in minimum_expected_tests:
+            options.extend(("--minimum-expected-tests", str(minimum_expected_tests[project])))
+        if fail_skips:
+            options.extend(("--fail-skips", "on"))
         arguments = ["dotnet", "test", *selector, "--no-build", "--no-restore", *test_flags(runner), *options]
         if xunit and runner == "VSTest":
             with complete_xunit_vstest_configuration(root, project, properties):
@@ -364,9 +391,11 @@ def execute_test_projects(root: Path, projects: tuple[str, ...], *, runner: str,
             run_command(arguments, root)
 
 
-def execute_unit_projects(root: Path, projects: tuple[str, ...], *, runner: str) -> None:
+def execute_unit_projects(root: Path, projects: tuple[str, ...], *, runner: str,
+                          minimum_expected_tests: dict[str, int] | None = None, fail_skips: bool = False) -> None:
     """Keep the stages 1–3 Python API while sharing complete-project semantics."""
-    execute_test_projects(root, projects, runner=runner, stage="Unit")
+    execute_test_projects(root, projects, runner=runner, stage="Unit",
+                          minimum_expected_tests=minimum_expected_tests, fail_skips=fail_skips)
 
 
 def classified_projects(prepared: PreparedConfig, *, repository: str, module_root: str = "") -> TestProjects:
@@ -375,6 +404,9 @@ def classified_projects(prepared: PreparedConfig, *, repository: str, module_roo
         return TestProjects((), (), ())
     projects = discover_test_projects(prepared.root, prepared.document["solution"])
     classified = classify_projects(projects, prepared.document, repository=repository, module_root=module_root)
+    validate_test_policy(prepared.root, classified.unit + classified.integration, runner=test_runner(prepared.root),
+                         minimum_expected_tests=prepared.document["tests"]["minimumExpectedTests"],
+                         fail_skips=prepared.document["tests"]["failSkips"])
     print(json.dumps({"unit": classified.unit, "integration": classified.integration,
                       "excluded": classified.excluded}), flush=True)
     return classified
@@ -385,7 +417,9 @@ def run_unit_tests(prepared: PreparedConfig, *, repository: str, module_root: st
     classified = classified_projects(prepared, repository=repository, module_root=module_root)
     if prepared.solution == "none":
         return classified
-    execute_unit_projects(prepared.root, classified.unit, runner=test_runner(prepared.root))
+    execute_unit_projects(prepared.root, classified.unit, runner=test_runner(prepared.root),
+                          minimum_expected_tests=prepared.document["tests"]["minimumExpectedTests"],
+                          fail_skips=prepared.document["tests"]["failSkips"])
     return classified
 
 
@@ -404,7 +438,9 @@ def run_integration_tests(prepared: PreparedConfig, *, repository: str, module_r
         raise PipelineError("CI configuration, runner or test classification changed after unit tests")
     if prepared.solution != "none":
         execute_test_projects(prepared.root, classified.integration,
-                              runner=test_runner(prepared.root), stage="Integration")
+                              runner=test_runner(prepared.root), stage="Integration",
+                              minimum_expected_tests=prepared.document["tests"]["minimumExpectedTests"],
+                              fail_skips=prepared.document["tests"]["failSkips"])
     return classified
 
 

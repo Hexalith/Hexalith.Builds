@@ -16,6 +16,7 @@
     "hooks",
     "jobs",
     "submodules",
+    "ciTimeoutMinutes",
     "npmWorkspaces",
     "dotnetTools"
   ],
@@ -51,6 +52,16 @@
       "type": "boolean",
       "default": false
     },
+    "aspire": {
+      "type": "boolean",
+      "description": "Enable the trusted Linux amd64 native Aspire toolchain. Omission preserves the existing disabled behavior. Requires dapr=true."
+    },
+    "job-timeout-minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 360,
+      "description": "Optional bound for the complete CI job. Omission preserves the shared 30-minute default."
+    },
     "codeql": {
       "type": "array",
       "uniqueItems": true,
@@ -74,7 +85,9 @@
       "additionalProperties": false,
       "required": [
         "integration",
-        "exclude"
+        "exclude",
+        "minimumExpectedTests",
+        "failSkips"
       ],
       "properties": {
         "integration": {
@@ -95,11 +108,29 @@
           },
           "default": {},
           "description": "Project to enabled hook or job. The loader checks dynamic membership; an exclusion is never a plain skip."
+        },
+        "minimumExpectedTests": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/projectPath"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "default": {},
+          "description": "Minimum tests per discovered, nonexcluded project. Requires Microsoft.Testing.Platform with xUnit."
+        },
+        "failSkips": {
+          "type": "boolean",
+          "default": false
         }
       },
       "default": {
         "integration": [],
-        "exclude": {}
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": false
       }
     },
     "hooks": {
@@ -159,6 +190,13 @@
       "default": [],
       "description": "Additional direct submodule paths relative to the repository. Builds checkout is implicit. No nested or recursive initialization."
     },
+    "ciTimeoutMinutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 360,
+      "default": 30,
+      "description": "Maximum shared CI build/test job duration, forwarded to job-timeout-minutes."
+    },
     "npmWorkspaces": {
       "type": "array",
       "uniqueItems": true,
@@ -172,16 +210,6 @@
       "type": "boolean",
       "default": false,
       "description": "Restore the module-owned exact-version .config/dotnet-tools.json through the trusted Builds NuGet configuration."
-    },
-    "aspire": {
-      "type": "boolean",
-      "description": "Enable the trusted Linux amd64 native Aspire toolchain. Omission preserves the existing disabled behavior. Requires dapr=true."
-    },
-    "job-timeout-minutes": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 360,
-      "description": "Optional bound for the complete CI job. Omission preserves the shared 30-minute default."
     }
   },
   "allOf": [
@@ -223,10 +251,15 @@
           "browsers": {
             "const": false
           },
+          "aspire": {
+            "const": false
+          },
           "tests": {
             "const": {
               "integration": [],
-              "exclude": {}
+              "exclude": {},
+              "minimumExpectedTests": {},
+              "failSkips": false
             }
           },
           "hooks": {
@@ -242,9 +275,6 @@
             "const": []
           },
           "dotnetTools": {
-            "const": false
-          },
-          "aspire": {
             "const": false
           }
         }

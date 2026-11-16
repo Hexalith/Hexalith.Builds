@@ -63,8 +63,8 @@ class SharedContractTests(unittest.TestCase):
         self.assertEqual(set(SCHEMA["required"]), document.keys())
 
     def test_renderer_defaults_are_metadata_and_every_knob_remains_required(self):
-        defaults = {"solution": "none", "dapr": False, "browsers": False, "registry": False,
-                    "tests": {"integration": [], "exclude": {}},
+        defaults = {"solution": "none", "dapr": False, "browsers": False, "registry": False, "ciTimeoutMinutes": 30,
+                    "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False},
                     "hooks": [], "jobs": {}, "submodules": [], "npmWorkspaces": [], "dotnetTools": False}
         for key, value in defaults.items():
             with self.subTest(key=key):

@@ -35,7 +35,8 @@ def fixture(root, solution="PackageOnly.slnx"):
     shutil.copytree(ROOT / "test/fixtures/release", root)
     (root / ".github").mkdir()
     config = json.loads((ROOT / ".github/hexalith-ci.json").read_text())
-    config.update(solution=solution, codeql=[], tests={"integration": [], "exclude": {}},
+    config.update(solution=solution, codeql=[],
+                  tests={"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False},
                   hooks=[], jobs={}, submodules=[], dapr=False, browsers=False, registry=False)
     (root / ".github/hexalith-ci.json").write_text(json.dumps(config))
     return prepare_config(root, repository=REPOSITORY)

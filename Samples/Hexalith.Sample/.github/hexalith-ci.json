@@ -2,9 +2,10 @@
   "schema": "hexalith.ci.v1",
   "buildsTag": "v4.46.0",
   "solution": "solutions/Hexalith.Sample.slnx",
-  "dapr": false,
+  "dapr": true,
   "browsers": false,
   "registry": false,
+  "ciTimeoutMinutes": 30,
   "codeql": [
     "csharp"
   ],
@@ -14,7 +15,9 @@
       "test/Hexalith.Sample.HookTests/Hexalith.Sample.HookTests.csproj": "after-unit-tests",
       "test/Hexalith.Sample.WindowsTests/Hexalith.Sample.WindowsTests.csproj": "sample-windows",
       "test/Hexalith.Sample.MacOSTests/Hexalith.Sample.MacOSTests.csproj": "sample-macos"
-    }
+    },
+    "minimumExpectedTests": {},
+    "failSkips": false
   },
   "hooks": [
     "after-unit-tests"
@@ -28,6 +31,7 @@
     }
   },
   "submodules": [],
+  "aspire": true,
   "npmWorkspaces": [],
   "dotnetTools": false
 }

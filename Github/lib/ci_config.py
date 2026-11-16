@@ -23,7 +23,7 @@ HOOKS = frozenset(("after-unit-tests", "after-integration-tests", "nightly"))
 LANGUAGES = frozenset(("c-cpp", "csharp", "go", "java-kotlin", "javascript-typescript",
                        "python", "ruby", "rust", "swift"))
 REQUIRED = frozenset(("schema", "solution", "dapr", "browsers", "registry", "codeql",
-                      "tests", "hooks", "jobs", "submodules", "npmWorkspaces", "dotnetTools"))
+                      "tests", "hooks", "jobs", "submodules", "npmWorkspaces", "dotnetTools", "ciTimeoutMinutes"))
 ACTION_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 STABLE_TAG = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 
@@ -141,6 +141,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         if (type(minutes) not in (int, float) or not 1 <= minutes <= 360
                 or (type(minutes) is float and not minutes.is_integer())):
             fail("$/job-timeout-minutes", "expected an integer from 1 to 360")
+    if type(document["ciTimeoutMinutes"]) is not int or not 1 <= document["ciTimeoutMinutes"] <= 360:
+        fail("$/ciTimeoutMinutes", "expected an integer from 1 to 360")
     for key in ("codeql", "hooks", "submodules", "npmWorkspaces"):
         array(document[key], f"$/{key}")
     for index, language in enumerate(document["codeql"]):
@@ -154,12 +156,23 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     for index, workspace in enumerate(document["npmWorkspaces"]):
         path(workspace, f"$/npmWorkspaces/{index}")
     tests = document["tests"]
-    closed(tests, frozenset(("integration", "exclude")), frozenset(), "$/tests")
+    closed(tests, frozenset(("integration", "exclude", "minimumExpectedTests", "failSkips")), frozenset(), "$/tests")
     array(tests["integration"], "$/tests/integration")
     for index, project in enumerate(tests["integration"]):
         path(project, f"$/tests/integration/{index}", ".csproj")
     if not isinstance(tests["exclude"], dict):
         fail("$/tests/exclude", "expected an object mapping projects to enabled actions")
+    if not isinstance(tests["minimumExpectedTests"], dict):
+        fail("$/tests/minimumExpectedTests", "expected an object mapping projects to positive integers")
+    for project, minimum in tests["minimumExpectedTests"].items():
+        location = f"$/tests/minimumExpectedTests/{project}"
+        path(project, location, ".csproj")
+        if type(minimum) is not int or minimum <= 0:
+            fail(location, "expected a positive integer")
+        if project in tests["exclude"]:
+            fail(location, "minimum cannot apply to an excluded project")
+    if type(tests["failSkips"]) is not bool:
+        fail("$/tests/failSkips", "expected a boolean")
     jobs = document["jobs"]
     if not isinstance(jobs, dict):
         fail("$/jobs", "expected an object")
@@ -183,8 +196,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         for key in ("dapr", "browsers", "hooks", "jobs", "npmWorkspaces", "dotnetTools"):
             if document[key]:
                 fail(f"$/{key}", "must be empty or false when solution is none")
-        if tests["integration"] or tests["exclude"]:
-            fail("$/tests", "integration and exclude must be empty when solution is none")
+        if tests["integration"] or tests["exclude"] or tests["minimumExpectedTests"] or tests["failSkips"]:
+            fail("$/tests", "test collections must be empty and failSkips false when solution is none")
     return document
 
 

@@ -61,6 +61,38 @@ class PrepareTests(unittest.TestCase):
     def commands(self):
         return self.fixture.commands()
 
+    def test_hosted_windows_enables_long_paths_before_the_external_checkout_boundary(self):
+        def checkout(reference, inputs, environment):
+            if reference.startswith("actions/checkout@"):
+                observed = subprocess.run(["git", "config", "--global", "--type=bool", "--get", "core.longpaths"],
+                                          env=environment, capture_output=True, text=True, check=True)
+                self.assertEqual("true", observed.stdout.strip())
+                self.assertTrue(Path(environment["GIT_CONFIG_GLOBAL"]).is_relative_to(self.root))
+            return self.external_control(reference, inputs, environment)
+        result = CompositeHarness(self.root, self.environment, runner_os="Windows", external_action=checkout).run_action(ACTION, self.inputs)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(2, len(self.external))
+
+    def test_failed_windows_long_path_configuration_prevents_checkout_and_product(self):
+        harness = CompositeHarness(self.root, self.environment, runner_os="Windows", external_action=self.external_control)
+        invalid = self.root / "invalid-global-config"
+        invalid.mkdir()
+        harness.environment["GIT_CONFIG_GLOBAL"] = str(invalid)
+        result = harness.run_action(ACTION, self.inputs)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual([], self.external)
+        self.assertEqual([], self.commands())
+
+    def test_self_hosted_windows_does_not_change_global_git_configuration(self):
+        harness = CompositeHarness(self.root, self.environment, runner_os="Windows", runner_environment="self-hosted",
+                                   external_action=self.external_control)
+        config = Path(harness.environment["GIT_CONFIG_GLOBAL"])
+        config.write_text("[core]\n\tlongpaths = false\n")
+        before = config.read_bytes()
+        result = harness.run_action(ACTION, self.inputs)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(before, config.read_bytes())
+
     def test_windows_release_flags_one_restore_no_tests_or_environment_or_config_read(self):
         # Invalid module JSON is deliberately unreadable to a config loader.
         self.save = lambda: None

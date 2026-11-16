@@ -1,5 +1,5 @@
 name: Prepare shared CI environment
-description: Set up enabled Linux tools once using the existing Release build and trusted Builds pins.
+description: Set up enabled Linux tools once; successful Dapr init exports HEXALITH_DAPR_INITIALIZATION_RECEIPT for fresh-backend checks.
 inputs:
   solution:
     description: Validated workspace-relative solution path, including any module-root prefix.

@@ -34,7 +34,8 @@ class ResolveAdapterTests(unittest.TestCase):
         self.git('config', 'user.email', 'fixture@example.com')
         self.config = {'schema': 'hexalith.ci.v1', 'npmWorkspaces': [], 'dotnetTools': False, 'solution': 'Fixture.slnx', 'dapr': False,
                        'browsers': False, 'registry': False, 'codeql': [], 'hooks': [], 'jobs': {},
-                       'tests': {'integration': [], 'exclude': {}}, 'submodules': []}
+                       'tests': {'integration': [], 'exclude': {}, 'minimumExpectedTests': {}, 'failSkips': False},
+                       'submodules': []}
         self.commit_config()
         self.old_sha = self.sha
         self.config.update(codeql=['csharp'], hooks=['nightly'])
