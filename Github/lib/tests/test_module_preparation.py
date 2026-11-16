@@ -98,6 +98,24 @@ class PreparationTests(unittest.TestCase):
         command.assert_not_called()
         git.assert_not_called()
 
+    def test_unsafe_scratch_spelling_refuses_before_output_creation_or_tool_execution(self):
+        nested = self.root / "nested"
+        nested.mkdir()
+        controlled = self.root / "control\nroot"
+        if os.name != "nt":
+            controlled.mkdir()
+        original_names = {item.name for item in self.root.iterdir()}
+        for temporary in (nested / "..", controlled):
+            for fetch_tags in (False, True):
+                with self.subTest(temporary=temporary, fetch_tags=fetch_tags), \
+                        mock.patch.object(PREP, "_run") as command, \
+                        mock.patch.object(PREP.tempfile, "mkdtemp") as create:
+                    with self.assertRaisesRegex(PREP.ConfigError, "traversal|control"):
+                        PREP.prepare_environment(self.prepared, self.authority, temporary, fetch_tags=fetch_tags)
+                    command.assert_not_called()
+                    create.assert_not_called()
+        self.assertEqual(original_names, {item.name for item in self.root.iterdir()})
+
     def test_one_exact_tool_restore_supplies_all_seven_values(self):
         environment = self.prepare()
         self.assertEqual(3, len(self.calls))
