@@ -11,18 +11,24 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 from ci_config import ConfigError
 from ci_pipeline import (PipelineError, classified_projects, initialize_submodules,
-                         prepare_config, restore_and_build, write_outputs, write_stage_outputs)
+                         preparation_environment, prepare_config, restore_and_build,
+                         validate_qualification_request, write_outputs, write_stage_outputs)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--phase", choices=("prepare", "build"), required=True)
+    parser.add_argument("--phase", choices=("request", "prepare", "build"), required=True)
     args = parser.parse_args()
     try:
         if sys.version_info < (3, 12):
             raise PipelineError("Python 3.12 or later is required")
         repository = os.environ.get("CI_REPOSITORY", "")
         module_root = os.environ.get("CI_MODULE_ROOT", "")
+        preparation_environment(os.environ.get("CI_PREPARE_ENVIRONMENT", "setup"))
+        if args.phase == "request":
+            validate_qualification_request(os.environ.get("CI_AUTHORITY_SHA256", ""),
+                                           os.environ.get("CI_SOURCE_SHA", ""), os.environ.get("GITHUB_SHA", ""))
+            return 0
         prepared = prepare_config(Path(os.environ.get("GITHUB_WORKSPACE", ".")),
                                   repository=repository, module_root=module_root)
         if args.phase == "prepare":

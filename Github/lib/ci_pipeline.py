@@ -308,6 +308,25 @@ def restore_and_build(prepared: PreparedConfig) -> None:
     run_command(["dotnet", "build", solution, "--no-restore", *build_flags()], prepared.root)
 
 
+def preparation_environment(value: str) -> bool:
+    """Fail closed on unknown preparation modes; preserve means build only.
+
+    Private qualification workers retain owner-provisioned fixture runtimes.
+    This selects environment setup only and never suppresses restore or build.
+    """
+    if value not in ("setup", "preserve"):
+        raise PipelineError("prepare environment must be setup or preserve")
+    return value == "setup"
+
+
+def validate_qualification_request(digest: str, ci_source: str, source: str) -> None:
+    """Require exact owner-request digest and green same-source CI before preparation."""
+    if re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        raise PipelineError("exact lowercase authority SHA-256 is required")
+    if re.fullmatch(r"[0-9a-f]{40}", source) is None or ci_source != source:
+        raise PipelineError("green CI source differs from qualification source")
+
+
 @contextmanager
 def complete_xunit_vstest_configuration(root: Path, project: str, properties: dict[str, str]):
     """Override only generated output configs, restoring exact bytes on failure.

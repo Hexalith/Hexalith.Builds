@@ -27,6 +27,9 @@ on:
         description: Password for the dedicated pull-only registry identity.
         required: false
     outputs:
+      source-sha:
+        description: Exact source commit that passed the shared CI job.
+        value: ${{ jobs.ci.outputs.source-sha }}
       solution:
         description: Validated workspace-relative solution path, or none.
         value: ${{ jobs.ci.outputs.solution }}
@@ -64,6 +67,7 @@ jobs:
       CI_EXPECTED_SOURCE: ${{ inputs.expected-source }}
       CI_EVENT_NAME: ${{ github.event_name }}
     outputs:
+      source-sha: ${{ github.sha }}
       drift: ${{ steps.guard.outputs.drift }}
       solution: ${{ steps.prepare.outputs.solution }}
       submodules: ${{ steps.prepare.outputs.submodules }}

@@ -104,6 +104,50 @@ class SharedContractTests(unittest.TestCase):
         self.assertEqual("Hexalith.Builds.slnx", document["solution"])
         self.assertEqual(set(SCHEMA["required"]), document.keys())
 
+    def test_manual_qualification_is_additive_and_closed_in_both_readers(self):
+        job = {"trigger": "manual", "runner": {"group": "private-ephemeral", "labels": ["self-hosted", "linux", "x64"]},
+               "environment": "owner-approval", "secrets": ["AUTHORITY_JSON", "CUSTODY_JSON"],
+               "preparation": "build-only", "timeoutMinutes": 45}
+        original = copy.deepcopy(CORPUS[0]["document"])
+        original["solution"] = "Fixture.slnx"
+        original["jobs"] = {"windows": {"runner": "windows-latest"}, "qualify": job}
+        original["tests"]["exclude"] = {"test/Live.csproj": "qualify"}
+        self.validator.validate(original)
+        self.assertIs(original, CONFIG.validate_config(original, repository=MODULE))
+        reserved = copy.deepcopy(original)
+        reserved["jobs"]["none"] = copy.deepcopy(job)
+        self.assertFalse(self.validator.is_valid(reserved))
+        with self.assertRaisesRegex(CONFIG.ConfigError, "none is reserved for the manual dispatch default"):
+            CONFIG.validate_config(reserved, repository=MODULE)
+        # The old Windows shape remains compatible; only a manual none job is forbidden.
+        reserved["jobs"]["none"] = {"runner": "windows-latest"}
+        self.validator.validate(reserved)
+        CONFIG.validate_config(reserved, repository=MODULE)
+        mutations = [
+            ("trigger", "push"), ("runner", "ubuntu-latest"),
+            ("runner", {"group": "private-ephemeral", "labels": ["linux", "x64"]}),
+            ("runner", {"group": "${{ vars.RUNNER }}", "labels": ["self-hosted", "linux", "x64"]}),
+            ("environment", "${{ inputs.environment }}"), ("preparation", "setup"),
+            ("timeoutMinutes", 0), ("timeoutMinutes", True), ("timeoutMinutes", 181),
+            ("secrets", []), ("secrets", "inherit"), ("secrets", ["GITHUB_TOKEN"]),
+            ("secrets", ["AUTHORITY_JSON", "AUTHORITY_JSON"]), ("secrets", ["authority-json"]),
+            ("extra", False),
+        ]
+        for key, value in mutations:
+            with self.subTest(key=key, value=value):
+                bad = copy.deepcopy(original)
+                bad["jobs"]["qualify"][key] = value
+                self.assertFalse(self.validator.is_valid(bad))
+                with self.assertRaises(CONFIG.ConfigError):
+                    CONFIG.validate_config(bad, repository=MODULE)
+        for key in job:
+            with self.subTest(missing=key):
+                bad = copy.deepcopy(original)
+                del bad["jobs"]["qualify"][key]
+                self.assertFalse(self.validator.is_valid(bad))
+                with self.assertRaises(CONFIG.ConfigError):
+                    CONFIG.validate_config(bad, repository=MODULE)
+
     def test_renderer_defaults_are_metadata_and_every_knob_remains_required(self):
         defaults = {"solution": "none", "dapr": False, "browsers": False, "registry": False, "ciTimeoutMinutes": 30,
                     "tests": {"integration": [], "exclude": {}, "minimumExpectedTests": {}, "failSkips": False},
@@ -177,6 +221,18 @@ class ContextAndInputTests(unittest.TestCase):
     def write(self, document=None):
         self.path.write_text(json.dumps(self.document if document is None else document), encoding="utf-8")
         return self.path
+
+    def test_additional_sdk_is_optional_and_exact_in_both_readers(self):
+        validator = Draft202012Validator(SCHEMA)
+        self.document["additionalSdkVersion"] = "10.0.404"
+        validator.validate(self.document)
+        CONFIG.validate_config(self.document, repository=MODULE)
+        for value in ("", "10.0.x", "10.0.404\n", "${{ vars.SDK }}", "010.0.404", 10):
+            with self.subTest(value=value):
+                self.document["additionalSdkVersion"] = value
+                self.assertFalse(validator.is_valid(self.document))
+                with self.assertRaises(CONFIG.ConfigError):
+                    CONFIG.validate_config(self.document, repository=MODULE)
 
     def cli(self, *arguments, environment=None, no_site=False):
         return subprocess.run([sys.executable, "-I", *(["-S"] if no_site else []), str(SCRIPT), str(self.path), *arguments],

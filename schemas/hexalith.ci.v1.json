@@ -166,20 +166,63 @@
       },
       "additionalProperties": {
         "type": "object",
-        "additionalProperties": false,
         "required": [
           "runner"
         ],
         "properties": {
           "runner": {
-            "enum": [
-              "windows-latest",
-              "macos-latest"
+            "anyOf": [
+              {
+                "enum": [
+                  "windows-latest",
+                  "macos-latest"
+                ]
+              },
+              {
+                "$ref": "#/$defs/privateQualificationRunner"
+              }
             ]
           }
-        }
+        },
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "runner"
+            ],
+            "properties": {
+              "runner": {
+                "enum": [
+                  "windows-latest",
+                  "macos-latest"
+                ]
+              }
+            }
+          },
+          {
+            "$ref": "#/$defs/manualQualificationJob"
+          }
+        ]
       },
-      "default": {}
+      "default": {},
+      "properties": {
+        "none": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "runner"
+          ],
+          "properties": {
+            "runner": {
+              "enum": [
+                "windows-latest",
+                "macos-latest"
+              ]
+            }
+          }
+        }
+      }
     },
     "submodules": {
       "type": "array",
@@ -234,6 +277,11 @@
       ],
       "default": null,
       "description": "Centrally reviewed immutable archive trees excluded only from protected Windows checkout."
+    },
+    "additionalSdkVersion": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])",
+      "description": "Optional exact SDK for older targeting packs and isolated package-consumer fixtures. Forwarded to shared CI preparation, never installed by a module action."
     }
   },
   "allOf": [
@@ -398,6 +446,71 @@
           "description": "The loader additionally rejects case aliases, overlaps, reserved Windows names and protected product paths."
         }
       }
+    },
+    "privateQualificationRunner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group",
+        "labels"
+      ],
+      "properties": {
+        "group": {
+          "$ref": "#/$defs/resourceName"
+        },
+        "labels": {
+          "const": [
+            "self-hosted",
+            "linux",
+            "x64"
+          ]
+        }
+      }
+    },
+    "manualQualificationJob": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runner",
+        "trigger",
+        "environment",
+        "secrets",
+        "preparation",
+        "timeoutMinutes"
+      ],
+      "properties": {
+        "trigger": {
+          "const": "manual"
+        },
+        "runner": {
+          "$ref": "#/$defs/privateQualificationRunner"
+        },
+        "environment": {
+          "$ref": "#/$defs/resourceName"
+        },
+        "secrets": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(?!(?:GITHUB_|ACTIONS_|RUNNER_))[A-Z_][A-Z0-9_]*(?![\\s\\S])"
+          }
+        },
+        "preparation": {
+          "const": "build-only"
+        },
+        "timeoutMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 180
+        }
+      },
+      "description": "Manual qualification after green CI at the same SHA, with a private runner, approval environment, explicit secrets and preserved fixture runtimes."
+    },
+    "resourceName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])"
     }
   }
 }

@@ -99,6 +99,20 @@ elif command=="build":
 
 
 class SubprocessPipelineTests(unittest.TestCase):
+    def test_private_preparation_preserves_environment_without_omitting_build(self):
+        self.assertTrue(PIPE.preparation_environment("setup"))
+        self.assertFalse(PIPE.preparation_environment("preserve"))
+        for mode in ("", "skip", "false", "${{ inputs.mode }}"):
+            with self.subTest(mode=mode), self.assertRaises(PIPE.PipelineError):
+                PIPE.preparation_environment(mode)
+
+    def test_private_request_requires_digest_and_green_same_source(self):
+        PIPE.validate_qualification_request("a" * 64, "b" * 40, "b" * 40)
+        for digest, ci_source, source in (("", "b" * 40, "b" * 40), ("A" * 64, "b" * 40, "b" * 40),
+                                          ("a" * 64, "c" * 40, "b" * 40), ("a" * 64, "", "")):
+            with self.subTest(digest=digest, source=source), self.assertRaises(PIPE.PipelineError):
+                PIPE.validate_qualification_request(digest, ci_source, source)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="ci-pipeline-")
         self.addCleanup(self.temporary.cleanup)

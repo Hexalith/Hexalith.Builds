@@ -25,7 +25,10 @@ LANGUAGES = frozenset(("c-cpp", "csharp", "go", "java-kotlin", "javascript-types
 REQUIRED = frozenset(("schema", "solution", "dapr", "browsers", "registry", "codeql",
                       "tests", "hooks", "jobs", "submodules", "npmWorkspaces", "dotnetTools", "ciTimeoutMinutes"))
 ACTION_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+SECRET_NAME = re.compile(r"[A-Z_][A-Z0-9_]*")
+RESOURCE_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 STABLE_TAG = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
+SDK_VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 
 
 class ConfigError(ValueError):
@@ -121,7 +124,11 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     if "schema" in document and document["schema"] != schema_identity():
         value = document["schema"]
         raise ConfigError(f"{source}: unsupported schema {value}. CI/CD is owned by Hexalith.CiCd.")
-    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes", "moduleManifest", "windowsCheckout")), "$")
+    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes", "moduleManifest", "windowsCheckout", "additionalSdkVersion")), "$")
+    if "additionalSdkVersion" in document:
+        version = document["additionalSdkVersion"]
+        if not isinstance(version, str) or SDK_VERSION.fullmatch(version) is None:
+            fail("$/additionalSdkVersion", "expected an exact stable MAJOR.MINOR.PATCH SDK version")
     if "buildsTag" not in document:
         if repository != BUILDS_REPOSITORY or module_root:
             fail("$/buildsTag", "required outside Builds' own repository, including samples")
@@ -183,9 +190,34 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         name(job, location)
         if job == "ci" or job in HOOKS:
             fail(location, "job name is reserved for CI or a fixed hook")
-        closed(options, frozenset(("runner",)), frozenset(), location)
-        if options["runner"] not in ("windows-latest", "macos-latest"):
-            fail(f"{location}/runner", "expected windows-latest or macos-latest")
+        if isinstance(options, dict) and options.get("trigger") == "manual":
+            if job == "none":
+                fail(location, "none is reserved for the manual dispatch default")
+            closed(options, frozenset(("runner", "trigger", "environment", "secrets",
+                                       "preparation", "timeoutMinutes")), frozenset(), location)
+            runner = options["runner"]
+            closed(runner, frozenset(("group", "labels")), frozenset(), f"{location}/runner")
+            for key, value in (("runner/group", runner["group"]), ("environment", options["environment"])):
+                if not isinstance(value, str) or RESOURCE_NAME.fullmatch(value) is None:
+                    fail(f"{location}/{key}", "expected a literal lowercase kebab-case resource name")
+            if runner["labels"] != ["self-hosted", "linux", "x64"]:
+                fail(f"{location}/runner/labels", "expected self-hosted, linux, x64 in that order")
+            if options["preparation"] != "build-only":
+                fail(f"{location}/preparation", "manual qualification requires build-only preparation")
+            timeout = options["timeoutMinutes"]
+            if type(timeout) is not int or not 1 <= timeout <= 180:
+                fail(f"{location}/timeout-minutes", "expected an integer from 1 to 180")
+            array(options["secrets"], f"{location}/secrets")
+            if not options["secrets"]:
+                fail(f"{location}/secrets", "manual qualification requires explicitly named secrets")
+            for index, secret in enumerate(options["secrets"]):
+                if (not isinstance(secret, str) or SECRET_NAME.fullmatch(secret) is None
+                        or secret.startswith(("GITHUB_", "ACTIONS_", "RUNNER_"))):
+                    fail(f"{location}/secrets/{index}", "expected an explicit non-reserved uppercase secret name")
+        else:
+            closed(options, frozenset(("runner",)), frozenset(), location)
+            if options["runner"] not in ("windows-latest", "macos-latest"):
+                fail(f"{location}/runner", "expected windows-latest or macos-latest")
     for project, action in tests["exclude"].items():
         location = f"$/tests/exclude/{project}"
         path(project, location, ".csproj")

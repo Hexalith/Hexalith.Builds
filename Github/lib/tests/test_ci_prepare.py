@@ -93,6 +93,43 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual(before, config.read_bytes())
 
+    def test_request_entrypoint_refuses_missing_invalid_digest_and_source_before_preparation(self):
+        for digest, source in (("", "a" * 40), ("A" * 64, "a" * 40), ("a" * 63, "a" * 40),
+                               ("a" * 64, "b" * 40)):
+            with self.subTest(digest=digest, source=source):
+                environment = dict(self.environment, CI_PREPARE_ENVIRONMENT="preserve", CI_AUTHORITY_SHA256=digest,
+                                   CI_SOURCE_SHA=source, GITHUB_SHA="a" * 40,
+                                   GITHUB_WORKSPACE=str(self.root / "missing-workspace"))
+                result = subprocess.run([sys.executable, "-I", "-S", "-B", str(ACTION / "prepare_linux.py"),
+                                         "--phase", "request"], env=environment, text=True, capture_output=True, check=False)
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertEqual([], self.commands())
+                self.assertFalse((self.root / "missing-workspace").exists())
+                self.assertFalse((self.root / "build-completed").exists())
+
+    def test_request_entrypoint_accepts_exact_digest_and_source_without_preparation(self):
+        environment = dict(self.environment, CI_PREPARE_ENVIRONMENT="preserve", CI_AUTHORITY_SHA256="a" * 64,
+                           CI_SOURCE_SHA="b" * 40, GITHUB_SHA="b" * 40,
+                           GITHUB_WORKSPACE=str(self.root / "missing-workspace"))
+        result = subprocess.run([sys.executable, "-I", "-S", "-B", str(ACTION / "prepare_linux.py"),
+                                 "--phase", "request"], env=environment, text=True, capture_output=True, check=False)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual([], self.commands())
+        self.assertFalse((self.root / "missing-workspace").exists())
+        self.assertFalse((self.root / "build-completed").exists())
+
+    def test_preserve_composite_rejects_request_before_checkout_sdk_or_build(self):
+        self.environment["GITHUB_SHA"] = "a" * 40
+        for digest, source in (("invalid", "a" * 40), ("a" * 64, "b" * 40)):
+            with self.subTest(digest=digest, source=source):
+                self.external.clear()
+                result = self.invoke("Linux", inputs=dict(self.inputs, environment="preserve",
+                                                         **{"authority-sha256": digest, "source-sha": source}))
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertEqual([], self.external)
+                self.assertEqual([], self.commands())
+                self.assertFalse((self.root / "build-completed").exists())
+
     def test_windows_release_flags_one_restore_no_tests_or_environment_or_config_read(self):
         # Invalid module JSON is deliberately unreadable to a config loader.
         self.save = lambda: None
