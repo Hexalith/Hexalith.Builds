@@ -983,7 +983,9 @@ class NativeAspireTests(unittest.TestCase):
             self.assertEqual(module, root)
             calls.append(arguments)
             if "setup" in arguments:
-                target = Path(arguments[arguments.index("--install-path") + 1]) / "bundle"
+                install_root = arguments[arguments.index("--install-path") + 1]
+                self.assertIn("ASPIRE_LAYOUT_PATH=" + install_root, arguments)
+                target = Path(install_root) / "bundle"
                 for name in ("dcp/dcp", "dashboard/Aspire.Dashboard"):
                     path = target / name
                     path.parent.mkdir(parents=True, exist_ok=True)

@@ -140,7 +140,7 @@ def setup_aspire(root: Path) -> None:
     expected = directory / "qualified"
     installed = Path.home() / ".aspire"
     for target in (expected, installed):
-        native_command([str(binary), "setup", "--install-path", str(target),
+        native_command(["env", f"ASPIRE_LAYOUT_PATH={target}", str(binary), "setup", "--install-path", str(target),
                         "--force", "--non-interactive"], root, 180)
     verify_aspire_bundle(expected / "bundle", installed / "bundle")
     venv = directory / "venv"
