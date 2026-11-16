@@ -35,7 +35,7 @@ class ResolveAdapterTests(unittest.TestCase):
         self.config = {'schema': 'hexalith.ci.v1', 'npmWorkspaces': [], 'dotnetTools': False, 'solution': 'Fixture.slnx', 'dapr': False,
                        'browsers': False, 'registry': False, 'codeql': [], 'hooks': [], 'jobs': {},
                        'tests': {'integration': [], 'exclude': {}, 'minimumExpectedTests': {}, 'failSkips': False},
-                       'submodules': []}
+                       'submodules': [], 'ciTimeoutMinutes': 45}
         self.commit_config()
         self.old_sha = self.sha
         self.config.update(codeql=['csharp'], hooks=['nightly'])
