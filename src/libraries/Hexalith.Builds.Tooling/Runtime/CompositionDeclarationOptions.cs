@@ -167,6 +167,29 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         }
     }
 
+    private static string? ReadDefaultCatalogProperty(XDocument catalog, string property)
+    {
+        // Consumer conditions belong to materialized views. The XML fallback
+        // admits only one explicit default in an unconditional top-level group.
+        return catalog.Root?.Elements("PropertyGroup").Elements(property)
+            .SingleOrDefault(element => string.IsNullOrWhiteSpace(element.Parent?.Attribute("Condition")?.Value)
+                && IsDefaultPropertyCondition(element.Attribute("Condition")?.Value, property))?.Value.Trim();
+    }
+
+    private static bool IsDefaultPropertyCondition(string? condition, string property)
+    {
+        if (string.IsNullOrWhiteSpace(condition))
+        {
+            return true;
+        }
+
+        string[] operands = condition.Split("==", StringSplitOptions.TrimEntries);
+        return operands.Length == 2
+            && (string.Equals(operands[0], $"'$({property})'", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(operands[0], $"\"$({property})\"", StringComparison.OrdinalIgnoreCase))
+            && operands[1] is "''" or "\"\"";
+    }
+
     private string? ReadCatalogPackageVersion(string packageId, string source, string? projectName)
     {
         string? snapshotPath = Workspace is null ? null : Path.Combine(Workspace, "source-mapping", "catalog-versions.json");
@@ -190,7 +213,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         }
 
         string property = version[2..^1];
-        return catalog.Descendants(property).FirstOrDefault()?.Value.Trim();
+        return ReadDefaultCatalogProperty(catalog, property);
     }
 
     private string? ReadRecordedPackageVersion(string packageId, string source, string? projectName, string snapshotPath)
@@ -237,7 +260,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
             _ => CompositionDeclarationClosure.Repository(module)["Hexalith.".Length..],
         };
         string property = "Hexalith" + suffix + "Version";
-        return catalog.Descendants(property).FirstOrDefault()?.Value ?? throw new InvalidDataException($"{source}: {module}: {property}: image version is missing from the Builds catalog.");
+        return ReadDefaultCatalogProperty(catalog, property) ?? throw new InvalidDataException($"{source}: {module}: {property}: image version is missing from the Builds catalog.");
     }
 
     private CatalogVersionSnapshot ReadValidatedSnapshot(string source, string module, string snapshotPath)

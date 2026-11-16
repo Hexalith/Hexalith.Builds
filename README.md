@@ -380,6 +380,10 @@ Composition can resolve an extension package with
 A named consumer requires its recorded view in the Builds-materialized pinned
 snapshot; an absent snapshot, absent view or changed snapshot refuses selection.
 The two-argument overload retains the default snapshot/catalog behavior.
+Without a snapshot, the fallback accepts one explicit default property in an
+unconditional top-level property group, either unconditional itself or guarded
+only by that property's empty value. Conditional consumer branches are excluded;
+ambiguous defaults require a materialized snapshot.
 
 McpCli is a short-lived tool, not a server, so its v2 declaration lists no
 server. When the active v2 module is `mcpcli`, source-mode `run` and `debug`

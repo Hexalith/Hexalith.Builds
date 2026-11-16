@@ -126,6 +126,90 @@ public sealed class CompositionCatalogPackageViewTests
         }
     }
 
+    /// <summary>Default owner and package reads exclude conditional views regardless of declaration position.</summary>
+    /// <param name="declarations">The synthetic catalog's property groups.</param>
+    [Theory]
+    [InlineData("""
+        <PropertyGroup>
+          <HexalithTenantsVersion Condition="'$(Consumer)' == 'legacy'">7.0.7</HexalithTenantsVersion>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.1</HexalithTenantsVersion>
+        </PropertyGroup>
+        """)]
+    [InlineData("""
+        <PropertyGroup>
+          <HexalithTenantsVersion>8.0.1</HexalithTenantsVersion>
+          <HexalithTenantsVersion Condition="'$(Consumer)' == 'legacy'">7.0.7</HexalithTenantsVersion>
+        </PropertyGroup>
+        """)]
+    [InlineData("""
+        <PropertyGroup Condition="'$(Consumer)' == 'legacy'">
+          <HexalithTenantsVersion>7.0.7</HexalithTenantsVersion>
+        </PropertyGroup>
+        <PropertyGroup>
+          <HexalithTenantsVersion Condition=' "$(hexalithtenantsversion)"=="" '>8.0.1</HexalithTenantsVersion>
+        </PropertyGroup>
+        """)]
+    public void UnmaterializedDefaultExcludesConditionalViews(string declarations)
+    {
+        string root = Directory.CreateTempSubdirectory("catalog-default-selection-").FullName;
+        try
+        {
+            CompositionDeclarationOptions options = UnmaterializedOptions(root, declarations);
+            options.CatalogVersion("tenants", "probe").ShouldBe("8.0.1");
+            options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe").ShouldBe("8.0.1");
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>A conditional-only property never becomes the implicit default.</summary>
+    [Fact]
+    public void UnmaterializedConditionalOnlyCatalogHasNoDefault()
+    {
+        string root = Directory.CreateTempSubdirectory("catalog-default-missing-").FullName;
+        try
+        {
+            CompositionDeclarationOptions options = UnmaterializedOptions(root, """
+                <PropertyGroup>
+                  <HexalithTenantsVersion Condition="'$(Consumer)' == 'legacy'">7.0.7</HexalithTenantsVersion>
+                </PropertyGroup>
+                """);
+            Should.Throw<InvalidDataException>(() => options.CatalogVersion("tenants", "probe"))
+                .Message.ShouldContain("image version is missing");
+            options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe").ShouldBeNull();
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>Multiple explicit defaults require materialization instead of an arbitrary XML-position choice.</summary>
+    [Fact]
+    public void UnmaterializedAmbiguousDefaultsAreRefused()
+    {
+        string root = Directory.CreateTempSubdirectory("catalog-default-ambiguous-").FullName;
+        try
+        {
+            CompositionDeclarationOptions options = UnmaterializedOptions(root, """
+                <PropertyGroup>
+                  <HexalithTenantsVersion>8.0.1</HexalithTenantsVersion>
+                  <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">9.0.0</HexalithTenantsVersion>
+                </PropertyGroup>
+                """);
+            Should.Throw<InvalidDataException>(() => options.CatalogVersion("tenants", "probe"))
+                .Message.ShouldContain("catalog metadata is malformed");
+            Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe"))
+                .Message.ShouldContain("catalog metadata is malformed");
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     /// <summary>Materializes every retained consumer view from the owning catalog while preserving its current default.</summary>
     /// <returns>The finite consumer-view and unknown-name refusal assertions.</returns>
     [Fact]
@@ -495,6 +579,22 @@ public sealed class CompositionCatalogPackageViewTests
             versions.ContainsKey(package).ShouldBeTrue($"{consumer}: {package}");
             versions[package].ShouldBe(expectedSdk, $"{consumer}: {package}");
         }
+    }
+
+    private static CompositionDeclarationOptions UnmaterializedOptions(string root, string declarations)
+    {
+        string catalog = Path.Combine(root, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(catalog)!);
+        File.WriteAllText(catalog, $"""
+            <Project>
+              {declarations}
+              <ItemGroup>
+                <PackageVersion Include="Hexalith.Tenants.Server" Version="$(HexalithTenantsVersion)" />
+              </ItemGroup>
+            </Project>
+            """);
+        SourceMapping mapping = new(WorkspaceMode.Package, root, "Hexalith.Platform", [], false);
+        return new CompositionDeclarationOptions(mapping, []);
     }
 
     private static CompositionDeclarationOptions Options(string root)
