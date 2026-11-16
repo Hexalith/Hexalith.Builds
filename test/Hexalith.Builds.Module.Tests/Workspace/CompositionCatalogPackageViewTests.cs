@@ -194,23 +194,108 @@ public sealed class CompositionCatalogPackageViewTests
         }
     }
 
-    /// <summary>Multiple explicit defaults require materialization instead of an arbitrary XML-position choice.</summary>
-    [Fact]
-    public void UnmaterializedAmbiguousDefaultsAreRefused()
+    /// <summary>Ordered defaults follow actual SDK evaluation, including guarded and unconditional reassignments.</summary>
+    /// <param name="declarations">The synthetic catalog's ordered property groups.</param>
+    /// <param name="expected">The property value independently selected by MSBuild.</param>
+    /// <returns>The actual SDK and both public default-lookup assertions.</returns>
+    [Theory]
+    [InlineData(
+        """
+        <PropertyGroup>
+          <HexalithTenantsVersion>8.0.1</HexalithTenantsVersion>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">9.0.0</HexalithTenantsVersion>
+        </PropertyGroup>
+        """,
+        "8.0.1")]
+    [InlineData(
+        """
+        <PropertyGroup><HexalithTenantsVersion>8.0.1</HexalithTenantsVersion></PropertyGroup>
+        <PropertyGroup><HexalithTenantsVersion>9.0.0</HexalithTenantsVersion></PropertyGroup>
+        """,
+        "9.0.0")]
+    [InlineData(
+        """
+        <PropertyGroup>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.1</HexalithTenantsVersion>
+          <HexalithTenantsVersion>9.0.0</HexalithTenantsVersion>
+        </PropertyGroup>
+        """,
+        "9.0.0")]
+    [InlineData(
+        """
+        <PropertyGroup>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.1</HexalithTenantsVersion>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">9.0.0</HexalithTenantsVersion>
+        </PropertyGroup>
+        """,
+        "8.0.1")]
+    [InlineData(
+        """
+        <PropertyGroup>
+          <HexalithTenantsVersion></HexalithTenantsVersion>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">9.0.0</HexalithTenantsVersion>
+        </PropertyGroup>
+        """,
+        "9.0.0")]
+    [InlineData(
+        """
+        <PropertyGroup>
+          <HexalithTenantsVersion>   </HexalithTenantsVersion>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">9.0.0</HexalithTenantsVersion>
+        </PropertyGroup>
+        """,
+        "9.0.0")]
+    [InlineData(
+        """
+        <PropertyGroup>
+          <HexalithTenantsVersion>8.0.1</HexalithTenantsVersion>
+          <HexalithTenantsVersion></HexalithTenantsVersion>
+        </PropertyGroup>
+        """,
+        "")]
+    [InlineData(
+        """
+        <PropertyGroup>
+          <HexalithTenantsVersion>8.0.1</HexalithTenantsVersion>
+          <HexalithTenantsVersion></HexalithTenantsVersion>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">9.0.0</HexalithTenantsVersion>
+        </PropertyGroup>
+        """,
+        "9.0.0")]
+    public async Task UnmaterializedDefaultsFollowSdkAssignmentOrderAsync(string declarations, string expected)
     {
-        string root = Directory.CreateTempSubdirectory("catalog-default-ambiguous-").FullName;
+        string root = Directory.CreateTempSubdirectory("catalog-default-order-").FullName;
         try
         {
-            CompositionDeclarationOptions options = UnmaterializedOptions(root, """
-                <PropertyGroup>
-                  <HexalithTenantsVersion>8.0.1</HexalithTenantsVersion>
-                  <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">9.0.0</HexalithTenantsVersion>
-                </PropertyGroup>
-                """);
-            Should.Throw<InvalidDataException>(() => options.CatalogVersion("tenants", "probe"))
-                .Message.ShouldContain("catalog metadata is malformed");
-            Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe"))
-                .Message.ShouldContain("catalog metadata is malformed");
+            CompositionDeclarationOptions options = UnmaterializedOptions(root, declarations);
+            File.Copy(Path.Combine(CompositionTestFiles.RepositoryRoot(), "global.json"), Path.Combine(root, "global.json"));
+            string catalog = Path.Combine(root, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
+            CompositionProcessResult evaluated = await CompositionProcess.RunAsync(
+                CompositionProcess.CreateStartInfo(
+                    "dotnet",
+                    ["msbuild", catalog, "-nologo", "-noAutoResponse", "-getProperty:HexalithTenantsVersion"],
+                    root,
+                    new Dictionary<string, string>(StringComparer.Ordinal) { ["DOTNET_CLI_USE_MSBUILD_SERVER"] = "false", ["MSBUILDUSESERVER"] = "0" }),
+                TimeSpan.FromMinutes(2),
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            evaluated.Started.ShouldBeTrue();
+            evaluated.TimedOut.ShouldBeFalse();
+            evaluated.OutputTruncated.ShouldBeFalse();
+            evaluated.SurvivingProcessIds.ShouldBeEmpty();
+            evaluated.ExitCode.ShouldBe(0, evaluated.Output + evaluated.ErrorOutput);
+            evaluated.Output.Trim().ShouldBe(expected);
+            if (expected.Length == 0)
+            {
+                Should.Throw<InvalidDataException>(() => options.CatalogVersion("tenants", "probe"))
+                    .Message.ShouldContain("is not literal");
+                Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe"))
+                    .Message.ShouldContain("is not literal");
+            }
+            else
+            {
+                options.CatalogVersion("tenants", "probe").ShouldBe(expected);
+                options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe").ShouldBe(expected);
+            }
         }
         finally
         {

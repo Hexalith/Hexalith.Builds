@@ -169,11 +169,20 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
 
     private static string? ReadDefaultCatalogProperty(XDocument catalog, string property)
     {
-        // Consumer conditions belong to materialized views. The XML fallback
-        // admits only one explicit default in an unconditional top-level group.
-        string? value = catalog.Element("Project")?.Elements("PropertyGroup").Elements(property)
-            .SingleOrDefault(element => element.Ancestors().All(ancestor => string.IsNullOrWhiteSpace(ancestor.Attribute("Condition")?.Value))
-                && IsDefaultPropertyCondition(element.Attribute("Condition")?.Value, property))?.Value.Trim();
+        // Consumer conditions belong to materialized views. Process the bounded
+        // default assignments in source order, including unconditional resets.
+        string? value = null;
+        foreach (XElement element in catalog.Element("Project")?.Elements("PropertyGroup").Elements(property) ?? [])
+        {
+            string? condition = element.Attribute("Condition")?.Value;
+            if (element.Ancestors().All(ancestor => string.IsNullOrWhiteSpace(ancestor.Attribute("Condition")?.Value))
+                && (string.IsNullOrWhiteSpace(condition)
+                    || (string.IsNullOrEmpty(value) && IsDefaultPropertyCondition(condition, property))))
+            {
+                value = element.Value.Trim();
+            }
+        }
+
         bool nonliteral = value is not null && (value.Length == 0 || value.Contains("$(", StringComparison.Ordinal)
             || value.Contains("@(", StringComparison.Ordinal) || value.Contains("%(", StringComparison.Ordinal));
         return nonliteral
