@@ -583,28 +583,38 @@ def setup_tls_trust(root: Path) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         if not (directory / "cert9.db").exists():
             run_command(["certutil", "-N", "-d", f"sql:{directory}", "--empty-password"], root)
-    run_command(["dotnet", "dev-certs", "https", "--trust"], root)
-    certificates = sorted(trust.glob("*.pem"))
-    if not certificates or any(path.is_symlink() or not path.is_file() or path.stat().st_size == 0
-                               for path in certificates):
-        raise PipelineError("TLS trust requires the exported .NET development certificate PEM files")
-    for index, certificate in enumerate(certificates):
-        run_command(["openssl", "x509", "-in", str(certificate), "-checkend", "0", "-noout"], root)
-        for directory in directories:
-            name = f"hexalith-ci-dev-cert-{index}"
-            run_command(["certutil", "-A", "-d", f"sql:{directory}", "-n", name,
-                         "-t", "P,,", "-i", str(certificate)], root)
-            run_command(["certutil", "-L", "-d", f"sql:{directory}", "-n", name], root, capture=True)
-    run_command(["dotnet", "dev-certs", "https", "--check", "--trust"], root)
     certificate_directories = os.pathsep.join(dict.fromkeys(
         (str(trust), "/usr/lib/ssl/certs", *filter(None, inherited_certificates.split(os.pathsep)))))
     if any(ord(char) < 32 or 127 <= ord(char) <= 159 or char in "\u2028\u2029"
            for char in certificate_directories):
         raise PipelineError("TLS certificate paths must not contain control characters")
-    if os.environ.get("GITHUB_ENV"):
-        with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
-            stream.write(f"SSL_CERT_DIR={certificate_directories}\n")
+    # The CLI requires this path during --trust to report full OpenSSL trust.
+    # Publish it to later Actions steps only after every trust check succeeds.
+    previous_certificates = os.environ.get("SSL_CERT_DIR")
     os.environ["SSL_CERT_DIR"] = certificate_directories
+    try:
+        run_command(["dotnet", "dev-certs", "https", "--trust"], root)
+        certificates = sorted(trust.glob("*.pem"))
+        if not certificates or any(path.is_symlink() or not path.is_file() or path.stat().st_size == 0
+                                   for path in certificates):
+            raise PipelineError("TLS trust requires the exported .NET development certificate PEM files")
+        for index, certificate in enumerate(certificates):
+            run_command(["openssl", "x509", "-in", str(certificate), "-checkend", "0", "-noout"], root)
+            for directory in directories:
+                name = f"hexalith-ci-dev-cert-{index}"
+                run_command(["certutil", "-A", "-d", f"sql:{directory}", "-n", name,
+                             "-t", "P,,", "-i", str(certificate)], root)
+                run_command(["certutil", "-L", "-d", f"sql:{directory}", "-n", name], root, capture=True)
+        run_command(["dotnet", "dev-certs", "https", "--check", "--trust"], root)
+        if os.environ.get("GITHUB_ENV"):
+            with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
+                stream.write(f"SSL_CERT_DIR={certificate_directories}\n")
+    except BaseException:
+        if previous_certificates is None:
+            os.environ.pop("SSL_CERT_DIR", None)
+        else:
+            os.environ["SSL_CERT_DIR"] = previous_certificates
+        raise
 
 
 def require_node_versions(root: Path, prerequisites: dict, *, npm_required: bool) -> None:

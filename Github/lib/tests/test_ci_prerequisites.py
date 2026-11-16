@@ -173,6 +173,29 @@ class PrerequisiteTests(unittest.TestCase):
         self.assertEqual(2, len([args for args in commands if args[:2] == ["certutil", "-L"]]))
         self.assertEqual(["dotnet", "dev-certs", "https", "--check", "--trust"], commands[-1])
 
+    def test_fresh_certificate_cli_sees_openssl_trust_directory(self):
+        trust = self.root / ".aspnet/dev-certs/trust"
+        environment_file = self.root / "github-env"
+        certificate = trust / "certificate.pem"
+
+        def run(arguments, root, **kwargs):
+            if arguments[:3] == ["dotnet", "dev-certs", "https"]:
+                # A fresh .NET CLI returns partial-trust exit 4 unless its
+                # exported certificate directory is already in SSL_CERT_DIR.
+                if str(trust) not in os.environ.get("SSL_CERT_DIR", "").split(os.pathsep):
+                    raise ENV.PipelineError("OpenSSL certificate directory is not configured", 4)
+                trust.mkdir(parents=True, exist_ok=True)
+                certificate.write_text("synthetic certificate bytes")
+            return ""
+
+        with mock.patch.dict(os.environ, {"GITHUB_ENV": str(environment_file)}), \
+                mock.patch.object(ENV.Path, "home", return_value=self.root), \
+                mock.patch.object(ENV, "run_command", side_effect=run):
+            os.environ.pop("SSL_CERT_DIR", None)
+            ENV.setup_tls_trust(self.root)
+            self.assertEqual(f"{trust}:/usr/lib/ssl/certs", os.environ["SSL_CERT_DIR"])
+            self.assertEqual(f"SSL_CERT_DIR={trust}:/usr/lib/ssl/certs\n", environment_file.read_text())
+
     def test_tls_import_failure_propagates_and_does_not_claim_trust(self):
         trust = self.root / ".aspnet/dev-certs/trust"
         trust.mkdir(parents=True)
