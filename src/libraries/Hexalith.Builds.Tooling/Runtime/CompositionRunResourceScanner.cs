@@ -157,7 +157,9 @@ public sealed class CompositionRunResourceScanner(string dockerCommand)
         {
             cancellationToken.ThrowIfCancellationRequested();
             (remaining, verified) = FindTaggedProcesses(runId, cancellationToken);
-            for (int attempt = 0; attempt < 5 && remaining.Count > 0; attempt++)
+
+            // An unreadable process may be transient; absence is not verified until a later complete scan.
+            for (int attempt = 0; attempt < 5 && (remaining.Count > 0 || !verified); attempt++)
             {
                 foreach (int processId in remaining)
                 {

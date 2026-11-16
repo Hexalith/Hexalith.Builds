@@ -246,14 +246,14 @@ public sealed class DirectCatalogDeclarationTests
             string catalog = await File.ReadAllTextAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             XDocument selectedCatalog = XDocument.Parse(catalog);
 
-            // A fixture's explicit historical/hostile selection precedes every conditional consumer default.
+            // Replace each generic default with the fixture's explicit selection before conditional consumer defaults.
             if (!consumerViews)
             {
-                selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithEventStoreVersion", unknownVersion ? "999.0.0" : sdkVersion)));
-                selectedCatalog.Root.AddFirst(new XElement("PropertyGroup", new XElement("HexalithTenantsVersion", "7.0.7")));
+                SelectExplicitCatalogDefault(selectedCatalog, "HexalithEventStoreVersion", unknownVersion ? "999.0.0" : sdkVersion);
+                SelectExplicitCatalogDefault(selectedCatalog, "HexalithTenantsVersion", "7.0.7");
             }
 
-            selectedCatalog.Root!.AddFirst(new XElement("PropertyGroup", new XElement("HexalithMemoriesVersion", unknownMemories ? "3.0.28" : memoriesVersion)));
+            SelectExplicitCatalogDefault(selectedCatalog, "HexalithMemoriesVersion", unknownMemories ? "3.0.28" : memoriesVersion);
             catalog = selectedCatalog.ToString();
 
             await File.WriteAllTextAsync(Path.Combine(builds, "Props", "Directory.Packages.props"), catalog, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -317,6 +317,16 @@ public sealed class DirectCatalogDeclarationTests
         }
 
         await File.WriteAllTextAsync(Path.Combine(declarations, "provenance.json"), provenance.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+    }
+
+    private static void SelectExplicitCatalogDefault(XDocument catalog, string property, string version)
+    {
+        XElement selected = catalog.Root!.Elements("PropertyGroup").Elements(property)
+            .Single(element => element.Attribute("Condition")?.Value == $"'$({property})' == ''");
+        selected.Remove();
+        selected.Attribute("Condition")!.Remove();
+        selected.Value = version;
+        catalog.Root.AddFirst(new XElement("PropertyGroup", selected));
     }
 
     private static async Task SelectAsync(string repository, string commit)
