@@ -27,7 +27,7 @@ BUILDS = "Hexalith/Hexalith.Builds"
 
 
 def configuration(*, codeql=None, nightly=False):
-    return {"schema": "hexalith.ci.v1", "buildsTag": "v1.0.0", "solution": "Fixture.slnx",
+    return {"schema": "hexalith.ci.v1", "npmWorkspaces": [], "dotnetTools": False, "buildsTag": "v1.0.0", "solution": "Fixture.slnx",
             "dapr": False, "browsers": False, "registry": False,
             "codeql": ["csharp"] if codeql is None else codeql,
             "tests": {"integration": [], "exclude": {}},

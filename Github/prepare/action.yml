@@ -61,6 +61,13 @@ runs:
         CI_MODULE_ROOT: ${{ inputs.module-root }}
       run: python3 -I "$GITHUB_ACTION_PATH/prepare_linux.py" --phase build
 
+    - name: Set up locked npm runtime
+      if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none' && steps.build.outputs.npmWorkspaces != '[]'
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '24'
+        package-manager-cache: false
+
     - name: Prepare Linux environment
       if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none'
       uses: $/Github/ci-environment
@@ -69,6 +76,8 @@ runs:
         dapr: ${{ steps.build.outputs.dapr }}
         browsers: ${{ steps.build.outputs.browsers }}
         registry: ${{ steps.build.outputs.registry }}
+        npm-workspaces: ${{ steps.build.outputs.npmWorkspaces }}
+        dotnet-tools: ${{ steps.build.outputs.dotnetTools }}
       env:
         CI_MODULE_ROOT: ${{ inputs.module-root }}
 

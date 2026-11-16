@@ -26,7 +26,7 @@ SPEC.loader.exec_module(PIPE)
 BUILDS = "Hexalith/Hexalith.Builds"
 # Deliberately independent of the implementation's flag factories: removing a
 # mandatory property or switch must fail this contract.
-EXPECTED_PROPERTIES = ("-p:Configuration=Release", "-p:UseHexalithProjectReferences=false",
+EXPECTED_PROPERTIES = ("-p:Configuration=Release", "-p:UseHexalithProjectReferences=false", "-p:ShouldUnsetParentConfigurationAndPlatform=false",
                        "-p:NuGetAudit=false", f"-p:RestoreConfigFile={ROOT / 'NuGet.ci.Config'}",
                        "-p:EnableNETAnalyzers=true", "-p:RunAnalyzers=true", "-p:RunAnalyzersDuringBuild=true")
 EXPECTED_ENGINE_FLAGS = ("-noAutoResponse", "-warnaserror")
@@ -34,7 +34,7 @@ EXPECTED_MTP_FLAGS = ("-p:TreatWarningsAsErrors=true", "-p:MSBuildTreatWarningsA
 
 
 def configuration(solution="Fixture.slnx"):
-    return {"schema": "hexalith.ci.v1", "solution": solution, "dapr": False,
+    return {"schema": "hexalith.ci.v1", "npmWorkspaces": [], "dotnetTools": False, "solution": solution, "dapr": False,
             "browsers": False, "registry": False, "codeql": [],
             "tests": {"integration": [], "exclude": {}}, "hooks": [], "jobs": {}, "submodules": []}
 
@@ -332,13 +332,15 @@ class SubprocessPipelineTests(unittest.TestCase):
     def test_unit_outputs_are_published_only_on_success_and_include_e2e_inference(self):
         output = self.root / "github-output"
         self.environment["GITHUB_OUTPUT"] = str(output)
-        self.document.update(dapr=True, registry=True, hooks=["after-unit-tests", "nightly"])
+        self.document.update(dapr=True, registry=True, hooks=["after-unit-tests", "nightly"],
+                             npmWorkspaces=["tests/e2e"], dotnetTools=True)
         project = "test/Browser.E2E.csproj"
         self.data["projects"][project] = True
         (self.root / project).write_text("<Project />")
         result = self.invoke("--phase", "unit")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual({"dapr": "true", "registry": "true", "browsers": "true",
+                          "npmWorkspaces": '["tests/e2e"]', "dotnetTools": "true",
                           "after-unit-tests": "true", "after-integration-tests": "false"},
                          dict(line.split("=", 1) for line in output.read_text().splitlines()))
         output.unlink()
@@ -368,7 +370,8 @@ class SubprocessPipelineTests(unittest.TestCase):
         for phase in ("unit", "integration"):
             result = self.invoke("--phase", phase)
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertTrue(all(line.endswith("=false") for line in output.read_text().splitlines()))
+        self.assertTrue(all(line.endswith("=false") or line == "npmWorkspaces=[]"
+                            for line in output.read_text().splitlines()))
         self.assertEqual([], self.commands())
 
     def test_builds_module_root_is_workspace_relative_without_builds_gitlink(self):

@@ -23,7 +23,7 @@ HOOKS = frozenset(("after-unit-tests", "after-integration-tests", "nightly"))
 LANGUAGES = frozenset(("c-cpp", "csharp", "go", "java-kotlin", "javascript-typescript",
                        "python", "ruby", "rust", "swift"))
 REQUIRED = frozenset(("schema", "solution", "dapr", "browsers", "registry", "codeql",
-                      "tests", "hooks", "jobs", "submodules"))
+                      "tests", "hooks", "jobs", "submodules", "npmWorkspaces", "dotnetTools"))
 ACTION_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 STABLE_TAG = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 
@@ -129,10 +129,10 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         fail("$/buildsTag", "expected an exact stable vMAJOR.MINOR.PATCH release tag")
     if document["solution"] != "none":
         path(document["solution"], "$/solution", ".slnx")
-    for key in ("dapr", "browsers", "registry"):
+    for key in ("dapr", "browsers", "registry", "dotnetTools"):
         if type(document[key]) is not bool:
             fail(f"$/{key}", "expected a boolean")
-    for key in ("codeql", "hooks", "submodules"):
+    for key in ("codeql", "hooks", "submodules", "npmWorkspaces"):
         array(document[key], f"$/{key}")
     for index, language in enumerate(document["codeql"]):
         if not isinstance(language, str) or language not in LANGUAGES:
@@ -142,6 +142,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
             fail(f"$/hooks/{index}", "expected after-unit-tests, after-integration-tests or nightly")
     for index, submodule in enumerate(document["submodules"]):
         path(submodule, f"$/submodules/{index}")
+    for index, workspace in enumerate(document["npmWorkspaces"]):
+        path(workspace, f"$/npmWorkspaces/{index}")
     tests = document["tests"]
     closed(tests, frozenset(("integration", "exclude")), frozenset(), "$/tests")
     array(tests["integration"], "$/tests/integration")
@@ -167,7 +169,7 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         if action not in document["hooks"] and action not in jobs:
             fail(location, f"{action!r} is not an enabled hook or job")
     if document["solution"] == "none":
-        for key in ("dapr", "browsers", "hooks", "jobs"):
+        for key in ("dapr", "browsers", "hooks", "jobs", "npmWorkspaces", "dotnetTools"):
             if document[key]:
                 fail(f"$/{key}", "must be empty or false when solution is none")
         if tests["integration"] or tests["exclude"]:

@@ -23,5 +23,7 @@
       "runner": "windows-latest"
     }
   },
-  "submodules": []
+  "submodules": [],
+  "npmWorkspaces": [],
+  "dotnetTools": false
 }

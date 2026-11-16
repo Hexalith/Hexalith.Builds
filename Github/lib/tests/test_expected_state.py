@@ -22,7 +22,7 @@ BUILDS = "Hexalith/Hexalith.Builds"
 
 
 def configuration(**changes):
-    return {"schema": "hexalith.ci.v1", "buildsTag": "v1.2.3", "solution": "Fixture.slnx",
+    return {"schema": "hexalith.ci.v1", "npmWorkspaces": [], "dotnetTools": False, "buildsTag": "v1.2.3", "solution": "Fixture.slnx",
             "dapr": False, "browsers": False, "registry": False, "codeql": [],
             "tests": {"integration": [], "exclude": {}}, "hooks": [], "jobs": {},
             "submodules": [], **changes}
