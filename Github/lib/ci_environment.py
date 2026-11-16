@@ -152,6 +152,7 @@ def setup_aspire(root: Path) -> None:
     if os.environ.get("GITHUB_ENV"):
         with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
             stream.write(f"HEXALITH_CI_PYTHON={python}\n")
+            stream.write(f"HEXALITH_CI_ASPIRE_QUALIFIED_BUNDLE={expected / 'bundle'}\n")
 
 
 def dapr_versions(builds_root: Path = BUILDS_ROOT) -> tuple[str, str]:

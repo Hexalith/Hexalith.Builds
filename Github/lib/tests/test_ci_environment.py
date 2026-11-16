@@ -1012,7 +1012,11 @@ class NativeAspireTests(unittest.TestCase):
         paths = path_file.read_text().splitlines()
         self.assertEqual(2, len(paths))
         self.assertTrue(all(Path(path).is_relative_to(self.root) for path in paths))
-        self.assertEqual(f"HEXALITH_CI_PYTHON={paths[-1]}/python\n", env_file.read_text())
+        exported = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
+        self.assertEqual(f"{paths[-1]}/python", exported["HEXALITH_CI_PYTHON"])
+        qualified = Path(exported["HEXALITH_CI_ASPIRE_QUALIFIED_BUNDLE"])
+        self.assertTrue(qualified.is_relative_to(self.root))
+        ENV.verify_aspire_bundle(qualified, self.root / "home/.aspire/bundle")
         self.assertEqual(b"shared-build", output.read_bytes())
         self.assertEqual([output], list(module.iterdir()))
 
