@@ -160,6 +160,12 @@
         or $(MSBuildProjectName.Equals('IdeParityCounter'))">true</HexalithFrontComposerImmutable10CatalogView>
     <HexalithImmutableVersion>11.0.0</HexalithImmutableVersion>
     <HexalithImmutableVersion Condition="'$(HexalithFrontComposerImmutable10CatalogView)' == 'true'">10.0.15</HexalithImmutableVersion>
+    <HexalithAspNetCoreJwtBearerVersion>11.0.0</HexalithAspNetCoreJwtBearerVersion>
+    <HexalithAspNetCoreJwtBearerVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreJwtBearerVersion>
+    <HexalithAspNetCoreMvcTestingVersion>11.0.0</HexalithAspNetCoreMvcTestingVersion>
+    <HexalithAspNetCoreMvcTestingVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreMvcTestingVersion>
+    <HexalithAspNetCoreTestHostVersion>11.0.0</HexalithAspNetCoreTestHostVersion>
+    <HexalithAspNetCoreTestHostVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreTestHostVersion>
     <HexalithAspNetCoreOpenIdConnectVersion>11.0.0</HexalithAspNetCoreOpenIdConnectVersion>
     <HexalithAspNetCoreOpenIdConnectVersion Condition="'$(HexalithFrontComposerNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreOpenIdConnectVersion>
     <!-- These finite producer host roles and Platform consumers retain the admitted SDK4.2/OpenAPI2 ABI. -->
@@ -389,8 +395,7 @@
     <!-- Authorization and SignalR align with the ASP.NET Core 11 host runtime. -->
     <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="11.0.0" Condition="'$(HexalithTimesheetsNet10CatalogView)' != 'true'" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(HexalithAspNetCoreJwtBearerVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(HexalithAspNetCoreOpenIdConnectVersion)" />
@@ -405,8 +410,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.DataProtection.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity" Version="2.3.14" />
     <PackageVersion Include="StackExchange.Redis" Version="3.4.35" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" Condition="'$(HexalithTimesheetsNet10CatalogView)' != 'true'" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="$(HexalithAspNetCoreMvcTestingVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="$(HexalithAspNetCoreOpenApiVersion)" />
     <!-- ASP.NET Core 10 Blazor requires IInvocationBinder.GetTarget(ReadOnlySpan<byte>);
          SignalR 11 falls back to netstandard2.0 and aborts interactive circuits. -->
@@ -414,8 +418,7 @@
     <!-- GHSA-334f-vvp4-7g6p: patched Common for consumers with CentralPackageTransitivePinningEnabled=true. -->
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" Condition="'$(HexalithTimesheetsNet10CatalogView)' != 'true'" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.15" Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="$(HexalithAspNetCoreTestHostVersion)" />
     <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.64.0" />
     <PackageVersion Include="Microsoft.Bot.Builder" Version="4.23.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.12.0" />
