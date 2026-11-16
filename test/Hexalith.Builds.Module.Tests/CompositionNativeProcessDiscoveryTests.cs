@@ -90,4 +90,30 @@ public sealed class CompositionNativeProcessDiscoveryTests
             CompositionTestFiles.Delete(root);
         }
     }
+
+    /// <summary>Transient unreadable process observations are retried without accepting persistent uncertainty.</summary>
+    /// <param name="eventuallyVerified">Whether a later process scan verifies the absence of native work.</param>
+    /// <returns>The finite retry and fail-closed observations.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NativeRemovalRetriesUnverifiedAbsenceWithinTheStopAllowanceAsync(bool eventuallyVerified)
+    {
+        int observations = 0;
+        CompositionRunResourceScanner scanner = new(string.Empty)
+        {
+            ProcessDiscoveryOverride = (_, _) => ([], ++observations > 1 && eventuallyVerified),
+        };
+        using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        bound.CancelAfter(TimeSpan.FromSeconds(10));
+        Stopwatch elapsed = Stopwatch.StartNew();
+
+        (IReadOnlyList<int> remaining, bool verified) = await scanner.RemoveTaggedProcessesAsync(CompositionRunPlanFactory.NewRunId(), bound.Token).ConfigureAwait(true);
+
+        observations.ShouldBeGreaterThan(1);
+        verified.ShouldBe(eventuallyVerified);
+        remaining.ShouldBeEmpty();
+        elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(10));
+        bound.IsCancellationRequested.ShouldBeFalse();
+    }
 }

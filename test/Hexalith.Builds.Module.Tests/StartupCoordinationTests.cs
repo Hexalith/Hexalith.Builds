@@ -20,6 +20,8 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Verifies one startup clock, authoritative dependency tasks, and post-task readiness.</summary>
+// Finite startup assertions must not compete with independent SDK/process fixtures.
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class StartupCoordinationTests
 {
     /// <summary>Cancellation before recorded-reference restoration never issues a working-tree suite.</summary>

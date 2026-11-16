@@ -171,9 +171,14 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     {
         // Consumer conditions belong to materialized views. The XML fallback
         // admits only one explicit default in an unconditional top-level group.
-        return catalog.Root?.Elements("PropertyGroup").Elements(property)
-            .SingleOrDefault(element => string.IsNullOrWhiteSpace(element.Parent?.Attribute("Condition")?.Value)
+        string? value = catalog.Element("Project")?.Elements("PropertyGroup").Elements(property)
+            .SingleOrDefault(element => element.Ancestors().All(ancestor => string.IsNullOrWhiteSpace(ancestor.Attribute("Condition")?.Value))
                 && IsDefaultPropertyCondition(element.Attribute("Condition")?.Value, property))?.Value.Trim();
+        bool nonliteral = value is not null && (value.Length == 0 || value.Contains("$(", StringComparison.Ordinal)
+            || value.Contains("@(", StringComparison.Ordinal) || value.Contains("%(", StringComparison.Ordinal));
+        return nonliteral
+            ? throw new InvalidDataException($"Builds catalog default for '{property}' is not literal; use a materialized catalog snapshot.")
+            : value;
     }
 
     private static bool IsDefaultPropertyCondition(string? condition, string property)

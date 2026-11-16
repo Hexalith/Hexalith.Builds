@@ -149,6 +149,14 @@ public sealed class CompositionCatalogPackageViewTests
           <HexalithTenantsVersion Condition=' "$(hexalithtenantsversion)"=="" '>8.0.1</HexalithTenantsVersion>
         </PropertyGroup>
         """)]
+    [InlineData("""
+        <PropertyGroup>
+          <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.1</HexalithTenantsVersion>
+        </PropertyGroup>
+        <PropertyGroup Condition="'$(Consumer)' == 'legacy'">
+          <HexalithTenantsVersion>7.0.7</HexalithTenantsVersion>
+        </PropertyGroup>
+        """)]
     public void UnmaterializedDefaultExcludesConditionalViews(string declarations)
     {
         string root = Directory.CreateTempSubdirectory("catalog-default-selection-").FullName;
@@ -203,6 +211,66 @@ public sealed class CompositionCatalogPackageViewTests
                 .Message.ShouldContain("catalog metadata is malformed");
             Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe"))
                 .Message.ShouldContain("catalog metadata is malformed");
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>Unmaterialized default values cannot retain unresolved MSBuild expressions or empty values.</summary>
+    /// <param name="value">The nonliteral or empty catalog default.</param>
+    [Theory]
+    [InlineData("$(UnresolvedVersion)")]
+    [InlineData("@(UnresolvedItems)")]
+    [InlineData("%(UnresolvedMetadata)")]
+    [InlineData("")]
+    public void UnmaterializedDefaultRefusesNonliteralValues(string value)
+    {
+        string root = Directory.CreateTempSubdirectory("catalog-default-nonliteral-").FullName;
+        try
+        {
+            CompositionDeclarationOptions options = UnmaterializedOptions(root, "<PropertyGroup><HexalithTenantsVersion>" + value + "</HexalithTenantsVersion></PropertyGroup>");
+            _ = Should.Throw<InvalidDataException>(() => options.CatalogVersion("tenants", "probe"));
+            _ = Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe"));
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    /// <summary>Only direct root property groups can define an unmaterialized default.</summary>
+    /// <param name="scope">The unexecuted or unselected MSBuild declaration scope.</param>
+    /// <param name="hasDefault">Whether a supported root property group supplies the current default.</param>
+    [Theory]
+    [InlineData("target", false)]
+    [InlineData("target", true)]
+    [InlineData("otherwise", false)]
+    [InlineData("otherwise", true)]
+    public void UnmaterializedDefaultRequiresRootPropertyGroups(string scope, bool hasDefault)
+    {
+        string root = Directory.CreateTempSubdirectory("catalog-default-scope-").FullName;
+        try
+        {
+            const string assignment = "<PropertyGroup><HexalithTenantsVersion>6.4.2</HexalithTenantsVersion></PropertyGroup>";
+            string unsupported = scope == "target"
+                ? "<Target Name=\"Unexecuted\">" + assignment + "</Target>"
+                : "<Choose><When Condition=\"'true' == 'true'\"><PropertyGroup /></When><Otherwise>" + assignment + "</Otherwise></Choose>";
+            string current = hasDefault
+                ? "<PropertyGroup><HexalithTenantsVersion>9.2.3</HexalithTenantsVersion></PropertyGroup>"
+                : string.Empty;
+            CompositionDeclarationOptions options = UnmaterializedOptions(root, current + unsupported);
+            if (hasDefault)
+            {
+                options.CatalogVersion("tenants", "probe").ShouldBe("9.2.3");
+                options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe").ShouldBe("9.2.3");
+            }
+            else
+            {
+                _ = Should.Throw<InvalidDataException>(() => options.CatalogVersion("tenants", "probe"));
+                options.CatalogPackageVersion("Hexalith.Tenants.Server", "probe").ShouldBeNull();
+            }
         }
         finally
         {

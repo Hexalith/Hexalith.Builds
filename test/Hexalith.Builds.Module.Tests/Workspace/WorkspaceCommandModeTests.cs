@@ -16,6 +16,8 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Verifies the public mode option belongs only to run and test.</summary>
+// Finite startup assertions must not compete with independent SDK/process fixtures.
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class WorkspaceCommandModeTests
 {
     /// <summary>Verifies the public command carries its resolved mode and hash into the engine-written plan.</summary>

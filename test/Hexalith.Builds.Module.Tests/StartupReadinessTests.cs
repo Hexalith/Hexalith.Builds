@@ -22,6 +22,8 @@ using Xunit;
 /// <summary>
 /// Verifies readiness-aware startup, debug attach, and preserved diagnostics.
 /// </summary>
+// Finite startup assertions must not compete with independent SDK/process fixtures.
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class StartupReadinessTests
 {
     /// <summary>Malformed explicit endpoint requests refuse before starting or resolving a manifest.</summary>

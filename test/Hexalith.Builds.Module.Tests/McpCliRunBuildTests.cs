@@ -17,6 +17,8 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Verifies the run-scoped, never-published McpCli build of an McpCli source run.</summary>
+// Finite startup assertions must not compete with independent SDK/process fixtures.
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class McpCliRunBuildTests
 {
     private const string _mcpCliModule = """
