@@ -404,7 +404,11 @@ class StrictPackageTests(unittest.TestCase):
         values = {"inventory": inventory, "package-policies": policies, "version": "2.3.5", "sha": SHA}
         public_files = package_archive.members(original)
         public_files[".signature.p7s"] = b"controlled signature"
-        signed = zip_bytes(list(public_files.items()))
+        recompressed = io.BytesIO()
+        with zipfile.ZipFile(recompressed, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for name, body in public_files.items():
+                archive.writestr(name, body)
+        signed = recompressed.getvalue()
         commands = []
         def command(arguments, **kwargs):
             commands.append((arguments, kwargs))
