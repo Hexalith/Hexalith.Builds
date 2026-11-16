@@ -124,7 +124,9 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     if "schema" in document and document["schema"] != schema_identity():
         value = document["schema"]
         raise ConfigError(f"{source}: unsupported schema {value}. CI/CD is owned by Hexalith.CiCd.")
-    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes", "moduleManifest", "windowsCheckout", "additionalSdkVersion")), "$")
+    closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes",
+                                         "moduleManifest", "windowsCheckout", "additionalSdkVersion",
+                                         "releaseTimeoutMinutes", "nightlyTimeoutMinutes", "prerequisites")), "$")
     if "additionalSdkVersion" in document:
         version = document["additionalSdkVersion"]
         if not isinstance(version, str) or SDK_VERSION.fullmatch(version) is None:
@@ -152,6 +154,26 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
             fail("$/job-timeout-minutes", "expected an integer from 1 to 360")
     if type(document["ciTimeoutMinutes"]) is not int or not 1 <= document["ciTimeoutMinutes"] <= 360:
         fail("$/ciTimeoutMinutes", "expected an integer from 1 to 360")
+    for key in ("releaseTimeoutMinutes", "nightlyTimeoutMinutes"):
+        if key in document and (type(document[key]) is not int or not 1 <= document[key] <= 360):
+            fail(f"$/{key}", "expected an integer from 1 to 360")
+
+    def prerequisites(value: Any, location: str) -> None:
+        closed(value, frozenset(), frozenset(("nodeVersion", "npmVersion", "apt", "tlsTrust", "daprProfile")), location)
+        for key in ("nodeVersion", "npmVersion"):
+            if key in value and (not isinstance(value[key], str)
+                                 or re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", value[key]) is None):
+                fail(f"{location}/{key}", "expected an exact numeric version")
+        if ("nodeVersion" in value) != ("npmVersion" in value):
+            fail(location, "nodeVersion and npmVersion must be supplied together")
+        for key in ("apt", "tlsTrust"):
+            if key in value and type(value[key]) is not bool:
+                fail(f"{location}/{key}", "expected a boolean")
+        if "daprProfile" in value and value["daprProfile"] != "catalog":
+            fail(f"{location}/daprProfile", "expected the catalog profile; other tuples require separate qualification")
+
+    if "prerequisites" in document:
+        prerequisites(document["prerequisites"], "$/prerequisites")
     for key in ("codeql", "hooks", "submodules", "npmWorkspaces"):
         array(document[key], f"$/{key}")
     for index, language in enumerate(document["codeql"]):
@@ -165,7 +187,12 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     for index, workspace in enumerate(document["npmWorkspaces"]):
         path(workspace, f"$/npmWorkspaces/{index}")
     tests = document["tests"]
-    closed(tests, frozenset(("integration", "exclude", "minimumExpectedTests", "failSkips")), frozenset(), "$/tests")
+    closed(tests, frozenset(("integration", "exclude", "minimumExpectedTests", "failSkips")),
+           frozenset(("additional", "reports")), "$/tests")
+    if "additional" in tests:
+        array(tests["additional"], "$/tests/additional")
+        for index, project in enumerate(tests["additional"]):
+            path(project, f"$/tests/additional/{index}", ".csproj")
     array(tests["integration"], "$/tests/integration")
     for index, project in enumerate(tests["integration"]):
         path(project, f"$/tests/integration/{index}", ".csproj")
@@ -182,17 +209,48 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
             fail(location, "minimum cannot apply to an excluded project")
     if type(tests["failSkips"]) is not bool:
         fail("$/tests/failSkips", "expected a boolean")
+    if "reports" in tests:
+        reports = tests["reports"]
+        closed(reports, frozenset(), frozenset(("trx", "coverage")), "$/tests/reports")
+        if "trx" in reports and type(reports["trx"]) is not bool:
+            fail("$/tests/reports/trx", "expected a boolean")
+        if "coverage" in reports:
+            coverage = reports["coverage"]
+            location = "$/tests/reports/coverage"
+            closed(coverage, frozenset(("projects",)), frozenset(("lineScope", "minimumLine", "lineComparison",
+                                                               "branchTargets", "minimumBranch")), location)
+            for key in ("projects", "lineScope", "branchTargets"):
+                if key not in coverage:
+                    continue
+                array(coverage[key], f"{location}/{key}")
+                for index, item in enumerate(coverage[key]):
+                    candidate = item[:-1] if key == "lineScope" and isinstance(item, str) and item.endswith("/") else item
+                    path(candidate, f"{location}/{key}/{index}", ".csproj" if key == "projects" else "")
+            if not coverage["projects"]:
+                fail(f"{location}/projects", "at least one coverage project is required")
+            if any(project in tests["exclude"] for project in coverage["projects"]):
+                fail(f"{location}/projects", "coverage cannot apply to excluded projects")
+            for key, scope in (("minimumLine", "lineScope"), ("minimumBranch", "branchTargets")):
+                if key in coverage:
+                    if type(coverage[key]) not in (int, float) or not 0 <= coverage[key] <= 100:
+                        fail(f"{location}/{key}", "expected a percentage from 0 to 100")
+                    if not coverage.get(scope):
+                        fail(f"{location}/{key}", f"requires a nonempty {scope}")
+            if coverage.get("lineComparison", "at-least") not in ("greater-than", "at-least"):
+                fail(f"{location}/lineComparison", "expected greater-than or at-least")
     jobs = document["jobs"]
     if not isinstance(jobs, dict):
         fail("$/jobs", "expected an object")
+    if len(jobs) > 64:
+        fail("$/jobs", "at most 64 custom jobs are supported")
     for job, options in jobs.items():
         location = f"$/jobs/{job}"
         name(job, location)
         if job == "ci" or job in HOOKS:
             fail(location, "job name is reserved for CI or a fixed hook")
-        if isinstance(options, dict) and options.get("trigger") == "manual":
-            if job == "none":
-                fail(location, "none is reserved for the manual dispatch default")
+        if job == "none" and isinstance(options, dict) and options.get("trigger") == "manual":
+            fail(location, "none is reserved for the manual dispatch default")
+        if isinstance(options, dict) and "preparation" in options and isinstance(options.get("secrets"), list):
             closed(options, frozenset(("runner", "trigger", "environment", "secrets",
                                        "preparation", "timeoutMinutes")), frozenset(), location)
             runner = options["runner"]
@@ -212,12 +270,115 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
                 fail(f"{location}/secrets", "manual qualification requires explicitly named secrets")
             for index, secret in enumerate(options["secrets"]):
                 if (not isinstance(secret, str) or SECRET_NAME.fullmatch(secret) is None
-                        or secret.startswith(("GITHUB_", "ACTIONS_", "RUNNER_"))):
+                        or secret.startswith(("GITHUB_", "ACTIONS_", "RUNNER_"))
+                        or secret in ("HEXALITH_JOB_NAME", "HEXALITH_JOB_PARAMETERS", "HEXALITH_JOB_NEEDS",
+                                      "HEXALITH_QUALIFICATION_PARAMETERS", "HEXALITH_AUTHORITY_SHA256", "HEXALITH_SOURCE_SHA")):
                     fail(f"{location}/secrets/{index}", "expected an explicit non-reserved uppercase secret name")
-        else:
-            closed(options, frozenset(("runner",)), frozenset(), location)
-            if options["runner"] not in ("windows-latest", "macos-latest"):
-                fail(f"{location}/runner", "expected windows-latest or macos-latest")
+            if options["trigger"] != "manual":
+                fail(f"{location}/trigger", "build-only qualification requires a manual job")
+            continue
+        closed(options, frozenset(("runner",)), frozenset(("timeoutMinutes", "trigger", "matrix", "maxParallel",
+               "needs", "runAfterFailure", "resourceProfile", "environment", "secrets", "setup", "preparation")), location)
+        runner = options["runner"]
+        private = isinstance(runner, dict)
+        trigger = options.get("trigger", "ci")
+        if trigger not in ("ci", "nightly", "manual"):
+            fail(f"{location}/trigger", "expected ci, nightly or manual")
+        if private:
+            closed(runner, frozenset(("group", "labels")), frozenset(), f"{location}/runner")
+            if (not isinstance(runner["group"], str)
+                    or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}", runner["group"]) is None
+                    or runner["labels"] != ["self-hosted", "linux", "x64"]):
+                fail(f"{location}/runner", "expected an explicit private Linux runner group and self-hosted/linux/x64 labels")
+            if trigger != "manual" or not options.get("environment"):
+                fail(f"{location}/runner", "private execution requires a manual job and protected environment")
+            if "setup" in options:
+                fail(f"{location}/setup", "private execution preserves owner-prepared fixtures and cannot override setup")
+        elif runner not in ("ubuntu-latest", "ubuntu-24.04", "windows-latest", "macos-latest"):
+            fail(f"{location}/runner", "expected a supported hosted runner or protected private Linux group")
+        linux = private or runner in ("ubuntu-latest", "ubuntu-24.04")
+        if "timeoutMinutes" in options and (type(options["timeoutMinutes"]) is not int
+                                            or not 1 <= options["timeoutMinutes"] <= (180 if private else 360)):
+            fail(f"{location}/timeoutMinutes", f"expected an integer from 1 to {180 if private else 360}")
+        if "preparation" in options and (not private or trigger != "manual" or options["preparation"] != "build-only"
+                                         or not isinstance(options.get("secrets"), dict)):
+            fail(f"{location}/preparation", "build-only preparation requires a private manual job with mapped secrets")
+        if "environment" in options:
+            name(options["environment"], f"{location}/environment")
+        if "resourceProfile" in options:
+            if options["resourceProfile"] != "mutation" or not linux or private:
+                fail(f"{location}/resourceProfile", "mutation requires a hosted Linux job")
+        if "matrix" in options:
+            matrix = options["matrix"]
+            closed(matrix, frozenset(("include",)), frozenset(), f"{location}/matrix")
+            array(matrix["include"], f"{location}/matrix/include")
+            if not 1 <= len(matrix["include"]) <= 64:
+                fail(f"{location}/matrix/include", "expected 1 to 64 isolated cases")
+            identifiers = set()
+            for index, row in enumerate(matrix["include"]):
+                row_location = f"{location}/matrix/include/{index}"
+                if not isinstance(row, dict) or "id" not in row:
+                    fail(row_location, "expected a record with a unique id")
+                for key, value in row.items():
+                    name(key, row_location)
+                    if (not isinstance(value, str) or len(value) > 4096 or "${{" in value
+                            or any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in value)):
+                        fail(row_location, "matrix values must be bounded literal strings without controls or expressions")
+                name(row["id"], f"{row_location}/id")
+                if row["id"] in identifiers:
+                    fail(f"{row_location}/id", "duplicate matrix id")
+                identifiers.add(row["id"])
+        if "maxParallel" in options and ("matrix" not in options or type(options["maxParallel"]) is not int
+                                         or not 1 <= options["maxParallel"] <= 64):
+            fail(f"{location}/maxParallel", "requires a matrix and an integer from 1 to 64")
+        if "runAfterFailure" in options and type(options["runAfterFailure"]) is not bool:
+            fail(f"{location}/runAfterFailure", "expected a boolean")
+        if "needs" in options:
+            array(options["needs"], f"{location}/needs")
+            for dependency in options["needs"]:
+                name(dependency, f"{location}/needs")
+                if dependency == job or dependency not in jobs:
+                    fail(f"{location}/needs", "dependencies must name other enabled jobs")
+                if not isinstance(jobs[dependency], dict) or jobs[dependency].get("trigger", "ci") != trigger:
+                    fail(f"{location}/needs", "dependencies must use the same trigger")
+        if options.get("runAfterFailure") and not options.get("needs"):
+            fail(f"{location}/runAfterFailure", "requires an explicit dependency")
+        if "secrets" in options:
+            secrets = options["secrets"]
+            if not isinstance(secrets, dict) or not private or trigger != "manual" or not options.get("environment"):
+                fail(f"{location}/secrets", "secrets require protected private manual execution")
+            for variable, secret in secrets.items():
+                if (not isinstance(variable, str) or re.fullmatch(r"[A-Z][A-Z0-9_]*", variable) is None
+                        or variable.startswith(("GITHUB_", "ACTIONS_", "RUNNER_", "CI_", "PYTHON", "NODE_", "DOTNET_"))
+                        or variable in ("PATH", "HOME", "TMPDIR", "TMP", "TEMP", "BASH_ENV", "ENV",
+                                        "LD_PRELOAD", "LD_LIBRARY_PATH", "SHELLOPTS", "BASHOPTS",
+                                        "HEXALITH_JOB_NAME", "HEXALITH_JOB_PARAMETERS", "HEXALITH_JOB_NEEDS",
+                                        "HEXALITH_QUALIFICATION_PARAMETERS", "HEXALITH_AUTHORITY_SHA256", "HEXALITH_SOURCE_SHA")
+                        or not isinstance(secret, str) or re.fullmatch(r"[A-Z][A-Z0-9_]*", secret) is None):
+                    fail(f"{location}/secrets", "expected safe environment names mapped to literal GitHub secret names")
+        if "setup" in options:
+            setup = options["setup"]
+            closed(setup, frozenset(), frozenset(("dapr", "browsers", "registry", "aspire", "npmWorkspaces",
+                                                 "dotnetTools", "prerequisites")), f"{location}/setup")
+            if not linux:
+                fail(f"{location}/setup", "environment overrides require Linux")
+            for key in ("dapr", "browsers", "registry", "aspire", "dotnetTools"):
+                if key in setup and type(setup[key]) is not bool:
+                    fail(f"{location}/setup/{key}", "expected a boolean")
+            if setup.get("aspire", document.get("aspire", False)) and not setup.get("dapr", document["dapr"]):
+                fail(f"{location}/setup/aspire", "requires dapr=true")
+            if "npmWorkspaces" in setup:
+                array(setup["npmWorkspaces"], f"{location}/setup/npmWorkspaces")
+                for index, item in enumerate(setup["npmWorkspaces"]):
+                    path(item, f"{location}/setup/npmWorkspaces/{index}")
+            if "prerequisites" in setup:
+                prerequisites(setup["prerequisites"], f"{location}/setup/prerequisites")
+    pending = set(jobs)
+    while pending:
+        ready = {job for job in pending if not (set(jobs[job].get("needs", [])) & pending)}
+        if not ready:
+            fail("$/jobs", "custom job dependencies contain a cycle")
+        pending -= ready
     for project, action in tests["exclude"].items():
         location = f"$/tests/exclude/{project}"
         path(project, location, ".csproj")
@@ -228,7 +389,7 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         "global.json", ".gitmodules", ".github", "references/Hexalith.Builds",
         *([document["solution"]] if document["solution"] != "none" else []),
         *([document["moduleManifest"]] if document.get("moduleManifest") else []),
-        *document["submodules"], *tests["integration"], *tests["exclude"],
+        *document["submodules"], *tests["integration"], *tests["exclude"], *tests.get("additional", []),
     ), source=source)
     if document["solution"] == "none":
         if document.get("aspire"):
@@ -241,6 +402,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
                 fail(f"$/{key}", "must be empty or false when solution is none")
         if tests["integration"] or tests["exclude"] or tests["minimumExpectedTests"] or tests["failSkips"]:
             fail("$/tests", "test collections must be empty and failSkips false when solution is none")
+        if "additional" in tests or "reports" in tests or document.get("prerequisites"):
+            fail("$/tests", "additional tests, reporting and prerequisites require a solution")
     return document
 
 

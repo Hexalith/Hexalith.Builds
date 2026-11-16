@@ -22,6 +22,11 @@ can set its numeric `job-timeout-minutes` input for a larger suite. Builds uses
 60 minutes for its full .NET catalog/workspace regression suite; sample jobs
 retain the shared default.
 
+CiCd's extended module execution contract supports isolated product jobs,
+qualification schedules, native reports/coverage and shared prerequisites. See
+[module adoption execution](docs/module-adoption-execution.md) for configuration,
+private execution boundaries and the separate infrastructure-release prerequisite.
+
 The complete CI document materializes required `ciTimeoutMinutes` (1–360,
 renderer default 30). Adopted callers forward that value through CiCd's
 generated workflow; select a compatible published Builds release before

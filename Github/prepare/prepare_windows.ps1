@@ -68,6 +68,32 @@ try {
         [IO.Path]::IsPathRooted($relativeSolution)) {
         throw 'Solution escapes the module SDK directory'
     }
+    $additionalProjects = @()
+    if (-not [string]::IsNullOrEmpty($env:CI_PREPARE_ADDITIONAL_TEST_PROJECTS)) {
+        $requested = ConvertFrom-Json -InputObject $env:CI_PREPARE_ADDITIONAL_TEST_PROJECTS -NoEnumerate
+        if ($requested -isnot [array]) {
+            throw 'Additional test projects must be a JSON array'
+        }
+        foreach ($path in $requested) {
+            if ($path -isnot [string]) {
+                throw 'Additional test projects must contain string paths'
+            }
+            $project = Resolve-OwnedPath $path 'additional test project'
+            if (-not (Test-Path -LiteralPath $project -PathType Leaf) -or
+                [IO.Path]::GetExtension($project) -cne '.csproj') {
+                throw 'Additional test project must be an existing .csproj file'
+            }
+            $relativeProject = [IO.Path]::GetRelativePath($moduleRoot, $project)
+            if ($relativeProject -eq '..' -or $relativeProject.StartsWith("..$([IO.Path]::DirectorySeparatorChar)") -or
+                [IO.Path]::IsPathRooted($relativeProject)) {
+                throw 'Additional test project escapes the module SDK directory'
+            }
+            $additionalProjects += $project
+        }
+        if (@($additionalProjects | Select-Object -Unique -CaseInsensitive).Count -ne $additionalProjects.Count) {
+            throw 'Duplicate additional test project paths'
+        }
+    }
     $submodules = @()
     if (-not [string]::IsNullOrEmpty($env:CI_PREPARE_SUBMODULES)) {
         $submodules = @($env:CI_PREPARE_SUBMODULES.Split("`n"))
@@ -118,6 +144,22 @@ try {
     try {
         Invoke-Checked dotnet (@('restore', $solution) + $flags)
         Invoke-Checked dotnet (@('build', $solution, '--no-restore') + $flags)
+        if ($additionalProjects.Count -gt 0) {
+            $members = @(Invoke-Checked dotnet @('sln', $solution, 'list') -Capture)
+            if ($members.Count -lt 2 -or $members[0].Trim() -cne 'Project(s)' -or
+                $members[1].Trim() -notmatch '^-+$') {
+                throw 'Unsupported solution membership output for additional test preparation'
+            }
+            $solutionDirectory = Split-Path -Parent $solution
+            $memberPaths = @($members | Select-Object -Skip 2 | ForEach-Object {
+                [IO.Path]::GetFullPath((Join-Path $solutionDirectory $_.Trim().Replace('\', '/')))
+            })
+            foreach ($project in $additionalProjects) {
+                if ($project -in $memberPaths) { continue }
+                Invoke-Checked dotnet (@('restore', $project) + $flags)
+                Invoke-Checked dotnet (@('build', $project, '--no-restore') + $flags)
+            }
+        }
     }
     finally {
         Pop-Location

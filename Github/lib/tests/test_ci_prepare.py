@@ -169,6 +169,57 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual(17, result.returncode, result.stdout + result.stderr)
         self.assertEqual(["restore"], [command[0] for command in self.commands()])
 
+    def test_platform_builds_additional_tests_outside_solution_with_shared_flags(self):
+        project = "test/Outside/Extra.Tests.csproj"
+        path = self.root / project
+        path.parent.mkdir(parents=True)
+        path.write_text("<Project />")
+        self.fixture.data["projects"][project] = True
+        self.fixture.data["outside_solution"] = [project]
+        for platform in ("Windows", "macOS"):
+            with self.subTest(platform=platform):
+                result = self.invoke(platform, inputs=dict(self.inputs, **{"additional-test-projects": json.dumps([project])}))
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                commands = self.commands()
+                self.assertEqual(["restore", "build", "sln", "restore", "build"], [args[0] for args in commands])
+                self.assertEqual(str(path), commands[-2][1])
+                self.assertEqual(str(path), commands[-1][1])
+                self.assertIn("--no-restore", commands[-1])
+                for command in (commands[-2], commands[-1]):
+                    for flag in (*FIXTURE.EXPECTED_PROPERTIES, *FIXTURE.EXPECTED_ENGINE_FLAGS):
+                        self.assertIn(flag, command)
+                (self.root / "commands.jsonl").unlink()
+
+    def test_platform_does_not_rebuild_additional_project_already_in_solution(self):
+        project = "test/Z.Tests/Z.Tests.csproj"
+        result = self.invoke(inputs=dict(self.inputs, **{"additional-test-projects": json.dumps([project])}))
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["restore", "build", "sln"], [args[0] for args in self.commands()])
+
+    def test_platform_additional_paths_fail_before_sdk_or_product(self):
+        for value in ("null", "{}", "[true]", '["../outside.csproj"]', '["missing.csproj"]',
+                      '["global.json"]', '["test/Z.Tests/Z.Tests.csproj","test/Z.Tests/Z.Tests.csproj"]'):
+            with self.subTest(value=value):
+                self.external.clear()
+                result = self.invoke(inputs=dict(self.inputs, **{"additional-test-projects": value}))
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertEqual(1, len(self.external))
+                self.assertEqual([], self.commands())
+
+    def test_platform_additional_restore_failure_stops_before_its_build(self):
+        project = "test/Outside/Extra.Tests.csproj"
+        path = self.root / project
+        path.parent.mkdir(parents=True)
+        path.write_text("<Project />")
+        self.fixture.data["projects"][project] = True
+        self.fixture.data["outside_solution"] = [project]
+        executable = self.fixture.bin / "dotnet"
+        executable.write_text(executable.read_text().replace('command=args[0]',
+            'command=args[0]\nif command=="restore" and args[1].endswith("Extra.Tests.csproj"): sys.exit(29)'))
+        result = self.invoke(inputs=dict(self.inputs, **{"additional-test-projects": json.dumps([project])}))
+        self.assertEqual(29, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["restore", "build", "sln", "restore"], [args[0] for args in self.commands()])
+
     def test_macos_unsafe_paths_fail_before_sdk_or_build(self):
         result = self.invoke("macOS", inputs=dict(self.inputs, solution="../outside.slnx"))
         self.assertNotEqual(0, result.returncode)
@@ -411,6 +462,21 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
         self.assertFalse(any(args[0] == "test" for args in commands))
         self.assertTrue((self.root / "build-completed").exists())
 
+    def test_linux_composite_forwards_job_name_and_selects_its_environment_setup(self):
+        self.fixture.document.update(registry=True, browsers=True, jobs={"product-check": {
+            "runner": "ubuntu-latest", "setup": {"registry": False, "browsers": False}}})
+        self.environment.pop("REGISTRY_PULL_USERNAME", None)
+        self.environment.pop("REGISTRY_PULL_PASSWORD", None)
+        selected = self.invoke("Linux", inputs={"job-name": "product-check"})
+        self.assertEqual(0, selected.returncode, selected.stdout + selected.stderr)
+        self.assertEqual(["restore", "build"], [args[0] for args in self.commands() if args[0] in ("restore", "build")])
+        defaults = self.invoke("Linux", inputs={})
+        self.assertNotEqual(0, defaults.returncode)
+        self.assertIn("pull-only username and password", defaults.stderr)
+        unknown = self.invoke("Linux", inputs={"job-name": "not-enabled"})
+        self.assertNotEqual(0, unknown.returncode)
+        self.assertIn("custom job is not enabled", unknown.stderr)
+
     def test_linux_prefixed_nested_module_uses_its_sdk_cwd_and_environment(self):
         prefix = "Samples/A sample"
         module = self.root / prefix
@@ -426,9 +492,11 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
         shutil.copy(self.root / "global.json", module / "global.json")
         # `dotnet sln list` reports paths relative to the nested solution,
         # while project evaluation and product commands run in the SDK directory.
+        listing = 'print("\\n".join(project for project in data["projects"] if project not in data.get("outside_solution", [])))'
+        self.assertIn(listing, FIXTURE.FAKE_DOTNET)
         (self.fixture.bin / "dotnet").write_text(f"#!{sys.executable}\n" + FIXTURE.FAKE_DOTNET.replace(
-            'print("\\n".join(data["projects"]))',
-            'print("\\n".join(os.path.relpath(root / project, root / "solutions/nested") for project in data["projects"]))'))
+            listing,
+            'print("\\n".join(os.path.relpath(root / project, root / "solutions/nested") for project in data["projects"] if project not in data.get("outside_solution", [])))'))
         for project in self.fixture.data["projects"]:
             target = module / project
             target.parent.mkdir(parents=True, exist_ok=True)

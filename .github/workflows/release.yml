@@ -23,6 +23,14 @@ on:
         description: Test-only Builds sample delivered-layout fixture, paired with module-root.
         type: string
         default: ''
+      release-timeout-minutes:
+        description: Maximum audited release build duration.
+        type: number
+        default: 45
+      nightly-timeout-minutes:
+        description: Maximum independently prepared nightly hook duration.
+        type: number
+        default: 45
     secrets:
       registry-pull-username:
         description: Dedicated pull-only registry identity for enabled setup or complete-mode image existence checks.
@@ -142,7 +150,7 @@ jobs:
     needs: resolve
     if: ${{ !cancelled() && needs.resolve.outputs.config-valid == 'true' && needs.resolve.outputs.nightly-hook == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: ${{ inputs.nightly-timeout-minutes }}
     permissions:
       contents: read
     steps:
@@ -194,7 +202,7 @@ jobs:
           needs.version.result == 'success' && needs.version.outputs.no-version == 'false' &&
           needs.version.outputs.version != '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: ${{ inputs.release-timeout-minutes }}
     permissions:
       contents: read
     outputs:

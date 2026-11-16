@@ -1,0 +1,25 @@
+name: Stage isolated qualification tools
+description: Verify and stage exact official archives or executables without initializing services.
+inputs:
+  manifest:
+    description: Module-relative hexalith.qualification-tools.v1 JSON manifest of official immutable assets.
+    required: true
+outputs:
+  directory:
+    description: Fresh private job directory containing only verified files and the receipt.
+    value: ${{ steps.stage.outputs.directory }}
+  receipt:
+    description: Integrity receipt; installation never establishes runtime qualification.
+    value: ${{ steps.stage.outputs.receipt }}
+  files:
+    description: JSON mapping of configured artifact names to their verified absolute paths.
+    value: ${{ steps.stage.outputs.files }}
+runs:
+  using: composite
+  steps:
+    - name: Stage and authenticate selected official artifacts
+      id: stage
+      shell: bash
+      env:
+        QUALIFICATION_TOOL_MANIFEST: ${{ inputs.manifest }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/qualification_tools.py" --manifest "$QUALIFICATION_TOOL_MANIFEST"

@@ -124,6 +124,105 @@
         "failSkips": {
           "type": "boolean",
           "default": false
+        },
+        "additional": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/projectPath"
+          }
+        },
+        "reports": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "trx": {
+              "type": "boolean"
+            },
+            "coverage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "projects"
+              ],
+              "properties": {
+                "projects": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/$defs/projectPath"
+                  }
+                },
+                "lineScope": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/$defs/sourcePrefix"
+                  }
+                },
+                "minimumLine": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "lineComparison": {
+                  "enum": [
+                    "greater-than",
+                    "at-least"
+                  ]
+                },
+                "branchTargets": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/$defs/repositoryPath"
+                  }
+                },
+                "minimumBranch": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "minimumLine"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "lineScope"
+                    ],
+                    "properties": {
+                      "lineScope": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "required": [
+                      "minimumBranch"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "branchTargets"
+                    ],
+                    "properties": {
+                      "branchTargets": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
         }
       },
       "default": {
@@ -165,25 +264,6 @@
         ]
       },
       "additionalProperties": {
-        "type": "object",
-        "required": [
-          "runner"
-        ],
-        "properties": {
-          "runner": {
-            "anyOf": [
-              {
-                "enum": [
-                  "windows-latest",
-                  "macos-latest"
-                ]
-              },
-              {
-                "$ref": "#/$defs/privateQualificationRunner"
-              }
-            ]
-          }
-        },
         "oneOf": [
           {
             "type": "object",
@@ -193,36 +273,267 @@
             ],
             "properties": {
               "runner": {
-                "enum": [
-                  "windows-latest",
-                  "macos-latest"
+                "oneOf": [
+                  {
+                    "enum": [
+                      "ubuntu-latest",
+                      "ubuntu-24.04",
+                      "windows-latest",
+                      "macos-latest"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "group",
+                      "labels"
+                    ],
+                    "properties": {
+                      "group": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}(?![\\s\\S])"
+                      },
+                      "labels": {
+                        "const": [
+                          "self-hosted",
+                          "linux",
+                          "x64"
+                        ]
+                      }
+                    }
+                  }
                 ]
+              },
+              "timeoutMinutes": {
+                "$ref": "#/$defs/minutes"
+              },
+              "trigger": {
+                "enum": [
+                  "ci",
+                  "nightly",
+                  "manual"
+                ]
+              },
+              "matrix": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "include"
+                ],
+                "properties": {
+                  "include": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 64,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "propertyNames": {
+                        "$ref": "#/$defs/actionName"
+                      },
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/actionName"
+                        }
+                      },
+                      "additionalProperties": {
+                        "$ref": "#/$defs/safeText"
+                      }
+                    }
+                  }
+                }
+              },
+              "maxParallel": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64
+              },
+              "needs": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "#/$defs/actionName"
+                }
+              },
+              "runAfterFailure": {
+                "type": "boolean"
+              },
+              "resourceProfile": {
+                "const": "mutation"
+              },
+              "environment": {
+                "$ref": "#/$defs/actionName"
+              },
+              "secrets": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^(?!(?:GITHUB_|ACTIONS_|RUNNER_|CI_|PYTHON|NODE_|DOTNET_))(?!(?:PATH|HOME|TMPDIR|TMP|TEMP|BASH_ENV|ENV|LD_PRELOAD|LD_LIBRARY_PATH|SHELLOPTS|BASHOPTS|HEXALITH_JOB_NAME|HEXALITH_JOB_PARAMETERS|HEXALITH_JOB_NEEDS|HEXALITH_QUALIFICATION_PARAMETERS|HEXALITH_AUTHORITY_SHA256|HEXALITH_SOURCE_SHA)(?![\\s\\S]))[A-Z][A-Z0-9_]*(?![\\s\\S])"
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9_]*(?![\\s\\S])"
+                }
+              },
+              "setup": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "dapr": {
+                    "type": "boolean"
+                  },
+                  "browsers": {
+                    "type": "boolean"
+                  },
+                  "registry": {
+                    "type": "boolean"
+                  },
+                  "aspire": {
+                    "type": "boolean",
+                    "description": "Enable the trusted Linux amd64 native Aspire toolchain. Omission preserves the existing disabled behavior. Requires dapr=true."
+                  },
+                  "npmWorkspaces": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "$ref": "#/$defs/repositoryPath"
+                    },
+                    "description": "Repository-relative npm workspace directories with committed package.json and package-lock.json. Prepared once without lifecycle scripts."
+                  },
+                  "dotnetTools": {
+                    "type": "boolean",
+                    "description": "Restore the module-owned exact-version .config/dotnet-tools.json through the trusted Builds NuGet configuration."
+                  },
+                  "prerequisites": {
+                    "$ref": "#/$defs/prerequisites"
+                  }
+                }
+              },
+              "preparation": {
+                "const": "build-only"
               }
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "runner": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "runner"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "environment",
+                    "trigger"
+                  ],
+                  "properties": {
+                    "trigger": {
+                      "const": "manual"
+                    },
+                    "timeoutMinutes": {
+                      "maximum": 180
+                    }
+                  },
+                  "not": {
+                    "required": [
+                      "setup"
+                    ]
+                  }
+                }
+              },
+              {
+                "if": {
+                  "required": [
+                    "secrets"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "environment",
+                    "trigger"
+                  ],
+                  "properties": {
+                    "trigger": {
+                      "const": "manual"
+                    },
+                    "runner": {
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "required": [
+                    "preparation"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "runner",
+                    "trigger",
+                    "secrets"
+                  ],
+                  "properties": {
+                    "runner": {
+                      "type": "object"
+                    },
+                    "trigger": {
+                      "const": "manual"
+                    },
+                    "secrets": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            ]
           },
           {
             "$ref": "#/$defs/manualQualificationJob"
           }
-        ]
+        ],
+        "type": "object",
+        "required": [
+          "runner"
+        ],
+        "properties": {
+          "runner": {
+            "type": [
+              "string",
+              "object"
+            ]
+          }
+        }
       },
       "default": {},
-      "properties": {
-        "none": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "runner"
-          ],
+      "maxProperties": 64,
+      "allOf": [
+        {
           "properties": {
-            "runner": {
-              "enum": [
-                "windows-latest",
-                "macos-latest"
-              ]
+            "none": {
+              "not": {
+                "required": [
+                  "trigger"
+                ],
+                "properties": {
+                  "trigger": {
+                    "const": "manual"
+                  }
+                }
+              }
             }
           }
         }
-      }
+      ]
     },
     "submodules": {
       "type": "array",
@@ -253,6 +564,15 @@
       "type": "boolean",
       "default": false,
       "description": "Restore the module-owned exact-version .config/dotnet-tools.json through the trusted Builds NuGet configuration."
+    },
+    "prerequisites": {
+      "$ref": "#/$defs/prerequisites"
+    },
+    "releaseTimeoutMinutes": {
+      "$ref": "#/$defs/minutes"
+    },
+    "nightlyTimeoutMinutes": {
+      "$ref": "#/$defs/minutes"
     },
     "moduleManifest": {
       "anyOf": [
@@ -349,6 +669,9 @@
           "dotnetTools": {
             "const": false
           },
+          "prerequisites": {
+            "const": {}
+          },
           "moduleManifest": {
             "const": null
           },
@@ -397,6 +720,52 @@
     "actionName": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])"
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 360
+    },
+    "safeText": {
+      "type": "string",
+      "maxLength": 4096,
+      "pattern": "^(?![\\s\\S]*[\\u0000-\\u001f\\u007f-\\u009f])(?![\\s\\S]*\\$\\{\\{)[\\s\\S]*(?![\\s\\S])"
+    },
+    "prerequisites": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nodeVersion": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
+        },
+        "npmVersion": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
+        },
+        "apt": {
+          "type": "boolean"
+        },
+        "tlsTrust": {
+          "type": "boolean"
+        },
+        "daprProfile": {
+          "const": "catalog"
+        }
+      },
+      "dependentRequired": {
+        "nodeVersion": [
+          "npmVersion"
+        ],
+        "npmVersion": [
+          "nodeVersion"
+        ]
+      }
+    },
+    "sourcePrefix": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?![\\s\\S]*\\\\)(?![\\s\\S]*//)(?![\\s\\S]*(?:^|/)\\.{1,2}(?:/|(?![\\s\\S])))(?![\\s\\S]*[\\u0000-\\u001f\\u007f-\\u009f])(?![\\s\\S]*\\$\\{\\{)[\\s\\S]+(?![\\s\\S])"
     },
     "jsonPath": {
       "allOf": [
@@ -494,7 +863,7 @@
           "uniqueItems": true,
           "items": {
             "type": "string",
-            "pattern": "^(?!(?:GITHUB_|ACTIONS_|RUNNER_))[A-Z_][A-Z0-9_]*(?![\\s\\S])"
+            "pattern": "^(?!(?:HEXALITH_JOB_NAME|HEXALITH_JOB_PARAMETERS|HEXALITH_JOB_NEEDS|HEXALITH_QUALIFICATION_PARAMETERS|HEXALITH_AUTHORITY_SHA256|HEXALITH_SOURCE_SHA)(?![\\s\\S]))(?!(?:GITHUB_|ACTIONS_|RUNNER_))[A-Z_][A-Z0-9_]*(?![\\s\\S])"
           }
         },
         "preparation": {
@@ -511,6 +880,20 @@
     "resourceName": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?![\\s\\S])"
+    }
+  },
+  "x-resource-profiles": {
+    "mutation": {
+      "container": {
+        "image": "mcr.microsoft.com/dotnet/sdk@sha256:7913685c883a29dd8ba79da96172f5c6b29ed9be706ebe95935e3ef45f19c9c1",
+        "options": "--cpus=4 --memory=10g --memory-swap=10g"
+      },
+      "env": {
+        "DOTNET_PROCESSOR_COUNT": "2",
+        "MSBUILDDISABLENODEREUSE": "1",
+        "DOTNET_CLI_USE_MSBUILD_SERVER": "0",
+        "UseSharedCompilation": "false"
+      }
     }
   }
 }

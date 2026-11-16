@@ -166,6 +166,8 @@ os.execv(sys.executable, [sys.executable, *args])
         expression = expression.strip()
         if expression.startswith("${{") and expression.endswith("}}"):
             expression = expression[3:-2].strip()
+        if expression == "always()":
+            return True
         if " || " in expression:
             return any(self.enabled(part, context) for part in expression.split(" || "))
         if " && " in expression:
@@ -199,7 +201,8 @@ os.execv(sys.executable, [sys.executable, *args])
                     self.external_calls.append((reference, inputs, dict(env)))
                     if reference.startswith("actions/setup-node@"):
                         assert reference == "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1", reference
-                        assert inputs.get("node-version") == "24", inputs
+                        assert inputs.get("node-version") == "24" or re.fullmatch(
+                            r"[0-9]+\.[0-9]+\.[0-9]+", inputs.get("node-version", "")), inputs
                         assert inputs.get("package-manager-cache") == "False" or inputs.get("package-manager-cache") == "false", inputs
                         assert not inputs.get("cache"), inputs
                     if self.external_action:
@@ -323,6 +326,9 @@ name=pathlib.Path(sys.argv[0]).name
 args=sys.argv[1:]
 if name=="node" and args==["--version"]:
     print(os.environ.get("PREPARE_NODE_VERSION", "v24.11.0"))
+    sys.exit(0)
+if name=="npm" and args==["--version"]:
+    print(os.environ.get("PREPARE_NPM_VERSION", "11.6.0"))
     sys.exit(0)
 with (root / "effects.jsonl").open("a") as stream:
     stream.write(json.dumps([name,args,str(pathlib.Path.cwd())])+"\n")
@@ -572,6 +578,40 @@ else:
         effects = [json.loads(line) for line in self.effects.read_text().splitlines()]
         self.assertEqual([["pwsh", ["-NoLogo", "-NoProfile", "-File", str(first), "install", "--with-deps"], ""]], effects)
         self.assertFalse(any(command[0] in ("restore", "build", "test") for command in self.fixture.commands()))
+
+    def test_environment_action_installs_tooling_from_additional_project_outside_solution(self):
+        project = "outside/Payload.Tests.csproj"
+        self.fixture.data["projects"][project] = True
+        self.fixture.data["outside_solution"] = [project]
+        source = self.root / project
+        source.parent.mkdir()
+        source.write_text("<Project />")
+        tooling = self.built_playwright(project=project)
+        (self.root / "build-completed").write_text("Release")
+        self.save_fixture()
+        harness = CompositeHarness(self.root, self.fixture.environment)
+        result = harness.run_action(ROOT / "Github/ci-environment", {
+            "solution": "Fixture.slnx", "browsers": "true", "additional-projects": json.dumps([project])})
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        effects = [json.loads(line) for line in self.effects.read_text().splitlines()]
+        self.assertEqual([["pwsh", ["-NoLogo", "-NoProfile", "-File", str(tooling), "install", "--with-deps"], ""]], effects)
+        evaluated = [args[2] for args in self.fixture.commands() if args[:2] == ["msbuild", project]]
+        self.assertTrue(evaluated, "the additional project's built outputs were not evaluated")
+
+    def test_unsafe_additional_browser_projects_fail_before_evaluation_or_tool_installation(self):
+        project = "test/Z.Tests/Z.Tests.csproj"
+        (self.root / "linked").symlink_to(self.root / "test/Z.Tests", target_is_directory=True)
+        self.save_fixture()
+        for paths in ([project, project], ["../escape.csproj"], ["/absolute.csproj"], ["missing.csproj"],
+                      ["linked/Z.Tests.csproj"], [project + "\n"], [1], {}, "project.csproj"):
+            with self.subTest(paths=paths):
+                harness = CompositeHarness(self.root, self.fixture.environment)
+                result = harness.run_action(ROOT / "Github/ci-environment", {
+                    "solution": "Fixture.slnx", "browsers": "true", "additional-projects": json.dumps(paths)})
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertFalse(self.effects.exists())
+                self.assertEqual([], self.fixture.commands())
 
     def test_distinct_browser_versions_and_cross_targeted_repeated_outputs_install_once(self):
         first = self.built_playwright(version="1.60.0")

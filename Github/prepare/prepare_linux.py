@@ -4,15 +4,28 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import os
 from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 from ci_config import ConfigError
-from ci_pipeline import (PipelineError, classified_projects, initialize_submodules,
+from ci_pipeline import (PipelineError, PreparedConfig, classified_projects, initialize_submodules,
                          preparation_environment, prepare_config, restore_and_build,
                          validate_qualification_request, write_outputs, write_stage_outputs)
+
+
+def environment_config(prepared: PreparedConfig, job_name: str) -> PreparedConfig:
+    """Select enabled per-job setup without changing discovery or test ownership."""
+    if not job_name:
+        return prepared
+    jobs = prepared.document["jobs"]
+    if job_name not in jobs:
+        raise PipelineError("custom job is not enabled by the delivered CI configuration")
+    document = dict(prepared.document)
+    document.update(jobs[job_name].get("setup", {}))
+    return replace(prepared, document=document)
 
 
 def main() -> int:
@@ -31,6 +44,8 @@ def main() -> int:
             return 0
         prepared = prepare_config(Path(os.environ.get("GITHUB_WORKSPACE", ".")),
                                   repository=repository, module_root=module_root)
+        job_name = os.environ.get("CI_CUSTOM_JOB", "")
+        environment = environment_config(prepared, job_name)
         if args.phase == "prepare":
             initialize_submodules(prepared)
             write_outputs(prepared, repository=repository)
@@ -40,7 +55,8 @@ def main() -> int:
                 ensure_for_job(prepared, repository=repository)
             restore_and_build(prepared)
             classified = classified_projects(prepared, repository=repository, module_root=module_root)
-            write_stage_outputs(prepared, classified)
+            infer_browsers = not (job_name and "browsers" in prepared.document["jobs"][job_name].get("setup", {}))
+            write_stage_outputs(environment, classified, infer_browsers=infer_browsers)
         return 0
     except ConfigError as error:
         print(error, file=sys.stderr)
