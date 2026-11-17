@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import http.client
+import hashlib
 import io
 import json
 import os
@@ -17,6 +18,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from oci_archive import inspect_archive
@@ -26,9 +28,68 @@ from release_draft import (DIGEST, MARKERS, MAX_ARCHIVE, MAX_JSON, RESERVED, Dra
                            package_identity, strict_json, workflows_match)
 from release_outcome import outcome_document, validate_outcome, write_document
 from release_state import Git, ReleaseError, SHA, STABLE, outputs
+import package_publication as publication
 
 
 class PublishApi(DraftApi):
+    def upload_publication(self, identity, data):
+        """Upload once; an existing/conflicting asset is never deleted or replaced."""
+        deadline = self.clock() + 120
+        def request():
+            path = f"/repos/{self.repository}/releases/{identity}/assets?name={publication.ASSET_NAME}"
+            url = self._url(path, deadline)
+            if self.base_url == "https://api.github.com":
+                url = "https://uploads.github.com" + path
+            headers = {"Authorization": "Bearer " + self.token, "Accept": "application/vnd.github+json",
+                       "Content-Type": "application/json", "X-GitHub-Api-Version": "2022-11-28"}
+            try:
+                with self.opener.open(urllib.request.Request(url, method="POST", data=data, headers=headers), timeout=60) as response:
+                    if response.status != 201:
+                        raise ReleaseError("GitHub publication asset upload did not return HTTP 201")
+                    return strict_json(limited_read(response, MAX_JSON))
+            except urllib.error.HTTPError as error:
+                with error:
+                    raise ReleaseError(f"GitHub publication asset upload returned HTTP {error.code}") from error
+            except (OSError, http.client.HTTPException) as error:
+                raise ReleaseError("GitHub publication asset upload transport failed") from error
+        return bounded(request, deadline=deadline, clock=self.clock)
+
+    def publication_bytes(self, identity):
+        """Read actual asset bytes, keeping credentials off download redirects."""
+        deadline = self.clock() + 120
+        def request():
+            url = self._url(f"/repos/{self.repository}/releases/assets/{identity}", deadline)
+            headers = {"Authorization": "Bearer " + self.token, "Accept": "application/octet-stream",
+                       "X-GitHub-Api-Version": "2022-11-28"}
+            try:
+                with self.opener.open(urllib.request.Request(url, headers=headers), timeout=60) as response:
+                    if response.status != 200:
+                        raise ReleaseError("GitHub publication asset read did not return HTTP 200")
+                    return limited_read(response, publication.MAX_DOCUMENT)
+            except urllib.error.HTTPError as error:
+                with error:
+                    if error.code != 302:
+                        raise ReleaseError(f"GitHub publication asset read returned HTTP {error.code}") from error
+                    location = error.headers.get("Location", "")
+            except (OSError, http.client.HTTPException) as error:
+                raise ReleaseError("GitHub publication asset transport failed") from error
+            parsed = urllib.parse.urlsplit(location)
+            if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
+                raise ReleaseError("publication asset redirect must use uncredentialed HTTPS")
+            try:
+                # A fresh opener has no credentials and refuses a second redirect.
+                from release_state import NoRedirect
+                with urllib.request.build_opener(NoRedirect()).open(location, timeout=60) as response:
+                    if response.status != 200:
+                        raise ReleaseError("publication asset download did not return HTTP 200")
+                    return limited_read(response, publication.MAX_DOCUMENT)
+            except urllib.error.HTTPError as error:
+                with error:
+                    raise ReleaseError(f"publication asset download returned HTTP {error.code}") from error
+            except (OSError, http.client.HTTPException) as error:
+                raise ReleaseError("publication asset download transport failed") from error
+        return bounded(request, deadline=deadline, clock=self.clock)
+
     def publish_draft(self, identity, document):
         deadline = self.clock() + 120
         def request():
@@ -177,6 +238,21 @@ def authenticate(git, api, values, directory, workflow_ref, *, registry=Registry
         values["package-policies"] = policies
     else:
         values.pop("package-policies", None)
+    values["repository"] = api.repository
+    values["package-payloads"] = {}
+    for name, data in files.items():
+        if name.startswith("packages/"):
+            # IDs are authoritative manifest inventory entries, not guessed file names.
+            matches = []
+            for identity in values["inventory"]["packages"]:
+                try:
+                    package_identity(data, package_id=identity, version=values["version"], sha=values["sha"])
+                except ReleaseError:
+                    continue
+                matches.append(identity)
+            if len(matches) != 1:
+                raise ReleaseError("original package payload identity is ambiguous")
+            values["package-payloads"][matches[0]] = publication.payload_map(data)
     live = api.get(f"/repos/{api.repository}/releases/{values['draft-id']}", deadline=api.clock() + 120)
     validate_release(live, values, draft=True)
     values["body"] = live["body"]
@@ -247,7 +323,11 @@ def verify_packages(values, *, open_url=urllib.request.urlopen, clock=time.monot
     """
     if type(attempts) is not int or attempts < 1 or interval < 0:
         raise ReleaseError("invalid NuGet verification retry bounds")
+    values.pop("package-publication", None)
     pending = set(values["inventory"]["packages"])
+    if set(values["package-payloads"]) != pending:
+        raise ReleaseError("original package payload inventory mismatch")
+    records = []
     deadline = clock() + 1800
     for attempt in range(attempts):
         for package_id in sorted(pending):
@@ -277,9 +357,17 @@ def verify_packages(values, *, open_url=urllib.request.urlopen, clock=time.monot
                     verify_signature(data, run=run)
                 except ValueError as error:
                     raise ReleaseError(str(error)) from error
+            try:
+                records.append(publication.record(package_id, data, values["package-payloads"][package_id]))
+            except publication.PublicationError as error:
+                raise ReleaseError(str(error)) from error
             pending.remove(package_id)
             print(f"Verified NuGet package {package_id} {version}", flush=True)
         if not pending:
+            values["package-publication"] = publication.validate({"schema": publication.SCHEMA,
+                "repository": values["repository"], "sha": values["sha"], "version": values["version"],
+                "artifactRun": positive(values["artifact-run"]), "artifactId": positive(values["artifact-id"]),
+                "artifactDigest": values["artifact-digest"], "packages": sorted(records, key=lambda item: item["id"])})
             return
         if attempt + 1 < attempts:
             remaining = deadline - clock()
@@ -289,12 +377,42 @@ def verify_packages(values, *, open_url=urllib.request.urlopen, clock=time.monot
     raise ReleaseError("NuGet publication incomplete: " + ", ".join(sorted(pending)))
 
 
+def ensure_package_publication(api, values):
+    """Authenticate an exact replay or upload and read back the immutable public bytes."""
+    try:
+        data = publication.serialize(values["package-publication"])
+        document = publication.read(data)
+    except (KeyError, publication.PublicationError) as error:
+        raise ReleaseError("verified package publication is unavailable") from error
+    expected = {"repository": api.repository, "sha": values["sha"], "version": values["version"],
+                "artifactRun": positive(values["artifact-run"]), "artifactId": positive(values["artifact-id"]),
+                "artifactDigest": values["artifact-digest"]}
+    if any(document[key] != value for key, value in expected.items()) or [item["id"] for item in document["packages"]] != values["inventory"]["packages"]:
+        raise ReleaseError("verified package publication identity/closure mismatch")
+    assets = list(api.pages(f"/repos/{api.repository}/releases/{values['draft-id']}/assets?per_page=100",
+                           deadline=api.clock() + 120))
+    matches = [item for item in assets if item.get("name") == publication.ASSET_NAME]
+    if len(matches) > 1:
+        raise ReleaseError("duplicate public package publication asset")
+    asset = matches[0] if matches else api.upload_publication(positive(values["draft-id"]), data)
+    if (not isinstance(asset, dict) or type(asset.get("id")) is not int or asset["id"] < 1
+            or asset.get("name") != publication.ASSET_NAME or asset.get("state") != "uploaded"
+            or type(asset.get("size")) is not int or asset["size"] != len(data)
+            or asset.get("digest") != "sha256:" + hashlib.sha256(data).hexdigest()):
+        raise ReleaseError("public package publication asset metadata mismatch")
+    observed = api.publication_bytes(asset["id"])
+    if observed != data:
+        raise ReleaseError("public package publication asset conflict")
+    publication.read(observed)
+
+
 def finalize_release(git, api, values, *, refresh=workflows_match):
     equal = refresh(git, api.repository, values["sha"])
     validate_source(git, values)
     live = api.get(f"/repos/{api.repository}/releases/{values['draft-id']}", deadline=api.clock() + 120)
     validate_release(live, values, draft=True, body=values["body"])
     version_tag(api, values)
+    ensure_package_publication(api, values)
     if not equal:
         document = outcome_document(values["sha"], "failed", values["version"])
         document.update(outcome="ready", draftId=positive(values["draft-id"]), lastTag=values["last-tag"])

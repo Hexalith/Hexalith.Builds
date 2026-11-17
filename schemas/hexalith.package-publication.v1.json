@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.com/schemas/hexalith.package-publication.v1.json",
+  "title": "Hexalith package publication v1",
+  "description": "Original artifact identity and signed feed archives; payload maps exclude only .signature.p7s. Readers also enforce sorted case-insensitively unique package IDs and safe unique ZIP paths, and a 2 MiB document bound.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "repository", "sha", "version", "artifactRun", "artifactId", "artifactDigest", "packages"],
+  "properties": {
+    "schema": {"const": "hexalith.package-publication.v1"},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?![\\s\\S])"},
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}(?![\\s\\S])"},
+    "version": {"type": "string", "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"},
+    "artifactRun": {"type": "integer", "minimum": 1},
+    "artifactId": {"type": "integer", "minimum": 1},
+    "artifactDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}(?![\\s\\S])"},
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "archiveSha256", "files"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(?![\\s\\S])"},
+          "archiveSha256": {"type": "string", "pattern": "^[0-9a-f]{64}(?![\\s\\S])"},
+          "files": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {"pattern": "^(?!\\.signature\\.p7s$)(?!.*[\\\\:\\u0000-\\u001f\\u007f-\\u009f])(?!(?:.*\/)?\\.\\.?(?:\/|$))[^/]+(?:/[^/]+)*(?![\\s\\S])"},
+            "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}(?![\\s\\S])"}
+          }
+        }
+      }
+    }
+  }
+}
