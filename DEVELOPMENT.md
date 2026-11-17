@@ -92,7 +92,7 @@ non-admitted identities under Debug and Release in the blocking catalog lane.
 No consumer-local PackageVersion or VersionOverride is authorized.
 
 Authorization and SignalR advance with the host's ASP.NET Core runtime, removing
-the mixed-major ABI constraints. OpenApi 3.11.0 and Swashbuckle 11.0.0 align with
+the mixed-major ABI constraints. OpenApi 3.11.1 and Swashbuckle 11.0.1 align with
 ASP.NET Core OpenApi 11. Retain the Dapr hosting integration required by the
 published EventStore package. Package migration evidence and remaining holds
 are recorded in `docs/dotnet-11-migration.md`.

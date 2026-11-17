@@ -486,7 +486,7 @@ public sealed class CompositionCatalogPackageViewTests
         platform.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe").ShouldBe("5.2.0");
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe").ShouldBe("11.0.0");
-        options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.0");
+        options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.1");
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("10.0.15");
         options.CatalogPackageVersion("Microsoft.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("2.13.0");
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
@@ -511,14 +511,14 @@ public sealed class CompositionCatalogPackageViewTests
     /// <param name="openApi">The consumer's compatible OpenAPI ABI selection.</param>
     /// <returns>The materialized host-view version assertion.</returns>
     [Theory]
-    [InlineData("Hexalith.Platform.EventStoreHost", "4.0.4", "11.0.0", "3.11.0")]
-    [InlineData("Hexalith.Platform.EventStoreHost", "4.1.0", "11.0.0", "3.11.0")]
+    [InlineData("Hexalith.Platform.EventStoreHost", "4.0.4", "11.0.0", "3.11.1")]
+    [InlineData("Hexalith.Platform.EventStoreHost", "4.1.0", "11.0.0", "3.11.1")]
     [InlineData("Hexalith.Platform.EventStoreHost", "4.2.0", "10.0.15", "2.13.0")]
-    [InlineData("Hexalith.Platform.EventStoreHost", "5.1.0", "11.0.0", "3.11.0")]
-    [InlineData("Hexalith.Parties", "4.0.4", "11.0.0", "3.11.0")]
-    [InlineData("Hexalith.Parties", "4.1.0", "11.0.0", "3.11.0")]
+    [InlineData("Hexalith.Platform.EventStoreHost", "5.1.0", "11.0.0", "3.11.1")]
+    [InlineData("Hexalith.Parties", "4.0.4", "11.0.0", "3.11.1")]
+    [InlineData("Hexalith.Parties", "4.1.0", "11.0.0", "3.11.1")]
     [InlineData("Hexalith.Parties", "4.2.0", "10.0.15", "2.13.0")]
-    [InlineData("Hexalith.Parties", "5.1.0", "11.0.0", "3.11.0")]
+    [InlineData("Hexalith.Parties", "5.1.0", "11.0.0", "3.11.1")]
     public async Task OwningHostViewPreservesExplicitHistoricalSdkSelectionAsync(string consumer, string selected, string aspNetOpenApi, string openApi)
     {
         string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -547,7 +547,7 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe", consumer).ShouldBe(aspNetOpenApi);
         options.CatalogPackageVersion("Microsoft.OpenApi", "probe", consumer).ShouldBe(openApi);
         options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe").ShouldBe("11.0.0");
-        options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.0");
+        options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.1");
     }
 
     /// <summary>Retains an explicit Memories selection in both exact SDK4.2 owner views.</summary>

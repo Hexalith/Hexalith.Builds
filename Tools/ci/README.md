@@ -120,7 +120,7 @@ exit status is preserved.
 ## Builds repository checks
 
 Run from the Builds repository root on Linux x86_64 with Python 3.12 or later,
-the .NET SDK from `global.json`, Node 24 or later, PowerShell 7.6 or later
+the .NET SDK from `global.json`, Node 26.13 or later, PowerShell 7.6 or later
 (`pwsh` on `PATH`), and the locked npm tools. The shared Python suite launches
 PowerShell unconditionally for composite and tooling contract tests.
 
@@ -627,7 +627,7 @@ literal text matching can report false positives and obfuscation remains outside
 this lint's scope. Release's existing real NuGet audit remains authoritative.
 
 The guard installs only its action-sourced exact CLI/preset 21.2.4 and js-yaml
-4.3.2 manifests/lock in a private temporary directory after ownership succeeds,
+5.5.0 manifests/lock in a private temporary directory after ownership succeeds,
 using `npm ci --ignore-scripts` followed by `npm audit signatures`. Parser and
 commitlint share that installation. A sanitized process environment and explicit
 action-sourced `--config` prevent module npm configuration, hooks, plugins or

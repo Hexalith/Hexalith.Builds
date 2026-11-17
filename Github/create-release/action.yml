@@ -13,12 +13,12 @@ runs:
   using: "composite"
   steps:
     - name: Setup Node.js
-      uses: actions/setup-node@v7.1.0
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         # Pin the major line: 'node' (latest) would silently jump majors on a
-        # publication path. 24 is Active LTS, satisfies semantic-release 25's
-        # >=24.10.0, and ships the npm 11 that package-lock.json was built with.
-        node-version: '24'
+        # publication path. 26 is Active LTS, satisfies semantic-release 26's
+        # >=26.13.0, and ships the npm 11 that package-lock.json was built with.
+        node-version: '26.13.1'
 
     - name: Install semantic-release dependencies
       shell: bash

@@ -1,13 +1,16 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "10d331dbccbb56948e1ce49999a7528f0cbee8c8",
+  "generatedFromRevision": "b371ea484d51f647f204af105ff2be00ca018396",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "58739467f142c54d5afc95bb59b2ad19bf60338883988e9f4a7c8089f4559307",
-  "catalogRawSha256": "9ba3a73743716b5351840e333ea455db588c075182450369b1f32b0a2e96f267",
+  "catalogSha256": "69cc541dbc99d584a9d2b83a3e1d9d3ee62933154645b62d50ac982d302775ef",
+  "catalogRawSha256": "aa423407a51ca2ee6507c49c94effd9c3b2da144d24158a1223dd863550d22a4",
   "snapshot": {
-    "mode": "complete",
-    "auditedAtUtc": "2026-11-16T20:54:02.4393599+00:00",
+    "mode": "incremental",
+    "auditedAtUtc": "2026-11-17T00:17:08.8515462+00:00",
     "refreshedFamilies": [
+      "package:microsoft.openapi"
+    ],
+    "preservedFamilies": [
       "aspire",
       "bunit-html",
       "dapr",
@@ -105,7 +108,6 @@
       "package:microsoft.graph",
       "package:microsoft.identity.client",
       "package:microsoft.net.test.sdk",
-      "package:microsoft.openapi",
       "package:microsoft.playwright",
       "package:microsoft.semantickernel",
       "package:microsoft.sourcelink.github",
@@ -165,8 +167,7 @@
       "roslyn",
       "verify",
       "xunit"
-    ],
-    "preservedFamilies": []
+    ]
   },
   "sources": [
     {
@@ -181,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "10d331dbccbb56948e1ce49999a7528f0cbee8c8",
+    "repositoryRevision": "b371ea484d51f647f204af105ff2be00ca018396",
     "sha256": "77b418c0957f84356cdc79d7f54df33027d496058d14261eee6e4475f528b0c8",
     "entries": [
       {
@@ -49464,11 +49465,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-16T20:54:02.4393599+00:00",
-        "generatedFromRevision": "10d331dbccbb56948e1ce49999a7528f0cbee8c8",
-        "familySelectionSha256": "928f78fd4112f0a0c8680673bc6fdcc54ddbb71ea82f1785dfabbdc0191a4cf3",
+        "auditedAtUtc": "2026-11-17T00:17:08.8515462+00:00",
+        "generatedFromRevision": "b371ea484d51f647f204af105ff2be00ca018396",
+        "familySelectionSha256": "a65f0540a07e21c4b21b6949c04e4bdd796bb73cc2d21d5156299d9f74e9c1d8",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "c0edfc9b41800748e53d130329ff1c4d7970e49a6f17d15f92df86746b2f1710",
+        "packageMetadataSha256": "0c15dd99ccf1e2e19853da726a8d0b8972f2de5a739d671e160dc47dea1595bc",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -49902,6 +49903,31 @@
             "familySelectionSha256": "7d9e4ddaacbaabebf4f51a9e4d6fca51098dcf1287f61b46eaef3cbcbe4e1e05",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "28cabbf389e7836ce1ea46a3b6a30aec212becc14fe7afba478735b875a9ea11",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-16T20:54:02.4393599+00:00",
+          "generatedFromRevision": "10d331dbccbb56948e1ce49999a7528f0cbee8c8",
+          "family": "package:microsoft.openapi",
+          "disposition": "retained",
+          "rollbackGroup": "package:microsoft.openapi",
+          "packageIds": [
+            "Microsoft.OpenApi"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-11-16T20:54:02.4393599+00:00",
+            "generatedFromRevision": "10d331dbccbb56948e1ce49999a7528f0cbee8c8",
+            "familySelectionSha256": "928f78fd4112f0a0c8680673bc6fdcc54ddbb71ea82f1785dfabbdc0191a4cf3",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "c0edfc9b41800748e53d130329ff1c4d7970e49a6f17d15f92df86746b2f1710",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -258498,22 +258524,22 @@
     },
     {
       "id": "Microsoft.OpenApi",
-      "auditedVersion": "3.11.0",
-      "selectedVersion": "3.11.0",
-      "latestStable": "3.11.0",
+      "auditedVersion": "3.11.1",
+      "selectedVersion": "3.11.1",
+      "latestStable": "3.11.1",
       "latestPrerelease": "2.0.0-preview.31",
       "listingState": "listed",
       "family": "package:microsoft.openapi",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.openapi",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.11.0, prerelease=2.0.0-preview.31",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.11.1, prerelease=2.0.0-preview.31",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.11.0",
+          "latestStable": "3.11.1",
           "latestPrerelease": "2.0.0-preview.31",
           "diagnostic": "Registration metadata resolved."
         }
@@ -259023,6 +259049,42 @@
             "familySelectionSha256": "7d9e4ddaacbaabebf4f51a9e4d6fca51098dcf1287f61b46eaef3cbcbe4e1e05",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "28cabbf389e7836ce1ea46a3b6a30aec212becc14fe7afba478735b875a9ea11",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-16T20:54:02.4393599+00:00",
+          "generatedFromRevision": "10d331dbccbb56948e1ce49999a7528f0cbee8c8",
+          "id": "Microsoft.OpenApi",
+          "auditedVersion": "3.11.0",
+          "selectedVersion": "3.11.0",
+          "latestStable": "3.11.0",
+          "latestPrerelease": "2.0.0-preview.31",
+          "listingState": "listed",
+          "family": "package:microsoft.openapi",
+          "disposition": "retained",
+          "rollbackGroup": "package:microsoft.openapi",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.11.0, prerelease=2.0.0-preview.31",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.11.0",
+              "latestPrerelease": "2.0.0-preview.31",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-16T20:54:02.4393599+00:00",
+            "generatedFromRevision": "10d331dbccbb56948e1ce49999a7528f0cbee8c8",
+            "familySelectionSha256": "928f78fd4112f0a0c8680673bc6fdcc54ddbb71ea82f1785dfabbdc0191a4cf3",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "c0edfc9b41800748e53d130329ff1c4d7970e49a6f17d15f92df86746b2f1710",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."

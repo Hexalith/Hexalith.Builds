@@ -85,7 +85,7 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
         self.assertEqual("5.2.0", versions["Hexalith.EventStore.Gateway"])
         self.assertEqual("3.0.0", versions["Hexalith.McpCli.Abstractions"])
         self.assertEqual("11.0.0", versions["Microsoft.AspNetCore.OpenApi"])
-        self.assertEqual("3.11.0", versions["Microsoft.OpenApi"])
+        self.assertEqual("3.11.1", versions["Microsoft.OpenApi"])
 
     def test_actual_named_source_project_evaluation_uses_the_source_abi(self):
         with tempfile.TemporaryDirectory(prefix="catalog-source-project-") as directory:
@@ -99,7 +99,7 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
                                     check=True, capture_output=True, text=True, timeout=60)
             versions = {item["Identity"]: item["Version"] for item in json.loads(result.stdout)["Items"]["PackageVersion"]}
             self.assertEqual("11.0.0", versions["Microsoft.AspNetCore.OpenApi"])
-            self.assertEqual("3.11.0", versions["Microsoft.OpenApi"])
+            self.assertEqual("3.11.1", versions["Microsoft.OpenApi"])
             self.assertEqual("5.2.0", versions["Hexalith.EventStore.Gateway"])
             self.assertEqual("3.0.0", versions["Hexalith.McpCli.Abstractions"])
 
