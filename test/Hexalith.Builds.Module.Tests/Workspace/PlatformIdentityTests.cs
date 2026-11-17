@@ -23,7 +23,9 @@ public sealed class PlatformIdentityTests
     [Fact]
     public async Task OwnedProducerBumpsMaterializeActualSelectedCatalogAsync()
     {
-        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(toolVersionRange: "[6.0.5,7.0.0-0)").ConfigureAwait(true);
+        // The baseline uses the actual test host; controlled producer calls below select generation 6.
+        const string ownerRange = "[1.0.0,7.0.0-0)";
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(toolVersionRange: ownerRange).ConfigureAwait(true);
         SourceMapping baseline = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string builds = Path.Combine(fixture.Checkout, "references", "Hexalith.Builds");
         string platform = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform");
@@ -37,7 +39,7 @@ public sealed class PlatformIdentityTests
             _ = await WorkspaceGitFixture.RunGitAsync(builds, "add", "Props/Directory.Packages.props").ConfigureAwait(true);
             string source = await CommitAsync(builds, "fix: next synthetic producer").ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(builds, "tag", "v" + version).ConfigureAwait(true);
-            string document = """{"schema":"hexalith.ci.v1","buildsTag":"vVERSION","solution":"Fixture.slnx","dapr":false,"browsers":false,"registry":false,"codeql":[],"tests":{"integration":[],"exclude":{}},"hooks":[],"jobs":{},"submodules":[]}""".Replace("VERSION", version, StringComparison.Ordinal);
+            string document = """{"schema":"hexalith.ci.v1","buildsTag":"vVERSION","solution":"Fixture.slnx","dapr":false,"browsers":false,"registry":false,"codeql":[],"tests":{"integration":[],"exclude":{},"minimumExpectedTests":{},"failSkips":false},"hooks":[],"jobs":{},"submodules":[],"ciTimeoutMinutes":30,"npmWorkspaces":[],"dotnetTools":false}""".Replace("VERSION", version, StringComparison.Ordinal);
             await File.WriteAllTextAsync(config, document, TestContext.Current.CancellationToken).ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", ".github/hexalith-ci.json", "references/Hexalith.Builds").ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "user.name=Workspace Test", "-c", "user.email=workspace@example.invalid", "commit", "-m", "ci: select exact producer").ConfigureAwait(true);
@@ -49,7 +51,7 @@ public sealed class PlatformIdentityTests
             (PlatformIdentity? identity, IReadOnlyList<PlatformIdentityFinding> findings) = await PlatformIdentityResolver.ResolveAsync(fixture.Checkout, ["references/Hexalith.Builds", "references/Hexalith.Platform"], recorded, TestContext.Current.CancellationToken, version + "+" + source).ConfigureAwait(true);
             findings.ShouldBeEmpty();
             identity.ShouldNotBeNull().CatalogCommit.ShouldBe(source);
-            identity.ToolVersionRange.ShouldBe("[6.0.5,7.0.0-0)");
+            identity.ToolVersionRange.ShouldBe(ownerRange);
             string workspace = Path.Combine(fixture.Directory, "owned-" + version);
             await SourceMappingMaterializer.WriteAsync(baseline with { PlatformIdentity = identity, IdentityFindings = findings }, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
             using JsonDocument snapshot = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(workspace, "source-mapping", "catalog-versions.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
@@ -138,7 +140,7 @@ public sealed class PlatformIdentityTests
         _ = await WorkspaceGitFixture.RunGitAsync(builds, "tag", "v6.0.7").ConfigureAwait(true);
         string path = Path.Combine(fixture.Checkout, ".github", "hexalith-ci.json");
         _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        const string content = "{\"schema\":\"hexalith.ci.v1\",\"buildsTag\":\"v6.0.7\",\"solution\":\"Fixture.slnx\",\"dapr\":false,\"browsers\":false,\"registry\":false,\"codeql\":[],\"tests\":{\"integration\":[],\"exclude\":{}},\"hooks\":[],\"jobs\":{},\"submodules\":[]}\n";
+        const string content = "{\"schema\":\"hexalith.ci.v1\",\"buildsTag\":\"v6.0.7\",\"solution\":\"Fixture.slnx\",\"dapr\":false,\"browsers\":false,\"registry\":false,\"codeql\":[],\"tests\":{\"integration\":[],\"exclude\":{},\"minimumExpectedTests\":{},\"failSkips\":false},\"hooks\":[],\"jobs\":{},\"submodules\":[],\"ciTimeoutMinutes\":30,\"npmWorkspaces\":[],\"dotnetTools\":false}\n";
         await File.WriteAllTextAsync(path, content, TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(fixture.Checkout, ".gitattributes"), ".github/hexalith-ci.json text eol=crlf\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", ".gitattributes", ".github/hexalith-ci.json").ConfigureAwait(true);
@@ -205,7 +207,7 @@ public sealed class PlatformIdentityTests
         _ = await WorkspaceGitFixture.RunGitAsync(builds, "tag", "v6.0.7").ConfigureAwait(true);
         string path = Path.Combine(fixture.Checkout, ".github", "hexalith-ci.json");
         _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllTextAsync(path, """{"schema":"hexalith.ci.v1","buildsTag":"v6.0.7","solution":"Fixture.slnx","dapr":false,"browsers":false,"registry":false,"codeql":[],"tests":{"integration":[],"exclude":{}},"hooks":[],"jobs":{},"submodules":[]}""", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(path, """{"schema":"hexalith.ci.v1","buildsTag":"v6.0.7","solution":"Fixture.slnx","dapr":false,"browsers":false,"registry":false,"codeql":[],"tests":{"integration":[],"exclude":{},"minimumExpectedTests":{},"failSkips":false},"hooks":[],"jobs":{},"submodules":[],"ciTimeoutMinutes":30,"npmWorkspaces":[],"dotnetTools":false}""", TestContext.Current.CancellationToken).ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", ".github/hexalith-ci.json").ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "user.name=Workspace Test", "-c", "user.email=workspace@example.invalid", "commit", "-m", "ci: select synthetic owned producer").ConfigureAwait(true);
 
