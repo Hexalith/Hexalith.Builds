@@ -14,46 +14,55 @@ from ci_config import BUILD_VERSIONS, ConfigError
 VARIABLE = "HexalithBuildProjects"
 _MAPPINGS = {}
 _ENVIRONMENTS = {}
+_QUALIFICATION_SCOPES = set()
 # Cases may select catalog versions, never override restore, source, import or
 # audit policy. Global flags remain authoritative; TreatAsLocalProperty is refused.
 POLICY = re.compile(r"(?i)(?:NuGetAudit.*|Restore.*|.*Warnings.*|NoWarn|.*Analyzers.*|UseHexalithProjectReferences|.*FromSource|.*Targets|.*Props|.*Path|.*Output.*|IsTestProject|XunitTestProject|Configuration|Platform)")
 
 
 def output_mapping(prepared, environment):
-    if not prepared.document.get("buildProjects"):
+    cases = [case for case in prepared.document.get("buildProjects", []) if "versions" in case]
+    if not cases:
         return {}
     if sys.platform != "linux" or environment.workspace is None:
         raise ConfigError("declared build projects require prepared Linux execution")
     directory = environment.workspace.parent / "build-projects"
     return {case["id"]: {"project": case["project"], "versions": case["versions"],
-        "artifactsPath": str(directory / case["id"])} for case in prepared.document["buildProjects"]}
+        "artifactsPath": str(directory / case["id"])} for case in cases}
 
 
-def mapping_value(prepared, environment):
+def mapping_value(prepared, environment, *, qualification=False):
     mapping = output_mapping(prepared, environment)
-    if mapping:
+    if prepared.document.get("buildProjects"):
         _MAPPINGS[str(prepared.root)] = mapping
         _ENVIRONMENTS[str(prepared.root)] = environment
+        if qualification:
+            _QUALIFICATION_SCOPES.add(str(prepared.root))
+        else:
+            _QUALIFICATION_SCOPES.discard(str(prepared.root))
     return json.dumps(mapping, sort_keys=True, separators=(",", ":")) if mapping else ""
 
 
 @contextmanager
-def output_scope(prepared, environment):
-    value = mapping_value(prepared, environment)
-    if not value:
+def output_scope(prepared, environment, *, qualification=False):
+    if not prepared.document.get("buildProjects"):
         yield
         return
     previous = os.environ.get(VARIABLE)
     if previous:
         raise ConfigError("ambient declared-build output override is forbidden")
-    os.environ[VARIABLE] = value
+    value = mapping_value(prepared, environment, qualification=qualification)
+    if value:
+        os.environ[VARIABLE] = value
     directory = environment.workspace.parent / "build-projects"
     try:
         yield
     finally:
         _MAPPINGS.pop(str(prepared.root), None)
         _ENVIRONMENTS.pop(str(prepared.root), None)
-        shutil.rmtree(directory, ignore_errors=True)
+        _QUALIFICATION_SCOPES.discard(str(prepared.root))
+        if value:
+            shutil.rmtree(directory, ignore_errors=True)
         if previous is None:
             os.environ.pop(VARIABLE, None)
         else:
@@ -199,7 +208,24 @@ def validate_project(root, project, visited=None):
 
 def preflight(prepared):
     for case in prepared.document.get("buildProjects", []):
-        validate_project(prepared.root, case["project"])
+        if "isolatedContract" in case:
+            from isolated_builds import preflight as isolated_preflight
+            isolated_preflight(prepared, case, registered_environment(prepared))
+        else:
+            validate_project(prepared.root, case["project"])
+
+
+def registered_environment(prepared):
+    """Use only the environment registered by the verified owning lifetime."""
+    from module_preparation import _verify_environment, verify_environment
+    environment = _ENVIRONMENTS.get(str(prepared.root))
+    if environment is None:
+        raise ConfigError("declared project preparation lifetime is unavailable")
+    if str(prepared.root) in _QUALIFICATION_SCOPES:
+        _verify_environment(prepared, environment.authority, environment, qualification=True)
+    else:
+        verify_environment(prepared, environment.authority, environment)
+    return environment
 
 
 def verify_packages(artifacts, versions):
@@ -233,24 +259,32 @@ def build_declared(prepared, flags, command):
     cases = prepared.document.get("buildProjects", [])
     if not cases:
         return
-    if sys.platform != "linux":
+    finite = [case for case in cases if "versions" in case]
+    if finite and sys.platform != "linux":
         raise ConfigError("declared build projects support Linux only")
     from ci_pipeline import evaluated_properties, target_frameworks
-    from module_preparation import _real, verify_environment
-    try:
-        mapping = json.loads(os.environ[VARIABLE])
-    except (KeyError, ValueError) as error:
-        raise ConfigError("declared projects require their owning preparation output mapping") from error
+    from module_preparation import _real
+    environment = registered_environment(prepared)
+    mapping = {}
+    if finite:
+        try:
+            mapping = json.loads(os.environ[VARIABLE])
+        except (KeyError, ValueError) as error:
+            raise ConfigError("declared projects require their owning preparation output mapping") from error
+    elif os.environ.get(VARIABLE):
+        raise ConfigError("isolated builds cannot use finite-version output overrides")
     # Recompute the mapping from the private authenticated producer receipt/root;
     # local applied scopes and CI both publish it only after preparation.
-    if mapping != _MAPPINGS.get(str(prepared.root)) or set(mapping) != {case["id"] for case in cases}:
+    if mapping != _MAPPINGS.get(str(prepared.root)) or set(mapping) != {case["id"] for case in finite}:
         raise ConfigError("declared build output mapping differs from configuration")
     roots = []
-    environment = _ENVIRONMENTS.get(str(prepared.root))
-    if environment is None:
-        raise ConfigError("declared project preparation lifetime is unavailable")
     for case in cases:
-        verify_environment(prepared, environment.authority, environment)
+        registered_environment(prepared)
+        if "isolatedContract" in case:
+            from isolated_builds import build as isolated_build
+            isolated_build(prepared, case, environment, flags, command)
+            registered_environment(prepared)
+            continue
         entry = mapping[case["id"]]
         if not isinstance(entry, dict) or set(entry) != {"project", "versions", "artifactsPath"} or entry["project"] != case["project"] or entry["versions"] != case["versions"]:
             raise ConfigError("declared build output mapping changed")
@@ -280,4 +314,4 @@ def build_declared(prepared, flags, command):
         command(["dotnet", "restore", project, *selected], prepared.root)
         verify_packages(path, case["versions"])
         command(["dotnet", "build", project, "--no-restore", *selected], prepared.root)
-        verify_environment(prepared, environment.authority, environment)
+        registered_environment(prepared)

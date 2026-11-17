@@ -7,14 +7,19 @@ namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
 
+using Microsoft.Build.Utilities;
+
 using Shouldly;
 
 using Xunit;
+
+using Task = System.Threading.Tasks.Task;
 
 /// <summary>Qualifies explicit catalog authority against real local Git identities.</summary>
 public sealed class ManagedBuildPreparationTests
@@ -86,6 +91,89 @@ public sealed class ManagedBuildPreparationTests
             _ = await Should.ThrowAsync<WorkspaceMappingException>(() => ManagedBuildPreparationService.ResolveAsync(fixture.Manifest, receipt, false, TestContext.Current.CancellationToken, (_, _, _) => Task.CompletedTask, "6.1.0")).ConfigureAwait(true);
         }
 
+        (await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "status", "--porcelain").ConfigureAwait(true)).Output.ShouldBeEmpty();
+    }
+
+    /// <summary>Real SDK restore/build and repeated on-demand lookup preserve every managed producer byte.</summary>
+    /// <returns>The complete immutable-lifetime assertion.</returns>
+    [Fact]
+    public async Task ManagedSdkBuildKeepsUnseededCatalogImmutableAsync()
+    {
+        const string catalog = "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"$([System.String]::Copy('$(MSBuildProjectName)').StartsWith('Hexalith.Folders'))\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>";
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(catalog).ConfigureAwait(true);
+        string consumer = Path.Combine(fixture.Checkout, "src", "Consumer");
+        _ = Directory.CreateDirectory(consumer);
+        string project = Path.Combine(consumer, "Hexalith.Folders.Aspire.csproj");
+        await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(consumer, "Consumer.cs"), "public sealed class Consumer { }", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Checkout, ".gitignore"), "**/bin/\n**/obj/\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", "src", ".gitignore").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "user.name=Qualification", "-c", "user.email=qualification@example.invalid", "commit", "-m", "test: add managed SDK consumer").ConfigureAwait(true);
+        ManagedBuildAuthority authority = await PrepareInputsAsync(fixture).ConfigureAwait(true);
+        string receipt = await WriteAuthorityAsync(fixture, authority).ConfigureAwait(true);
+        SourceMapping mapping = await ManagedBuildPreparationService.ResolveAsync(
+            fixture.Manifest,
+            receipt,
+            false,
+            TestContext.Current.CancellationToken,
+            (_, _, _) => Task.CompletedTask,
+            "6.1.0").ConfigureAwait(true);
+        string output = Path.Combine(fixture.Directory, "immutable-output");
+        await SourceMappingMaterializer.WriteAsync(mapping, output, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string snapshotPath = Path.Combine(output, "source-mapping", "catalog-versions.json");
+        CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, snapshotPath);
+        snapshot.ProjectVersions.ContainsKey("Hexalith.Folders.Aspire").ShouldBeFalse();
+        Dictionary<string, string> before = ProducerInventory(output);
+        Dictionary<string, string> environment = new(SourceMappingMaterializer.Environment(mapping, output), StringComparer.Ordinal)
+        {
+            ["NUGET_PACKAGES"] = Path.Combine(fixture.Directory, "sdk-packages"),
+        };
+        string feed = Path.Combine(fixture.Directory, "empty-feed");
+        _ = Directory.CreateDirectory(feed);
+        for (int iteration = 0; iteration < 2; iteration++)
+        {
+            foreach (string command in new[] { "restore", "build" })
+            {
+                string[] arguments = [command, project, "-noAutoResponse", "-nologo", "-v:q", "-p:Configuration=Release", "-warnaserror", "-p:RestoreSources=" + feed];
+                if (command == "build")
+                {
+                    arguments = [.. arguments, "--no-restore"];
+                }
+
+                CompositionProcessResult result = await CompositionProcess.RunAsync(
+                    CompositionSdkProcess.CreateStartInfo(arguments, fixture.Checkout, environment),
+                    TimeSpan.FromMinutes(2),
+                    TestContext.Current.CancellationToken).ConfigureAwait(true);
+                result.ExitCode.ShouldBe(0, result.Output + result.ErrorOutput);
+                ProducerInventory(output).ShouldBe(before);
+            }
+        }
+
+        foreach (string version in new[] { "13.0.0", "13.6.0-preview.1" })
+        {
+            TaskItem package = new("CommunityToolkit.Aspire.Hosting.Dapr");
+            package.SetMetadata("Version", version);
+            CatalogTestBuildEngine engine = new();
+            CatalogVersionValidationTask task = new()
+            {
+                BuildEngine = engine,
+                MappingFile = Path.Combine(output, "source-mapping", "mapping.json"),
+                MappingHash = mapping.ContentHash,
+                CatalogFile = snapshotPath,
+                ProjectName = "Hexalith.Folders.Aspire",
+                Packages = [package],
+            };
+            task.Execute().ShouldBe(version == "13.0.0");
+            if (version != "13.0.0")
+            {
+                engine.Error.ShouldNotBeNull().Code.ShouldBe("HXW012");
+            }
+
+            ProducerInventory(output).ShouldBe(before);
+        }
+
+        File.Exists(snapshotPath + ".lock").ShouldBeFalse();
+        CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, snapshotPath).ProjectVersions.ContainsKey("Hexalith.Folders.Aspire").ShouldBeFalse();
         (await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "status", "--porcelain").ConfigureAwait(true)).Output.ShouldBeEmpty();
     }
 
@@ -177,6 +265,26 @@ public sealed class ManagedBuildPreparationTests
         mapping.EffectiveCatalogCommit.ShouldBe(accepted.BuildsCommit);
         mapping.ManagedAuthority.ShouldNotBeNull().OriginalBuildsGitlink.ShouldBe(accepted.PlatformCatalogCommit);
         mapping.PlatformIdentity.ShouldNotBeNull().CatalogCommit.ShouldBe(accepted.PlatformCatalogCommit);
+        string immutable = Path.Combine(fixture.Directory, "qualified-immutable-output");
+        await SourceMappingMaterializer.WriteAsync(mapping, immutable, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        Dictionary<string, string> qualifiedBefore = ProducerInventory(immutable);
+        for (int iteration = 0; iteration < 2; iteration++)
+        {
+            TaskItem package = new("Hexalith.Dep");
+            package.SetMetadata("Version", "2.0.0");
+            CatalogVersionValidationTask task = new()
+            {
+                BuildEngine = new CatalogTestBuildEngine(),
+                MappingFile = Path.Combine(immutable, "source-mapping", "mapping.json"),
+                MappingHash = mapping.ContentHash,
+                CatalogFile = Path.Combine(immutable, "source-mapping", "catalog-versions.json"),
+                ProjectName = "Qualified.Unseeded.Consumer",
+                Packages = [package],
+            };
+            task.Execute().ShouldBeTrue();
+            ProducerInventory(immutable).ShouldBe(qualifiedBefore);
+        }
+
         string tool = Environment.GetEnvironmentVariable("HEXALITH_MANAGED_SOURCE_PACKAGE_TOOL") ?? string.Empty;
         if (tool.Length > 0)
         {
@@ -193,6 +301,70 @@ public sealed class ManagedBuildPreparationTests
 
         (await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "ls-tree", "HEAD", "--", "references/Hexalith.Builds").ConfigureAwait(true)).Output.ShouldContain(accepted.PlatformCatalogCommit);
         (await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "status", "--porcelain").ConfigureAwait(true)).Output.ShouldBeEmpty();
+    }
+
+    /// <summary>The shared Python route invokes real SDK guards and builds canonical isolated outputs under one immutable lifetime.</summary>
+    /// <returns>The complete source integration assertion.</returns>
+    [Fact]
+    public async Task SharedIsolatedDeclarationBuildsWithinVerifiedLifetimeAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string source = Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "isolated");
+        foreach (string file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
+        {
+            string destination = Path.Combine(fixture.Checkout, Path.GetRelativePath(source, file));
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(file, destination);
+        }
+
+        await File.WriteAllTextAsync(Path.Combine(fixture.Checkout, ".gitignore"), "**/bin/\n**/obj/\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", "adapter", "fixture", ".gitignore").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "user.name=Qualification", "-c", "user.email=qualification@example.invalid", "commit", "-m", "test: bind isolated SDK sources").ConfigureAwait(true);
+        ManagedBuildAuthority authority = await PrepareInputsAsync(fixture, withRestorePolicy: true).ConfigureAwait(true);
+        string corpus = Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "Github", "lib", "tests", "fixtures", "contract.json");
+        JsonObject configuration = JsonNode.Parse(await File.ReadAllTextAsync(corpus, TestContext.Current.CancellationToken).ConfigureAwait(true))!.AsArray()[0]!["document"]!.DeepClone().AsObject();
+        configuration["solution"] = "Fixture.slnx";
+        configuration["buildsTag"] = "v6.1.0";
+        configuration["moduleManifest"] = "module.json";
+        configuration["buildProjects"] = new JsonArray(new JsonObject
+        {
+            ["id"] = "isolated",
+            ["project"] = "adapter/Adapter.csproj",
+            ["isolatedContract"] = "adapter/contract.json",
+        });
+        byte[] configurationBytes = JsonSerializer.SerializeToUtf8Bytes(configuration);
+        await File.WriteAllBytesAsync(Path.Combine(fixture.Checkout, ".github", "hexalith-ci.json"), configurationBytes, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Checkout, "Fixture.slnx"), "<Solution />", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", ".github/hexalith-ci.json", "Fixture.slnx").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "user.name=Qualification", "-c", "user.email=qualification@example.invalid", "commit", "-m", "test: bind isolated declaration").ConfigureAwait(true);
+        string head = (await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
+        authority = authority with { ModuleHead = head, ConfigurationDigest = Convert.ToHexStringLower(SHA256.HashData(configurationBytes)) };
+        string receipt = await WriteAuthorityAsync(fixture, authority).ConfigureAwait(true);
+        SourceMapping mapping = await ManagedBuildPreparationService.ResolveAsync(fixture.Manifest, receipt, false, TestContext.Current.CancellationToken, (_, _, _) => Task.CompletedTask, "6.1.0").ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "isolated-producer");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string input = Path.Combine(fixture.Directory, "source-driver.json");
+        string data = JsonSerializer.Serialize(new
+        {
+            root = fixture.Checkout,
+            authority = receipt,
+            workspace,
+            environment = SourceMappingMaterializer.Environment(mapping, workspace),
+        });
+        await File.WriteAllTextAsync(input, data, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string library = Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "Github", "lib");
+        string driver = Path.Combine(library, "tests", "fixtures", "isolated_source_driver.py");
+        Dictionary<string, string> processEnvironment = new(StringComparer.Ordinal)
+        {
+            ["DOTNET_CLI_USE_MSBUILD_SERVER"] = "1",
+            ["MSBUILDDISABLENODEREUSE"] = "0",
+        };
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            CompositionProcess.CreateStartInfo("python3", [driver, library, input], fixture.Checkout, processEnvironment),
+            TimeSpan.FromMinutes(3),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.ExitCode.ShouldBe(0, result.Output + result.ErrorOutput);
+        result.Output.ShouldContain("canonical DLL and immutable lifetime passed");
     }
 
     /// <summary>Both new public commands reject missing authority without creating producer state.</summary>
@@ -216,7 +388,11 @@ public sealed class ManagedBuildPreparationTests
         Directory.Exists(output).ShouldBeFalse();
     }
 
-    private static async Task<ManagedBuildAuthority> PrepareInputsAsync(WorkspaceGitFixture fixture)
+    private static Dictionary<string, string> ProducerInventory(string directory)
+        => System.IO.Directory.GetFiles(directory, "*", SearchOption.AllDirectories).OrderBy(path => path, StringComparer.Ordinal)
+            .ToDictionary(path => Path.GetRelativePath(directory, path), path => Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path))), StringComparer.Ordinal);
+
+    private static async Task<ManagedBuildAuthority> PrepareInputsAsync(WorkspaceGitFixture fixture, bool withRestorePolicy = false)
     {
         string declaration = await File.ReadAllTextAsync(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test", "fixtures", "module", "platform", "valid.json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(fixture.Manifest, declaration, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -227,6 +403,12 @@ public sealed class ManagedBuildPreparationTests
         string originalCatalog = await File.ReadAllTextAsync(catalog, TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(catalog, originalCatalog.Replace("1.0.0", "2.0.0", StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(builds, "add", "Props/Directory.Packages.props").ConfigureAwait(true);
+        if (withRestorePolicy)
+        {
+            File.Copy(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "NuGet.ci.Config"), Path.Combine(builds, "NuGet.ci.Config"));
+            _ = await WorkspaceGitFixture.RunGitAsync(builds, "add", "NuGet.ci.Config").ConfigureAwait(true);
+        }
+
         _ = await WorkspaceGitFixture.RunGitAsync(builds, "-c", "user.name=Qualification", "-c", "user.email=qualification@example.invalid", "commit", "-m", "advance actual catalog").ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(builds, "tag", "v6.1.0").ConfigureAwait(true);
         string active = (await WorkspaceGitFixture.RunGitAsync(builds, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();

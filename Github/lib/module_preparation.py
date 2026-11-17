@@ -271,9 +271,10 @@ def _cleanup_owned(prepared, environment=None, *, state=None):
             else:
                 os.environ[key] = previous
             removed.append(key)
-    from build_projects import _MAPPINGS, _ENVIRONMENTS
+    from build_projects import _MAPPINGS, _ENVIRONMENTS, _QUALIFICATION_SCOPES
     _MAPPINGS.pop(str(prepared.root), None)
     _ENVIRONMENTS.pop(str(prepared.root), None)
+    _QUALIFICATION_SCOPES.discard(str(prepared.root))
     if removed and os.environ.get("GITHUB_ENV"):
         with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
             stream.write("".join(key + "=" + os.environ.get(key, "") + "\n" for key in sorted(removed)))
@@ -424,7 +425,9 @@ def applied_qualification(prepared, authority: dict, environment: BuildEnvironme
     previous = {key: os.environ.get(key) for key in environment.values}
     os.environ.update(environment.values)
     try:
-        yield environment
+        from build_projects import output_scope
+        with output_scope(prepared, environment, qualification=True):
+            yield environment
         _verify_environment(prepared, authority, environment, qualification=True)
     finally:
         for key, value in previous.items():

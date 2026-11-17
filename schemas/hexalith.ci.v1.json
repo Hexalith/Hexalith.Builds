@@ -625,8 +625,7 @@
         "additionalProperties": false,
         "required": [
           "id",
-          "project",
-          "versions"
+          "project"
         ],
         "properties": {
           "id": {
@@ -653,8 +652,23 @@
                 "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])"
               }
             }
+          },
+          "isolatedContract": {
+            "$ref": "#/$defs/jsonPath"
           }
-        }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "versions"
+            ]
+          },
+          {
+            "required": [
+              "isolatedContract"
+            ]
+          }
+        ]
       }
     }
   },
@@ -773,7 +787,12 @@
         ],
         "properties": {
           "buildProjects": {
-            "minItems": 1
+            "minItems": 1,
+            "contains": {
+              "required": [
+                "versions"
+              ]
+            }
           }
         }
       },
@@ -844,6 +863,32 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "buildProjects"
+        ],
+        "properties": {
+          "buildProjects": {
+            "contains": {
+              "required": [
+                "isolatedContract"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "moduleManifest"
+        ],
+        "properties": {
+          "moduleManifest": {
+            "type": "string"
           }
         }
       }

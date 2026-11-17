@@ -1,0 +1,11 @@
+{
+  "schema": "hexalith.isolated-build.v1",
+  "owner": "adapter/Adapter.csproj",
+  "projects": ["fixture/Child.csproj"],
+  "roots": ["adapter", "fixture"],
+  "framework": "net11.0",
+  "propertyPrefix": "FixtureOptions",
+  "properties": {"FixtureOptionsMode": "package"},
+  "props": "adapter/Boundary.props",
+  "targets": "adapter/Boundary.targets"
+}

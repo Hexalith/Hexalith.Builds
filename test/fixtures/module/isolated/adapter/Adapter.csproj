@@ -1,0 +1,21 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <IsTestProject>false</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <_OptionalSdkHook>$([MSBuild]::NormalizePath('$(MSBuildExtensionsPath)', 'v$(MSBuildToolsVersion)', 'Custom.After.Microsoft.Common.targets'))</_OptionalSdkHook>
+    <CustomAfterMicrosoftCommonTargets Condition="'$(CustomAfterMicrosoftCommonTargets)' == '$(_OptionalSdkHook)' and !Exists('$(CustomAfterMicrosoftCommonTargets)')" />
+    <HexalithBuildsRoot>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'references', 'Hexalith.Builds'))</HexalithBuildsRoot>
+    <_IsolatedProperties>Configuration=Release;TargetFramework=net11.0;UseHexalithProjectReferences=false;UseNuGetDeps=true;RestoreLockedMode=true;CustomBeforeDirectoryBuildProps=;CustomBeforeDirectoryBuildTargets=;CustomAfterDirectoryBuildTargets=;AfterMicrosoftNETSdkTargets=;CustomAfterMicrosoftCommonProps=$(MSBuildThisFileDirectory)Boundary.props;CustomAfterMicrosoftCommonTargets=$(MSBuildThisFileDirectory)Boundary.targets;HexalithIsolatedParentCommonTargets=$(CustomAfterMicrosoftCommonTargets);HexalithBuildsRoot=$(HexalithBuildsRoot);WarningsNotAsErrors=;ShouldUnsetParentConfigurationAndPlatform=false;FixtureOptionsMode=package</_IsolatedProperties>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../fixture/Child.csproj" ReferenceOutputAssembly="false"
+      AdditionalProperties="$(_IsolatedProperties)" HexalithIsolatedBuildContract="adapter/contract.json" />
+  </ItemGroup>
+</Project>

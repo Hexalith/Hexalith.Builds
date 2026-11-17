@@ -72,7 +72,7 @@ public sealed class CatalogVersionValidationTask : ITask
 
             IReadOnlyDictionary<string, string> selected = snapshot.ProjectVersions
                 .FirstOrDefault(pair => string.Equals(pair.Key, ProjectName, StringComparison.OrdinalIgnoreCase)).Value
-                ?? (string.IsNullOrWhiteSpace(ProjectName) ? snapshot.Versions : EvaluateAndRecordProject(snapshot));
+                ?? SelectUnseededProject(mapping, snapshot);
             Dictionary<string, string> pinnedVersions = selected.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
             List<string> mismatches = [];
@@ -234,12 +234,31 @@ public sealed class CatalogVersionValidationTask : ITask
                 && VersionComparer.VersionRelease.Compare(range.MinVersion, pin) == 0;
     }
 
-    private IReadOnlyDictionary<string, string> EvaluateAndRecordProject(CatalogVersionSnapshot snapshot)
+    private IReadOnlyDictionary<string, string> SelectUnseededProject(SourceMapping mapping, CatalogVersionSnapshot snapshot)
+    {
+        if (string.IsNullOrWhiteSpace(ProjectName))
+        {
+            return snapshot.Versions;
+        }
+
+        // Managed preparation retains an exact producer byte inventory. Its
+        // pinned catalog stays immutable while unknown consumers are evaluated.
+        return mapping.ManagedAuthority is { Kind: "accepted-delivery" or "candidate-qualification" }
+            ? EvaluateProject(snapshot)
+            : EvaluateAndRecordProject(snapshot);
+    }
+
+    private Dictionary<string, string> EvaluateProject(CatalogVersionSnapshot snapshot)
     {
 #pragma warning disable VSTHRD002 // ITask.Execute is synchronous; the isolated process evaluator never captures this context.
-        Dictionary<string, string> evaluated = CatalogVersionMaterializer.EvaluateForProjectAsync(
+        return CatalogVersionMaterializer.EvaluateForProjectAsync(
             CatalogFile, ProjectName, snapshot.CatalogCommit, CancellationToken.None).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
+    }
+
+    private IReadOnlyDictionary<string, string> EvaluateAndRecordProject(CatalogVersionSnapshot snapshot)
+    {
+        Dictionary<string, string> evaluated = EvaluateProject(snapshot);
         using FileStream lease = AcquireSnapshotLock(CatalogFile + ".lock");
         CatalogVersionSnapshot latest = CatalogVersionMaterializer.ReadSnapshot(CatalogFile);
         if (latest.PinnedFiles is null || latest.Versions is null || latest.ProjectVersions is null

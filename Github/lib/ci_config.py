@@ -150,22 +150,38 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     array(cases, "$/buildProjects")
     if len(cases) > 32:
         fail("$/buildProjects", "at most 32 projects are supported")
-    identifiers, selections = set(), set()
+    identifiers, selections, isolated_projects = set(), set(), set()
     for index, case in enumerate(cases):
         location = f"$/buildProjects/{index}"
-        closed(case, frozenset(("id", "project", "versions")), frozenset(), location)
+        isolated = isinstance(case, dict) and "isolatedContract" in case
+        closed(case, frozenset(("id", "project", "isolatedContract" if isolated else "versions")), frozenset(), location)
         name(case["id"], location + "/id")
         path(case["project"], location + "/project", ".csproj")
         if (case["project"].startswith(("references/", ".github/", ".git/"))
                 or any(char in case["project"] for char in ':;,%$@*?<>"|')):
             fail(location + "/project", "unsafe or foreign compatibility project")
-        versions = case["versions"]
-        if not isinstance(versions, dict) or not versions or versions.keys() - BUILD_VERSIONS:
-            fail(location + "/versions", "only finite named EventStore/Tenants/Memories catalog versions are supported")
-        for key, value in versions.items():
-            if not isinstance(value, str) or SDK_VERSION.fullmatch(value) is None:
-                fail(location + "/versions/" + key, "expected an exact stable version")
-        selection = (case["project"].casefold(), tuple(sorted(versions.items())))
+        project = case["project"].casefold()
+        if isolated:
+            path(case["isolatedContract"], location + "/isolatedContract", ".json")
+            if (case["isolatedContract"].startswith(("references/", ".github/", ".git/"))
+                    or any(char in case["isolatedContract"] for char in ':;,%$@*?<>"|')):
+                fail(location + "/isolatedContract", "unsafe or foreign isolated contract")
+            if not document.get("moduleManifest"):
+                fail(location + "/isolatedContract", "requires authenticated managed module preparation")
+            if any(selected[0] == project for selected in selections):
+                fail(location, "duplicate isolated project")
+            isolated_projects.add(project)
+            selection = (project, ("isolatedContract", case["isolatedContract"].casefold()))
+        else:
+            versions = case["versions"]
+            if not isinstance(versions, dict) or not versions or versions.keys() - BUILD_VERSIONS:
+                fail(location + "/versions", "only finite named EventStore/Tenants/Memories catalog versions are supported")
+            for key, value in versions.items():
+                if not isinstance(value, str) or SDK_VERSION.fullmatch(value) is None:
+                    fail(location + "/versions/" + key, "expected an exact stable version")
+            if project in isolated_projects:
+                fail(location, "duplicate isolated project")
+            selection = (project, tuple(sorted(versions.items())))
         if case["id"] in identifiers or selection in selections:
             fail(location, "duplicate id or project/version selection")
         identifiers.add(case["id"])
@@ -412,7 +428,7 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         if not ready:
             fail("$/jobs", "custom job dependencies contain a cycle")
         pending -= ready
-    if (cases or document.get("publishedBuilds")) and any(options["runner"] in ("windows-latest", "macos-latest") for options in jobs.values()):
+    if (any("versions" in case for case in cases) or document.get("publishedBuilds")) and any(options["runner"] in ("windows-latest", "macos-latest") for options in jobs.values()):
         fail("$/jobs", "published preparation and buildProjects support Linux jobs only")
     for project, action in tests["exclude"].items():
         location = f"$/tests/exclude/{project}"
