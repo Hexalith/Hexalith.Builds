@@ -983,7 +983,12 @@ public sealed class WorkspaceMsBuildTests
                 "-p:NuGetAudit=false").ConfigureAwait(true);
             build.ExitCode.ShouldNotBe(0);
             build.Output.ShouldContain("HXW006");
-            build.Output.ShouldContain("_HXWPreLateConfiguration");
+
+            // The CLI forwards Configuration globally during build; the conflicting
+            // source flag or dependency root remains mutable and must be refused.
+            build.Output.ShouldContain(mode == WorkspaceMode.Source
+                ? "_HXWPreLateUseHexalithProjectReferences"
+                : "_HXWPreLateHexalithDepRoot");
             result.Output.ShouldContain("\"HexalithDepFromSource\": \"" + sourceExpected + "\"");
             using JsonDocument output = JsonDocument.Parse(result.Output);
             output.RootElement.GetProperty("Properties").GetProperty("HexalithDepRoot").GetString().ShouldBe(Path.Combine(active, "references", "Hexalith.Dep"));

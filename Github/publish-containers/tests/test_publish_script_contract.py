@@ -535,7 +535,7 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertIn("refs/heads/main|refs/heads/prerelease", source_guard)
         self.assertIn("persist-credentials: false", workflow)
         self.assertEqual(
-            ["main", {"name": "prerelease", "prerelease": True}],
+            [{"name": "4.44.x", "range": "4.44.x"}, "main", {"name": "prerelease", "prerelease": True}],
             package["release"]["branches"],
         )
         self.assertNotIn("@semantic-release/changelog", package["release"]["plugins"])
