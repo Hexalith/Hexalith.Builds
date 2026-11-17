@@ -598,7 +598,10 @@ class StrictPackageTests(unittest.TestCase):
         inventory = release_draft.artifact_inventory(payload, sha=SHA, version="2.3.5", digest=digest(payload),
             repository="Example/Fixture", files=files, package_policies=policies)
         self.assertEqual({"Fixture.Package": package_archive.body_inventory(original)}, policies)
-        values = {"inventory": inventory, "package-policies": policies, "version": "2.3.5", "sha": SHA}
+        values = {"inventory": inventory, "package-policies": policies, "version": "2.3.5", "sha": SHA,
+            "package-payloads": {"Fixture.Package": release_publish.publication.payload_map(original)},
+            "repository": "Example/Fixture", "artifact-run": "123", "artifact-id": "456",
+            "artifact-digest": digest(payload)}
         public_files = package_archive.members(original)
         public_files[".signature.p7s"] = b"controlled signature"
         recompressed = io.BytesIO()
@@ -617,6 +620,8 @@ class StrictPackageTests(unittest.TestCase):
             return lambda *_args, **_kwargs: response
         with patch.dict(os.environ, {"NUGET_API_KEY": "secret-control", "GITHUB_TOKEN": "secret-control", "PYTHONPATH": "/module"}):
             release_publish.verify_packages(values, open_url=download(signed), attempts=1, interval=0, run=command)
+        self.assertEqual(values["package-payloads"]["Fixture.Package"], values["package-publication"]["packages"][0]["files"])
+        self.assertEqual(sha(signed), values["package-publication"]["packages"][0]["archiveSha256"])
         self.assertEqual(1, len(commands))
         args, kwargs = commands[0]
         self.assertEqual(["dotnet", "nuget", "verify"], args[:3])
@@ -707,8 +712,12 @@ class StrictPackageTests(unittest.TestCase):
         response.status = 200
         response.headers = {}
         with patch.object(package_archive, "verify_signature", side_effect=AssertionError("unexpected strict verification")):
-            release_publish.verify_packages({"inventory": inventory, "version": "2.3.5", "sha": SHA},
-                open_url=lambda *_a, **_k: response, attempts=1, interval=0)
+            values = {"inventory": inventory, "version": "2.3.5", "sha": SHA,
+                "package-payloads": {"Fixture.Package": release_publish.publication.payload_map(package(SHA))},
+                "repository": "Example/Fixture", "artifact-run": "123", "artifact-id": "456",
+                "artifact-digest": digest(payload)}
+            release_publish.verify_packages(values, open_url=lambda *_a, **_k: response, attempts=1, interval=0)
+        self.assertEqual(values["package-payloads"]["Fixture.Package"], values["package-publication"]["packages"][0]["files"])
 
 
 if __name__ == "__main__":
