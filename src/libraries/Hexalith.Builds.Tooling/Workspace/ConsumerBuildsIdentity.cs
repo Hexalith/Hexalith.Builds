@@ -131,7 +131,7 @@ internal static partial class ConsumerBuildsIdentity
         {
             using JsonDocument document = JsonDocument.Parse(content);
             JsonElement value = document.RootElement;
-            using Stream stream = typeof(ConsumerBuildsIdentity).Assembly.GetManifestResourceStream("Hexalith.Builds.Tooling.Workspace.hexalith.ci.v1.json")
+            using Stream stream = typeof(ConsumerBuildsIdentity).Assembly.GetManifestResourceStream("Hexalith.Builds.Tooling.ManagedAuthority.hexalith.ci.v1.json")
                 ?? throw Refuse(root, "The shared CI contract is unavailable.");
             using StreamReader reader = new(stream);
             JsonSchema schema = JsonSchema.FromText(reader.ReadToEnd(), new BuildOptions
