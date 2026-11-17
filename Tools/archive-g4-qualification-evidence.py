@@ -64,8 +64,11 @@ def validated_payload(directory: Path, kind: str) -> dict[str, bytes]:
             or not re.fullmatch(r"[1-9][0-9]*", identity["GITHUB_RUN_ID"])
             or not re.fullmatch(r"[1-9][0-9]*", identity["GITHUB_RUN_ATTEMPT"])
             or identity["GITHUB_WORKFLOW_SHA"] != source
-            or not re.fullmatch(rf"Hexalith/Hexalith.Builds/\.github/workflows/{re.escape(workflow)}@refs/(?:heads/(?:main|prerelease)|pull/[1-9][0-9]*/merge)", identity["GITHUB_WORKFLOW_REF"])):
+            or not re.fullmatch(rf"Hexalith/Hexalith.Builds/\.github/workflows/{re.escape(workflow)}@refs/(?:heads/(?:main|prerelease|4\.44\.x)|pull/[1-9][0-9]*/merge)", identity["GITHUB_WORKFLOW_REF"])):
         raise ValueError("Complete matching producer run/workflow identity is required")
+    if (kind == "release" and identity["GITHUB_WORKFLOW_REF"].endswith("@refs/heads/4.44.x")
+            and not re.fullmatch(r"4\.44\.(?:0|[1-9][0-9]*)", inventory["version"])):
+        raise ValueError("Maintenance release carrier requires an exact stable 4.44 version")
     if kind == "release":
         if (identity["GITHUB_JOB"] != "release" or identity["GITHUB_EVENT_NAME"] != "workflow_dispatch"
                 or "/merge" in identity["GITHUB_WORKFLOW_REF"]):
