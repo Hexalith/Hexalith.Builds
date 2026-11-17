@@ -46,7 +46,7 @@ public sealed class PlatformIdentityTests
                 ["references/Hexalith.Builds"] = source,
                 ["references/Hexalith.Platform"] = platformSource,
             };
-            var (identity, findings) = await PlatformIdentityResolver.ResolveAsync(fixture.Checkout, ["references/Hexalith.Builds", "references/Hexalith.Platform"], recorded, TestContext.Current.CancellationToken, version + "+" + source).ConfigureAwait(true);
+            (PlatformIdentity? identity, IReadOnlyList<PlatformIdentityFinding> findings) = await PlatformIdentityResolver.ResolveAsync(fixture.Checkout, ["references/Hexalith.Builds", "references/Hexalith.Platform"], recorded, TestContext.Current.CancellationToken, version + "+" + source).ConfigureAwait(true);
             findings.ShouldBeEmpty();
             identity.ShouldNotBeNull().CatalogCommit.ShouldBe(source);
             identity.ToolVersionRange.ShouldBe("[6.0.5,7.0.0-0)");
@@ -115,14 +115,9 @@ public sealed class PlatformIdentityTests
         _ = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string path = Path.Combine(fixture.Checkout, ".github", "hexalith-ci.json");
         _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        if (symlink)
-        {
-            _ = File.CreateSymbolicLink(path, Path.Combine(fixture.Directory, "absent.json"));
-        }
-        else
-        {
-            _ = Directory.CreateDirectory(path);
-        }
+        _ = symlink
+            ? File.CreateSymbolicLink(path, Path.Combine(fixture.Directory, "absent.json"))
+            : Directory.CreateDirectory(path);
 
         WorkspaceMappingException refusal = await Should.ThrowAsync<WorkspaceMappingException>(() => ConsumerBuildsIdentity.ResolveAsync(fixture.Checkout, new Dictionary<string, string>(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
         refusal.Diagnostics.ShouldContain(item => item.Message.Contains("committed regular blob", StringComparison.Ordinal));
@@ -143,7 +138,7 @@ public sealed class PlatformIdentityTests
         _ = await WorkspaceGitFixture.RunGitAsync(builds, "tag", "v6.0.7").ConfigureAwait(true);
         string path = Path.Combine(fixture.Checkout, ".github", "hexalith-ci.json");
         _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        const string content = """{"schema":"hexalith.ci.v1","buildsTag":"v6.0.7","solution":"Fixture.slnx","dapr":false,"browsers":false,"registry":false,"codeql":[],"tests":{"integration":[],"exclude":{}},"hooks":[],"jobs":{},"submodules":[]}""" + "\n";
+        const string content = "{\"schema\":\"hexalith.ci.v1\",\"buildsTag\":\"v6.0.7\",\"solution\":\"Fixture.slnx\",\"dapr\":false,\"browsers\":false,\"registry\":false,\"codeql\":[],\"tests\":{\"integration\":[],\"exclude\":{}},\"hooks\":[],\"jobs\":{},\"submodules\":[]}\n";
         await File.WriteAllTextAsync(path, content, TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(fixture.Checkout, ".gitattributes"), ".github/hexalith-ci.json text eol=crlf\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", ".gitattributes", ".github/hexalith-ci.json").ConfigureAwait(true);
