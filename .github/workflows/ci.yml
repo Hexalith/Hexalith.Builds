@@ -7,9 +7,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, prerelease]
+    branches: [main, prerelease, 4.44.x]
   push:
-    branches: [main, prerelease]
+    branches: [main, prerelease, 4.44.x]
 
 concurrency:
   # Unlike the release workflow, superseded CI runs carry no publication risk.
@@ -336,6 +336,9 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -v
+
+      - name: Test the approved maintenance publication gate
+        run: python3 Tools/test-maintenance-release-source.py
 
       - name: Test commitlint helpers
         working-directory: Github/commitlint/tests

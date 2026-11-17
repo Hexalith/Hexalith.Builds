@@ -18,9 +18,10 @@ if (-not $releaseWorkflow.Contains('id-token: write', [StringComparison]::Ordina
 
 $release = (Get-Content -LiteralPath (Join-Path $repositoryRoot 'package.json') -Raw | ConvertFrom-Json).release
 $branches = @($release.branches)
-if ($branches.Count -ne 2 -or $branches[0] -cne 'main' -or
-    [string]$branches[1].name -cne 'prerelease' -or $branches[1].prerelease -ne $true) {
-    throw 'Semantic-release must retain main stable and protected prerelease channels.'
+if ($branches.Count -ne 3 -or [string]$branches[0].name -cne '4.44.x' -or
+    [string]$branches[0].range -cne '4.44.x' -or $branches[1] -cne 'main' -or
+    [string]$branches[2].name -cne 'prerelease' -or $branches[2].prerelease -ne $true) {
+    throw 'Semantic-release must retain the bounded maintenance, main stable and protected prerelease channels.'
 }
 
 $execPlugins = @($release.plugins | Where-Object { $_ -is [array] -and $_[0] -ceq '@semantic-release/exec' })
