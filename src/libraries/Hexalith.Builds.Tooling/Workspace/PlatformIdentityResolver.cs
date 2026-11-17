@@ -185,6 +185,13 @@ internal static partial class PlatformIdentityResolver
             }
         }
 
+        // Explicit managed authority retains its checked catalog selection.
+        if (managedAuthority is null)
+        {
+            // Adopted consumers select the central version without changing Platform's nested pin.
+            catalogCommit = await ConsumerBuildsIdentity.ResolveAsync(root, recorded, cancellationToken, toolVersionOverride?.Contains('+', StringComparison.Ordinal) == true ? toolVersionOverride : null).ConfigureAwait(false) ?? catalogCommit;
+        }
+
         string buildsPath = managedAuthority?.BuildsRoot ?? Path.Combine(root, _buildsReference.Replace('/', Path.DirectorySeparatorChar));
         string? buildsStaged = recorded.GetValueOrDefault(_buildsReference);
         string? buildsHead = await TryCheckoutHeadAsync(findings, buildsPath, cancellationToken).ConfigureAwait(false);
@@ -204,7 +211,7 @@ internal static partial class PlatformIdentityResolver
             _ = await TryGitAsync(findings, buildsPath, cancellationToken, "show", selectedCatalog + ":Props/Directory.Packages.props").ConfigureAwait(false);
         }
 
-        string version = toolVersionOverride ?? ToolVersion;
+        string version = toolVersionOverride?.Split('+', 2)[0] ?? ToolVersion;
         if (toolRange is null || !VersionRange.TryParse(toolRange, out VersionRange? range)
             || !NuGetVersion.TryParse(version, out NuGetVersion? parsed) || !range.Satisfies(parsed))
         {
@@ -232,6 +239,23 @@ internal static partial class PlatformIdentityResolver
         string[] fields = separator < 0 ? [] : records[0][..separator].Split(' ', StringSplitOptions.RemoveEmptyEntries);
         return fields.Length == 3 && fields[0] is "100644" or "100755" && fields[1] == "blob"
             && separator >= 0 && records[0][(separator + 1)..] == path;
+    }
+
+    /// <summary>Reads one exact Git tree gitlink without selecting another source.</summary>
+    /// <param name="output">The bounded NUL-delimited tree response.</param>
+    /// <param name="path">The expected dependency path.</param>
+    /// <returns>The source revision, or null for a malformed or absent gitlink.</returns>
+    internal static string? TreeGitlink(string output, string path)
+    {
+        string[] records = output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        if (records.Length != 1)
+        {
+            return null;
+        }
+
+        int separator = records[0].IndexOf('\t', StringComparison.Ordinal);
+        string[] fields = separator < 0 ? [] : records[0][..separator].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return fields.Length == 3 && fields[0] == "160000" && fields[1] == "commit" && fields[2].Length is 40 or 64 && fields[2].All(Uri.IsHexDigit) && records[0][(separator + 1)..] == path ? fields[2] : null;
     }
 
     private static async Task<CompositionProcessResult?> TryGitAsync(List<PlatformIdentityFinding> findings, string path, CancellationToken cancellationToken, params string[] arguments)
@@ -318,19 +342,6 @@ internal static partial class PlatformIdentityResolver
         string digits = mantissa.Replace(".", string.Empty, StringComparison.Ordinal).TrimStart('0');
         int trailingZeros = digits.Length - digits.TrimEnd('0').Length;
         return digits.TrimEnd('0') == "1" && exponent - fractionalDigits + trailingZeros == BigInteger.Zero;
-    }
-
-    private static string? TreeGitlink(string output, string path)
-    {
-        string[] records = output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
-        if (records.Length != 1)
-        {
-            return null;
-        }
-
-        int separator = records[0].IndexOf('\t', StringComparison.Ordinal);
-        string[] fields = separator < 0 ? [] : records[0][..separator].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return fields.Length == 3 && fields[0] == "160000" && fields[1] == "commit" && fields[2].Length is 40 or 64 && fields[2].All(Uri.IsHexDigit) && records[0][(separator + 1)..] == path ? fields[2] : null;
     }
 
     private static async Task<string?> CheckoutHeadAsync(string path, CancellationToken cancellationToken)

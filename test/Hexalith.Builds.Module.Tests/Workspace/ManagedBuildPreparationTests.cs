@@ -59,6 +59,10 @@ public sealed class ManagedBuildPreparationTests
         snapshot.CatalogCommit.ShouldBe(authority.BuildsCommit);
         snapshot.Versions["Hexalith.Dep"].ShouldBe("2.0.0");
         SourceMappingMaterializer.Environment(mapping, output)["Configuration"].ShouldBe("Release");
+
+        // Legacy tuple behavior applies only when no owned producer configuration is present.
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "rm", ".github/hexalith-ci.json").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "user.name=Qualification", "-c", "user.email=qualification@example.invalid", "commit", "-m", "test: select legacy tuple context").ConfigureAwait(true);
         WorkspaceMappingException legacy = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken)).ConfigureAwait(true);
         legacy.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW009");
         SourceMapping source = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);

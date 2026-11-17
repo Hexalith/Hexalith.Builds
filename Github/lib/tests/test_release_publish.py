@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 from contextlib import contextmanager, redirect_stdout, redirect_stderr
 import http.server
 import io
@@ -42,7 +43,25 @@ class PublishFixture(DraftApiFixture):
             "body": draft.release_body("Original notes", sha=sha, run_id=RUN, artifact_id=ARTIFACT,
                                        digest=digest(payload), inventory=inventory)}
         self.errors, self.requests = {}, []
+        self.assets, self.asset_data, self.asset_uploads = [], {}, []
         self.after_patch = lambda value: value
+
+    def pages(self, path, deadline=None):
+        self.events.append("LIST")
+        yield from copy.deepcopy(self.assets if "/assets?" in path else self.drafts)
+
+    def upload_publication(self, identity, data):
+        self.events.append("asset-upload")
+        self.asset_uploads.append(data)
+        asset = {"id": 990, "name": publish.publication.ASSET_NAME, "state": "uploaded",
+                 "size": len(data), "digest": "sha256:" + hashlib.sha256(data).hexdigest()}
+        self.assets.append(asset)
+        self.asset_data[990] = data
+        return copy.deepcopy(asset)
+
+    def publication_bytes(self, identity):
+        self.events.append("asset-read")
+        return self.asset_data[identity]
 
     def get(self, path, deadline=None):
         self.events.append(path)
@@ -92,6 +111,32 @@ def api_http(control, *, tls=None):
             control.requests.append(("GET", self.path, self.headers.get("Authorization")))
             if self.path in control.errors:
                 self.respond(control.errors[self.path], {})
+            elif "/releases/assets/" in self.path and getattr(control, "publication_location", None):
+                self.send_response(302)
+                self.send_header("Location", control.publication_location)
+                self.end_headers()
+            elif self.path == "/publication-download":
+                if getattr(control, "publication_download_location", None):
+                    self.send_response(302)
+                    self.send_header("Location", control.publication_download_location)
+                    self.end_headers()
+                    return
+                if getattr(control, "publication_download_status", 200) != 200:
+                    self.respond(control.publication_download_status, {})
+                    return
+                data = getattr(control, "publication_download_bytes", control.publication_bytes(990))
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+            elif "/releases/assets/" in self.path:
+                data = control.publication_bytes(int(self.path.rsplit("/", 1)[-1]))
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+            elif "/assets?" in self.path:
+                self.respond(200, list(control.pages(self.path)))
             elif self.path.endswith("/zip"):
                 self.send_response(302)
                 self.send_header("Location", control.location)
@@ -112,6 +157,9 @@ def api_http(control, *, tls=None):
                 self.wfile.write(data)
             else:
                 self.respond(200, control.get(self.path))
+        def do_POST(self):
+            control.requests.append(("POST", self.path, self.headers.get("Authorization")))
+            self.respond(201, control.upload_publication(789, self.rfile.read(int(self.headers["Content-Length"])) ))
         def do_PATCH(self):
             control.requests.append(("PATCH", self.path, self.headers.get("Authorization")))
             if getattr(control, "patch_status", 200) != 200:
@@ -141,8 +189,22 @@ class PublisherTests(History):
     def authenticate(self, control, **kwargs):
         work = self.root / "payload"
         work.mkdir(exist_ok=True)
-        return publish.authenticate(self.git, control, copy.deepcopy(control.values), work,
-                                    REPOSITORY + "/.github/workflows/release.yml@refs/heads/main", **kwargs)
+        values = publish.authenticate(self.git, control, copy.deepcopy(control.values), work,
+                                      REPOSITORY + "/.github/workflows/release.yml@refs/heads/main", **kwargs)
+        packages = [data for name, data in draft_files(control.payload) if name.startswith("packages/")]
+        def feed(url, **_kwargs):
+            identity = next(name for name in values["inventory"]["packages"] if "/" + name.lower() + "/" in url)
+            for data in packages:
+                try:
+                    draft.package_identity(data, package_id=identity, version=VERSION, sha=self.sha)
+                except ReleaseError:
+                    continue
+                response = io.BytesIO(data)
+                response.status, response.headers = 200, {}
+                return response
+            self.fail("missing fixture package")
+        publish.verify_packages(values, open_url=feed, attempts=1)
+        return values
 
     def refresh(self, git, repository, sha):
         actual = git.run
@@ -418,6 +480,76 @@ class PublisherTests(History):
         self.assertEqual(json.loads((directory / "state.json").read_text()), original)
         self.assertEqual([path.name for path in directory.iterdir()], ["state.json"])
 
+    def test_publication_asset_https_redirect_reads_exact_bytes_without_credentials_before_finalization(self):
+        certificate, key = self.root / "publication-cert.pem", self.root / "publication-key.pem"
+        subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", str(key),
+            "-out", str(certificate), "-days", "1", "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1"], check=True, capture_output=True)
+        tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        tls.load_cert_chain(certificate, key)
+        control = self.control()
+        values = self.authenticate(control)
+        with api_http(control, tls=tls) as signed, api_http(control) as base, patch.dict(os.environ, {"SSL_CERT_FILE": str(certificate)}):
+            api = publish.PublishApi(REPOSITORY, "synthetic-publication-token", base_url=base)
+            control.publication_location = signed + "/publication-download"
+            for location in (base + "/publication-download", signed.replace("https://", "https://user:secret@") + "/publication-download", signed + "/publication-download#fragment"):
+                control.publication_location = location
+                with self.subTest(location=location), self.assertRaisesRegex(ReleaseError, "uncredentialed HTTPS"):
+                    publish.ensure_package_publication(api, values)
+            control.publication_location = signed + "/publication-download"
+            control.publication_download_location = signed + "/second-hop"
+            with self.assertRaisesRegex(ReleaseError, "download returned HTTP 302"):
+                publish.ensure_package_publication(api, values)
+            del control.publication_download_location
+            control.publication_download_status = 503
+            with self.assertRaisesRegex(ReleaseError, "download returned HTTP 503"):
+                publish.ensure_package_publication(api, values)
+            del control.publication_download_status
+            control.publication_download_bytes = b"wrong actual bytes"
+            with self.assertRaisesRegex(ReleaseError, "asset conflict"):
+                publish.ensure_package_publication(api, values)
+            del control.publication_download_bytes
+            self.assertEqual(control.writes, [])
+            outcome = publish.finalize_release(self.git, api, values, refresh=self.refresh)
+            self.assertEqual(outcome["outcome"], "published")
+        self.assertEqual(len(control.asset_uploads), 1)
+        downloads = [auth for method, path, auth in control.requests if path == "/publication-download"]
+        self.assertGreaterEqual(len(downloads), 4)
+        self.assertTrue(all(auth is None for auth in downloads))
+        self.assertTrue(all(auth == "Bearer synthetic-publication-token" for method, path, auth in control.requests if "/releases/assets/" in path))
+        self.assertLess(control.events.index("asset-read"), control.events.index("PATCH"))
+
+    def test_public_inventory_upload_readback_and_exact_replay_precede_finalization(self):
+        control = self.control()
+        values = self.authenticate(control)
+        publish.ensure_package_publication(control, values)
+        publish.ensure_package_publication(control, values)
+        self.assertEqual(len(control.asset_uploads), 1)
+        self.assertEqual(publish.publication.read(control.asset_uploads[0])["artifactRun"], RUN)
+        self.assertEqual(control.events.count("asset-read"), 2)
+        result = publish.finalize_release(self.git, control, values, refresh=self.refresh)
+        self.assertEqual(result["outcome"], "published")
+        self.assertLess(control.events.index("asset-read"), control.events.index("PATCH"))
+
+    def test_missing_conflicting_duplicate_or_unreadable_inventory_never_returns_ready(self):
+        for mode in ("missing", "conflict", "duplicate", "read-error", "upload-error"):
+            control = self.control()
+            values = self.authenticate(control)
+            if mode == "missing":
+                del values["package-publication"]
+            elif mode == "upload-error":
+                control.upload_publication = lambda *_args: (_ for _ in ()).throw(ReleaseError("HTTP 403"))
+            else:
+                publish.ensure_package_publication(control, values)
+                if mode == "conflict":
+                    control.asset_data[990] = b"conflicting bytes"
+                elif mode == "duplicate":
+                    control.assets.append(copy.deepcopy(control.assets[0]))
+                else:
+                    control.publication_bytes = lambda *_args: (_ for _ in ()).throw(ReleaseError("HTTP 403"))
+            with self.subTest(mode=mode), self.assertRaises(ReleaseError):
+                publish.finalize_release(self.git, control, values, refresh=lambda *_args: False)
+            self.assertEqual(control.writes, [])
+
 
 def draft_files(payload):
     import zipfile
@@ -456,7 +588,11 @@ class NuGetVerificationTests(unittest.TestCase):
     def setUp(self):
         self.sha = "a" * 40
         self.values = {"sha": self.sha, "version": VERSION,
-                       "inventory": {"packages": ["Fixture.One", "Fixture.Two"], "containers": []}}
+                       "repository": REPOSITORY, "artifact-run": str(RUN), "artifact-id": str(ARTIFACT),
+                       "artifact-digest": "sha256:" + "d" * 64,
+                       "inventory": {"packages": ["Fixture.One", "Fixture.Two"], "containers": []},
+                       "package-payloads": {name: publish.publication.payload_map(package(self.sha, package_id=name))
+                                            for name in ("Fixture.One", "Fixture.Two")}}
 
     def response(self, payload):
         response = io.BytesIO(payload)
@@ -502,6 +638,7 @@ class NuGetVerificationTests(unittest.TestCase):
         self.assertEqual(len(requests), 4)
         self.assertEqual(pauses, [1])
         self.values["inventory"]["packages"] = ["Fixture.One"]
+        del self.values["package-payloads"]["Fixture.Two"]
         for payload in (package("b" * 40, package_id="Fixture.One"),
                         package(self.sha, package_id="Fixture.Other"),
                         package(self.sha, package_id="Fixture.One", version="9.9.9"), b"not a package"):
@@ -517,6 +654,7 @@ class NuGetVerificationTests(unittest.TestCase):
                 publish.verify_packages(self.values, open_url=forbidden,
                                         sleep=lambda _: self.fail("authorization must not retry"))
         self.values["inventory"]["packages"] = []
+        self.values["package-payloads"] = {}
         publish.verify_packages(self.values, open_url=lambda *_args, **_kwargs: self.fail("feed read"))
 
     def test_response_size_and_whole_verification_deadline_are_bounded(self):
@@ -533,6 +671,19 @@ class NuGetVerificationTests(unittest.TestCase):
         with self.assertRaisesRegex(ReleaseError, "incomplete"):
             publish.verify_packages(self.values, open_url=unavailable, clock=lambda: now[0],
                                     sleep=lambda _: self.fail("deadline must stop retries"))
+
+    def test_repository_signing_may_add_only_signature_bytes_to_original_payloads(self):
+        self.values["inventory"]["packages"] = ["Fixture.One"]
+        self.values["package-payloads"].pop("Fixture.Two")
+        original = package(self.sha, package_id="Fixture.One")
+        signed = zip_bytes([*draft_files(original), (".signature.p7s", b"feed signature")])
+        publish.verify_packages(self.values, open_url=lambda *_args, **_kwargs: self.response(signed), attempts=1)
+        record = self.values["package-publication"]["packages"][0]
+        self.assertEqual(record["archiveSha256"], hashlib.sha256(signed).hexdigest())
+        changed = zip_bytes([(name, b"different compiled bytes" if name.endswith(".dll") else payload)
+                             for name, payload in draft_files(signed)])
+        with self.assertRaisesRegex(ReleaseError, "payload differs"):
+            publish.verify_packages(self.values, open_url=lambda *_args, **_kwargs: self.response(changed), attempts=1)
 
 
 class PublishCompositeTests(History):
@@ -652,6 +803,7 @@ raise SystemExit({0})
                     return {}
                 with api_http(control, tls=tls) as signed, api_http(control) as base:
                     control.location = signed + "/archive"
+                    control.publication_location = signed + "/publication-download"
                     environment["GITHUB_API_URL"] = base
                     environment["NUGET_TEST_URL"] = base
                     result, processes = run_composite(action, inputs, environment, cwd=work, runner_temp=work, external=external)
@@ -679,7 +831,7 @@ raise SystemExit({0})
                     self.assertEqual(git_command(self.root, "rev-parse", "v" + VERSION + "^{}"), target)
                 self.assertNotIn("temporary-key-marker", "".join(process.stdout + process.stderr for process in processes))
                 self.assertFalse(any(Path(line.split("=", 1)[1]).exists() for line in output.read_text().splitlines() if line.startswith("state=")))
-                self.assertTrue(all(auth is None for method, path, auth in control.requests if path == "/archive"))
+                self.assertTrue(all(auth is None for method, path, auth in control.requests if path in {"/archive", "/publication-download"}))
                 self.assertTrue(all(auth is None for method, path, auth in control.requests if path.startswith("/nuget/")))
 
 

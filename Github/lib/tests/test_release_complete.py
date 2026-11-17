@@ -52,7 +52,7 @@ class CompleteFixture(PublishFixture):
 
     def pages(self, path, deadline=None):
         self.events.append("LIST")
-        yield from copy.deepcopy([*([self.release] if not self.deleted else []), *self.additional])
+        yield from copy.deepcopy(self.assets if "/assets?" in path else [*([self.release] if not self.deleted else []), *self.additional])
 
     def delete_draft(self, identity):
         self.events.append("DELETE")
@@ -384,6 +384,10 @@ def recovery_http(control, *, tls=None):
             if self.path in control.errors:
                 self.send_data(control.errors[self.path], json.dumps(
                     getattr(control, "error_documents", {}).get(self.path, {})).encode())
+            elif "/releases/assets/" in self.path:
+                self.send_data(200, control.publication_bytes(int(self.path.rsplit("/", 1)[-1])))
+            elif "/assets?" in self.path:
+                self.send_data(200, json.dumps(list(control.pages(self.path))).encode())
             elif control.deleted and self.path == f"/repos/{REPOSITORY}/releases/789":
                 self.send_data(404, b"{}")
             elif self.path.endswith("/zip"):
@@ -399,6 +403,10 @@ def recovery_http(control, *, tls=None):
                 self.send_data(200, json.dumps(list(control.pages(self.path))).encode())
             else:
                 self.send_data(200, json.dumps(control.get(self.path)).encode())
+        def do_POST(self):
+            control.requests.append(("POST", self.path, self.headers.get("Authorization")))
+            data = self.rfile.read(int(self.headers["Content-Length"]))
+            self.send_data(201, json.dumps(control.upload_publication(789, data)).encode())
         def do_DELETE(self):
             control.requests.append(("DELETE", self.path, self.headers.get("Authorization")))
             if control.delete_status == 204:
