@@ -5,6 +5,11 @@ set -euo pipefail
 : "${DISPATCH_REF:?Dispatch branch is required}"
 : "${DISPATCH_SHA:?Dispatch SHA is required}"
 
+# The named maintenance lane has an independent strict ancestry/latest-attempt gate.
+if [[ "$DISPATCH_REF" == refs/heads/4.44.x ]]; then
+  exec python3 "$({ cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd; })/verify-maintenance-release-source.py"
+fi
+
 case "$DISPATCH_REF" in
   refs/heads/main|refs/heads/prerelease) ;;
   *) echo "Builds Release requires main or prerelease branch." >&2; exit 1 ;;

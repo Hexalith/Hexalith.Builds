@@ -12,6 +12,10 @@
   },
   "release": {
     "branches": [
+      {
+        "name": "4.44.x",
+        "range": "4.44.x"
+      },
       "main",
       {
         "name": "prerelease",

@@ -19,7 +19,7 @@ function Get-VerifiedSourceCiRun {
     $branch = $env:GITHUB_REF -creplace '^refs/heads/', ''
     if ($RunId -cnotmatch '^[1-9][0-9]*$' -or $Revision -cnotmatch '^[0-9a-f]{40}$' -or
         $repository -cnotmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' -or
-        $env:GITHUB_REF -cnotin @('refs/heads/main', 'refs/heads/prerelease')) {
+        $env:GITHUB_REF -cnotin @('refs/heads/main', 'refs/heads/prerelease', 'refs/heads/4.44.x')) {
         throw 'Source CI verification requires a valid run ID, source revision, repository, and release branch.'
     }
 
@@ -95,7 +95,7 @@ function Assert-CurrentReleaseSource {
     }
     if ($releaseContext -and (
         $env:GITHUB_REPOSITORY -cne 'Hexalith/Hexalith.Builds' -or
-        $env:GITHUB_REF -cnotin @('refs/heads/main', 'refs/heads/prerelease') -or
+        $env:GITHUB_REF -cnotin @('refs/heads/main', 'refs/heads/prerelease', 'refs/heads/4.44.x') -or
         $env:GITHUB_EVENT_NAME -cne 'workflow_dispatch' -or
         $env:GITHUB_WORKFLOW_REF -cne "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@$($env:GITHUB_REF)" -or
         $env:GITHUB_WORKFLOW_SHA -cne [string]$Qualification.sourceTree.revision -or
