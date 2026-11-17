@@ -674,7 +674,7 @@ jobs:
           runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@c171c7265e70806f09f6ac54130aa6e28ef74395 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@c171c7265e70806f09f6ac54130aa6e28ef74395 # untagged commit c171c7265e70806f09f6ac54130aa6e28ef74395
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -991,6 +991,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: false
+          persist-credentials: false
       - name: Checkout approved Builds preparation
         if: ${{ inputs.module-manifest != '' && inputs.governed-ci }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1000,7 +1001,7 @@ jobs:
           path: .hexalith/builds-execution
           persist-credentials: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@beb85e497957fedc66854013efd2cc4bd216ecbc # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@beb85e497957fedc66854013efd2cc4bd216ecbc # untagged commit beb85e497957fedc66854013efd2cc4bd216ecbc
       - name: Validate Aspire hooks
         id: validate-aspire-hooks
         if: ${{ inputs.aspire-prepare-script != '' || inputs.aspire-runner-script != '' }}
@@ -1135,7 +1136,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@c171c7265e70806f09f6ac54130aa6e28ef74395 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@c171c7265e70806f09f6ac54130aa6e28ef74395 # untagged commit c171c7265e70806f09f6ac54130aa6e28ef74395
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -1264,6 +1265,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: false
+          persist-credentials: false
       - name: Checkout approved Builds preparation
         if: ${{ inputs.module-manifest != '' && inputs.governed-ci }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1273,7 +1275,7 @@ jobs:
           path: .hexalith/builds-execution
           persist-credentials: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@beb85e497957fedc66854013efd2cc4bd216ecbc # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@beb85e497957fedc66854013efd2cc4bd216ecbc # untagged commit beb85e497957fedc66854013efd2cc4bd216ecbc
       - name: Initialize .NET
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
@@ -1327,7 +1329,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@c171c7265e70806f09f6ac54130aa6e28ef74395 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@c171c7265e70806f09f6ac54130aa6e28ef74395 # untagged commit c171c7265e70806f09f6ac54130aa6e28ef74395
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
