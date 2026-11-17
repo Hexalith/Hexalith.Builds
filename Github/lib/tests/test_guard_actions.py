@@ -24,10 +24,10 @@ class PinnedParser:
     """A test adapter to root's already signature-verified, integrity lock pin."""
 
     def __init__(self):
-        self.cli = ROOT / "node_modules/js-yaml/bin/js-yaml.js"
+        self.cli = ROOT / "node_modules/js-yaml/bin/js-yaml.mjs"
         package = json.loads((self.cli.parents[1] / "package.json").read_text())
-        if package["version"] != "4.3.2":
-            raise AssertionError("action tests require the committed js-yaml 4.3.2 pin")
+        if package["version"] != "5.5.0":
+            raise AssertionError("action tests require the committed js-yaml 5.5.0 pin")
         self.calls = 0
 
     def parse_yaml(self, text):

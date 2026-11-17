@@ -57,11 +57,11 @@ with ledger.open("a") as stream:
 if name=="npm":
     assert args in (["ci", "--ignore-scripts"], ["audit", "signatures"]), args
     package=json.loads((cwd / "package.json").read_text())
-    assert package["dependencies"]=={{"@commitlint/cli":"21.2.4","@commitlint/config-conventional":"21.2.4","js-yaml":"4.3.2"}}
+    assert package["dependencies"]=={{"@commitlint/cli":"21.2.4","@commitlint/config-conventional":"21.2.4","js-yaml":"5.5.0"}}
     if args==["audit", "signatures"] and (workspace / "fail-guard-signatures").exists():
         print("private-tool-error\\x1b[31m", file=sys.stderr)
         sys.exit(31)
-elif args[0].endswith("js-yaml.js"):
+elif args[0].endswith("js-yaml.mjs"):
     import yaml
     assert data.startswith("# guard YAML input\\n")
     print(json.dumps(yaml.safe_load(data)))

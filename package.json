@@ -4,7 +4,7 @@
   "private": true,
   "description": "Hexalith Build assets",
   "engines": {
-    "node": ">=24.10"
+    "node": ">=26.13"
   },
   "repository": {
     "type": "git",
@@ -51,7 +51,8 @@
     "@commitlint/config-conventional": "21.2.4",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/github": "^12.0.11",
-    "semantic-release": "^25.0.9"
+    "semantic-release": "^26.0.1",
+    "js-yaml": "5.5.0"
   },
   "overrides": {
     "semantic-release": {

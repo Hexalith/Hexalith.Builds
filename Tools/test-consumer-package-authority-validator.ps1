@@ -436,7 +436,7 @@ exit $LASTEXITCODE
     Write-Utf8File -Path $outsideRetained -Content '<Project><ItemGroup><PackageVersion Update="Microsoft.OpenApi" Version="2.13.0" /></ItemGroup></Project>'
     Write-Utf8File -Path (Join-Path $unknownRoot 'Directory.Build.targets') -Content "<Project><Import Project=`"$outsideRetained`" /></Project>"
     Test-Scenario -Name 'Unmeasured owner cannot claim missing retained view through an outside import' -RepositoryRoot $unknownRoot -ExpectedExitCode 1 `
-        -ExpectedOutput "instead of '3.11.0'"
+        -ExpectedOutput "instead of '3.11.1'"
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue

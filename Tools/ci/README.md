@@ -627,7 +627,7 @@ literal text matching can report false positives and obfuscation remains outside
 this lint's scope. Release's existing real NuGet audit remains authoritative.
 
 The guard installs only its action-sourced exact CLI/preset 21.2.4 and js-yaml
-4.3.2 manifests/lock in a private temporary directory after ownership succeeds,
+5.5.0 manifests/lock in a private temporary directory after ownership succeeds,
 using `npm ci --ignore-scripts` followed by `npm audit signatures`. Parser and
 commitlint share that installation. A sanitized process environment and explicit
 action-sourced `--config` prevent module npm configuration, hooks, plugins or

@@ -80,7 +80,7 @@ class Tools:
         return result.stdout
 
     def parse_yaml(self, text: str):
-        output = self._run(["node", str(self.directory / "node_modules/js-yaml/bin/js-yaml.js")],
+        output = self._run(["node", str(self.directory / "node_modules/js-yaml/bin/js-yaml.mjs")],
                            "YAML parser", "# guard YAML input\n" + text, output_limit=MAX_YAML_OUTPUT)
         try:
             document = json.loads(output)

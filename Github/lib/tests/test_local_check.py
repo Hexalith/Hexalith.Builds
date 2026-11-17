@@ -140,7 +140,7 @@ if name=="npm":
     for filename in ("package.json", "package-lock.json"):
         assert (cwd / filename).read_bytes()==(pathlib.Path({str(self.builds_path)!r}) / "Github/guard" / filename).read_bytes()
 elif name=="node":
-    if args[0].endswith("js-yaml.js"):
+    if args[0].endswith("js-yaml.mjs"):
         assert payload.startswith("# guard YAML input\\n")
         print(json.dumps(json.loads(payload.removeprefix("# guard YAML input\\n"))))
     else:
@@ -237,7 +237,7 @@ else:
                 calls = [json.loads(line) for line in self.ledger.read_text().splitlines()]
                 self.assertEqual([["ci", "--ignore-scripts"], ["audit", "signatures"]],
                                  [call["args"] for call in calls if call["tool"] == "npm"])
-                self.assertTrue(any(call["tool"] == "node" and call["args"][0].endswith("js-yaml.js") for call in calls))
+                self.assertTrue(any(call["tool"] == "node" and call["args"][0].endswith("js-yaml.mjs") for call in calls))
                 self.assertTrue(any(call["tool"] == "node" and call["args"][0].endswith("cli.js") for call in calls))
                 self.assertTrue(any("https://github.com/Hexalith/Hexalith.CiCd.git" in call["args"] for call in calls))
                 self.assertTrue(any("https://github.com/Hexalith/Hexalith.Builds.git" in call["args"] for call in calls))
