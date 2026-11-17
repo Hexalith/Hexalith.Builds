@@ -1,0 +1,13 @@
+name: Release
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  require-supported-maintenance-ref:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Refuse publication from the registration declaration
+        run: |
+          echo 'Select the reviewed 4.44.x maintenance branch; this default-branch declaration publishes nothing.' >&2
+          exit 1
