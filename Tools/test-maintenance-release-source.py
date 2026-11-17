@@ -39,7 +39,7 @@ def fixtures():
              'conclusion': 'skipped' if name.startswith('Dependency review') else 'success'} for index, name in enumerate(names)]
     return {HEAD: {'ref': REF, 'url': f'https://api.github.com/repos/{REPO}/git/{REF}',
                    'object': {'type': 'commit', 'sha': SOURCE, 'url': f'https://api.github.com/repos/{REPO}/git/commits/{SOURCE}'}},
-            REG: {'id': 89, 'path': guard.WORKFLOW, 'name': 'CI', 'state': 'active'},
+            REG: {'id': 89, 'path': guard.WORKFLOW, 'name': 'Shared CI', 'state': 'active'},
             LIST: {'total_count': 1, 'workflow_runs': [deepcopy(RUN)]}, RUN_PATH: deepcopy(RUN),
             JOBS: {'total_count': 7, 'jobs': jobs}}
 
@@ -79,10 +79,30 @@ class MaintenanceSourceTests(unittest.TestCase):
 
     def test_exact_live_ref_and_workflow_are_required(self):
         for path, key, value in [(HEAD, 'ref', 'refs/heads/other'), (HEAD, 'url', 'https://api.github.com/repos/Other/Repo/git/' + REF),
-                                 (REG, 'path', '.github/workflows/other.yml'), (REG, 'state', 'disabled_manually'), (REG, 'id', 0), (REG, 'name', 'Other CI')]:
+                                 (REG, 'path', '.github/workflows/other.yml'), (REG, 'state', 'disabled_manually'), (REG, 'id', 0)]:
             data = fixtures(); data[path][key] = value
             with self.subTest(path=path, key=key), self.assertRaises(guard.Refusal):
                 self.execute(data)
+
+    def test_registry_label_is_separate_from_the_frozen_source_run_name(self):
+        result, receipt = self.execute()
+        self.assertEqual(result, (123, 2))
+        self.assertEqual(receipt['workflowCatalogLabel'], 'Shared CI')
+        data = fixtures(); data[RUN_PATH]['name'] = 'Shared CI'
+        with self.assertRaises(guard.Refusal):
+            self.execute(data)
+
+    def test_late_registry_label_change_does_not_change_authenticated_identity(self):
+        def race(path, count, value):
+            if path == REG and count == 2: value['name'] = 'CI'
+        self.assertEqual(self.execute(race=race)[0], (123, 2))
+
+    def test_late_registry_identity_or_state_change_refuses(self):
+        for key, replacement in [('id', 999), ('path', '.github/workflows/foreign.yml'), ('state', 'disabled_manually')]:
+            def race(path, count, value):
+                if path == REG and count == 2: value[key] = replacement
+            with self.subTest(key=key), self.assertRaises(guard.Refusal):
+                self.execute(race=race)
 
     def test_latest_failed_or_running_attempt_never_falls_back_to_older_success(self):
         for conclusion, status in [('failure', 'completed'), (None, 'in_progress')]:

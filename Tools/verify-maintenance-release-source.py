@@ -68,8 +68,7 @@ def verify(api, ancestor, environment, receipt):
     live()
     registered = api(f"repos/{REPOSITORY}/actions/workflows/ci.yml")
     require(isinstance(registered, dict) and positive(registered.get("id"))
-            and registered.get("path") == WORKFLOW and registered.get("name") == "CI"
-            and registered.get("state") == "active",
+            and registered.get("path") == WORKFLOW and registered.get("state") == "active",
             "maintenance CI workflow is unavailable")
     listing = api(f"repos/{REPOSITORY}/actions/workflows/ci.yml/runs?head_sha={source}&event=push&branch={BRANCH}&per_page=100")
     runs = listing.get("workflow_runs")
@@ -117,11 +116,15 @@ def verify(api, ancestor, environment, receipt):
     # Re-discover without a status filter: a newer run or running rerun cannot expose an old green fallback.
     latest = api(f"repos/{REPOSITORY}/actions/workflows/ci.yml/runs?head_sha={source}&event=push&branch={BRANCH}&per_page=100")
     require(latest == listing, "maintenance CI discovery changed before publication")
-    require(api(f"repos/{REPOSITORY}/actions/workflows/ci.yml") == registered,
+    # The registry display label follows the default-branch reusable workflow.
+    # Authenticate its stable identity/state; the source run name stays frozen in identity().
+    late_registered = api(f"repos/{REPOSITORY}/actions/workflows/ci.yml")
+    require(isinstance(late_registered, dict) and late_registered.get("id") == registered["id"]
+            and late_registered.get("path") == WORKFLOW and late_registered.get("state") == "active",
             "registered maintenance workflow changed before publication")
     live()
     receipt.update(status="verified", ciRunId=current["id"], ciRunAttempt=current["run_attempt"],
-                   workflowId=registered["id"], jobs=[{key: job[key] for key in ("id", "name", "conclusion")} for job in values])
+                   workflowId=registered["id"], workflowCatalogLabel=registered.get("name"), jobs=[{key: job[key] for key in ("id", "name", "conclusion")} for job in values])
     return current["id"], current["run_attempt"]
 
 
