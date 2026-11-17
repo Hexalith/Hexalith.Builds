@@ -74,6 +74,60 @@ class CarrierTests(unittest.TestCase):
         self.assertEqual((self.directory / carrier.INVENTORY_NAME).read_bytes(), original)
         self.assertEqual((self.evidence / "sample.json").read_bytes(), self.data)
 
+    def test_exact_maintenance_ci_and_release_preserve_carrier_binding(self):
+        for kind in ("ci", "release"):
+            with self.subTest(kind=kind):
+                self.inventory["version"] = "4.44.14" if kind == "release" else "0.0.0-ci.123"
+                self.inventory["qualification"]["releaseEligible"] = kind == "release"
+                workflow = "build-release.yml" if kind == "release" else "ci.yml"
+                identity = {"GITHUB_JOB": "release" if kind == "release" else "contracts",
+                            "GITHUB_EVENT_NAME": "workflow_dispatch" if kind == "release" else "push",
+                            "GITHUB_WORKFLOW_REF": "Hexalith/Hexalith.Builds/.github/workflows/" + workflow + "@refs/heads/4.44.x"}
+                original = self.write_inventory()
+                with patch.dict(os.environ, identity):
+                    path = carrier.archive_evidence(self.directory, kind)
+                    self.assertEqual(path, carrier.verify_archive(self.directory, kind))
+                    with zipfile.ZipFile(path) as archive:
+                        self.assertEqual(original, archive.read(carrier.INVENTORY_NAME))
+                        producer = json.loads(archive.read("producer-run.json"))
+                        self.assertEqual(identity["GITHUB_WORKFLOW_REF"], producer["GITHUB_WORKFLOW_REF"])
+                        self.assertEqual(SOURCE, producer["sourceRevision"])
+                        self.assertEqual(kind, producer["kind"])
+                        self.assertEqual("2", producer["GITHUB_RUN_ATTEMPT"])
+                    path.unlink()
+
+    def test_maintenance_carrier_refuses_other_branches_tags_and_versions(self):
+        self.inventory["version"] = "4.44.14"
+        self.write_inventory()
+        for ref in ("heads/4.45.x", "heads/4.44", "heads/4x44xx", "heads/4.44.x/other", "tags/v4.44.14"):
+            with self.subTest(ref=ref), patch.dict(os.environ, {"GITHUB_WORKFLOW_REF":
+                    "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/" + ref}):
+                with self.assertRaises(ValueError):
+                    carrier.archive_evidence(self.directory, "release")
+                self.assertFalse((self.directory / carrier.ARCHIVE_NAME).exists())
+        with patch.dict(os.environ, {"GITHUB_WORKFLOW_REF":
+                "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/4.44.x"}):
+            for version in ("4.45.0", "5.0.0", "4.44.14-preview.1", "4.44.014"):
+                with self.subTest(version=version):
+                    self.inventory["version"] = version
+                    self.write_inventory()
+                    with self.assertRaisesRegex(ValueError, "exact stable 4.44"):
+                        carrier.archive_evidence(self.directory, "release")
+
+    def test_maintenance_carrier_keeps_all_producer_identity_refusals(self):
+        self.inventory["version"] = "4.44.14"
+        self.write_inventory()
+        valid = "Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/4.44.x"
+        with patch.dict(os.environ, {"GITHUB_WORKFLOW_REF": valid}):
+            for key, value in (("GITHUB_WORKFLOW_SHA", "b" * 40), ("GITHUB_SHA", "b" * 40),
+                               ("GITHUB_REPOSITORY", "Other/Builds"), ("GITHUB_RUN_ID", "0"),
+                               ("GITHUB_RUN_ATTEMPT", "0"), ("GITHUB_JOB", "contracts"),
+                               ("GITHUB_EVENT_NAME", "push"), ("GITHUB_WORKFLOW_REF", valid.replace("build-release.yml", "foreign.yml"))):
+                with self.subTest(key=key), patch.dict(os.environ, {key: value}):
+                    with self.assertRaises(ValueError):
+                        carrier.archive_evidence(self.directory, "release")
+                    self.assertFalse((self.directory / carrier.ARCHIVE_NAME).exists())
+
     def test_rejects_changed_hash_size_empty_duplicate_or_unsafe_inventory(self):
         original = copy.deepcopy(self.inventory)
         for fault in ("hash", "size", "empty", "duplicate", "escape", "absolute", "case-alias"):
