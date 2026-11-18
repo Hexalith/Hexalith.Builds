@@ -114,10 +114,10 @@ public sealed class CompositionCatalogPackageViewTests
             File.Copy(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), catalog);
             SourceMapping mapping = new(WorkspaceMode.Package, root, "Hexalith.Platform", [], false);
             CompositionDeclarationOptions options = new(mapping, []);
-            options.CatalogVersion("tenants", "probe").ShouldBe("8.0.1");
+            options.CatalogVersion("tenants", "probe").ShouldBe("8.0.2");
             foreach (string package in new[] { "Hexalith.Tenants.Aspire", "Hexalith.Tenants.Client", "Hexalith.Tenants.Contracts", "Hexalith.Tenants.Server", "Hexalith.Tenants.Testing" })
             {
-                options.CatalogPackageVersion(package, "probe").ShouldBe("8.0.1", package);
+                options.CatalogPackageVersion(package, "probe").ShouldBe("8.0.2", package);
             }
         }
         finally
