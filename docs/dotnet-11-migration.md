@@ -32,8 +32,8 @@ is needed. Historical audit observations remain historical evidence.
 - SDK 10.0.404 remains installed alongside SDK 11 in relevant CI jobs for offline
   older-framework reference packs and runtimes. It does not select the active SDK.
 - CommunityToolkit.Aspire.Hosting.Dapr is 17.0.0-beta.1052 to stay on the Aspire 17
-  hosting line. Aspire Keycloak remains on its published preview channel. Neither
-  hold is removed by retargeting to .NET 11.
+  hosting line. Folders.Aspire retains its stable 13.0.0 pin. Aspire Keycloak remains on its
+  published preview channel. Neither hold is removed by retargeting to .NET 11.
 - AngleSharp remains on the 1.10 line (currently 1.10.4) for bunit 2.15.2's
   BeforeToggle implementation; the host framework change does not establish
   compatibility with AngleSharp 2.

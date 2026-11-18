@@ -4,6 +4,8 @@
     <HexalithBuildLoaded>true</HexalithBuildLoaded>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <NoWarn>$(NoWarn);S113;SA1609;SA1309;SA1101;SA1009;SA1111;RCS1158;SA1502;IDE0079;SA1518;S1135;</NoWarn>
+    <!-- Aspire 17 reports ASPIRE012 for the still-supported AppHost SDK; keep it until Project v2 migration. -->
+    <SuppressAspireAppHostSdkObsoleteWarning>true</SuppressAspireAppHostSdkObsoleteWarning>
     <AnalysisMode>All</AnalysisMode>
     <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
     <AnalysisLevel>preview-all</AnalysisLevel>
