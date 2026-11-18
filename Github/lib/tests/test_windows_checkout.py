@@ -203,7 +203,44 @@ class ProtectedCheckoutTests(unittest.TestCase):
         self.assertNotIn("core.protectNTFS=false", args)
         self.assertIn("credential.helper=", args)
         self.assertIn("submodule.recurse=false", args)
+        self.assertIn("core.hooksPath=/dev/null", args)
+        self.assertIn("http.extraHeader=", args)
+        self.assertEqual("/dev/null", run.call_args.kwargs["env"]["GIT_CONFIG_GLOBAL"])
         self.assertNotIn("GITHUB_TOKEN", run.call_args.kwargs["env"])
+
+    def test_hosted_job_token_is_command_local_and_absent_from_git_environment(self):
+        token = "ghs_" + "A" * 40
+        header = "AUTHORIZATION: basic " + CHECKOUT.base64.b64encode(
+            b"x-access-token:" + token.encode("ascii")).decode("ascii")
+        git = CHECKOUT.Git(self.source, extra_header=header)
+        with mock.patch.object(CHECKOUT.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, b"", b"")) as run:
+            git.run("fetch", "origin", "1" * 40)
+        args = run.call_args.args[0]
+        self.assertIn("http.extraHeader=" + header, args)
+        self.assertIn("credential.helper=", args)
+        environment = run.call_args.kwargs["env"]
+        self.assertNotIn("GITHUB_TOKEN", environment)
+        self.assertNotIn(token, environment.values())
+
+    def test_hosted_job_token_is_required_only_on_actions(self):
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "false"}, clear=False):
+            os.environ.pop("GITHUB_TOKEN", None)
+            self.assertIsNone(CHECKOUT.job_authorization_header())
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "ghs_" + "B" * 40}):
+            header = CHECKOUT.job_authorization_header()
+        self.assertTrue(header.startswith("AUTHORIZATION: basic "))
+        self.assertNotIn("ghs_", header)
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "not-a-job-token"}):
+            with self.assertRaisesRegex(CHECKOUT.ConfigError, "job token"):
+                CHECKOUT.job_authorization_header()
+
+    def test_git_failures_are_classified_without_stderr_or_remotes(self):
+        result = subprocess.CompletedProcess(
+            ["git", "fetch"], 128, b"", b"fatal: unable to access 'https://github.com/Example/secret.git/': The requested URL returned error: 403")
+        message = CHECKOUT.describe_git_failure(("fetch", "origin", "1" * 40), result)
+        self.assertEqual("protected Git fetch failed (128/auth)", message)
+        self.assertNotIn("github.com", message)
+        self.assertNotIn("secret", message)
 
 
 if __name__ == "__main__":

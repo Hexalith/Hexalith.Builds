@@ -8,6 +8,7 @@ parent submodule helper are deliberately unavailable in this opt-in path.
 
 from __future__ import annotations
 
+import base64
 import ctypes
 from dataclasses import dataclass
 from functools import cmp_to_key
@@ -25,9 +26,40 @@ from ci_config import ConfigError, _object, _constant, validate_windows_checkout
 
 OID = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
+JOB_TOKEN = re.compile(r"ghs_[A-Za-z0-9]{1,255}\Z")
 SELECTORS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
              "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE",
              "GIT_CONFIG", "GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS")
+GIT_NULL = "/dev/null"
+
+
+def job_authorization_header() -> str | None:
+    """Use the hosted job token only as a command-local GitHub HTTPS header."""
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return None
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if JOB_TOKEN.fullmatch(token) is None:
+        raise ConfigError("hosted Windows checkout requires the job token")
+    credential = base64.b64encode(b"x-access-token:" + token.encode("ascii")).decode("ascii")
+    return "AUTHORIZATION: basic " + credential
+
+
+def describe_git_failure(args: tuple[str, ...], result: subprocess.CompletedProcess[bytes]) -> str:
+    """Classify a Git failure without echoing remotes, credentials or stderr."""
+    text = (result.stderr or b"")[:2048].decode("utf-8", "replace").lower()
+    if "authentication failed" in text or "error: 401" in text or "error: 403" in text:
+        kind = "auth"
+    elif "could not resolve host" in text:
+        kind = "dns"
+    elif "not our ref" in text or "couldn't find remote ref" in text:
+        kind = "ref"
+    elif "unable to access" in text and ("nul" in text or "/dev/null" in text):
+        kind = "config-device"
+    elif "unable to access" in text:
+        kind = "transport"
+    else:
+        kind = "command"
+    return f"protected Git {args[0]} failed ({result.returncode}/{kind})"
 
 
 @dataclass(frozen=True, order=True)
@@ -47,14 +79,14 @@ def regular_path(root: Path) -> None:
 
 
 class Git:
-    """Anonymous native Git with command-local path protections and no hooks."""
+    """Isolated native Git with command-local path protections and no hooks."""
 
-    def __init__(self, root: Path, executable: str = "git"):
-        self.root, self.executable = root, executable
+    def __init__(self, root: Path, executable: str = "git", extra_header: str | None = None):
+        self.root, self.executable, self.extra_header = root, executable, extra_header
         self.environment = {key: value for key, value in os.environ.items()
                             if key in {"PATH", "SystemRoot", "WINDIR", "TMPDIR", "TMP", "TEMP",
                                        "LANG", "LC_ALL", "LC_CTYPE", "SSL_CERT_FILE", "SSL_CERT_DIR"}}
-        self.environment.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+        self.environment.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=GIT_NULL,
                                 GIT_TERMINAL_PROMPT="0", GIT_NO_REPLACE_OBJECTS="1",
                                 GIT_LITERAL_PATHSPECS="1", GIT_LFS_SKIP_SMUDGE="1")
 
@@ -63,15 +95,17 @@ class Git:
         environment = self.environment.copy()
         if index is not None:
             environment["GIT_INDEX_FILE"] = str(index)
+        header = self.extra_header or ""
         result = subprocess.run([self.executable, "-c", "core.protectNTFS=true", "-c", "core.longpaths=true",
-            "-c", "core.hooksPath=" + os.devnull, "-c", "credential.helper=", "-c", "http.extraHeader=",
+            "-c", "core.hooksPath=" + GIT_NULL, "-c", "credential.helper=",
+            "-c", "http.extraHeader=" + header,
             "-c", "protocol.allow=never", "-c", "protocol.https.allow=always", "-c", "protocol.file.allow=never",
             "-c", "submodule.recurse=false", "-c", "fetch.recurseSubmodules=false",
             "-c", "filter.lfs.smudge=", "-c", "filter.lfs.process=", "-c", "filter.lfs.required=false",
             "-C", str(self.root), *args], env=environment, input=data, capture_output=True, check=False)
         if result.returncode or (quiet and result.stderr):
             # Do not echo authored remote configuration, credentials or terminal controls.
-            raise ConfigError(f"protected Git {args[0]} failed ({result.returncode})")
+            raise ConfigError(describe_git_failure(args, result))
         return result.stdout
 
 
@@ -255,7 +289,7 @@ def initialize_dependencies(git: Git, paths: list[str], entries: tuple[Entry, ..
         if root.exists() and (not root.is_dir() or any(root.iterdir())):
             raise ConfigError("direct dependency checkout is unexpectedly occupied")
         root.mkdir(parents=True, exist_ok=True)
-        child = Git(root, git.executable)
+        child = Git(root, git.executable, extra_header=git.extra_header)
         child.run("init", "--template=")
         child.run("remote", "add", "origin", url)
         child.run("fetch", "--no-recurse-submodules", "--no-tags", "--depth=1", "origin", pin[path])
@@ -284,7 +318,7 @@ def main() -> int:
         regular_path(root)
         if not root.is_dir() or any(root.iterdir()):
             raise ConfigError("protected checkout requires a fresh empty workspace")
-        git = Git(root)
+        git = Git(root, extra_header=job_authorization_header())
         if b".windows." not in git.run("--version"):
             raise ConfigError("protected checkout requires native Windows Git")
         repository = os.environ["GITHUB_REPOSITORY"]
