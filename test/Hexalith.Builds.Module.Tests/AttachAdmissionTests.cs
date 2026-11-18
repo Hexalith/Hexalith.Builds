@@ -18,6 +18,7 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Verifies explicit attach admission, recorded holds, retries, and attachment-scoped endings.</summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class AttachAdmissionTests
 {
     private static readonly JsonElement _local = JsonSerializer.SerializeToElement(new { kind = "local" });
@@ -219,6 +220,7 @@ public sealed class AttachAdmissionTests
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
         using IDisposable handoff = ForeignIssuedHandoff(workspace.Root, owner, Ci("job-b"));
+        using IDisposable ambient = ScrubbedGitHub();
         ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
         result.Diagnostics.Single().Field.ShouldBe("cross-job");
     }
@@ -230,9 +232,90 @@ public sealed class AttachAdmissionTests
     {
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
+        using IDisposable noHandoff = Ambient(("HEXALITH_G4_RUN_ID", null), ("HEXALITH_TEST_ENVIRONMENT_PATH", null), ("HEXALITH_G4_PLAN_PATH", null));
         using IDisposable ambient = IncompleteGitHub();
         ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
         result.Diagnostics.Single().Field.ShouldBe("attacher-context-unverifiable");
+    }
+
+    /// <summary>A handoff with one mismatched binding, unsupported runner, malformed attempt, unparsable or locked descriptor, or invalid state path refuses as unverifiable instead of admitting or crashing.</summary>
+    /// <param name="mutation">The single issued handoff change.</param>
+    /// <returns>The unverifiable refusal assertion.</returns>
+    [Theory]
+    [InlineData("descriptor-context")]
+    [InlineData("role")]
+    [InlineData("plan-attempt")]
+    [InlineData("self-hosted")]
+    [InlineData("not-disposable")]
+    [InlineData("fractional-attempt")]
+    [InlineData("descriptor-json")]
+    [InlineData("descriptor-locked")]
+    [InlineData("state-directory-nul")]
+    public async Task MutatedIssuedHandoffIsUnverifiableAsync(string mutation)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
+        using IDisposable handoff = mutation switch
+        {
+            "self-hosted" => ForeignIssuedHandoff(workspace.Root, owner, Ci("job-a", runnerKind: "other")),
+            "not-disposable" => ForeignIssuedHandoff(workspace.Root, owner, Ci("job-a", disposable: false)),
+            "fractional-attempt" => ForeignIssuedHandoff(workspace.Root, owner, JsonSerializer.SerializeToElement(new { kind = "ci", repository = "o/r", workflowRunId = "1", workflowAttempt = 1.5, jobId = "job-a", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true })),
+            _ => IssuedHandoff(store, owner, Ci("job-a"), mutation),
+        };
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable locked = (mutation == "descriptor-locked"
+            ? new FileStream(Path.Combine(owner.Workspace, "test-environment.json"), FileMode.Open, FileAccess.ReadWrite, FileShare.None)
+            : Stream.Null).ConfigureAwait(true);
+        using IDisposable ambient = IncompleteGitHub();
+        ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Diagnostics.Single().Field.ShouldBe("attacher-context-unverifiable");
+    }
+
+    /// <summary>A complete process CI identity takes precedence over issued owner state from another job.</summary>
+    /// <returns>The cross-job refusal assertion.</returns>
+    [Fact]
+    public async Task CompleteProcessIdentityPrecedesIssuedOwnerStateAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
+        using IDisposable handoff = IssuedHandoff(store, owner, Ci("job-a"));
+        using IDisposable ambient = CompleteGitHub("job-b");
+        ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Diagnostics.Single().Field.ShouldBe("cross-job");
+    }
+
+    /// <summary>A descriptor and plan written by the real producers in the owner's CI job admit a scrubbed attacher from that job.</summary>
+    /// <returns>The same-job admission assertions.</returns>
+    [Fact]
+    public async Task WrittenOwnerHandoffAdmitsScrubbedSameJobAttacherAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
+        ModuleTestSelection selected = owner.SelectedTest.ShouldNotBeNull();
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root, owner.RunId) with
+        {
+            SelectedTest = selected,
+            Workspace = Directory.CreateDirectory(owner.Workspace).FullName,
+            AttemptId = owner.AttemptId!,
+            EnvironmentId = owner.EnvironmentId!,
+            ResourceClaimStateDirectory = store.Directory,
+        };
+        plan = await TestEnvironmentProvisioningFixture.PrepareAsync(plan, workspace.Save(), workspace.Root).ConfigureAwait(true);
+        plan = plan with { ExecutionTiming = ModuleTestExecutionTiming.Start(selected, DateTimeOffset.UtcNow) };
+        CompositionReadiness ready = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("eventstore", "project", "Healthy")]), selected.ModuleId);
+        string descriptor;
+        using (System.Diagnostics.Process host = new())
+        using (CompleteGitHub("job-a"))
+        {
+            descriptor = await TestEnvironmentDescriptorWriter.WriteAsync(new(plan, ready, "fixture-key", host), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        string planPath = Path.Combine(plan.Workspace, "plan.json");
+        await CompositionDocumentStore.WriteAsync(planPath, plan, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using IDisposable handoff = Ambient(("HEXALITH_G4_RUN_ID", owner.RunId), ("HEXALITH_TEST_ENVIRONMENT_PATH", descriptor), ("HEXALITH_G4_PLAN_PATH", planPath));
+        using IDisposable ambient = ScrubbedGitHub();
+        ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, string.Join(';', result.Diagnostics.Select(item => item.Field + item.Message)));
+        _ = result.Attachment.ShouldNotBeNull();
     }
 
     /// <summary>A finished owner refuses new attaches and names its state, unless it is a ready failure-retained local environment.</summary>
@@ -1867,12 +1950,12 @@ public sealed class AttachAdmissionTests
         return hold;
     }
 
-    private static JsonElement Ci(string job, string repository = "o/r", string run = "1", int attempt = 1) => JsonSerializer.SerializeToElement(new { kind = "ci", repository, workflowRunId = run, workflowAttempt = attempt, jobId = job, runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
+    private static JsonElement Ci(string job, string repository = "o/r", string run = "1", int attempt = 1, string runnerKind = "github-hosted", bool disposable = true) => JsonSerializer.SerializeToElement(new { kind = "ci", repository, workflowRunId = run, workflowAttempt = attempt, jobId = job, runnerKind, operatingSystem = "Linux", disposable });
 
-    private static Restore IssuedHandoff(CompositionRunStateStore store, CompositionRunState owner, JsonElement context)
+    private static Restore IssuedHandoff(CompositionRunStateStore store, CompositionRunState owner, JsonElement context, string? mutation = null)
     {
         _ = Directory.CreateDirectory(owner.Workspace);
-        return WriteHandoff(owner.Workspace, store.Directory, owner, context);
+        return WriteHandoff(owner.Workspace, store.Directory, owner, context, mutation);
     }
 
     private static Restore ForeignIssuedHandoff(string root, CompositionRunState owner, JsonElement context)
@@ -1884,30 +1967,42 @@ public sealed class AttachAdmissionTests
         return WriteHandoff(workspace, stateDirectory, foreign, context);
     }
 
-    private static Restore WriteHandoff(string workspace, string stateDirectory, CompositionRunState owner, JsonElement context)
+    private static Restore WriteHandoff(string workspace, string stateDirectory, CompositionRunState owner, JsonElement context, string? mutation = null)
     {
-        File.WriteAllText(Path.Combine(workspace, "test-environment.json"), JsonSerializer.Serialize(new
+        string role = mutation == "role" ? "attached" : "owner";
+        JsonElement descriptorContext = mutation == "descriptor-context" ? Ci("job-b") : context;
+        string descriptor = JsonSerializer.Serialize(new
         {
             bindings = new
             {
-                run = new { runId = owner.RunId, ownerRunId = owner.RunId, attemptId = owner.AttemptId, environmentId = owner.EnvironmentId, role = "owner" },
-                environment = new { executionContext = context },
+                run = new { runId = owner.RunId, ownerRunId = owner.RunId, attemptId = owner.AttemptId, environmentId = owner.EnvironmentId, role },
+                environment = new { executionContext = descriptorContext },
             },
-        }));
-        File.WriteAllText(Path.Combine(workspace, "plan.json"), JsonSerializer.Serialize(new
+        });
+        File.WriteAllText(Path.Combine(workspace, "test-environment.json"), mutation == "descriptor-json" ? "{" : descriptor);
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace, owner.RunId) with
         {
-            schema = "hexalith.g4-run-plan.v1",
-            runId = owner.RunId,
-            workspace,
-            attemptId = owner.AttemptId,
-            environmentId = owner.EnvironmentId,
-            resourceClaimStateDirectory = stateDirectory,
-        }));
+            Workspace = workspace,
+            AttemptId = mutation == "plan-attempt" ? CompositionRunPlanFactory.NewRunId() : owner.AttemptId!,
+            EnvironmentId = owner.EnvironmentId!,
+            ResourceClaimStateDirectory = mutation == "state-directory-nul" ? stateDirectory + "\0" : stateDirectory,
+        };
+        File.WriteAllText(Path.Combine(workspace, "plan.json"), CompositionDocumentStore.Serialize(plan));
         return Ambient(
             ("HEXALITH_G4_RUN_ID", owner.RunId),
             ("HEXALITH_TEST_ENVIRONMENT_PATH", Path.Combine(workspace, "test-environment.json")),
             ("HEXALITH_G4_PLAN_PATH", Path.Combine(workspace, "plan.json")));
     }
+
+    private static Restore CompleteGitHub(string job) => Ambient(
+        ("CI", "true"),
+        ("GITHUB_ACTIONS", "true"),
+        ("GITHUB_REPOSITORY", "o/r"),
+        ("GITHUB_RUN_ID", "1"),
+        ("GITHUB_RUN_ATTEMPT", "1"),
+        ("GITHUB_JOB", job),
+        ("RUNNER_OS", "Linux"),
+        ("RUNNER_ENVIRONMENT", "github-hosted"));
 
     private static Restore IncompleteGitHub() => Ambient(
         ("CI", "true"),

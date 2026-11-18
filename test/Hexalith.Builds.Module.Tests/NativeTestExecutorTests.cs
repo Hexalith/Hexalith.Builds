@@ -525,10 +525,12 @@ public sealed class NativeTestExecutorTests
     public void HandoffCarriesRunScopedEndpointsAndIdentity()
     {
         string root = CompositionTestFiles.CreateDirectory();
+        string? previousHold = Environment.GetEnvironmentVariable(NativeTestHandoff.LifecycleHold);
         try
         {
             CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root);
             CompositionReadiness readiness = new(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), new Uri("http://127.0.0.1:20013/"), []);
+            Environment.SetEnvironmentVariable(NativeTestHandoff.LifecycleHold, null);
 
             IReadOnlyDictionary<string, string> handoff = NativeTestHandoff.Create(plan, readiness, "access-token");
 
@@ -544,19 +546,12 @@ public sealed class NativeTestExecutorTests
             handoff[NativeTestHandoff.AccessToken].ShouldBe("access-token");
             handoff.Keys.ShouldNotContain(CompositionEnvironment.SigningKey);
             handoff.ContainsKey(NativeTestHandoff.LifecycleHold).ShouldBeFalse();
-            string? previous = Environment.GetEnvironmentVariable(NativeTestHandoff.LifecycleHold);
-            try
-            {
-                Environment.SetEnvironmentVariable(NativeTestHandoff.LifecycleHold, "1");
-                NativeTestHandoff.Create(plan, readiness, "access-token")[NativeTestHandoff.LifecycleHold].ShouldBe("1");
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(NativeTestHandoff.LifecycleHold, previous);
-            }
+            Environment.SetEnvironmentVariable(NativeTestHandoff.LifecycleHold, "1");
+            NativeTestHandoff.Create(plan, readiness, "access-token")[NativeTestHandoff.LifecycleHold].ShouldBe("1");
         }
         finally
         {
+            Environment.SetEnvironmentVariable(NativeTestHandoff.LifecycleHold, previousHold);
             CompositionTestFiles.Delete(root);
         }
     }

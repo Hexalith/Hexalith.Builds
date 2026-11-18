@@ -277,9 +277,9 @@ public static class TestEnvironmentDescriptorWriter
             {
                 issued = ReadIssuedOwnerContext();
             }
-            catch (InvalidDataException exception)
+            catch (Exception exception) when (exception is InvalidDataException or JsonException or IOException or UnauthorizedAccessException or ArgumentException)
             {
-                issuedError = exception;
+                issuedError = exception as InvalidDataException ?? new InvalidDataException("Issued owner metadata is unreadable or malformed.", exception);
             }
         }
 
@@ -373,7 +373,7 @@ public static class TestEnvironmentDescriptorWriter
         }
 
         if (!context.TryGetProperty("workflowAttempt", out JsonElement attempt) || attempt.ValueKind != JsonValueKind.Number
-            || attempt.GetInt32() <= 0
+            || !attempt.TryGetInt32(out int attemptNumber) || attemptNumber <= 0
             || string.IsNullOrWhiteSpace(Text(context, "repository"))
             || string.IsNullOrWhiteSpace(Text(context, "workflowRunId"))
             || string.IsNullOrWhiteSpace(Text(context, "jobId")))
