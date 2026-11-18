@@ -48,6 +48,9 @@ public static class NativeTestHandoff
     /// <summary>The strict private channel version, independent of the credential-free v1 environment schema.</summary>
     public const string EndpointCredentialsSchema = "hexalith.test-endpoint-credentials.v1";
 
+    /// <summary>Opt-in native hold after real persistence, forwarded only when the owner process requested it.</summary>
+    public const string LifecycleHold = "HEXALITH_CI_LIFECYCLE_HOLD";
+
     /// <summary>The private execution tag inherited only by one native child and its descendants.</summary>
     internal const string _nativeExecutionId = "HEXALITH_G4_NATIVE_EXECUTION_ID";
 
@@ -142,6 +145,11 @@ public static class NativeTestHandoff
             values["HEXALITH_G4_PLAN_PATH"] = attached?.PlanPath ?? Path.Combine(plan.Workspace, "plan.json");
             values["HEXALITH_G4_READINESS_PATH"] = attached?.ReadinessPath ?? plan.ReadinessPath;
             values["HEXALITH_G4_SOURCE_MAPPING_PATH"] = Path.Combine(plan.Workspace, "source-mapping", "mapping.json");
+        }
+
+        if (string.Equals(Environment.GetEnvironmentVariable(LifecycleHold), "1", StringComparison.Ordinal))
+        {
+            values[LifecycleHold] = "1";
         }
 
         return values;

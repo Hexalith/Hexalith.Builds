@@ -543,6 +543,17 @@ public sealed class NativeTestExecutorTests
             handoff[NativeTestHandoff.Domains].ShouldBe("p0-inventory,p0-orders");
             handoff[NativeTestHandoff.AccessToken].ShouldBe("access-token");
             handoff.Keys.ShouldNotContain(CompositionEnvironment.SigningKey);
+            handoff.ContainsKey(NativeTestHandoff.LifecycleHold).ShouldBeFalse();
+            string? previous = Environment.GetEnvironmentVariable(NativeTestHandoff.LifecycleHold);
+            try
+            {
+                Environment.SetEnvironmentVariable(NativeTestHandoff.LifecycleHold, "1");
+                NativeTestHandoff.Create(plan, readiness, "access-token")[NativeTestHandoff.LifecycleHold].ShouldBe("1");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(NativeTestHandoff.LifecycleHold, previous);
+            }
         }
         finally
         {

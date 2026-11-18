@@ -194,6 +194,47 @@ public sealed class AttachAdmissionTests
         File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(store.Directory, "diagnostics", owner.RunId))).ShouldBeTrue();
     }
 
+    /// <summary>A scrubbed or incomplete CI process admits from verified issued owner state in the same job.</summary>
+    /// <param name="process">The attaching process environment.</param>
+    /// <returns>The same-job admission assertions.</returns>
+    [Theory]
+    [InlineData("scrubbed")]
+    [InlineData("incomplete")]
+    public async Task IssuedOwnerStateAdmitsSameJobWithoutProcessGitHubVariablesAsync(string process)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
+        using IDisposable handoff = IssuedHandoff(store, owner, Ci("job-a"));
+        using IDisposable ambient = process == "incomplete" ? IncompleteGitHub() : Restore.None();
+        ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, string.Join(';', result.Diagnostics.Select(item => item.Field + item.Message)));
+        _ = result.Attachment.ShouldNotBeNull();
+    }
+
+    /// <summary>Issued owner state from another job cannot satisfy same-job admission.</summary>
+    /// <returns>The cross-job refusal assertion.</returns>
+    [Fact]
+    public async Task IssuedOwnerStateFromAnotherJobIsCrossJobAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
+        using IDisposable handoff = ForeignIssuedHandoff(workspace.Root, owner, Ci("job-b"));
+        ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Diagnostics.Single().Field.ShouldBe("cross-job");
+    }
+
+    /// <summary>Incomplete CI without issued owner handoff remains unverifiable.</summary>
+    /// <returns>The unverifiable refusal assertion.</returns>
+    [Fact]
+    public async Task IncompleteProcessWithoutIssuedHandoffIsUnverifiableAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
+        using IDisposable ambient = IncompleteGitHub();
+        ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Diagnostics.Single().Field.ShouldBe("attacher-context-unverifiable");
+    }
+
     /// <summary>A finished owner refuses new attaches and names its state, unless it is a ready failure-retained local environment.</summary>
     /// <param name="owner">The owner state scenario.</param>
     /// <param name="reason">The expected refusal reason, or null when accepted.</param>
@@ -1828,6 +1869,67 @@ public sealed class AttachAdmissionTests
 
     private static JsonElement Ci(string job, string repository = "o/r", string run = "1", int attempt = 1) => JsonSerializer.SerializeToElement(new { kind = "ci", repository, workflowRunId = run, workflowAttempt = attempt, jobId = job, runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
 
+    private static Restore IssuedHandoff(CompositionRunStateStore store, CompositionRunState owner, JsonElement context)
+    {
+        _ = Directory.CreateDirectory(owner.Workspace);
+        return WriteHandoff(owner.Workspace, store.Directory, owner, context);
+    }
+
+    private static Restore ForeignIssuedHandoff(string root, CompositionRunState owner, JsonElement context)
+    {
+        string workspace = Directory.CreateDirectory(Path.Combine(root, "foreign-owner")).FullName;
+        string stateDirectory = Directory.CreateDirectory(Path.Combine(root, "foreign-state")).FullName;
+        CompositionRunState foreign = owner with { Workspace = workspace, ExecutionContext = context };
+        File.WriteAllText(Path.Combine(stateDirectory, owner.RunId + ".json"), CompositionDocumentStore.Serialize(foreign));
+        return WriteHandoff(workspace, stateDirectory, foreign, context);
+    }
+
+    private static Restore WriteHandoff(string workspace, string stateDirectory, CompositionRunState owner, JsonElement context)
+    {
+        File.WriteAllText(Path.Combine(workspace, "test-environment.json"), JsonSerializer.Serialize(new
+        {
+            bindings = new
+            {
+                run = new { runId = owner.RunId, ownerRunId = owner.RunId, attemptId = owner.AttemptId, environmentId = owner.EnvironmentId, role = "owner" },
+                environment = new { executionContext = context },
+            },
+        }));
+        File.WriteAllText(Path.Combine(workspace, "plan.json"), JsonSerializer.Serialize(new
+        {
+            schema = "hexalith.g4-run-plan.v1",
+            runId = owner.RunId,
+            workspace,
+            attemptId = owner.AttemptId,
+            environmentId = owner.EnvironmentId,
+            resourceClaimStateDirectory = stateDirectory,
+        }));
+        return Ambient(
+            ("HEXALITH_G4_RUN_ID", owner.RunId),
+            ("HEXALITH_TEST_ENVIRONMENT_PATH", Path.Combine(workspace, "test-environment.json")),
+            ("HEXALITH_G4_PLAN_PATH", Path.Combine(workspace, "plan.json")));
+    }
+
+    private static Restore IncompleteGitHub() => Ambient(
+        ("CI", "true"),
+        ("GITHUB_ACTIONS", "true"),
+        ("GITHUB_REPOSITORY", "o/r"),
+        ("GITHUB_RUN_ID", "1"),
+        ("GITHUB_RUN_ATTEMPT", "1"),
+        ("GITHUB_JOB", null),
+        ("RUNNER_OS", "Linux"),
+        ("RUNNER_ENVIRONMENT", "github-hosted"));
+
+    private static Restore Ambient(params (string Name, string? Value)[] values)
+    {
+        (string Name, string? Previous)[] previous = [.. values.Select(value => (value.Name, Environment.GetEnvironmentVariable(value.Name)))];
+        foreach ((string name, string? value) in values)
+        {
+            Environment.SetEnvironmentVariable(name, value);
+        }
+
+        return new Restore(previous);
+    }
+
     private static CompositionAttachRequest Request(CompositionRunState owner, string composition) => new(owner.RunId, "source", composition) { AttacherContext = _local };
 
     private static CompositionRunState Finished(CompositionRunState state, string scenario)
@@ -1899,6 +2001,19 @@ public sealed class AttachAdmissionTests
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
         int exit = await ModuleCommandApplication.InvokeAsync(arguments, output, TextWriter.Null, TestContext.Current.CancellationToken, compositionOptions: options, attacherContext: attacherContext).ConfigureAwait(true);
         return (exit, output.ToString());
+    }
+
+    private sealed class Restore((string Name, string? Previous)[] previous) : IDisposable
+    {
+        public void Dispose()
+        {
+            foreach ((string name, string? value) in previous)
+            {
+                Environment.SetEnvironmentVariable(name, value);
+            }
+        }
+
+        internal static Restore None() => new([]);
     }
 
     private sealed class OwnerRun : IAsyncDisposable

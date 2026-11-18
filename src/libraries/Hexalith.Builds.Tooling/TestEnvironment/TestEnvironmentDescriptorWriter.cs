@@ -264,6 +264,195 @@ public static class TestEnvironmentDescriptorWriter
             : new { kind = "ci", repository, workflowRunId = run, workflowAttempt = attempt, jobId = job, runnerKind, operatingSystem = os, disposable = runner == "github-hosted" };
     }
 
+    /// <summary>Resolves attacher job identity from this process, or from issued owner state when GitHub variables are absent.</summary>
+    /// <returns>The process or issued owner execution context.</returns>
+    /// <exception cref="InvalidDataException">Neither complete process metadata nor verified issued owner context is available.</exception>
+    internal static JsonElement ResolveAttacherContext()
+    {
+        JsonElement? issued = null;
+        InvalidDataException? issuedError = null;
+        if (HandoffDeclared())
+        {
+            try
+            {
+                issued = ReadIssuedOwnerContext();
+            }
+            catch (InvalidDataException exception)
+            {
+                issuedError = exception;
+            }
+        }
+
+        try
+        {
+            JsonElement process = JsonSerializer.SerializeToElement(ExecutionContext());
+            return IsLocalExecution() && issued is { } recorded && Kind(recorded) == "ci" ? recorded : process;
+        }
+        catch (InvalidDataException processError)
+        {
+            return issued ?? throw (issuedError ?? processError);
+        }
+    }
+
+    private static bool HandoffDeclared() =>
+        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HEXALITH_TEST_ENVIRONMENT_PATH"))
+        || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HEXALITH_G4_PLAN_PATH"))
+        || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HEXALITH_G4_RUN_ID"));
+
+    private static JsonElement ReadIssuedOwnerContext()
+    {
+        string runId = Required("HEXALITH_G4_RUN_ID");
+        if (runId.Length != 32 || runId.Any(value => value is not ((>= '0' and <= '9') or (>= 'a' and <= 'f'))))
+        {
+            throw new InvalidDataException("Issued owner run identity is malformed.");
+        }
+
+        string descriptorPath = Required("HEXALITH_TEST_ENVIRONMENT_PATH");
+        string planPath = Required("HEXALITH_G4_PLAN_PATH");
+        using JsonDocument descriptor = ReadDocument(descriptorPath);
+        using JsonDocument plan = ReadDocument(planPath);
+        JsonElement run = Property(descriptor.RootElement, "bindings", "run");
+        JsonElement context = Property(descriptor.RootElement, "bindings", "environment", "executionContext");
+        string workspace = Path.GetDirectoryName(Path.GetFullPath(descriptorPath))
+            ?? throw new InvalidDataException("Issued owner descriptor has no workspace.");
+        RequireEqual(Path.GetFullPath(descriptorPath), Path.Combine(workspace, "test-environment.json"));
+        RequireEqual(Path.GetFullPath(planPath), Path.Combine(workspace, "plan.json"));
+        RequireEqual(Text(plan.RootElement, "schema"), "hexalith.g4-run-plan.v1");
+        RequireEqual(Text(plan.RootElement, "runId"), runId);
+        RequireEqual(Text(plan.RootElement, "workspace"), workspace);
+        RequireEqual(Text(run, "runId"), runId);
+        RequireEqual(Text(run, "ownerRunId"), runId);
+        RequireEqual(Text(run, "role"), "owner");
+        string stateDirectory = Text(plan.RootElement, "resourceClaimStateDirectory")
+            ?? throw new InvalidDataException("Issued owner plan has no resource claim state directory.");
+        using JsonDocument state = ReadDocument(Path.Combine(stateDirectory, runId + ".json"));
+        RequireEqual(Text(state.RootElement, "schema"), "hexalith.g4-run-state.v1");
+        RequireEqual(Text(state.RootElement, "runId"), runId);
+        RequireEqual(Text(state.RootElement, "workspace"), workspace);
+        foreach (string name in new[] { "attemptId", "environmentId" })
+        {
+            string value = Text(run, name) ?? throw new InvalidDataException("Issued owner run binding is incomplete.");
+            RequireEqual(Text(state.RootElement, name), value);
+            RequireEqual(Text(plan.RootElement, name), value);
+        }
+
+        JsonElement recorded = Property(state.RootElement, "executionContext");
+        if (!JsonElement.DeepEquals(context, recorded))
+        {
+            throw new InvalidDataException("Issued owner descriptor and state execution contexts differ.");
+        }
+
+        VerifyIssuedContext(recorded);
+        VerifyExecutingTool(plan.RootElement, state.RootElement);
+        return recorded.Clone();
+    }
+
+    private static void VerifyIssuedContext(JsonElement context)
+    {
+        string? kind = Kind(context);
+        string[] names = kind == "local"
+            ? ["kind"]
+            : ["kind", "repository", "workflowRunId", "workflowAttempt", "jobId", "runnerKind", "operatingSystem", "disposable"];
+        if (context.ValueKind != JsonValueKind.Object
+            || !context.EnumerateObject().Select(property => property.Name).Order(StringComparer.Ordinal).SequenceEqual(names.Order(StringComparer.Ordinal))
+            || kind is not ("local" or "ci"))
+        {
+            throw new InvalidDataException("Issued owner execution context has unexpected fields.");
+        }
+
+        if (kind == "local")
+        {
+            return;
+        }
+
+        RequireEqual(Text(context, "runnerKind"), "github-hosted");
+        RequireEqual(Text(context, "operatingSystem"), "Linux");
+        if (!context.TryGetProperty("disposable", out JsonElement disposable) || disposable.ValueKind != JsonValueKind.True)
+        {
+            throw new InvalidDataException("Issued owner CI context is not disposable.");
+        }
+
+        if (!context.TryGetProperty("workflowAttempt", out JsonElement attempt) || attempt.ValueKind != JsonValueKind.Number
+            || attempt.GetInt32() <= 0
+            || string.IsNullOrWhiteSpace(Text(context, "repository"))
+            || string.IsNullOrWhiteSpace(Text(context, "workflowRunId"))
+            || string.IsNullOrWhiteSpace(Text(context, "jobId")))
+        {
+            throw new InvalidDataException("Issued owner CI context is incomplete.");
+        }
+    }
+
+    private static void VerifyExecutingTool(JsonElement plan, JsonElement state)
+    {
+        string? planIdentity = Text(plan, "executingTool", "contentIdentity");
+        string? stateIdentity = Text(state, "executingTool", "contentIdentity");
+        if (planIdentity is not null && stateIdentity is not null)
+        {
+            RequireEqual(planIdentity, stateIdentity);
+        }
+    }
+
+    private static JsonDocument ReadDocument(string path)
+    {
+        FileInfo file = new(Path.GetFullPath(path));
+        if (!Path.IsPathFullyQualified(file.FullName) || file.LinkTarget is not null || !file.Exists || file.Length is <= 0 or > 4_194_304)
+        {
+            throw new InvalidDataException("Issued owner metadata must be a bounded regular non-linked file.");
+        }
+
+        for (DirectoryInfo? parent = file.Directory; parent is not null; parent = parent.Parent)
+        {
+            if (parent.LinkTarget is not null)
+            {
+                throw new InvalidDataException("Issued owner metadata cannot traverse links.");
+            }
+        }
+
+        return JsonDocument.Parse(File.ReadAllBytes(file.FullName));
+    }
+
+    private static JsonElement Property(JsonElement root, params string[] names)
+    {
+        JsonElement current = root;
+        foreach (string name in names)
+        {
+            if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(name, out current))
+            {
+                throw new InvalidDataException("Issued owner metadata is missing a required binding.");
+            }
+        }
+
+        return current;
+    }
+
+    private static string? Kind(JsonElement context) => Text(context, "kind");
+
+    private static string? Text(JsonElement element, params string[] names)
+    {
+        JsonElement current = element;
+        foreach (string name in names)
+        {
+            if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(name, out current))
+            {
+                return null;
+            }
+        }
+
+        return current.ValueKind == JsonValueKind.String ? current.GetString() : null;
+    }
+
+    private static string Required(string name) => Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
+        ? value
+        : throw new InvalidDataException("Issued owner handoff is incomplete.");
+
+    private static void RequireEqual(string? actual, string? expected)
+    {
+        if (string.IsNullOrEmpty(actual) || actual != expected)
+        {
+            throw new InvalidDataException("Issued owner metadata binding mismatch.");
+        }
+    }
+
     private static object CandidateBinding(CompositionRunPlan plan, AttachedSuiteIdentity? attached) => (attached, plan.CandidatePolicy) switch
     {
         (not null, _) => AttachedCandidate(),
