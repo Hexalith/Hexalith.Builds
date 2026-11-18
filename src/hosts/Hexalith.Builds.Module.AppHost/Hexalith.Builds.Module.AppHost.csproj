@@ -7,6 +7,7 @@
     <RootNamespace>Hexalith.Builds.ModuleHosts.AppHost</RootNamespace>
     <Description>Builds-owned Aspire AppHost that composes one G-4 run from a runner-written run plan.</Description>
     <BuildsHostingFromMappedSource Condition="'$(Configuration)' == 'Debug' and Exists('$(HexalithEventStoreRoot)/src/Hexalith.EventStore.Aspire/Hexalith.EventStore.Aspire.csproj')">true</BuildsHostingFromMappedSource>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
     <!-- CommunityToolkit.Aspire.Hosting.Dapr and the EventStore Aspire extensions are prerelease-only integrations. -->
     <SuppressAspireAppHostSdkObsoleteWarning>true</SuppressAspireAppHostSdkObsoleteWarning>
     <NoWarn>$(NoWarn);NU5104;ASPIRE010;ASPIRE012;CA1303;CS0618</NoWarn>

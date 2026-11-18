@@ -2,8 +2,8 @@
   "schema": "hexalith.g6-current-policy.v1",
   "tuple": {
     "dotnetSdk": "11.0.100",
-    "aspireSdk": "13.6.5",
-    "aspireCli": "13.6.5",
+    "aspireSdk": "17.0.0",
+    "aspireCli": "17.0.0",
     "communityToolkitAspireDapr": "13.6.2-beta.959",
     "daprCli": "1.19.1",
     "daprRuntime": "1.19.1",
@@ -16,8 +16,8 @@
     "decision": "approved",
     "approvedBy": "Current user authorization",
     "approvedAtUtc": "2026-11-12T03:07:25Z",
-    "reference": "The current user explicitly requested the latest compatible SDK and packages and authorized releases while directing us to bypass any human validation. This authorizes the .NET SDK11.0.100/Aspire13.6.5/DaprCLI+runtime1.19.1 tuple and the existing catalog CommunityToolkit.Aspire.Hosting.Dapr13.6.2-beta.959 prerelease exception. Approval covers tuple selection and release authorization, not unseen qualification result acceptance. Full fresh source-mode G-6 behavior tests, exact-source evidence, provenance, zero required skips and owned-resource cleanup remain mandatory. This record claims neither independent human review nor native/image acceptance.",
-    "tupleSha256": "206a846c35f2a0223d9ba063fa1b95c1b802f625f38ec2191ab28e30c216bae9"
+    "reference": "The current user explicitly requested the latest compatible SDK and packages and authorized releases while directing us to bypass any human validation. This authorizes the .NET SDK11.0.100/Aspire17.0.0/DaprCLI+runtime1.19.1 tuple and the existing catalog CommunityToolkit.Aspire.Hosting.Dapr13.6.2-beta.959 prerelease exception. Approval covers tuple selection and release authorization, not unseen qualification result acceptance. Full fresh source-mode G-6 behavior tests, exact-source evidence, provenance, zero required skips and owned-resource cleanup remain mandatory. This record claims neither independent human review nor native/image acceptance.",
+    "tupleSha256": "02e22a6fd75f81dac325d1b78f6734ee7435768cd18e6639ee8d979d02c9e6b8"
   },
   "exceptions": {
     "daprSupportTable": "approved-explicit-exception",

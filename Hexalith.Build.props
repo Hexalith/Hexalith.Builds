@@ -30,7 +30,8 @@
          (see .github/workflows/ci-cd-standards.md, "Dependency Auditing"). -->
     <NuGetAudit>true</NuGetAudit>
     <NuGetAuditMode>all</NuGetAuditMode>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+    <!-- Aspire 17 keeps AddProject and Aspire.AppHost.Sdk available but obsolete. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904;CS0618;ASPIRE012</WarningsNotAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true'">
     <!-- Enable Deterministic Builds for github actions -->

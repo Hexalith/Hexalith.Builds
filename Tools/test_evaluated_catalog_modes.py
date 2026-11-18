@@ -107,13 +107,13 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="catalog-source-inspection-") as directory:
             root = Path(directory)
             (root / "Directory.Build.props").write_text("""<Project><PropertyGroup>
-<HexalithAspireAppHostSdkVersion Condition="'$(UseHexalithProjectReferences)' == 'true'">13.6.5</HexalithAspireAppHostSdkVersion>
+<HexalithAspireAppHostSdkVersion Condition="'$(UseHexalithProjectReferences)' == 'true'">17.0.0</HexalithAspireAppHostSdkVersion>
 <HexalithAspireAppHostSdkVersion Condition="'$(UseHexalithProjectReferences)' != 'true'">1.0.0</HexalithAspireAppHostSdkVersion>
 </PropertyGroup></Project>""")
             project = root / "Source.AppHost.csproj"
             project.write_text('<Project Sdk="Aspire.AppHost.Sdk/$(HexalithAspireAppHostSdkVersion)" />')
             selections = project_sdk_selections(project)
-            self.assertEqual([{"Id": "Aspire.AppHost.Sdk", "Version": "13.6.5", "CatalogSelected": True}], selections)
+            self.assertEqual([{"Id": "Aspire.AppHost.Sdk", "Version": "17.0.0", "CatalogSelected": True}], selections)
 
 
 if __name__ == "__main__":

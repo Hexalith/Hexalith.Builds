@@ -266,6 +266,7 @@ def hosting_preview_exclusions(aspire_sdk: str) -> set[tuple[str, str]]:
         "13.6.1": "13.6.1-preview.1.26506.6",
         "13.6.4": "13.6.4-preview.1.26523.11",
         "13.6.5": "13.6.5-preview.1.26559.7",
+        "17.0.0": "17.0.0-preview.1.26567.5",
     }
     version = versions.get(aspire_sdk)
     return {(package, version) for package in ("Aspire.Hosting.Keycloak", "Aspire.Hosting.Kubernetes")} if version else set()

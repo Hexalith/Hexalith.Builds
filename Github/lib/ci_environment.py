@@ -204,10 +204,10 @@ def initialize_dapr(binary: Path, runtime: str, root: Path) -> Path:
 
 # Trusted native toolchain. A module may enable it but cannot choose executable
 # URLs, checksums or dependencies. The CLI embeds the DCP/dashboard bundle.
-ASPIRE_VERSION = "13.6.5"
+ASPIRE_VERSION = "17.0.0"
 ASPIRE_URL = f"https://github.com/microsoft/aspire/releases/download/v{ASPIRE_VERSION}/aspire-cli-linux-x64-{ASPIRE_VERSION}.tar.gz"
-ASPIRE_ARCHIVE_SHA256 = "6e22bd4daaa62d09320638246e57bfaf56ed147a3a87cdd5eafec277726ca978"
-ASPIRE_BINARY_SHA256 = "7a9d1c1e264c645d7d78e2891ef53a865fa51d96adf2d827fed1e9cc3cb1e253"
+ASPIRE_ARCHIVE_SHA256 = "74a6d6418fcddb117770ccd235e2de4a96a02e36ebcfd0b0e2a0e69d6e85fc18"
+ASPIRE_BINARY_SHA256 = "0baad566dbf3e158ae27ba471f2bb0a2783e0dbd7dbdabc5c01550609aded798"
 NATIVE_MANAGED_RUNTIME = "11.0.0"
 NATIVE_PYTHON_REQUIREMENTS = BUILDS_ROOT / "Github/ci-environment/requirements.txt"
 
