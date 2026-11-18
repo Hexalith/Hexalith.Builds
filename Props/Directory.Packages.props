@@ -32,7 +32,7 @@
         or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Works.Tests'))">true</HexalithTimesheetsNet10CatalogView>
     <HexalithCommonsVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true' and '$(HexalithCommonsVersion)' == ''">2.30.11</HexalithCommonsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true' and '$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.9</HexalithPolymorphicSerializationsVersion>
-    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">3.0.0</HexalithCommonsVersion>
+    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">3.0.1</HexalithCommonsVersion>
     <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.0.0</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.0</HexalithPolymorphicSerializationsVersion>
     <!-- Record the composed-host consumer while keeping one canonical SDK version authority. -->
@@ -174,8 +174,8 @@
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.EventStoreHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
-    <!-- Story 1.17: published 5.1.1 supplies the native source scanner APIs used by Folders and Projects. -->
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.2.0</HexalithEventStoreVersion>
+    <!-- Published EventStore 5.3.0 remains the current net11 default; SDK4.2 consumers keep 4.2.0. -->
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.3.0</HexalithEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
     <!-- Packaged SDK4.2 uses OpenApi2; current source projects consume the .NET11 OpenAPI ABI. -->
@@ -383,7 +383,7 @@
     <PackageVersion Include="Grpc" Version="2.46.6" />
     <PackageVersion Include="Grpc.HealthCheck" Version="2.85.0" />
     <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.85.0" />
-    <PackageVersion Include="HotChocolate" Version="16.7.5" />
+    <PackageVersion Include="HotChocolate" Version="16.7.6" />
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
     <PackageVersion Include="JsonSchema.Net" Version="9.7.0" />
@@ -471,7 +471,7 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <!-- ASP.NET Core OpenApi 11 and Swashbuckle 11 use OpenApi 3.x. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="$(HexalithOpenApiVersion)" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.64.1" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.65.0" />
     <!-- Existing Timesheets Works prerequisite; retain the published version. -->
     <PackageVersion Include="Hexalith.Works.Contracts" Version="1.0.2" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.82.0" />
@@ -513,7 +513,7 @@
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.1" />
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
-    <PackageVersion Include="Radzen.Blazor" Version="13.1.0" />
+    <PackageVersion Include="Radzen.Blazor" Version="13.1.1" />
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Scriban" Version="7.6.1" />
