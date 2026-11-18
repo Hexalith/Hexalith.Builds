@@ -277,7 +277,7 @@ public static class CompositionAttachAdmission
         JsonElement attacher;
         try
         {
-            attacher = request.AttacherContext ?? JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext());
+            attacher = request.AttacherContext ?? TestEnvironment.TestEnvironmentDescriptorWriter.ResolveAttacherContext();
         }
         catch (InvalidDataException)
         {
