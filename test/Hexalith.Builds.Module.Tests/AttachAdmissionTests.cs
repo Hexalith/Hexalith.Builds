@@ -205,7 +205,7 @@ public sealed class AttachAdmissionTests
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
         using IDisposable handoff = IssuedHandoff(store, owner, Ci("job-a"));
-        using IDisposable ambient = process == "incomplete" ? IncompleteGitHub() : Restore.None();
+        using IDisposable ambient = process == "incomplete" ? IncompleteGitHub() : ScrubbedGitHub();
         ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = null }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
         result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, string.Join(';', result.Diagnostics.Select(item => item.Field + item.Message)));
         _ = result.Attachment.ShouldNotBeNull();
@@ -1919,6 +1919,16 @@ public sealed class AttachAdmissionTests
         ("RUNNER_OS", "Linux"),
         ("RUNNER_ENVIRONMENT", "github-hosted"));
 
+    private static Restore ScrubbedGitHub() => Ambient(
+        ("CI", null),
+        ("GITHUB_ACTIONS", null),
+        ("GITHUB_REPOSITORY", null),
+        ("GITHUB_RUN_ID", null),
+        ("GITHUB_RUN_ATTEMPT", null),
+        ("GITHUB_JOB", null),
+        ("RUNNER_OS", null),
+        ("RUNNER_ENVIRONMENT", null));
+
     private static Restore Ambient(params (string Name, string? Value)[] values)
     {
         (string Name, string? Previous)[] previous = [.. values.Select(value => (value.Name, Environment.GetEnvironmentVariable(value.Name)))];
@@ -2012,8 +2022,6 @@ public sealed class AttachAdmissionTests
                 Environment.SetEnvironmentVariable(name, value);
             }
         }
-
-        internal static Restore None() => new([]);
     }
 
     private sealed class OwnerRun : IAsyncDisposable
