@@ -1057,6 +1057,7 @@ public sealed class CompositionEngineTests
         new(Path.Combine(root, "missing", "Hexalith.Builds.Module.AppHost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
         {
             AspireCommand = CompositionTestFiles.CreateAspire(root),
+            AspirePackagesRoot = CompositionTestFiles.CreateAspirePackages(root).Root,
             ContinuousIntegrationOverride = false,
             StateDirectory = Path.Combine(root, "state"),
             WorkspaceRoot = Path.Combine(root, "workspaces"),

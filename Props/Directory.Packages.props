@@ -332,6 +332,12 @@
     <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="17.0.0" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="17.0.0" />
     <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Dashboard.Sdk.linux-arm64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Dashboard.Sdk.linux-x64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Dashboard.Sdk.osx-arm64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Dashboard.Sdk.osx-x64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Dashboard.Sdk.win-arm64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Dashboard.Sdk.win-x64" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="17.0.0" />
@@ -340,6 +346,12 @@
     <PackageVersion Include="Aspire.Hosting.Dotnet" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting.Keycloak" Version="17.0.0-preview.1.26567.5" />
     <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Orchestration.linux-arm64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Orchestration.linux-x64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Orchestration.osx-arm64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Orchestration.osx-x64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Orchestration.win-arm64" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Orchestration.win-x64" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="17.0.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="17.0.0" />
     <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="17.0.0" />
@@ -555,8 +567,8 @@
     <PackageVersion Include="Testcontainers" Version="4.17.0" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
     <!-- FrontComposer snapshot testing uses the xUnit v3 adapter, not Verify.Xunit. -->
-    <PackageVersion Include="Verify" Version="33.5.0" />
-    <PackageVersion Include="Verify.XunitV3" Version="33.5.0" />
+    <PackageVersion Include="Verify" Version="33.6.0" />
+    <PackageVersion Include="Verify.XunitV3" Version="33.6.0" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="bunit" Version="2.15.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />

@@ -16,6 +16,19 @@
   <ItemGroup>
     <!-- SkipAddAspireDefaultReferences avoids the SDK's implicit Versioned PackageReference, which CPM rejects. -->
     <PackageReference Include="Aspire.Hosting.AppHost" />
+    <!-- Restore DCP and dashboard into the NuGet global packages folder used by HXR016. -->
+    <PackageReference Include="Aspire.Dashboard.Sdk.linux-arm64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Dashboard.Sdk.linux-x64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Dashboard.Sdk.osx-arm64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Dashboard.Sdk.osx-x64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Dashboard.Sdk.win-arm64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Dashboard.Sdk.win-x64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Hosting.Orchestration.linux-arm64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Hosting.Orchestration.linux-x64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Hosting.Orchestration.osx-arm64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Hosting.Orchestration.osx-x64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Hosting.Orchestration.win-arm64" ExcludeAssets="all" />
+    <PackageReference Include="Aspire.Hosting.Orchestration.win-x64" ExcludeAssets="all" />
     <PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" />
     <!-- Align published EventStore transitive hosting dependencies with the approved catalog; Keycloak runtime remains unqualified. -->
     <PackageReference Include="Aspire.Hosting.Keycloak" />

@@ -149,6 +149,7 @@ public sealed class WorkspaceRunPlanTests
                 AspireCommand = portable?.Aspire ?? CompositionTestFiles.CreateAspire(root),
                 DockerCommand = portable?.Docker ?? CompositionTestFiles.CreateStubDocker(root),
                 DaprHome = portable?.DaprHome ?? CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+                AspirePackagesRoot = CompositionTestFiles.CreateAspirePackages(root).Root,
                 StateDirectory = Path.Combine(root, "state"),
                 WorkspaceRoot = Path.Combine(root, "workspaces"),
                 ReadinessTimeout = TimeSpan.FromSeconds(5),

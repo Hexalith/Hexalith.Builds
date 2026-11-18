@@ -1257,6 +1257,7 @@ public sealed class StartupReadinessTests
         new(appHost, typeof(ModuleCommandApplication).Assembly.Location)
         {
             AspireCommand = CompositionTestFiles.CreateAspire(root),
+            AspirePackagesRoot = CompositionTestFiles.CreateAspirePackages(root).Root,
             DaprHome = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
             DockerCommand = CompositionTestFiles.CreateStubDocker(root),
             StateDirectory = Path.Combine(root, "state"),

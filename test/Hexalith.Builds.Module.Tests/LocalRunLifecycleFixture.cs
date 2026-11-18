@@ -56,6 +56,7 @@ internal static class LocalRunLifecycleFixture
     internal static CompositionEngineOptions Options(string root, ModuleTestSelection selected) => new("unused-apphost", "unused-child")
     {
         SelectedTest = selected,
+        AspirePackagesRoot = CompositionTestFiles.CreateAspirePackages(root).Root,
         WorkspaceRoot = Path.Combine(root, "runs"),
         StateDirectory = Path.Combine(root, "state"),
         DockerCommand = CompositionTestFiles.CreateStubDocker(root),
