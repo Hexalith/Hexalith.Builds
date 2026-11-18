@@ -261,12 +261,13 @@ def controlled_field(package: str) -> str | None:
 
 def hosting_preview_exclusions(aspire_sdk: str) -> set[tuple[str, str]]:
     """Retain exact dependency exceptions without qualifying their runtime behavior."""
+    if aspire_sdk == "17.0.0":
+        return {("Aspire.Hosting.Keycloak", "17.0.0-preview.1.26567.5")}
     versions = {
         "13.6.0": "13.6.0-preview.1.26479.8",
         "13.6.1": "13.6.1-preview.1.26506.6",
         "13.6.4": "13.6.4-preview.1.26523.11",
         "13.6.5": "13.6.5-preview.1.26559.7",
-        "17.0.0": "17.0.0-preview.1.26567.5",
     }
     version = versions.get(aspire_sdk)
     return {(package, version) for package in ("Aspire.Hosting.Keycloak", "Aspire.Hosting.Kubernetes")} if version else set()
