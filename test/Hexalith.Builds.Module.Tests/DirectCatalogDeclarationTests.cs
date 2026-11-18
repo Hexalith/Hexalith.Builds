@@ -212,16 +212,16 @@ public sealed class DirectCatalogDeclarationTests
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionDeclarationOptions selected = cold with { Workspace = workspace };
         selected.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
-        (selected with { ConsumerProjectName = null }).CatalogVersion("eventstore", "probe").ShouldBe("5.3.0");
+        (selected with { ConsumerProjectName = null }).CatalogVersion("eventstore", "probe").ShouldBe("5.3.1");
         CompositionDeclarationClosure.Load(selected).Count.ShouldBe(closure.Count);
         CompositionDeclarationOptions platform = selected with { ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName };
         platform.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
         platform.CatalogVersion("memories", "probe").ShouldBe("3.0.27");
         CompositionDeclarationClosure.Load(platform).Count.ShouldBe(closure.Count);
         Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(selected with { ConsumerProjectName = null }))
-            .Message.ShouldContain("5.3.0");
+            .Message.ShouldContain("5.3.1");
         CatalogVersionMaterializer.ReadSnapshot(Path.Combine(workspace, "source-mapping", "catalog-versions.json"))
-            .Versions["Hexalith.EventStore.Aspire"].ShouldBe("5.3.0");
+            .Versions["Hexalith.EventStore.Aspire"].ShouldBe("5.3.1");
     }
 
     /// <summary>A cold consumer cannot substitute the default view for an absent recorded identity.</summary>
