@@ -727,8 +727,8 @@ The current catalog selects EventStore 4.2.0 from released source
 `aa16227bd07f0564a3026d619a5abd973e02656f`. Its v2 declaration retains SHA-256
 `21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495`; the older
 4.1.0 release authority remains separately recorded. This adoption retains the
-upstream Dapr runtime and CLI 1.19.1, Dapr .NET SDK 1.19.0 and Aspire 13.6.4
-with Toolkit 13.6.2-beta.959. Platform must independently enroll and qualify the
+upstream Dapr runtime and CLI 1.19.1, Dapr .NET SDK 1.19.0 and Aspire 17.0.0
+with Toolkit 17.0.0-beta.1052. Platform must independently enroll and qualify the
 new package cohort before a sealed runtime run can use it.
 
 Withdrawal records outcomes; termination of attached processes at expiry is deferred to
@@ -1332,8 +1332,8 @@ mutation-controls command record must be exactly the self-test's
 `G6-EVIDENCE-MUTATIONS-PASSED` result line, every count included. The pending
 2026-09-29 candidate baseline records the explicit Dapr runtime `1.18.2` / .NET
 package `1.18.10` exception with Toolkit `13.5.1-beta.770`; it is not a
-support-table-listed pair. The current catalog's Toolkit `13.6.0-beta.910`
-and Fluent UI `5.0.0` need fresh G-6 acceptance before current live
+support-table-listed pair. The current catalog's Toolkit `17.0.0-beta.1052`
+and Fluent UI `5.0.1` need fresh G-6 acceptance before current live
 qualification. The executable fixture and installed runner implement public
 composition and the native `full`/`full-mtp` persisted profiles; retained Stage
 5 evidence qualifies their historical local scope. `HXR003` applies to the

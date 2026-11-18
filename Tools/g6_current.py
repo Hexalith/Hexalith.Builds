@@ -270,7 +270,8 @@ def hosting_preview_exclusions(aspire_sdk: str) -> set[tuple[str, str]]:
         "13.6.5": "13.6.5-preview.1.26559.7",
     }
     version = versions.get(aspire_sdk)
-    return {(package, version) for package in ("Aspire.Hosting.Keycloak", "Aspire.Hosting.Kubernetes")} if version else set()
+    packages = ("Aspire.Hosting.Keycloak",) if aspire_sdk == "17.0.0" else ("Aspire.Hosting.Keycloak", "Aspire.Hosting.Kubernetes")
+    return {(package, version) for package in packages} if version else set()
 
 
 def resolved_graph(workspace: Path, policy: dict[str, Any], tuple_values: dict[str, str]) -> tuple[list[dict], list[str]]:
