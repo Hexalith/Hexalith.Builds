@@ -85,7 +85,7 @@ class Git:
     def __init__(self, root: Path, executable: str = "git", extra_header: str | None = None):
         self.root, self.executable, self.extra_header = root, executable, extra_header
         self.environment = {key: value for key, value in os.environ.items()
-                            if key in {"PATH", "SystemRoot", "WINDIR", "TMPDIR", "TMP", "TEMP",
+                            if key in {"PATH", "SYSTEMROOT", "WINDIR", "TMPDIR", "TMP", "TEMP",
                                        "LANG", "LC_ALL", "LC_CTYPE", "SSL_CERT_FILE", "SSL_CERT_DIR"}}
         self.environment.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=GIT_NULL,
                                 GIT_TERMINAL_PROMPT="0", GIT_NO_REPLACE_OBJECTS="1",

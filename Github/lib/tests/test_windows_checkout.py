@@ -195,7 +195,8 @@ class ProtectedCheckoutTests(unittest.TestCase):
                 CHECKOUT.records(payload, index=index)
 
     def test_git_always_overrides_ambient_protection_and_does_not_persist_credentials(self):
-        git = CHECKOUT.Git(self.source)
+        with mock.patch.dict(os.environ, {"SYSTEMROOT": r"C:\Windows"}):
+            git = CHECKOUT.Git(self.source)
         with mock.patch.object(CHECKOUT.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, b"", b"")) as run:
             git.run("status")
         args = run.call_args.args[0]
@@ -205,6 +206,7 @@ class ProtectedCheckoutTests(unittest.TestCase):
         self.assertIn("submodule.recurse=false", args)
         self.assertIn("core.hooksPath=/dev/null", args)
         self.assertIn("http.extraHeader=", args)
+        self.assertEqual(r"C:\Windows", run.call_args.kwargs["env"]["SYSTEMROOT"])
         self.assertEqual("/dev/null", run.call_args.kwargs["env"]["GIT_CONFIG_GLOBAL"])
         self.assertNotIn("GITHUB_TOKEN", run.call_args.kwargs["env"])
 
