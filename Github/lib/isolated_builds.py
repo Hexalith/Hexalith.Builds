@@ -132,6 +132,9 @@ def preflight(prepared, case, environment, *, flags=None):
 
 def build(prepared, case, environment, flags, command):
     """Use independent SDK processes and canonical module output directories."""
+    # The independent locked restore uses the fixture's own project versions.
+    # Keep release version overrides scoped to the shipping build.
+    flags = [flag for flag in flags if not flag.startswith(("-p:Version=", "-p:PackageVersion="))]
     project = preflight(prepared, case, environment, flags=flags)
     flags = [*flags, "-nodeReuse:false"]
     command(["dotnet", "restore", project, *flags], prepared.root)

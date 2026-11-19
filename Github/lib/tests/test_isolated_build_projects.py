@@ -190,6 +190,28 @@ class IsolatedBuildTests(unittest.TestCase):
             self.assertNotIn(str(self.root), build_projects._ENVIRONMENTS)
         self.assertFalse((self.base / "build-projects").exists())
 
+    def test_release_fixture_uses_source_versions_and_keeps_release_audit(self):
+        from release_build import release_flags
+
+        flags = release_flags("2.1.0", "a" * 40, "Example/Fixture")
+        fixture_flags = [flag for flag in flags if flag not in ("-p:Version=2.1.0", "-p:PackageVersion=2.1.0")]
+        fixture_flags.append("-nodeReuse:false")
+        calls = []
+        with patch("ci_pipeline.run_command", side_effect=[self.evaluation(), ""]) as preflight:
+            isolated_builds.build(self.prepared, self.case, self.environment, flags,
+                lambda args, root: calls.append((args, root)))
+
+        for call, prefix in zip(preflight.call_args_list, (
+                ["dotnet", "msbuild", str(self.adapter)],
+                ["dotnet", "msbuild", str(self.adapter), "-target:HexalithReconcileSourceMapping"]), strict=True):
+            self.assertEqual(fixture_flags, call.args[0][len(prefix):len(prefix) + len(fixture_flags)])
+        self.assertEqual([
+            (["dotnet", "restore", str(self.adapter), *fixture_flags], self.root),
+            (["dotnet", "build", str(self.adapter), "--no-restore", *fixture_flags], self.root),
+        ], calls)
+        self.assertIn("-p:Version=2.1.0", flags)
+        self.assertIn("-p:PackageVersion=2.1.0", flags)
+
     def test_interleaved_declarations_keep_order_and_mapping_refusals_precede_execution(self):
         finite_project = self.root / "finite/Consumer.csproj"
         finite_project.parent.mkdir()
