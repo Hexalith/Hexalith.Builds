@@ -433,14 +433,11 @@ class BuildTests(unittest.TestCase):
             self.assertEqual(["linux/amd64", "linux/arm64"], graph["platforms"])
             with self.assertRaisesRegex(oci.OciError, "created label mismatch"):
                 build.inspect_archive(path, revision=SHA, version=VERSION, created="2026-11-20T00:00:00Z")
-            plain = container["name"] == "hexalith-release-create-disposable"
-            for platform, config in child_configs(path):
-                with self.subTest(container=container["name"], platform=platform):
-                    labels = config["config"]["Labels"]
-                    self.assertEqual(FIRST, labels[IMAGE_CREATED])
-                    # A plain consumer gets the image label with no setup; a product that
-                    # declares the artifact label receives the same publisher instant.
-                    self.assertEqual(None if plain else FIRST, labels.get(ARTIFACT_CREATED))
+            # Every child of both containers carries the publisher instant in both created
+            # labels: the plain consumer with no setup, and the product that declares them.
+            self.assertEqual([{IMAGE_CREATED: FIRST, ARTIFACT_CREATED: FIRST}] * 2,
+                             [{key: config["config"]["Labels"].get(key) for key in (IMAGE_CREATED, ARTIFACT_CREATED)}
+                              for _platform, config in child_configs(path)], container["name"])
         self.assertEqual({"packages": [value["id"] for value in manifest["packages"]],
                           "containers": [value["name"] for value in manifest["containers"]]},
                          drafted_inventory(self.root / "created-payload"))

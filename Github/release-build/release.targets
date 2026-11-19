@@ -7,16 +7,20 @@
     <NoWarn>$([System.Text.RegularExpressions.Regex]::Replace('$(NoWarn)', '(?i)(^|[;,])\s*NU190[0345]\s*(?=[;,]|$)', '$1'))</NoWarn>
   </PropertyGroup>
   <!-- The release passes one publisher-owned ContainerProvenanceCreated instant to
-       every SDK command; each image's created label carries it instead of the
-       SDK's per-RID clock. Builds without the property keep the SDK label. -->
+       every project-discovery and declared-build MSBuild evaluation, restore,
+       build, declared build, pack and container publish of its build phase, and
+       turns off the SDK switch that generates both created labels; each image's
+       image and artifact created labels carry the instant instead of the SDK's
+       per-RID clock. Builds without the property keep the SDK labels. -->
   <Target Name="HexalithReleaseLabels" BeforeTargets="_PublishSingleContainer">
     <ItemGroup>
       <ContainerLabel Remove="org.opencontainers.image.source;org.opencontainers.image.revision;org.opencontainers.image.version" />
-      <ContainerLabel Remove="org.opencontainers.image.created" Condition="'$(ContainerProvenanceCreated)' != ''" />
+      <ContainerLabel Remove="org.opencontainers.image.created;org.opencontainers.artifact.created" Condition="'$(ContainerProvenanceCreated)' != ''" />
       <ContainerLabel Include="org.opencontainers.image.source" Value="$(RepositoryUrl)" />
       <ContainerLabel Include="org.opencontainers.image.revision" Value="$(SourceRevisionId)" />
       <ContainerLabel Include="org.opencontainers.image.version" Value="$(PackageVersion)" />
       <ContainerLabel Include="org.opencontainers.image.created" Value="$(ContainerProvenanceCreated)" Condition="'$(ContainerProvenanceCreated)' != ''" />
+      <ContainerLabel Include="org.opencontainers.artifact.created" Value="$(ContainerProvenanceCreated)" Condition="'$(ContainerProvenanceCreated)' != ''" />
     </ItemGroup>
   </Target>
 </Project>

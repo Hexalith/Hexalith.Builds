@@ -32,7 +32,7 @@ AUDIT = re.compile(r"\b(?:warning|error)\s+(NU190[0345])\s*:", re.IGNORECASE)
 PACKAGE_ID = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*\Z")
 CONTAINER_NAME = re.compile(r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*)*\Z")
 # The legacy publisher's ContainerProvenanceCreated rule: an exact UTC RFC 3339
-# second (no fraction or offset) that strptime accepts as a real calendar date.
+# second (no fraction or offset) that strptime accepts as a real UTC date and time.
 CREATED = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\Z")
 CREATED_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -84,7 +84,7 @@ def publisher_created(clock=utc_second) -> str:
     try:
         datetime.strptime(created, CREATED_FORMAT)
     except ValueError as error:
-        raise PipelineError("release created instant must be a real calendar date") from error
+        raise PipelineError("release created instant must be a real UTC date and time") from error
     return created
 
 

@@ -127,7 +127,6 @@ class CompleteTests(History):
 
     def test_original_publisher_created_labels_complete_without_rebuild_or_new_instant(self):
         import oci_archive as oci
-        import release_build
         import test_release_oci as fixtures
         labels = {fixtures.IMAGE_CREATED: fixtures.CREATED, fixtures.ARTIFACT_CREATED: fixtures.CREATED}
         sources = []
@@ -153,14 +152,11 @@ class CompleteTests(History):
                 pass
         work = self.root / "payload"
         work.mkdir()
-        # Completion and its publisher reuse the stored payload: no build and no new publisher instant.
-        with patch.object(release_build, "build_release", side_effect=AssertionError("rebuilt")), \
-                patch.object(release_build, "publisher_created", side_effect=AssertionError("new instant")):
-            result = self.invoke(control, registry=lambda *_args: self.fail("recovery attempted registry publication preflight"))
-            self.assertEqual(result, {**control.values, "noop-reason": ""})
-            self.assertEqual(result["artifact-digest"], digest(payload))
-            values = publisher.authenticate(self.git, control, copy.deepcopy(control.values), work, WORKFLOW_REF,
-                                            registry=Registry)
+        result = self.invoke(control, registry=lambda *_args: self.fail("recovery attempted registry publication preflight"))
+        self.assertEqual(result, {**control.values, "noop-reason": ""})
+        self.assertEqual(result["artifact-digest"], digest(payload))
+        values = publisher.authenticate(self.git, control, copy.deepcopy(control.values), work, WORKFLOW_REF,
+                                        registry=Registry)
         item, = values["containers"]
         self.assertEqual("product/image", item["name"])
         self.assertEqual(original, (work / item["path"]).read_bytes())

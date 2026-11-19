@@ -354,7 +354,15 @@ class HistoricalTests(unittest.TestCase):
         real_prepare = published.prepare
         def controlled(prepared, workspace):
             return real_prepare(prepared, workspace, read=lambda p: self.metadata[p], download=lambda _: self.payload, run=self.runner)
+        created = "2026-11-19T23:59:59Z"
+        def assert_instant(flags):
+            # The release passes one publisher instant to every declared-build evaluation and command.
+            if route == "release":
+                self.assertEqual(["-p:ContainerProvenanceCreated=" + created],
+                                 [flag for flag in flags if flag.startswith("-p:ContainerProvenanceCreated=")])
+                self.assertIn("-p:ContainerGenerateLabelsImageCreated=false", flags)
         def evaluate(*args, **kwargs):
+            assert_instant(kwargs["flags"])
             values = {name: "" for name in kwargs["properties"]}
             values.update(dict(flag[3:].split("=", 1) for flag in kwargs["flags"] if flag.startswith("-p:")))
             values["TargetFramework"] = "net10.0"
@@ -372,6 +380,7 @@ class HistoricalTests(unittest.TestCase):
                     action = arguments[1]
                     artifact_flags = [flag for flag in arguments if flag.startswith("-p:ArtifactsPath=")]
                     if artifact_flags:
+                        assert_instant(arguments)
                         directory = Path(artifact_flags[0].split("=", 1)[1])
                         version = next(flag.split("=", 1)[1] for flag in arguments if flag.startswith("-p:HexalithEventStoreVersion="))
                         events.append(action + ":" + version)
@@ -413,10 +422,10 @@ class HistoricalTests(unittest.TestCase):
                         with patch.object(release_build, "initialize_submodules"), patch.object(release_build, "discover_projects", return_value=(release_build.Project("Ship.csproj", "Fixture.Package", "", "", ()),)), patch.object(release_build, "audited_command", side_effect=command):
                             if fail:
                                 with self.assertRaises(pipeline.PipelineError):
-                                    release_build.build_release(self.prepared, destination, version="1.2.3", sha=self.head, repository="Example/Fixture")
+                                    release_build.build_release(self.prepared, destination, version="1.2.3", sha=self.head, repository="Example/Fixture", clock=lambda: created)
                                 self.assertFalse((destination / "release-manifest.json").exists())
                             else:
-                                manifest = release_build.build_release(self.prepared, destination, version="1.2.3", sha=self.head, repository="Example/Fixture")
+                                manifest = release_build.build_release(self.prepared, destination, version="1.2.3", sha=self.head, repository="Example/Fixture", clock=lambda: created)
                                 self.assertEqual(1, len(manifest["packages"]))
                     self.assertIn("build:4.1.0", events)
                     if fail:

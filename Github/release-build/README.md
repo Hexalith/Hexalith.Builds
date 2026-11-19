@@ -31,26 +31,27 @@ created labels of every image.
 | --- | --- |
 | Property | `ContainerProvenanceCreated`, the generic Builds property that `Props/ContainerProvenance.targets` and the legacy container publisher already use |
 | Time authority | The publisher's UTC clock, read once at the start of the build phase (`release_build.py --phase build`) |
-| Format | `YYYY-MM-DDTHH:MM:SSZ`: an exact UTC RFC 3339 second with no fraction or offset and a real calendar date |
-| Scope | Every SDK command of the build phase: project discovery, audited restore and build, declared builds, pack and each runtime identifier's container publish |
+| Format | `YYYY-MM-DDTHH:MM:SSZ`: an exact UTC RFC 3339 second with no fraction or offset and a real date and time |
+| Scope | Every project-discovery and declared-build MSBuild evaluation, audited restore and build, declared build, pack and runtime identifier's container publish of the build phase; `dotnet sln list`, `dotnet tool restore`/`run` and the isolated preflight run without it |
 
-The build phase passes the instant as `-p:ContainerProvenanceCreated=<instant>`
-together with `-p:ContainerGenerateLabelsImageCreated=false`. Every image's
-`org.opencontainers.image.created` label carries the instant, so all projects,
+The build phase passes the instant to each of those as
+`-p:ContainerProvenanceCreated=<instant>` together with
+`-p:ContainerGenerateLabelsImageCreated=false`, the one SDK switch that
+generates both created labels. `release.targets` rebinds both for every image:
+the `org.opencontainers.image.created` and
+`org.opencontainers.artifact.created` labels carry the instant, so all projects,
 images and runtime identifiers of one release share it even when the build
 spans several clock seconds. There is no workflow or composite input,
 environment override or other time source: commit time and per-project or
 per-runtime clocks are never used. An instant that is not an exact real UTC
 second fails the build before any SDK command and writes no payload.
 
-Containers need no configuration to receive the label. A product that requires
-the publisher instant reads `$(ContainerProvenanceCreated)` directly. Because
-the SDK no longer generates its created labels, an
-`org.opencontainers.artifact.created` label appears only when the product
-declares one, and it must carry the same instant. Before the manifest is
-written, the assembled archive must show the instant as every child's image
-created label, and as its artifact created label when present. A mismatch fails
-with `OCI created label mismatch` and writes no manifest.
+Containers need no configuration to receive both labels. A product that
+requires the publisher instant reads `$(ContainerProvenanceCreated)` directly,
+and any created label it declares is rebound to the same instant. Before the
+manifest is written, the assembled archive must show the instant as every
+child's image created label, and as its artifact created label when present. A
+mismatch fails with `OCI created label mismatch` and writes no manifest.
 
 The scope is labels. The SDK's own config `created` field and history stay as
 written, so the child digests remain those the SDK produced. Package-only
