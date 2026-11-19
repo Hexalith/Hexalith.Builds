@@ -39,6 +39,8 @@ BUILDS = "c" * 40
 OTHER = "d" * 40
 POLICY_SHA = "e" * 64
 BLOB = "f" * 64
+BUILDS_SIGNER = "https://github.com/Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml"
+FRONTCOMPOSER_SIGNER = "https://github.com/Hexalith/Hexalith.FrontComposer/.github/workflows/release-publish.yml"
 
 
 def canonical_json(value):
@@ -97,7 +99,7 @@ def quality_run():
     }
 
 
-def provenance():
+def provenance(*, same_repository=False):
     document = {
         "ci": {
             "run": {
@@ -127,8 +129,80 @@ def provenance():
             "builds_execution_sha": BUILDS,
         },
     }
+    if same_repository:
+        document["release"]["reusable"].update(
+            repository="github.com/hexalith/hexalith.frontcomposer",
+            workflow_path=".github/workflows/release-publish.yml",
+            commit=CANDIDATE,
+        )
     document["definition_digest"] = canonical.canonical_digest({"ci": document["ci"], "release": document["release"]})
     return document
+
+
+def attestation_expectations():
+    return {
+        "packages": [("Demo.1.2.3.nupkg", "4" * 64)],
+        "repository_slug": "Hexalith/Hexalith.FrontComposer",
+        "caller_workflow": ".github/workflows/release.yml",
+        "repository_id": 1,
+        "owner_id": 2,
+        "candidate": CANDIDATE,
+        "builds_sha": BUILDS,
+        "run_id": 40,
+        "run_attempt": 1,
+    }
+
+
+def attestation_statement(builder_id):
+    return {
+        "_type": attestation.STATEMENT_TYPE,
+        "subject": [{"name": "Demo.1.2.3.nupkg", "digest": {"sha256": "4" * 64}}],
+        "predicateType": attestation.PREDICATE_TYPE,
+        "predicate": {
+            "buildDefinition": {
+                "buildType": "https://actions.github.io/buildtypes/workflow/v1",
+                "externalParameters": {
+                    "workflow": {
+                        "repository": "https://github.com/Hexalith/Hexalith.FrontComposer",
+                        "ref": "refs/heads/main",
+                        "path": ".github/workflows/release.yml",
+                    }
+                },
+                "internalParameters": {
+                    "github": {
+                        "event_name": "workflow_dispatch",
+                        "repository_id": 1,
+                        "repository_owner_id": 2,
+                        "runner_environment": "github-hosted",
+                    }
+                },
+                "resolvedDependencies": [
+                    {
+                        "uri": "git+https://github.com/Hexalith/Hexalith.FrontComposer@refs/heads/main",
+                        "digest": {"gitCommit": CANDIDATE},
+                    }
+                ],
+            },
+            "runDetails": {
+                "builder": {"id": builder_id},
+                "metadata": {"invocationId": "https://github.com/Hexalith/Hexalith.FrontComposer/actions/runs/40/attempts/1"},
+            },
+        },
+    }
+
+
+def certificate_extensions(signer_sha):
+    return {
+        "1.3.6.1.4.1.57264.1.8": "https://token.actions.githubusercontent.com",
+        "1.3.6.1.4.1.57264.1.10": signer_sha,
+        "1.3.6.1.4.1.57264.1.11": "github-hosted",
+        "1.3.6.1.4.1.57264.1.12": "https://github.com/Hexalith/Hexalith.FrontComposer",
+        "1.3.6.1.4.1.57264.1.13": CANDIDATE,
+        "1.3.6.1.4.1.57264.1.14": "refs/heads/main",
+        "1.3.6.1.4.1.57264.1.15": "1",
+        "1.3.6.1.4.1.57264.1.17": "2",
+        "1.3.6.1.4.1.57264.1.21": "https://github.com/Hexalith/Hexalith.FrontComposer/actions/runs/40/attempts/1",
+    }
 
 
 def zip_bytes(members, *, mode=None):
@@ -221,24 +295,165 @@ class ArchiveTests(unittest.TestCase):
                 os.chdir(previous)
 
 
+    def test_archive_requires_no_execution_marker(self):
+        release_evaluator = evaluator()
+        release_evaluator["caller"]["commit"] = CANDIDATE
+        release_evaluator["reusable"].update(
+            repository="github.com/hexalith/hexalith.frontcomposer",
+            workflow_path=".github/workflows/release-publish.yml",
+            commit=CANDIDATE,
+        )
+        release_evaluator["definition_digest"] = canonical.canonical_digest({
+            key: release_evaluator[key] for key in ("caller", "reusable", "actions")
+        })
+        document = {
+            "schema": descriptor.DESCRIPTOR_SCHEMA,
+            "release_run": {
+                "repository": "github.com/hexalith/hexalith.frontcomposer",
+                "workflow_path": ".github/workflows/release.yml",
+                "run_id": 10,
+                "run_attempt": 1,
+            },
+            "candidate": CANDIDATE,
+            "ci_handoff_sha256": BLOB,
+            "dependency_policy": policy_projection(),
+            "evaluator": release_evaluator,
+            "release_plan": None,
+            "files": [],
+        }
+        payload = zip_bytes([("publication-candidate.json", canonical.canonical_bytes(document))])
+        with mock.patch.dict(os.environ, clear=True):
+            self.assertIn("publication-candidate.json", split_publication.authenticate_directory(payload))
+        with tempfile.TemporaryDirectory() as temporary:
+            marker = Path(temporary) / "marker"
+            marker.touch()
+            with mock.patch.dict(os.environ, {"SPLIT_EXECUTION_MARKER": str(marker)}):
+                with self.assertRaisesRegex(canonical.ContractError, "before archive authentication"):
+                    split_publication.authenticate_directory(payload)
+        wrong_source = canonical_json(document)
+        wrong_evaluator = wrong_source["evaluator"]
+        wrong_evaluator["reusable"]["commit"] = OTHER
+        wrong_evaluator["definition_digest"] = canonical.canonical_digest({
+            key: wrong_evaluator[key] for key in ("caller", "reusable", "actions")
+        })
+        with self.assertRaisesRegex(canonical.ContractError, "publisher to the candidate"):
+            descriptor.validate_descriptor(wrong_source)
+
+
+class CiHandoffTests(unittest.TestCase):
+    def test_handoff_requires_the_authenticated_ci_evaluator(self):
+        ci_evaluator = evaluator()
+        ci_evaluator["caller"].update(workflow_path=".github/workflows/ci.yml", commit=CANDIDATE)
+        ci_evaluator["reusable"]["workflow_path"] = ".github/workflows/domain-ci.yml"
+        run = {
+            "repository": "github.com/hexalith/hexalith.frontcomposer",
+            "workflow_path": ".github/workflows/ci.yml",
+            "run_id": 9,
+            "run_attempt": 1,
+            "event": "push",
+            "branch": "main",
+            "candidate": CANDIDATE,
+        }
+        document = {
+            "schema": handoff.CI_HANDOFF_SCHEMA,
+            "run": run,
+            "revisions": {"base": BASE, "candidate": CANDIDATE, "merge_base": None},
+            "evaluator": ci_evaluator,
+            "dependency_policy": policy_projection(),
+            "dependency_graph": empty_graph(),
+        }
+        cases = [
+            (".github/workflows/domain-ci.yml", CANDIDATE, None),
+            (".github/workflows/domain-release.yml", CANDIDATE, "select the Builds CI workflow"),
+            (".github/workflows/domain-ci.yml", OTHER, "caller commit does not match"),
+        ]
+        for workflow, revision, error in cases:
+            with self.subTest(workflow=workflow, revision=revision):
+                ci_evaluator["caller"]["commit"] = revision
+                ci_evaluator["reusable"]["workflow_path"] = workflow
+                ci_evaluator["definition_digest"] = canonical.canonical_digest({
+                    key: ci_evaluator[key] for key in ("caller", "reusable", "actions")
+                })
+                raw = canonical.canonical_bytes(document)
+                if error:
+                    with self.assertRaisesRegex(canonical.ContractError, error):
+                        handoff.validate_ci_handoff(document, raw)
+                else:
+                    verified = handoff.validate_ci_handoff(document, raw)
+                    self.assertEqual(ci_evaluator, verified["evaluator"])
+                    self.assertEqual(canonical.sha256_bytes(raw), verified["evidence_sha256"])
+
+
 class ManifestAndFallbackTests(unittest.TestCase):
     def test_manifest_v4_seals_only_its_closed_body(self):
-        sealed = manifest.seal_manifest(
-            dependency_graph=empty_graph(),
-            dependency_policy=policy_projection(),
-            quality_run=quality_run(),
-            attestation={"status": "attested", "bundle": {"path": "provenance-attestation.json", "sha256": "2" * 64}, "fallback": None},
-            workflow_provenance=provenance(),
-            candidate=CANDIDATE,
-            sealed_at="2026-10-30T18:00:00Z",
-        )
-        self.assertEqual(manifest.MANIFEST_SCHEMA, sealed["schema"])
-        verified = manifest.verify_manifest(sealed, CANDIDATE)
-        self.assertEqual(sealed["seal"]["hash"], verified["seal"]["hash"])
-        tampered = json.loads(canonical.canonical_bytes(sealed))
-        tampered["quality_run"]["run_id"] = 8
-        with self.assertRaises(canonical.ContractError):
-            manifest.verify_manifest(tampered, CANDIDATE)
+        for same_repository in (False, True):
+            with self.subTest(same_repository=same_repository):
+                workflow_provenance = provenance(same_repository=same_repository)
+                sealed = manifest.seal_manifest(
+                    dependency_graph=empty_graph(),
+                    dependency_policy=policy_projection(),
+                    quality_run=quality_run(),
+                    attestation={
+                        "status": "attested",
+                        "bundle": {"path": "provenance-attestation.json", "sha256": "2" * 64},
+                        "fallback": None,
+                    },
+                    workflow_provenance=workflow_provenance,
+                    candidate=CANDIDATE,
+                    sealed_at="2026-10-30T18:00:00Z",
+                )
+                self.assertEqual(manifest.MANIFEST_SCHEMA, sealed["schema"])
+                self.assertEqual(workflow_provenance, sealed["workflow_provenance"])
+                self.assertEqual(sealed, manifest.verify_manifest(sealed, CANDIDATE))
+                tampered = json.loads(canonical.canonical_bytes(sealed))
+                tampered["quality_run"]["run_id"] = 8
+                with self.assertRaises(canonical.ContractError):
+                    manifest.verify_manifest(tampered, CANDIDATE)
+
+                if same_repository:
+                    tampered = json.loads(canonical.canonical_bytes(sealed))
+                    tampered_provenance = tampered["workflow_provenance"]
+                    tampered_provenance["release"]["builds_execution_sha"] = OTHER
+                    with self.assertRaisesRegex(canonical.ContractError, "definition_digest"):
+                        manifest.verify_manifest(tampered, CANDIDATE)
+                    tampered_provenance["definition_digest"] = canonical.canonical_digest(
+                        {"ci": tampered_provenance["ci"], "release": tampered_provenance["release"]}
+                    )
+                    with self.assertRaisesRegex(canonical.ContractError, "manifest seal"):
+                        manifest.verify_manifest(tampered, CANDIDATE)
+
+    def test_same_repository_provenance_rejects_mismatched_coordinates(self):
+        mismatches = [
+            ("ci", "run", "repository", "github.com/hexalith/hexalith.tenants"),
+            ("ci", "run", "head_sha", OTHER),
+            ("release", "caller", "repository", "github.com/hexalith/hexalith.tenants"),
+            ("release", "caller", "workflow_path", ".github/workflows/another-release.yml"),
+            ("release", "caller", "commit", OTHER),
+            ("release", "reusable", "repository", "github.com/hexalith/hexalith.tenants"),
+            ("release", "reusable", "workflow_path", ".github/workflows/another-publisher.yml"),
+            ("release", "reusable", "commit", BUILDS),
+        ]
+        for section, coordinate, field, replacement in mismatches:
+            with self.subTest(coordinate=coordinate, field=field):
+                document = provenance(same_repository=True)
+                document[section][coordinate][field] = replacement
+                document["definition_digest"] = canonical.canonical_digest({"ci": document["ci"], "release": document["release"]})
+                with self.assertRaises(canonical.ContractError):
+                    manifest.validate_workflow_provenance(document, CANDIDATE)
+
+    def test_same_repository_provenance_still_requires_an_exact_builds_execution_sha(self):
+        document = provenance(same_repository=True)
+        document["release"]["builds_execution_sha"] = "refs/heads/main"
+        document["definition_digest"] = canonical.canonical_digest({"ci": document["ci"], "release": document["release"]})
+        with self.assertRaisesRegex(canonical.ContractError, "builds execution sha"):
+            manifest.validate_workflow_provenance(document, CANDIDATE)
+
+    def test_legacy_provenance_requires_the_exact_builds_execution_sha_as_the_reusable_commit(self):
+        document = provenance()
+        document["release"]["reusable"]["commit"] = CANDIDATE
+        document["definition_digest"] = canonical.canonical_digest({"ci": document["ci"], "release": document["release"]})
+        with self.assertRaisesRegex(canonical.ContractError, "selected Builds execution SHA"):
+            manifest.validate_workflow_provenance(document, CANDIDATE)
 
     def test_attempt_one_approval_does_not_authorize_attempt_two(self):
         request = {
@@ -291,31 +506,102 @@ class ManifestAndFallbackTests(unittest.TestCase):
                 {**common, "run_id": 40, "run_attempt": 1, "attestation_capability": "supported"},
             )
 
-    def test_statement_rejects_an_extra_subject(self):
-        statement = {
-            "_type": attestation.STATEMENT_TYPE,
-            "subject": [
-                {"name": "Demo.1.2.3.nupkg", "digest": {"sha256": "4" * 64}},
-                {"name": "extra.nupkg", "digest": {"sha256": "5" * 64}},
-            ],
-            "predicateType": attestation.PREDICATE_TYPE,
-            "predicate": {},
-        }
-        with self.assertRaises(canonical.ContractError):
+
+class AttestationTests(unittest.TestCase):
+    def test_legacy_signer_matches_the_exact_builds_revision(self):
+        expected = attestation_expectations()
+        statement = attestation_statement(f"{BUILDS_SIGNER}@{BUILDS}")
+        extensions = certificate_extensions(BUILDS)
+        attestation.validate_statement(statement, expected)
+        attestation.certificate_identity(extensions, expected)
+        attestation.validate_statement(statement, expected, workflow_provenance=provenance())
+        for ref in (CANDIDATE, "refs/heads/main"):
+            with self.subTest(ref=ref):
+                with self.assertRaisesRegex(canonical.ContractError, "builder id"):
+                    attestation.validate_statement(attestation_statement(f"{BUILDS_SIGNER}@{ref}"), expected)
+        with self.assertRaisesRegex(canonical.ContractError, r"\.1\.10"):
+            attestation.certificate_identity(certificate_extensions(CANDIDATE), expected)
+
+    def test_provenance_selects_the_frontcomposer_signer_at_the_candidate(self):
+        expected = attestation_expectations()
+        signer_id = f"{FRONTCOMPOSER_SIGNER}@{CANDIDATE}"
+        extensions = {**certificate_extensions(CANDIDATE), "1.3.6.1.4.1.57264.1.9": signer_id}
+        workflow_provenance = manifest.validate_workflow_provenance(provenance(same_repository=True), CANDIDATE)
+        statement = attestation_statement(signer_id)
+        attestation.validate_statement(
+            statement, expected, workflow_provenance=workflow_provenance, verified_certificate_extensions=extensions
+        )
+        with self.assertRaisesRegex(canonical.ContractError, "cryptographically verified signer certificate"):
+            attestation.validate_statement(statement, expected, workflow_provenance=workflow_provenance)
+        attestation.certificate_identity(extensions, expected, workflow_provenance=workflow_provenance)
+        with self.assertRaisesRegex(canonical.ContractError, "authenticated release"):
             attestation.validate_statement(
-                statement,
-                {
-                    "packages": [("Demo.1.2.3.nupkg", "4" * 64)],
-                    "repository_slug": "Hexalith/Hexalith.FrontComposer",
-                    "caller_workflow": ".github/workflows/release.yml",
-                    "repository_id": 1,
-                    "owner_id": 2,
-                    "candidate": CANDIDATE,
-                    "builds_sha": BUILDS,
-                    "run_id": 40,
-                    "run_attempt": 1,
-                },
+                attestation_statement(signer_id), {**expected, "builds_sha": OTHER}, workflow_provenance=workflow_provenance
             )
+        with self.assertRaisesRegex(canonical.ContractError, "builder id"):
+            attestation.validate_statement(attestation_statement(signer_id), expected)
+
+    def test_same_repository_builder_rejects_a_different_signer_or_ref(self):
+        builder_ids = (
+            f"{BUILDS_SIGNER}@{BUILDS}",
+            f"{FRONTCOMPOSER_SIGNER}@{BUILDS}",
+            f"{FRONTCOMPOSER_SIGNER}@refs/heads/feature",
+            f"{FRONTCOMPOSER_SIGNER}@refs/tags/main",
+            f"{FRONTCOMPOSER_SIGNER.replace('release-publish.yml', 'release.yml')}@{CANDIDATE}",
+            f"{FRONTCOMPOSER_SIGNER.replace('Hexalith.FrontComposer', 'Hexalith.Tenants')}@{CANDIDATE}",
+        )
+        for builder_id in builder_ids:
+            with self.subTest(builder_id=builder_id):
+                with self.assertRaisesRegex(canonical.ContractError, "builder id"):
+                    attestation.validate_statement(
+                        attestation_statement(builder_id),
+                        attestation_expectations(),
+                        workflow_provenance=provenance(same_repository=True),
+                    )
+
+    def test_same_repository_builder_rejects_a_different_source_commit(self):
+        statement = attestation_statement(f"{FRONTCOMPOSER_SIGNER}@{CANDIDATE}")
+        statement["predicate"]["buildDefinition"]["resolvedDependencies"][0]["digest"]["gitCommit"] = OTHER
+        with self.assertRaisesRegex(canonical.ContractError, "resolved dependency"):
+            attestation.validate_statement(
+                statement, attestation_expectations(), workflow_provenance=provenance(same_repository=True)
+            )
+
+    def test_same_repository_main_ref_requires_verified_certificate_identity(self):
+        main_id = f"{FRONTCOMPOSER_SIGNER}@refs/heads/main"
+        statement = attestation_statement(main_id)
+        expected = attestation_expectations()
+        workflow_provenance = provenance(same_repository=True)
+        with self.assertRaisesRegex(canonical.ContractError, "cryptographically verified signer certificate"):
+            attestation.validate_statement(statement, expected, workflow_provenance=workflow_provenance)
+
+        extensions = {**certificate_extensions(CANDIDATE), "1.3.6.1.4.1.57264.1.9": main_id}
+        attestation.validate_statement(
+            statement, expected, workflow_provenance=workflow_provenance, verified_certificate_extensions=extensions
+        )
+        mismatches = {
+            "1.3.6.1.4.1.57264.1.8": "https://different-issuer.example",
+            "1.3.6.1.4.1.57264.1.9": f"{BUILDS_SIGNER}@refs/heads/main",
+            "1.3.6.1.4.1.57264.1.10": BUILDS,
+            "1.3.6.1.4.1.57264.1.12": "https://github.com/Hexalith/Hexalith.Tenants",
+            "1.3.6.1.4.1.57264.1.13": OTHER,
+            "1.3.6.1.4.1.57264.1.14": "refs/heads/feature",
+        }
+        for oid, replacement in mismatches.items():
+            with self.subTest(oid=oid):
+                with self.assertRaisesRegex(canonical.ContractError, "attestation certificate"):
+                    attestation.validate_statement(
+                        statement,
+                        expected,
+                        workflow_provenance=workflow_provenance,
+                        verified_certificate_extensions={**extensions, oid: replacement},
+                    )
+
+    def test_statement_rejects_an_extra_subject(self):
+        statement = attestation_statement(f"{BUILDS_SIGNER}@{BUILDS}")
+        statement["subject"].append({"name": "extra.nupkg", "digest": {"sha256": "5" * 64}})
+        with self.assertRaisesRegex(canonical.ContractError, "authenticated package set"):
+            attestation.validate_statement(statement, attestation_expectations())
 
 
 class PublicationBoundaryTests(unittest.TestCase):

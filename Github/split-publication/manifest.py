@@ -22,7 +22,14 @@ from canonical import (
     expect_timestamp,
     sha256_bytes,
 )
-from descriptor import validate_policy_projection
+from descriptor import (
+    BUILDS_RELEASE_WORKFLOW,
+    BUILDS_REPOSITORY,
+    FRONTCOMPOSER_PUBLISH_WORKFLOW,
+    FRONTCOMPOSER_RELEASE_WORKFLOW,
+    FRONTCOMPOSER_REPOSITORY,
+    validate_policy_projection,
+)
 from graph import validate_graph
 
 
@@ -116,12 +123,6 @@ def validate_workflow_provenance(value: Any, candidate: str) -> dict[str, Any]:
         "workflow provenance reusable",
     )
     builds_sha = expect_commit(release["builds_execution_sha"], "builds execution sha")
-    if (
-        expect_identity(reusable["repository"], "workflow provenance reusable repository") != "github.com/hexalith/hexalith.builds"
-        or reusable["workflow_path"] != ".github/workflows/domain-release.yml"
-        or expect_commit(reusable["commit"], "workflow provenance reusable commit") != builds_sha
-    ):
-        raise ContractError("workflow provenance reusable coordinate is not the selected Builds execution SHA")
     normalized = {
         "ci": {
             "run": {
@@ -143,14 +144,32 @@ def validate_workflow_provenance(value: Any, candidate: str) -> dict[str, Any]:
                 "blob_sha256": expect_sha256(caller["blob_sha256"], "workflow provenance caller blob"),
             },
             "reusable": {
-                "repository": "github.com/hexalith/hexalith.builds",
-                "workflow_path": ".github/workflows/domain-release.yml",
-                "commit": builds_sha,
+                "repository": expect_identity(reusable["repository"], "workflow provenance reusable repository"),
+                "workflow_path": expect_string(reusable["workflow_path"], "workflow provenance reusable workflow"),
+                "commit": expect_commit(reusable["commit"], "workflow provenance reusable commit"),
                 "blob_sha256": expect_sha256(reusable["blob_sha256"], "workflow provenance reusable blob"),
             },
             "builds_execution_sha": builds_sha,
         },
     }
+    caller = normalized["release"]["caller"]
+    reusable = normalized["release"]["reusable"]
+    if reusable["repository"] == FRONTCOMPOSER_REPOSITORY:
+        if (
+            reusable["workflow_path"] != FRONTCOMPOSER_PUBLISH_WORKFLOW
+            or reusable["commit"] != candidate
+            or caller["repository"] != FRONTCOMPOSER_REPOSITORY
+            or caller["workflow_path"] != FRONTCOMPOSER_RELEASE_WORKFLOW
+            or caller["commit"] != candidate
+            or normalized["ci"]["run"]["repository"] != FRONTCOMPOSER_REPOSITORY
+        ):
+            raise ContractError("workflow provenance must bind the FrontComposer caller and publisher to the candidate")
+    elif (
+        reusable["repository"] != BUILDS_REPOSITORY
+        or reusable["workflow_path"] != BUILDS_RELEASE_WORKFLOW
+        or reusable["commit"] != builds_sha
+    ):
+        raise ContractError("workflow provenance reusable coordinate is not the selected Builds execution SHA")
     digest = canonical_digest({"ci": normalized["ci"], "release": normalized["release"]})
     if expect_sha256(provenance["definition_digest"], "workflow provenance digest") != digest:
         raise ContractError("workflow provenance definition_digest does not match its canonical bytes")

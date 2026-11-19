@@ -1,0 +1,50 @@
+{
+  "mediaType": "application/vnd.dev.sigstore.trustedroot+json;version=0.1",
+  "certificateAuthorities": [
+    {
+      "uri": "https://fulcio.test.invalid",
+      "certChain": {
+        "certificates": [
+          {
+            "rawBytes": "MIIBRjCB7aADAgECAgEBMAoGCCqGSM49BAMCMBkxFzAVBgNVBAMMDkJ1aWxkcyB0ZXN0IENBMB4XDTI0MTIzMTEyMDAwMFoXDTI1MDEwMjEyMDAwMFowGTEXMBUGA1UEAwwOQnVpbGRzIHRlc3QgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAR/i/sqV66+tb3vRQwiyCyWgfI07eRnfgUfZm/dfHclU+sFu03SRYvRDCONVPZrYEdiDEFzoDmt032T6Lcnb2EOoyYwJDASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOPQQDAgNIADBFAiBCxtwoAq/0vG6rAreT1FOlTw4yEEWeUNJqiE/SHQ8BiAIhALwCzewBC9u/bmL/6fpLkOYQNauSD4ii0xK4BvhGAm5a"
+          }
+        ]
+      },
+      "validFor": {
+        "start": "2024-12-31T12:00:00+00:00"
+      }
+    }
+  ],
+  "tlogs": [
+    {
+      "baseUrl": "https://rekor.test.invalid",
+      "hashAlgorithm": "SHA2_256",
+      "publicKey": {
+        "rawBytes": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAP6Y6vHpP5a1W70WunUGGgmCAuWgF4RCK8d20wFqk6jWH2sidmA0IoJ7Zp4lWYYGeBPGwQBvbhq2+GtnhRvzCQ==",
+        "keyDetails": "PKIX_ECDSA_P256_SHA_256",
+        "validFor": {
+          "start": "2024-12-31T12:00:00+00:00"
+        }
+      },
+      "logId": {
+        "keyId": "zzLaFddpBxljO/Mk6L2ZU3E2QJWL/6rTa2iFmQRhhzU="
+      }
+    }
+  ],
+  "ctlogs": [
+    {
+      "baseUrl": "https://ct.test.invalid",
+      "hashAlgorithm": "SHA2_256",
+      "publicKey": {
+        "rawBytes": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdtG5LrUaVYM8lL86tEnrw+5CxacPRmpHJjFy0GeLyCgZX1g4aQThCUzfB137jsc80J1px5MY3gj8lcgNrrlESQ==",
+        "keyDetails": "PKIX_ECDSA_P256_SHA_256",
+        "validFor": {
+          "start": "2024-12-31T12:00:00+00:00"
+        }
+      },
+      "logId": {
+        "keyId": "+eGULJujhPNScKdyJyyn92pYFw6A/4A09MP2Y6HfXt8="
+      }
+    }
+  ]
+}

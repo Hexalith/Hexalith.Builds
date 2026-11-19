@@ -70,12 +70,20 @@ def validate_ci_handoff(value: Any, raw: bytes) -> dict[str, Any]:
     if policy["commit"] != expect_commit(revisions["base"], "CI handoff base"):
         raise ContractError("CI handoff policy commit does not equal revisions.base")
     graph = validate_graph(document["dependency_graph"])
-    if graph["root"]["repository"] != policy["repository"] or graph["root"]["commit"] != candidate:
-        raise ContractError("CI handoff graph root does not match the candidate and policy repository")
+    repository = expect_identity(run["repository"], "CI handoff repository")
+    if (
+        graph["root"]["repository"] != repository
+        or policy["repository"] != repository
+        or graph["root"]["commit"] != candidate
+    ):
+        raise ContractError("CI handoff graph root does not match the candidate, run repository, and policy repository")
+    evaluator = validate_evaluator(document["evaluator"], "CI handoff evaluator", candidate=candidate, ci=True)
+    if evaluator["caller"]["repository"] != repository or evaluator["caller"]["workflow_path"] != run["workflow_path"]:
+        raise ContractError("CI handoff evaluator caller does not match the authenticated run")
     return {
         "schema": CI_HANDOFF_SCHEMA,
         "run": {
-            "repository": expect_identity(run["repository"], "CI handoff repository"),
+            "repository": repository,
             "workflow_path": ".github/workflows/ci.yml",
             "run_id": expect_safe_integer(run["run_id"], "CI handoff run id", minimum=1),
             "run_attempt": expect_safe_integer(run["run_attempt"], "CI handoff run attempt", minimum=1),
@@ -84,7 +92,7 @@ def validate_ci_handoff(value: Any, raw: bytes) -> dict[str, Any]:
             "candidate": candidate,
         },
         "revisions": {"base": policy["commit"], "candidate": candidate, "merge_base": None},
-        "evaluator": validate_evaluator(document["evaluator"], "CI handoff evaluator"),
+        "evaluator": evaluator,
         "dependency_policy": policy,
         "dependency_graph": graph,
         "evidence_sha256": sha256_bytes(raw),
@@ -164,12 +172,13 @@ def build_verification_handoff(value: dict[str, Any]) -> dict[str, Any]:
             "seal": expect_sha256(manifest["seal"], "handoff manifest seal"),
         }
     attestation = None if value["attestation"] is None else value["attestation"]
+    candidate = expect_commit(value["candidate"], "handoff candidate")
     document = {
         "schema": VERIFICATION_HANDOFF_SCHEMA,
         "release_run": value["release_run"],
         "quality_run": value["quality_run"],
         "ci_handoff": value["ci_handoff"],
-        "candidate": expect_commit(value["candidate"], "handoff candidate"),
+        "candidate": candidate,
         "dependency_policy": validate_policy_projection(value["dependency_policy"], "handoff policy"),
         "publication_candidate": publication_candidate,
         "release": {
@@ -185,7 +194,7 @@ def build_verification_handoff(value: dict[str, Any]) -> dict[str, Any]:
         "manifest": manifest,
         "attestation": attestation,
         "assets": normalized_assets,
-        "evaluator": validate_evaluator(value["evaluator"], "handoff evaluator"),
+        "evaluator": validate_evaluator(value["evaluator"], "handoff evaluator", candidate=candidate),
     }
     release_run = expect_members(
         value["release_run"],
