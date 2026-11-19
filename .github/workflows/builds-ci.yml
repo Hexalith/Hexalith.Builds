@@ -121,6 +121,9 @@ jobs:
       - name: Test FrontComposer Immutable consumer view
         run: python3 Tools/test-frontcomposer-immutable-view.py
 
+      - name: Test Aspire AppHost catalog reference
+        run: python3 Tools/test-aspire-apphost-catalog-reference.py
+
       - name: Test central package version validator
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1

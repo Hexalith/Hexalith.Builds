@@ -578,4 +578,5 @@
   </ItemGroup>
   <!-- Metadata-only catalog copies do not require build-time analyzer selection. -->
   <Import Project="$(MSBuildThisFileDirectory)Logging.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)Logging.Build.targets')" />
+  <Import Project="$(MSBuildThisFileDirectory)AspireAppHost.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)AspireAppHost.Build.targets')" />
 </Project>

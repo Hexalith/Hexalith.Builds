@@ -1,0 +1,18 @@
+<Project>
+  <!-- Aspire.AppHost.Sdk adds a versioned, implicitly defined Aspire.Hosting.AppHost
+       PackageReference unless the project sets SkipAddAspireDefaultReferences or
+       references the package itself. Central package management rejects that item
+       beside the catalog pin (NU1009). Restate it as an ordinary reference so the
+       catalog supplies its version. Explicit references are left unchanged. -->
+  <Target Name="HexalithUseCatalogAspireAppHostPackage"
+          AfterTargets="AddImplicitAspireAppHostPackage"
+          Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+    <ItemGroup>
+      <_HexalithImplicitAspireAppHostPackage Include="@(PackageReference)"
+          Condition="'%(PackageReference.Identity)' == 'Aspire.Hosting.AppHost' and '%(PackageReference.IsImplicitlyDefined)' == 'true'" />
+      <PackageReference Remove="@(_HexalithImplicitAspireAppHostPackage)" />
+      <PackageReference Include="Aspire.Hosting.AppHost" Condition="'@(_HexalithImplicitAspireAppHostPackage)' != ''" />
+      <_HexalithImplicitAspireAppHostPackage Remove="@(_HexalithImplicitAspireAppHostPackage)" />
+    </ItemGroup>
+  </Target>
+</Project>
