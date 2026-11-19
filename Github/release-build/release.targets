@@ -6,12 +6,17 @@
     <WarningsNotAsErrors>$([System.Text.RegularExpressions.Regex]::Replace('$(WarningsNotAsErrors)', '(?i)(^|[;,])\s*NU190[0345]\s*(?=[;,]|$)', '$1'));NU1901;NU1902</WarningsNotAsErrors>
     <NoWarn>$([System.Text.RegularExpressions.Regex]::Replace('$(NoWarn)', '(?i)(^|[;,])\s*NU190[0345]\s*(?=[;,]|$)', '$1'))</NoWarn>
   </PropertyGroup>
+  <!-- The release passes one publisher-owned ContainerProvenanceCreated instant to
+       every SDK command; each image's created label carries it instead of the
+       SDK's per-RID clock. Builds without the property keep the SDK label. -->
   <Target Name="HexalithReleaseLabels" BeforeTargets="_PublishSingleContainer">
     <ItemGroup>
       <ContainerLabel Remove="org.opencontainers.image.source;org.opencontainers.image.revision;org.opencontainers.image.version" />
+      <ContainerLabel Remove="org.opencontainers.image.created" Condition="'$(ContainerProvenanceCreated)' != ''" />
       <ContainerLabel Include="org.opencontainers.image.source" Value="$(RepositoryUrl)" />
       <ContainerLabel Include="org.opencontainers.image.revision" Value="$(SourceRevisionId)" />
       <ContainerLabel Include="org.opencontainers.image.version" Value="$(PackageVersion)" />
+      <ContainerLabel Include="org.opencontainers.image.created" Value="$(ContainerProvenanceCreated)" Condition="'$(ContainerProvenanceCreated)' != ''" />
     </ItemGroup>
   </Target>
 </Project>

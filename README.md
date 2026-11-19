@@ -103,6 +103,10 @@ This repository:
   `domain-release.yml` container publishing).
 - [`Github/publish-containers/`](Github/publish-containers/README.md): Install
   the semantic-release container publish helper used by `domain-release.yml`.
+- [`Github/release-build/`](Github/release-build/README.md): Audit, build, pack
+  and containerize the frozen release source once into the original `release`
+  artifact, stamping every image with one publisher-owned
+  `ContainerProvenanceCreated` instant.
 - [`Github/unit-tests/`](Github/unit-tests/README.md): Run and clean a standard
   Hexalith test project (legacy — modules use `domain-ci.yml`).
 - [`Github/verify/`](Github/verify/README.md): CI gate that checks out,

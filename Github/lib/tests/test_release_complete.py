@@ -125,6 +125,51 @@ class CompleteTests(History):
         self.assertEqual(control.deletes + control.writes, [])
         self.assertEqual(self.emitted, [])
 
+    def test_original_publisher_created_labels_complete_without_rebuild_or_new_instant(self):
+        import oci_archive as oci
+        import release_build
+        import test_release_oci as fixtures
+        labels = {fixtures.IMAGE_CREATED: fixtures.CREATED, fixtures.ARTIFACT_CREATED: fixtures.CREATED}
+        sources = []
+        with patch.object(fixtures, "SHA", self.sha), patch.object(fixtures, "REPOSITORY", REPOSITORY):
+            for architecture in ("amd64", "arm64"):
+                source = self.root / (architecture + ".tar")
+                fixtures.sdk_archive(source, architecture, version=VERSION, labels=labels)
+                sources.append((source, {"os": "linux", "architecture": architecture}))
+        combined = self.root / "original-image.tar"
+        oci.combine_archives(sources, combined, revision=self.sha, version=VERSION, repository=REPOSITORY,
+                             name="product/image", created=fixtures.CREATED)
+        original = combined.read_bytes()
+        manifest = {"sha": self.sha, "version": VERSION, "packages": [],
+                    "containers": [{"name": "product/image", "path": "containers/image.tar"}]}
+        payload = artifact(self.sha, packages=False, manifest=manifest, extra=[("containers/image.tar", original)])
+        control = self.control(payload)
+
+        class Registry:
+            def __init__(inner, *_args):
+                pass
+
+            def preflight(inner, *_args):
+                pass
+        work = self.root / "payload"
+        work.mkdir()
+        # Completion and its publisher reuse the stored payload: no build and no new publisher instant.
+        with patch.object(release_build, "build_release", side_effect=AssertionError("rebuilt")), \
+                patch.object(release_build, "publisher_created", side_effect=AssertionError("new instant")):
+            result = self.invoke(control, registry=lambda *_args: self.fail("recovery attempted registry publication preflight"))
+            self.assertEqual(result, {**control.values, "noop-reason": ""})
+            self.assertEqual(result["artifact-digest"], digest(payload))
+            values = publisher.authenticate(self.git, control, copy.deepcopy(control.values), work, WORKFLOW_REF,
+                                            registry=Registry)
+        item, = values["containers"]
+        self.assertEqual("product/image", item["name"])
+        self.assertEqual(original, (work / item["path"]).read_bytes())
+        self.assertEqual(item["graph"], oci.inspect_archive(work / item["path"], revision=self.sha, version=VERSION,
+            repository=REPOSITORY, name="product/image", created=fixtures.CREATED))
+        self.assertEqual([labels, labels], [{key: value[key] for key in labels}
+                                            for value in fixtures.child_labels(work / item["path"])])
+        self.assertEqual(control.deletes + control.writes, [])
+
     def test_draft_changed_during_download_never_emits_a_publication_handoff(self):
         for mutation in ({"body": "changed notes"}, {"draft": False}):
             control = self.control()

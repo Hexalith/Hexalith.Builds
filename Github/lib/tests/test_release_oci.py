@@ -16,9 +16,13 @@ import oci_archive as oci
 SHA = "a" * 40
 VERSION = "2.4.0"
 REPOSITORY = "owner/product"
+CREATED = "2026-11-19T23:59:59Z"
+IMAGE_CREATED = "org.opencontainers.image.created"
+ARTIFACT_CREATED = "org.opencontainers.artifact.created"
 
 
-def sdk_archive(path, architecture="amd64", *, version=VERSION, platform=None, config_platform=None):
+def sdk_archive(path, architecture="amd64", *, version=VERSION, platform=None, config_platform=None,
+                labels=None):
     files = {"oci-layout": b'{"imageLayoutVersion":"1.0.0"}'}
 
     def store(value, media):
@@ -31,7 +35,7 @@ def sdk_archive(path, architecture="amd64", *, version=VERSION, platform=None, c
     config = store({"os": "linux", "architecture": architecture, **(config_platform or {}), "config": {"Labels": {
         "org.opencontainers.image.source": "https://github.com/" + REPOSITORY,
         "org.opencontainers.image.revision": SHA, "org.opencontainers.image.version": version,
-        "arbitrary": "https://example.org:443/a:b"}}}, "application/vnd.oci.image.config.v1+json")
+        "arbitrary": "https://example.org:443/a:b", **(labels or {})}}}, "application/vnd.oci.image.config.v1+json")
     child = store({"schemaVersion": 2, "mediaType": oci.MANIFEST, "config": config, "layers": [layer]}, oci.MANIFEST)
     if platform is not None:
         child["platform"] = platform
@@ -63,6 +67,19 @@ def change_manifest(files, mutate):
     mutate(manifest)
     replace_blob(files, descriptor, manifest)
     files["index.json"] = json.dumps(layout).encode()
+
+
+def child_labels(path):
+    """Read each assembled child's config labels in index order."""
+    files = oci.archive_files(path)
+    root, = oci.document(files["index.json"])["manifests"]
+    index = oci.document(files["blobs/sha256/" + root["digest"][7:]])
+    labels = []
+    for child in index["manifests"]:
+        manifest = oci.document(files["blobs/sha256/" + child["digest"][7:]])
+        config = oci.document(files["blobs/sha256/" + manifest["config"]["digest"][7:]])
+        labels.append(config["config"]["Labels"])
+    return labels
 
 
 def pax_record(key, value):
@@ -301,6 +318,60 @@ class OciTests(unittest.TestCase):
                 with self.assertRaises(oci.OciError):
                     self.combine()
                 self.setUp()
+
+    def created_inputs(self, amd64, arm64):
+        """Rebuild both SDK platform archives with the given created labels."""
+        self.original = {}
+        for (path, platform), labels in zip(self.inputs, (amd64, arm64)):
+            files = sdk_archive(path, platform["architecture"], labels=labels)
+            self.original.update({name: data for name, data in files.items() if name.startswith("blobs/")})
+
+    def test_publisher_created_labels_verified_on_every_child_without_rewriting_bytes(self):
+        for artifact in (False, True):
+            with self.subTest(artifact=artifact):
+                labels = {IMAGE_CREATED: CREATED, **({ARTIFACT_CREATED: CREATED} if artifact else {})}
+                self.created_inputs(labels, labels)
+                graph = oci.combine_archives(self.inputs, self.output, revision=SHA, version=VERSION,
+                    repository=REPOSITORY, name="product/image", created=CREATED)
+                self.assertEqual(["linux/amd64", "linux/arm64"], graph["platforms"])
+                self.assertEqual([labels, labels], [{key: value[key] for key in value if key.endswith(".created")}
+                                                    for value in child_labels(self.output)])
+                files = oci.archive_files(self.output)
+                for name, data in self.original.items():
+                    self.assertEqual(data, files[name])
+                self.assertEqual(graph, oci.inspect_archive(self.output, revision=SHA, version=VERSION,
+                    repository=REPOSITORY, name="product/image", created=CREATED))
+                for other in ("2026-11-20T00:00:00Z", "2026-11-19T23:59:59.0000000Z"):
+                    with self.assertRaisesRegex(oci.OciError, "created label mismatch"):
+                        oci.inspect_archive(self.output, revision=SHA, version=VERSION, created=other)
+
+    def test_created_label_mismatch_fails_before_the_archive_is_written(self):
+        later = "2026-11-20T00:00:00Z"
+        fraction = "2026-11-19T23:59:59.1234567Z"
+        cases = {
+            "differs from instant": ({IMAGE_CREATED: later}, {IMAGE_CREATED: later}),
+            "differs between platforms": ({IMAGE_CREATED: CREATED}, {IMAGE_CREATED: later}),
+            "sdk per-platform clock": ({IMAGE_CREATED: fraction}, {IMAGE_CREATED: fraction}),
+            "missing image label": ({IMAGE_CREATED: CREATED}, {ARTIFACT_CREATED: CREATED}),
+            "artifact label differs": ({IMAGE_CREATED: CREATED},
+                                       {IMAGE_CREATED: CREATED, ARTIFACT_CREATED: later}),
+        }
+        for case, (amd64, arm64) in cases.items():
+            with self.subTest(case=case):
+                self.output.unlink(missing_ok=True)
+                self.created_inputs(amd64, arm64)
+                with self.assertRaisesRegex(oci.OciError, "created label mismatch"):
+                    oci.combine_archives(self.inputs, self.output, revision=SHA, version=VERSION,
+                        repository=REPOSITORY, name="product/image", created=CREATED)
+                self.assertFalse(self.output.exists())
+                # Callers without an instant (draft, publish, complete) keep reading
+                # stored payloads unchanged; only the publisher instant check rejects them.
+                graph = self.combine()
+                self.assertEqual(graph, oci.inspect_archive(self.output, revision=SHA, version=VERSION,
+                    repository=REPOSITORY, name="product/image"))
+                with self.assertRaisesRegex(oci.OciError, "created label mismatch"):
+                    oci.inspect_archive(self.output, revision=SHA, version=VERSION,
+                        repository=REPOSITORY, name="product/image", created=CREATED)
 
     def test_unsafe_link_and_duplicate_json_rejected(self):
         for name in ("../escape", "/escape", "a\\b"):

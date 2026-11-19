@@ -142,8 +142,12 @@ def platform_identity(platform):
 
 def inspect_files(files: dict[str, bytes], *, revision: str, version: str,
                   repository: str = "", name: str = "", platforms: list[str] | None = None,
-                  single: bool = False) -> dict:
-    """Verify every descriptor, platform, config label and referenced blob."""
+                  single: bool = False, created: str = "") -> dict:
+    """Verify every descriptor, platform, config label and referenced blob.
+
+    With ``created``, every child carries that publisher instant as its image
+    created label, and as its artifact created label when one is present.
+    """
     used = {"oci-layout", "index.json"}
     blobs = {}
 
@@ -196,6 +200,9 @@ def inspect_files(files: dict[str, bytes], *, revision: str, version: str,
                 expected["org.opencontainers.image.source"] = "https://github.com/" + repository
             if not isinstance(labels, dict) or any(labels.get(key) != value for key, value in expected.items()):
                 raise OciError("OCI source/revision/version label mismatch")
+            if created and (labels.get("org.opencontainers.image.created") != created
+                            or labels.get("org.opencontainers.artifact.created", created) != created):
+                raise OciError("OCI created label mismatch")
             if not isinstance(manifest["layers"], list):
                 raise OciError("OCI layer list missing")
             for layer in manifest["layers"]:
@@ -212,13 +219,15 @@ def inspect_files(files: dict[str, bytes], *, revision: str, version: str,
 
 
 def inspect_archive(source: Path | io.BytesIO, *, revision: str, version: str,
-                    repository: str = "", name: str = "", platforms: list[str] | None = None) -> dict:
+                    repository: str = "", name: str = "", platforms: list[str] | None = None,
+                    created: str = "") -> dict:
     return inspect_files(archive_files(source), revision=revision, version=version,
-                         repository=repository, name=name, platforms=platforms)
+                         repository=repository, name=name, platforms=platforms, created=created)
 
 
 def combine_archives(archives: list[tuple[Path, dict]], destination: Path, *,
-                     revision: str, version: str, repository: str, name: str) -> dict:
+                     revision: str, version: str, repository: str, name: str,
+                     created: str = "") -> dict:
     """Wrap unchanged single-platform manifests/configs/layers in one new index."""
     files, children, platforms = {}, [], []
     for path, selected in archives:
@@ -226,7 +235,7 @@ def combine_archives(archives: list[tuple[Path, dict]], destination: Path, *,
         platform_files = archive_files(path)
         # SDK single-platform descriptors may omit platform; config is authority.
         inspect_files(platform_files, revision=revision, version=version,
-                      repository=repository, single=True)
+                      repository=repository, single=True, created=created)
         descriptor, = document(platform_files["index.json"])["manifests"]
         manifest = document(platform_files["blobs/sha256/" + descriptor["digest"][7:]])
         config = document(platform_files["blobs/sha256/" + manifest["config"]["digest"][7:]])
@@ -251,7 +260,7 @@ def combine_archives(archives: list[tuple[Path, dict]], destination: Path, *,
         "annotations": {"org.opencontainers.image.ref.name": name + ":" + version}}]},
         separators=(",", ":")).encode()
     graph = inspect_files(files, revision=revision, version=version, repository=repository,
-                          name=name, platforms=platforms)
+                          name=name, platforms=platforms, created=created)
     with tarfile.open(destination, "w", format=tarfile.USTAR_FORMAT) as archive:
         for member, data in sorted(files.items()):
             entry = tarfile.TarInfo(member)

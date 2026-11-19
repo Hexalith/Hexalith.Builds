@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -30,6 +31,10 @@ PROPERTIES = ("TargetFramework", "TargetFrameworks", "IsCrossTargetingBuild", "I
 AUDIT = re.compile(r"\b(?:warning|error)\s+(NU190[0345])\s*:", re.IGNORECASE)
 PACKAGE_ID = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*\Z")
 CONTAINER_NAME = re.compile(r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*)*\Z")
+# The legacy publisher's ContainerProvenanceCreated rule: an exact UTC RFC 3339
+# second (no fraction or offset) that strptime accepts as a real calendar date.
+CREATED = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\Z")
+CREATED_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 @dataclass(frozen=True)
@@ -64,6 +69,23 @@ def release_flags(version: str, sha: str, repository: str) -> list[str]:
             "-p:EnableSdkContainerSupport=true", "-p:ContainerImageFormat=OCI",
             "-p:ContainerGenerateLabelsImageSource=false", "-p:ContainerGenerateLabelsImageRevision=false",
             "-p:ContainerGenerateLabelsImageVersion=false"]
+
+
+def utc_second() -> str:
+    """The publisher clock: the current UTC instant truncated to one second."""
+    return datetime.now(timezone.utc).strftime(CREATED_FORMAT)
+
+
+def publisher_created(clock=utc_second) -> str:
+    """Read the publisher clock once and accept only an exact real UTC RFC 3339 second."""
+    created = clock()
+    if not isinstance(created, str) or not CREATED.fullmatch(created):
+        raise PipelineError("release created instant must be an exact UTC RFC 3339 second")
+    try:
+        datetime.strptime(created, CREATED_FORMAT)
+    except ValueError as error:
+        raise PipelineError("release created instant must be a real calendar date") from error
+    return created
 
 
 def audited_command(arguments: list[str], root: Path, version: str) -> None:
@@ -193,8 +215,12 @@ def validate_package(path: Path, *, identity: str, version: str, sha: str) -> No
 
 
 def build_release(prepared: PreparedConfig, output: Path, *, version: str, sha: str,
-                  repository: str) -> dict:
-    flags = release_flags(version, sha, repository)
+                  repository: str, clock=utc_second) -> dict:
+    # One publisher-owned instant for every project, image and RID: discovery,
+    # restore, build, pack and each publish receive the same global property.
+    created = publisher_created(clock)
+    flags = [*release_flags(version, sha, repository), f"-p:ContainerProvenanceCreated={created}",
+             "-p:ContainerGenerateLabelsImageCreated=false"]
     output = output.resolve()
     if output.exists():
         raise PipelineError("release payload directory already exists")
@@ -254,8 +280,9 @@ def build_release(prepared: PreparedConfig, output: Path, *, version: str, sha: 
                             if destination.exists():
                                 raise PipelineError("conflicting container archive filename")
                             combine_archives(archives, destination, revision=sha, version=version,
-                                             repository=repository, name=project.container)
-                            inspect_archive(destination, revision=sha, version=version, repository=repository, name=project.container)
+                                             repository=repository, name=project.container, created=created)
+                            inspect_archive(destination, revision=sha, version=version, repository=repository,
+                                            name=project.container, created=created)
                             manifest["containers"].append({"name": project.container, "path": destination.relative_to(output).as_posix()})
     manifest["packages"].sort(key=lambda value: value["id"])
     manifest["containers"].sort(key=lambda value: value["name"])
