@@ -177,8 +177,8 @@
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.EventStoreHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
-    <!-- Published EventStore 5.3.1 remains the current net11 default; SDK4.2 consumers keep 4.2.0. -->
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.3.1</HexalithEventStoreVersion>
+    <!-- Published EventStore 5.4.0 remains the current net11 default; SDK4.2 consumers keep 4.2.0. -->
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.4.0</HexalithEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
     <!-- Packaged SDK4.2 uses OpenApi2; current source projects consume the .NET11 OpenAPI ABI. -->
@@ -192,7 +192,7 @@
     <!-- Every finite SDK4.2 role uses the admitted Memories cohort, including private Parties producers; explicit selections remain authoritative. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">3.0.27</HexalithMemoriesVersion>
     <!-- Current package selection; historical declarations retain their separately pinned release inputs. -->
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.0.0</HexalithMemoriesVersion>
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.0</HexalithMemoriesVersion>
     <!-- SDK4.2 consumers retain Tenants7; Tenants8 requires the current SDK5 cohort. -->
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">7.0.7</HexalithTenantsVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.2</HexalithTenantsVersion>

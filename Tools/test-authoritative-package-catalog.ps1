@@ -145,7 +145,7 @@ if ($overrideEnabled -cne 'false') {
 
 # Each canonical family must use its one authoritative property, including new members.
 $cohortFamilies = [ordered] @{
-    'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '5.3.1' }
+    'Hexalith.EventStore.' = @{ Property = 'HexalithEventStoreVersion'; Version = '5.4.0' }
     'Hexalith.McpCli.' = @{ Property = 'HexalithMcpCliVersion'; Version = '3.0.0' }
     'Hexalith.Tenants.' = @{ Property = 'HexalithTenantsVersion'; Version = '8.0.2' }
     'Hexalith.Folders' = @{ Property = 'HexalithFoldersVersion'; Version = '2.0.1' }
@@ -331,21 +331,21 @@ try {
     Test-OwnedCatalogView 'Hexalith.Parties.Contracts' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '3.0.26'
     Test-OwnedCatalogView 'Hexalith.Builds.Module.EventStoreHost' '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' -SelectedMemories '3.0.26'
     Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedTenants '8.0.0'
-    Test-OwnedCatalogView 'Unrelated.Consumer' '5.3.1' '11.0.0' '3.11.1' 'false' 'false' -SelectedTenants '7.0.7'
+    Test-OwnedCatalogView 'Unrelated.Consumer' '5.4.0' '11.0.0' '3.11.1' 'false' 'false' -SelectedTenants '7.0.7'
     foreach ($name in $buildsHostSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' }
     foreach ($name in @('Unrelated.Consumer', 'Hexalith.Parties.Future', 'Hexalith.Parties.Tests.Future',
                         'hexalith.Parties.Tests', 'Hexalith.Platform.Future', 'Hexalith.Platform.EventStoreHost.Future',
                         'hexalith.Platform.EventStoreHost', 'Hexalith.platform.Composition',
                         'Hexalith.Builds.Module.AppHost.Future', 'Hexalith.Builds.Module.EventStoreHost.Future', 'Hexalith.Builds.Module.UiHost.Future',
                         'hexalith.Builds.Module.AppHost', 'hexalith.Builds.Module.EventStoreHost', 'hexalith.Builds.Module.UiHost')) {
-        Test-OwnedCatalogView $name '5.3.1' '11.0.0' '3.11.1' 'false' 'false'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false'
         Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' 'false' 'false' -SelectedSdk '4.2.0'
     }
     foreach ($name in (@('Hexalith.Parties.Tests', 'Hexalith.Platform.EventStoreHost') + $buildsHostSdk42Consumers)) {
         $partiesView = if ($name -eq 'Hexalith.Parties.Tests') { 'true' } else { 'false' }
         $platformView = if ($name -eq 'Hexalith.Platform.EventStoreHost') { 'true' } else { 'false' }
         $buildsHostView = if ($name -cin $buildsHostSdk42Consumers) { 'true' } else { 'false' }
-        foreach ($sdk in @('4.0.4', '4.1.0', '4.3.0', '5.0.0', '5.0.1', '5.1.0', '5.1.1', '5.2.0', '5.3.0', '5.3.1')) {
+        foreach ($sdk in @('4.0.4', '4.1.0', '4.3.0', '5.0.0', '5.0.1', '5.1.0', '5.1.1', '5.2.0', '5.3.0', '5.3.1', '5.4.0')) {
             Test-OwnedCatalogView $name $sdk '11.0.0' '3.11.1' $partiesView $platformView $sdk -ExpectedBuildsHostView $buildsHostView
         }
     }
@@ -354,7 +354,7 @@ try {
         $partiesView = if ($name -cin $partiesSdk42Consumers) { 'true' } else { 'false' }
         $platformView = if ($name -cin $platformSdk42Consumers) { 'true' } else { 'false' }
         $buildsHostView = if ($name -cin $buildsHostSdk42Consumers) { 'true' } else { 'false' }
-        Test-OwnedCatalogView $name '5.3.1' '11.0.0' '3.11.1' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
     }
     foreach ($name in @('Hexalith.Parties', 'Hexalith.Platform.EventStoreHost', 'Hexalith.Builds.Module.EventStoreHost')) {
         $partiesView = if ($name -ceq 'Hexalith.Parties') { 'true' } else { 'false' }
@@ -364,13 +364,13 @@ try {
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'false'
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'false'
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'false'
-        Test-OwnedCatalogView $name '5.3.1' '11.0.0' '3.11.1' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
         Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
         Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -McpCliFromSource 'false'
         Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -SelectedMcpCli '3.0.0'
     }
     foreach ($name in @('Unrelated.Consumer', 'Hexalith.Platform.EventStoreHost.Future', 'hexalith.Platform.EventStoreHost')) {
-        Test-OwnedCatalogView $name '5.3.1' '11.0.0' '3.11.1' 'false' 'false' -UseProjectReferences 'true'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false' -UseProjectReferences 'true'
     }
     # Include the supported source samples: their central transitive pins consume Shell too.
     foreach ($name in @('Counter.Domain', 'Counter.Specimens', 'Counter.Specimens.Domain', 'Counter.Web', 'IdeParityCounter',
@@ -378,7 +378,7 @@ try {
                         'Hexalith.FrontComposer.Shell.Tests.Bench', 'Hexalith.FrontComposer.SourceTools.Tests',
                         'Hexalith.FrontComposer.Testing', 'Hexalith.FrontComposer.Testing.Tests',
                         'Hexalith.FrontComposer.UI', 'Hexalith.FrontComposer.UI.Tests')) {
-        Test-OwnedCatalogView $name '5.3.1' '11.0.0' '3.11.1' 'false' 'false' `
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
             -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true' `
             -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
     }
@@ -389,13 +389,13 @@ try {
                         'Hexalith.FrontComposer.CounterFixture', 'Hexalith.FrontComposer.Mcp',
                         'Hexalith.FrontComposer.Mcp.Tests', 'Hexalith.FrontComposer.Schema',
                         'Hexalith.FrontComposer.SourceTools')) {
-        Test-OwnedCatalogView $name '5.3.1' '11.0.0' '3.11.1' 'false' 'false' `
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
             -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
     }
     foreach ($name in @('Hexalith.Memories.Server', 'Hexalith.Memories.Web', 'Hexalith.FrontComposer.Future',
                         'Hexalith.FrontComposer.Shell.Future', 'Counter.Web.Future', 'Counter.Specimens.Domain.Future',
                         'counter.Web', 'ideParityCounter', 'hexalith.FrontComposer.Shell')) {
-        Test-OwnedCatalogView $name '5.3.1' '11.0.0' '3.11.1' 'false' 'false'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false'
     }
     Write-Output "Owned catalog views passed $viewCount exact positive/negative probes."
 }
