@@ -6,7 +6,7 @@ description: >-
 
 inputs:
   command:
-    description: Literal prepare-candidate, authenticate-archive, inventory-closure, or helper-version command.
+    description: Literal split-publication command, including verify-attestation for FrontComposer.
     required: true
   package-directory:
     description: Directory containing candidate package bytes.
@@ -52,6 +52,10 @@ inputs:
     description: Path of the provenance attestation bundle.
     required: false
     default: ""
+  builds-execution-sha:
+    description: Owner-approved Builds action commit for the FrontComposer-owned publisher.
+    required: false
+    default: ""
   member:
     description: Archive member to extract after the AD-7 scan.
     required: false
@@ -88,6 +92,7 @@ runs:
         SPLIT_EXPECTED_SHA256: ${{ inputs.expected-sha256 }}
         SPLIT_HANDOFF: ${{ inputs.handoff }}
         SPLIT_BUNDLE: ${{ inputs.bundle }}
+        SPLIT_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
         SPLIT_MEMBER: ${{ inputs.member }}
         SPLIT_OBJECT_STORE: ${{ inputs.object-store }}
         SPLIT_NUGET_API_KEY: ${{ inputs.nuget-api-key }}
@@ -95,7 +100,7 @@ runs:
       run: |
         set -euo pipefail
         case "$SPLIT_COMMAND" in
-          prepare-candidate|authenticate-archive|download-archive|extract-member|verify-live|release-authenticated|emit-handoff|inventory-closure|helper-version)
+          prepare-candidate|authenticate-archive|download-archive|extract-member|verify-attestation|verify-live|release-authenticated|emit-handoff|inventory-closure|helper-version)
             ;;
           *)
             echo "split-publication command is not in the closed set." >&2

@@ -16,7 +16,8 @@ from archive_scan import materialize_archive, scan_archive
 import attestation
 from attestation import HELPER_VERSION, subject_checksums
 from canonical import ContractError, canonical_bytes, expect_commit, expect_sha256, expect_version, parse_json, sha256_bytes
-from descriptor import DESCRIPTOR_SCHEMA, validate_descriptor
+import cryptographic_attestation
+from descriptor import DESCRIPTOR_SCHEMA, FRONTCOMPOSER_REPOSITORY, validate_descriptor
 import graph
 from handoff import build_verification_handoff
 import publication
@@ -42,6 +43,16 @@ def _workspace_path(name: str) -> Path:
     if not relative.parts:
         raise ContractError(f"{name} must name a workspace file or directory")
     return workspace.joinpath(*(os.path.basename(part) for part in relative.parts))
+
+
+def _bundle_path() -> Path:
+    """Allow the workspace and actions/attest's runner temporary directory."""
+
+    runner_temp = os.environ.get("RUNNER_TEMP")
+    path = Path(_env("SPLIT_BUNDLE")).resolve()
+    if runner_temp and path.is_relative_to(Path(runner_temp).resolve()) and path.is_file():
+        return path
+    return _workspace_path("SPLIT_BUNDLE")
 
 
 def prepare_candidate(package_directory: Path, output_directory: Path, metadata: dict) -> dict:
@@ -143,10 +154,9 @@ def authenticate_directory(archive: bytes) -> dict[str, bytes]:
     members = {member.name: member.payload for member in scan_archive(archive)}
     if "publication-candidate.json" not in members:
         raise ContractError("publication archive has no publication-candidate.json")
-    marker = Path(os.environ.get("SPLIT_EXECUTION_MARKER", ""))
-    if marker:
-        if marker.exists():
-            raise ContractError("candidate bytes executed before archive authentication")
+    marker = os.environ.get("SPLIT_EXECUTION_MARKER")
+    if marker and Path(marker).exists():
+        raise ContractError("candidate bytes executed before archive authentication")
     descriptor = parse_json(members["publication-candidate.json"], "publication candidate", max_bytes=16 * 1024 * 1024)
     validate_descriptor(descriptor, members)
     return members
@@ -182,10 +192,20 @@ def classify_authenticated(directory: Path, handoff_path: Path, bundle_path: Pat
     attestation_verified = False
     attestation_projection = None
     if bundle_path is not None and bundle_path.is_file():
-        bundle_bytes = bundle_path.read_bytes()
-        bundle = parse_json(bundle_bytes, "attestation bundle", max_bytes=16 * 1024 * 1024)
-        _payload, _signature, statement = attestation.decode_statement(bundle)
-        attestation.validate_statement(statement, state["attestation_expected"])
+        bundle_bytes = cryptographic_attestation.read_bundle(bundle_path)
+        provenance = state["workflow_provenance"]
+        if (
+            descriptor["evaluator"]["reusable"]["repository"] == FRONTCOMPOSER_REPOSITORY
+            or provenance["release"]["reusable"]["repository"] == FRONTCOMPOSER_REPOSITORY
+        ):
+            cryptographic_attestation.verify_frontcomposer_attestation(
+                bundle_bytes, descriptor, provenance,
+                builds_execution_sha=_env("SPLIT_BUILDS_EXECUTION_SHA"), environment=os.environ,
+            )
+        else:
+            bundle = parse_json(bundle_bytes, "attestation bundle", max_bytes=16 * 1024 * 1024)
+            _payload, _signature, statement = attestation.decode_statement(bundle)
+            attestation.validate_statement(statement, state["attestation_expected"])
         attestation_verified = True
         attestation_projection = {
             "status": "attested",
@@ -270,6 +290,23 @@ def main(argv: list[str] | None = None) -> int:
                 raise ContractError(f"authenticated archive has no member {name}")
             _workspace_path("SPLIT_OUTPUT").write_bytes(members[name])
             return 0
+        if command == "verify-attestation":
+            expected_archive = expect_sha256(_env("SPLIT_EXPECTED_SHA256").removeprefix("sha256:"), "artifact digest")
+            archive = _workspace_path("SPLIT_ARCHIVE").read_bytes()
+            if sha256_bytes(archive) != expected_archive:
+                raise ContractError("publication candidate archive does not match the authenticated upload digest")
+            members = authenticate_directory(archive)
+            descriptor = validate_descriptor(
+                parse_json(members["publication-candidate.json"], "publication candidate", max_bytes=16 * 1024 * 1024)
+            )
+            state = attestation.load_json_object(_workspace_path("SPLIT_METADATA").read_bytes(), "publication state")
+            bundle_bytes = cryptographic_attestation.read_bundle(_bundle_path())
+            cryptographic_attestation.verify_frontcomposer_attestation(
+                bundle_bytes, descriptor, state.get("workflow_provenance"),
+                builds_execution_sha=_env("SPLIT_BUILDS_EXECUTION_SHA"), environment=os.environ,
+            )
+            print(canonical_bytes({"bundle_sha256": sha256_bytes(bundle_bytes)}).decode("ascii"))
+            return 0
         if command == "verify-live":
             handoff_bytes = _workspace_path("SPLIT_HANDOFF").read_bytes()
             handoff = parse_json(handoff_bytes, "CI handoff", max_bytes=16 * 1024 * 1024)
@@ -289,7 +326,7 @@ def main(argv: list[str] | None = None) -> int:
             graph.verify_live(graph.GitDirectoryReader(stores), handoff["dependency_graph"], trusted)
             return 0
         if command == "release-authenticated":
-            bundle = _workspace_path("SPLIT_BUNDLE") if os.environ.get("SPLIT_BUNDLE") else None
+            bundle = _bundle_path() if os.environ.get("SPLIT_BUNDLE") else None
             state = parse_json(_workspace_path("SPLIT_METADATA").read_bytes(), "publication state", max_bytes=16 * 1024 * 1024)
             handoff_bytes = _workspace_path("SPLIT_HANDOFF").read_bytes()
             handoff = parse_json(handoff_bytes, "CI handoff", max_bytes=16 * 1024 * 1024)

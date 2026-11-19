@@ -21,35 +21,62 @@ from canonical import (
 
 DESCRIPTOR_SCHEMA = "hexalith.publication-candidate.v1"
 FILE_ROLES = frozenset({"package", "symbol", "evidence", "release-metadata"})
-BUILDS_IDENTITY = "github.com/hexalith/hexalith.builds"
-REUSABLE_WORKFLOW = ".github/workflows/domain-release.yml"
+BUILDS_REPOSITORY = "github.com/hexalith/hexalith.builds"
+BUILDS_CI_WORKFLOW = ".github/workflows/domain-ci.yml"
+BUILDS_RELEASE_WORKFLOW = ".github/workflows/domain-release.yml"
+FRONTCOMPOSER_REPOSITORY = "github.com/hexalith/hexalith.frontcomposer"
+FRONTCOMPOSER_RELEASE_WORKFLOW = ".github/workflows/release.yml"
+FRONTCOMPOSER_PUBLISH_WORKFLOW = ".github/workflows/release-publish.yml"
 MAX_NOTES_BYTES = 1024 * 1024
 
 
-def validate_evaluator(value: Any, context: str = "release evaluator") -> dict[str, Any]:
+def validate_evaluator(
+    value: Any,
+    context: str = "release evaluator",
+    *,
+    candidate: str | None = None,
+    ci: bool = False,
+) -> dict[str, Any]:
     """Validate one AD-13 evaluator projection and recompute its definition digest."""
 
     from canonical import canonical_digest
 
     evaluator = expect_members(value, {"caller", "reusable", "actions", "definition_digest"}, context)
-    caller = expect_members(
-        evaluator["caller"],
-        {"repository", "workflow_path", "blob_sha256"},
-        f"{context} caller",
-    )
+    caller_members = {"repository", "workflow_path", "blob_sha256"}
+    caller_value = evaluator["caller"]
+    if ci or (isinstance(caller_value, dict) and "commit" in caller_value):
+        caller_members.add("commit")
+    caller = expect_members(caller_value, caller_members, f"{context} caller")
     expect_identity(caller["repository"], f"{context} caller repository")
     expect_path(caller["workflow_path"], f"{context} caller workflow", max_depth=16, max_bytes=240)
     expect_sha256(caller["blob_sha256"], f"{context} caller blob")
+    caller_commit = None
+    if "commit" in caller:
+        caller_commit = expect_commit(caller["commit"], f"{context} caller commit")
+        if candidate is not None and caller_commit != candidate:
+            raise ContractError(f"{context} caller commit does not match the candidate")
     reusable = expect_members(
         evaluator["reusable"],
         {"repository", "workflow_path", "commit", "blob_sha256"},
         f"{context} reusable",
     )
-    if expect_identity(reusable["repository"], f"{context} reusable repository") != BUILDS_IDENTITY:
-        raise ContractError(f"{context} reusable repository must be {BUILDS_IDENTITY}")
-    if expect_string(reusable["workflow_path"], f"{context} reusable workflow") != REUSABLE_WORKFLOW:
-        raise ContractError(f"{context} reusable workflow must be {REUSABLE_WORKFLOW}")
-    expect_commit(reusable["commit"], f"{context} reusable commit")
+    repository = expect_identity(reusable["repository"], f"{context} reusable repository")
+    workflow = expect_string(reusable["workflow_path"], f"{context} reusable workflow")
+    reusable_commit = expect_commit(reusable["commit"], f"{context} reusable commit")
+    if ci:
+        if (repository, workflow) != (BUILDS_REPOSITORY, BUILDS_CI_WORKFLOW):
+            raise ContractError(f"{context} must select the Builds CI workflow")
+    elif (repository, workflow) == (FRONTCOMPOSER_REPOSITORY, FRONTCOMPOSER_PUBLISH_WORKFLOW):
+        if (
+            caller["repository"] != FRONTCOMPOSER_REPOSITORY
+            or caller["workflow_path"] != FRONTCOMPOSER_RELEASE_WORKFLOW
+            or candidate is None
+            or caller_commit != candidate
+            or reusable_commit != candidate
+        ):
+            raise ContractError(f"{context} must bind FrontComposer release and publisher to the candidate")
+    elif (repository, workflow) != (BUILDS_REPOSITORY, BUILDS_RELEASE_WORKFLOW):
+        raise ContractError(f"{context} must select an eligible release workflow")
     expect_sha256(reusable["blob_sha256"], f"{context} reusable blob")
     actions = evaluator["actions"]
     if not isinstance(actions, list):
@@ -75,11 +102,7 @@ def validate_evaluator(value: Any, context: str = "release evaluator") -> dict[s
     if action_keys != sorted(action_keys) or len(action_keys) != len(set(action_keys)):
         raise ContractError(f"{context} actions must be unique and ordinally sorted")
     materialized = {
-        "caller": {
-            "repository": caller["repository"],
-            "workflow_path": caller["workflow_path"],
-            "blob_sha256": caller["blob_sha256"],
-        },
+        "caller": dict(caller),
         "reusable": {
             "repository": reusable["repository"],
             "workflow_path": reusable["workflow_path"],
@@ -198,7 +221,7 @@ def validate_descriptor(value: Any, members: dict[str, bytes] | None = None) -> 
         "candidate": candidate,
         "ci_handoff_sha256": expect_sha256(document["ci_handoff_sha256"], "ci handoff sha256"),
         "dependency_policy": validate_policy_projection(document["dependency_policy"]),
-        "evaluator": validate_evaluator(document["evaluator"]),
+        "evaluator": validate_evaluator(document["evaluator"], candidate=candidate),
         "release_plan": plan,
         "files": normalized_files,
     }

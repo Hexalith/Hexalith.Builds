@@ -21,6 +21,8 @@ from canonical import (
     parse_json,
     sha256_bytes,
 )
+from descriptor import BUILDS_RELEASE_WORKFLOW, BUILDS_REPOSITORY
+from manifest import validate_workflow_provenance
 
 
 FALLBACK_REQUEST_SCHEMA = "hexalith.attestation-fallback-request.v1"
@@ -29,6 +31,8 @@ STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PREDICATE_TYPE = "https://slsa.dev/provenance/v1"
 BUILD_TYPE = "https://actions.github.io/buildtypes/workflow/v1"
 TOKEN_ISSUER = "https://token.actions.githubusercontent.com"
+MAIN_REF = "refs/heads/main"
+BUILDS_SIGNER = f"https://github.com/Hexalith/Hexalith.Builds/{BUILDS_RELEASE_WORKFLOW}"
 DEFINITION_FILES = (
     ".github/workflows/ci.yml",
     ".github/workflows/release.yml",
@@ -66,8 +70,41 @@ def _pae(payload_type: bytes, payload: bytes) -> bytes:
     return b"DSSEv1 " + str(len(payload_type)).encode("ascii") + b" " + payload_type + b" " + str(len(payload)).encode("ascii") + b" " + payload
 
 
-def validate_statement(statement: dict[str, Any], expected: dict[str, Any]) -> None:
-    """Require the GitHub workflow build predicate bound to this exact attempt."""
+def _expected_signer(
+    expected: dict[str, Any], workflow_provenance: dict[str, Any] | None
+) -> tuple[str, str, bool]:
+    if workflow_provenance is None:
+        return BUILDS_SIGNER, expected["builds_sha"], False
+
+    release = validate_workflow_provenance(workflow_provenance, expected["candidate"])["release"]
+    caller = release["caller"]
+    if (
+        caller["repository"] != f"github.com/{expected['repository_slug'].lower()}"
+        or caller["workflow_path"] != expected["caller_workflow"]
+        or caller["commit"] != expected["candidate"]
+        or release["builds_execution_sha"] != expected["builds_sha"]
+    ):
+        raise ContractError("attestation workflow provenance does not match the authenticated release")
+    reusable = release["reusable"]
+    if reusable["repository"] == BUILDS_REPOSITORY:
+        return BUILDS_SIGNER, reusable["commit"], False
+    signer = f"https://github.com/{expected['repository_slug']}/{reusable['workflow_path']}"
+    return signer, reusable["commit"], True
+
+
+def validate_statement(
+    statement: dict[str, Any],
+    expected: dict[str, Any],
+    *,
+    workflow_provenance: dict[str, Any] | None = None,
+    verified_certificate_extensions: dict[str, str] | None = None,
+) -> None:
+    """Check the GitHub build predicate against the authenticated release attempt.
+
+    Supply workflow provenance from the validated manifest. The same-repository
+    signer requires certificate extensions from a trusted cryptographic
+    verification of this exact statement, including for a literal commit ID.
+    """
 
     document = expect_members(
         statement,
@@ -116,7 +153,7 @@ def validate_statement(statement: dict[str, Any], expected: dict[str, Any]) -> N
     repository_url = f"https://github.com/{expected['repository_slug']}"
     if (
         workflow["repository"] != repository_url
-        or workflow["ref"] != "refs/heads/main"
+        or workflow["ref"] != MAIN_REF
         or workflow["path"] != expected["caller_workflow"]
     ):
         raise ContractError("attestation workflow parameters do not match the authenticated caller")
@@ -135,46 +172,72 @@ def validate_statement(statement: dict[str, Any], expected: dict[str, Any]) -> N
         raise ContractError("attestation GitHub parameters do not match the authenticated run")
     dependencies = build["resolvedDependencies"]
     expected_dependency = {
-        "uri": f"git+{repository_url}@refs/heads/main",
+        "uri": f"git+{repository_url}@{MAIN_REF}",
         "digest": {"gitCommit": expected["candidate"]},
     }
     if dependencies != [expected_dependency]:
         raise ContractError("attestation resolved dependency is not the authenticated candidate")
     run_details = expect_members(predicate["runDetails"], {"builder", "metadata"}, "attestation run details")
     builder = expect_members(run_details["builder"], {"id"}, "attestation builder")
-    expected_builder = (
-        "https://github.com/Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@"
-        f"{expected['builds_sha']}"
-    )
-    if builder["id"] != expected_builder:
+    signer, signer_sha, same_repository = _expected_signer(expected, workflow_provenance)
+    if builder["id"] != f"{signer}@{signer_sha}" and not (
+        same_repository and builder["id"] == f"{signer}@{MAIN_REF}"
+    ):
         raise ContractError("attestation builder id is not the selected reusable commit")
+    if same_repository and verified_certificate_extensions is None:
+        raise ContractError("attestation requires a cryptographically verified signer certificate for the same-repository workflow")
+    if verified_certificate_extensions is not None:
+        _require_certificate_identity(verified_certificate_extensions, expected, signer, signer_sha, same_repository)
     metadata = expect_members(run_details["metadata"], {"invocationId"}, "attestation metadata")
-    expected_invocation = (
-        f"https://github.com/{expected['repository_slug']}/actions/runs/"
-        f"{expected['run_id']}/attempts/{expected['run_attempt']}"
-    )
-    if metadata["invocationId"] != expected_invocation:
+    if metadata["invocationId"] != _invocation_uri(expected):
         raise ContractError("attestation invocation id is not the current Release attempt")
 
 
-def certificate_identity(extensions: dict[str, str], expected: dict[str, str]) -> None:
-    """Require the Fulcio certificate identity extensions for this attempt."""
+def _invocation_uri(expected: dict[str, Any]) -> str:
+    return (
+        f"https://github.com/{expected['repository_slug']}/actions/runs/"
+        f"{expected['run_id']}/attempts/{expected['run_attempt']}"
+    )
 
+
+def certificate_identity(
+    extensions: dict[str, str], expected: dict[str, Any], *, workflow_provenance: dict[str, Any] | None = None
+) -> None:
+    """Check identity extensions from the cryptographically verified Fulcio certificate."""
+
+    signer, signer_sha, same_repository = _expected_signer(expected, workflow_provenance)
+    _require_certificate_identity(extensions, expected, signer, signer_sha, same_repository)
+
+
+def _require_certificate_identity(
+    extensions: dict[str, str], expected: dict[str, Any], signer: str, signer_sha: str, same_repository: bool
+) -> None:
     required = {
         "1.3.6.1.4.1.57264.1.8": TOKEN_ISSUER,
-        "1.3.6.1.4.1.57264.1.10": expected["builds_sha"],
+        "1.3.6.1.4.1.57264.1.10": signer_sha,
         "1.3.6.1.4.1.57264.1.11": "github-hosted",
         "1.3.6.1.4.1.57264.1.12": f"https://github.com/{expected['repository_slug']}",
         "1.3.6.1.4.1.57264.1.13": expected["candidate"],
-        "1.3.6.1.4.1.57264.1.14": "refs/heads/main",
+        "1.3.6.1.4.1.57264.1.14": MAIN_REF,
     }
+    if same_repository:
+        required.update({
+            "1.3.6.1.4.1.57264.1.15": str(expected["repository_id"]),
+            "1.3.6.1.4.1.57264.1.17": str(expected["owner_id"]),
+            "1.3.6.1.4.1.57264.1.21": _invocation_uri(expected),
+        })
     for oid, value in required.items():
         if extensions.get(oid) != value:
             raise ContractError(f"attestation certificate extension {oid} does not match the authenticated attempt")
+    if same_repository and extensions.get("1.3.6.1.4.1.57264.1.9") not in (
+        f"{signer}@{signer_sha}",
+        f"{signer}@{MAIN_REF}",
+    ):
+        raise ContractError("attestation certificate build signer URI does not match the authenticated workflow")
 
 
 def decode_statement(bundle: dict[str, Any]) -> tuple[bytes, bytes, dict[str, Any]]:
-    """Decode a Sigstore bundle payload without treating it as executable."""
+    """Decode a Sigstore bundle payload and signature for separate cryptographic verification."""
 
     envelope = bundle.get("dsseEnvelope")
     if not isinstance(envelope, dict):
