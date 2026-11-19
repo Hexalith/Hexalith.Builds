@@ -26,7 +26,8 @@ from ci_config import ConfigError, _object, _constant, validate_windows_checkout
 
 OID = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
-JOB_TOKEN = re.compile(r"ghs_[A-Za-z0-9]{1,255}\Z")
+# GitHub installation tokens can be opaque or JWT-formatted. Accept either as an opaque credential.
+JOB_TOKEN = re.compile(r"ghs_[A-Za-z0-9._-]{36,}\Z")
 SELECTORS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
              "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE",
              "GIT_CONFIG", "GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS")

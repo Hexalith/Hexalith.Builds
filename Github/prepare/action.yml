@@ -95,6 +95,7 @@ runs:
       if: runner.os == 'Windows' && inputs.windows-checkout != '' && inputs.windows-checkout != 'null'
       shell: pwsh
       env:
+        GITHUB_TOKEN: ${{ github.token }}
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_MODULE_MANIFEST: ${{ inputs.module-manifest }}

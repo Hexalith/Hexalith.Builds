@@ -226,13 +226,18 @@ class ProtectedCheckoutTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "false"}, clear=False):
             os.environ.pop("GITHUB_TOKEN", None)
             self.assertIsNone(CHECKOUT.job_authorization_header())
-        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "ghs_" + "B" * 40}):
-            header = CHECKOUT.job_authorization_header()
-        self.assertTrue(header.startswith("AUTHORIZATION: basic "))
-        self.assertNotIn("ghs_", header)
-        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": "not-a-job-token"}):
-            with self.assertRaisesRegex(CHECKOUT.ConfigError, "job token"):
-                CHECKOUT.job_authorization_header()
+        legacy_token = "ghs_" + "B" * 36
+        stateless_token = "ghs_123456_eyJhbGciOiJSUzI1NiJ9." + "A_-" * 55 + "." + "B" * 320
+        for token_format, token in (("legacy", legacy_token), ("stateless", stateless_token)):
+            with self.subTest(format=token_format):
+                with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": token}):
+                    header = CHECKOUT.job_authorization_header()
+                expected = CHECKOUT.base64.b64encode(("x-access-token:" + token).encode("ascii")).decode("ascii")
+                self.assertEqual("AUTHORIZATION: basic " + expected, header)
+        for value in ("", "not-a-job-token", stateless_token + "\n"):
+            with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_TOKEN": value}):
+                with self.assertRaisesRegex(CHECKOUT.ConfigError, "job token"):
+                    CHECKOUT.job_authorization_header()
 
     def test_git_failures_are_classified_without_stderr_or_remotes(self):
         result = subprocess.CompletedProcess(
