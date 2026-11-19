@@ -36,7 +36,7 @@
     <HexalithCommonsVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true' and '$(HexalithCommonsVersion)' == ''">2.30.11</HexalithCommonsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true' and '$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.9</HexalithPolymorphicSerializationsVersion>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">3.0.1</HexalithCommonsVersion>
-    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.0.0</HexalithConversationsVersion>
+    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.1.0</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.0</HexalithPolymorphicSerializationsVersion>
     <!-- Record the composed-host consumer while keeping one canonical SDK version authority. -->
     <HexalithPlatformEventStoreHostCatalogView Condition="'$(MSBuildProjectName)' == 'Hexalith.Platform.EventStoreHost'">true</HexalithPlatformEventStoreHostCatalogView>
@@ -184,7 +184,7 @@
     <!-- Packaged SDK4.2 uses OpenApi2; current source projects consume the .NET11 OpenAPI ABI. -->
     <HexalithAspNetCoreOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">10.0.15</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">2.13.0</HexalithOpenApiVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.0</HexalithFrontComposerVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.1</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.0.1</HexalithFoldersVersion>
     <!-- Retain the qualified MCP2 package ABI only for the finite SDK4.2 roles; source MCP keeps its current catalog. -->
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithMcpCliFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">2.0.1</HexalithMcpCliVersion>
