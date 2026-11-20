@@ -537,7 +537,7 @@
   <Import Project="$(MSBuildThisFileDirectory)Logging.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)Logging.Build.targets')" />
   <Import Project="$(MSBuildThisFileDirectory)AspireAppHost.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)AspireAppHost.Build.targets')" />
   <Target Name="ValidateHexalithFramework" BeforeTargets="PrepareForBuild">
-    <Error Condition="!$(NETCoreSdkVersion.StartsWith('11.0.')) or !(('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFrameworkVersion)' == 'v11.0') or ('$(IsRoslynComponent)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETStandard' and '$(TargetFrameworkVersion)' == 'v2.0'))"
+    <Error Condition="!$(NETCoreSdkVersion.StartsWith('11.0.')) or !(('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFrameworkVersion)' == 'v11.0') or (('$(IsRoslynComponent)' == 'true' or $([System.String]::Copy(';$(TargetFrameworks);').Contains(';net11.0;'))) and '$(TargetFrameworkIdentifier)' == '.NETStandard' and '$(TargetFrameworkVersion)' == 'v2.0'))"
            Text="$(MSBuildProjectName) requires the .NET 11 SDK and a net11.0 target. Selected SDK $(NETCoreSdkVersion), framework $(TargetFramework)." />
   </Target>
   <Target Name="ValidateHexalithEventStoreSelection" BeforeTargets="CollectPackageReferences" Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
