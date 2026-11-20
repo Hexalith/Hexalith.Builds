@@ -351,6 +351,12 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
         self.assertNotIn("--remote", arguments)
 
     def test_windows_initializes_recorded_direct_gitlinks_before_product_commands(self):
+        self.check_platform_gitlinks("Windows")
+
+    def test_macos_initializes_recorded_direct_gitlinks_with_windows_policy_present(self):
+        self.check_platform_gitlinks("macOS")
+
+    def check_platform_gitlinks(self, platform):
         fixture = FIXTURE.ClassifierAndSubmoduleTests()
         self.addCleanup(fixture.doCleanups)
 
@@ -373,7 +379,9 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
                     self.fail(f"unexpected external action: {reference}")
                 return 0
 
-            result = CompositeHarness(consumer, environment, runner_os="Windows",
+            if platform == "macOS":
+                inputs["windows-checkout"] = '{"mode":"archive"}'
+            result = CompositeHarness(consumer, environment, runner_os=platform,
                                       external_action=external_control).run_action(ACTION, inputs)
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
             commands = [json.loads(line) for line in (consumer / "commands.jsonl").read_text().splitlines()]
@@ -533,7 +541,8 @@ with (root / "setup-effects.jsonl").open("a") as stream:
         for effect in effects:
             self.assertEqual(str(module), effect["cwd"])
             self.assertEqual({"CI_MODULE_ROOT": prefix, "CI_ENVIRONMENT_SOLUTION": f"{prefix}/{solution}",
-                              "CI_ENVIRONMENT_DAPR": "false", "CI_ENVIRONMENT_BROWSERS": "true",
+                              "CI_ENVIRONMENT_DAPR": "false" if effect["tool"] == "pwsh" else None,
+                              "CI_ENVIRONMENT_BROWSERS": "true" if effect["tool"] == "pwsh" else None,
                               "CI_ENVIRONMENT_REGISTRY": "true"}, effect["environment"])
 
     def require_recorded_dependencies_at_product_commands(self):

@@ -57,6 +57,7 @@ class PrerequisiteTests(unittest.TestCase):
         fixture = FIXTURE.PreparationInputTests()
         fixture.setUp()
         self.addCleanup(fixture.doCleanups)
+        fixture.environment.update(REGISTRY_PULL_USERNAME="legacy-user", REGISTRY_PULL_PASSWORD="legacy-password")
         harness = FIXTURE.CompositeHarness(fixture.root, fixture.environment)
         result = harness.run_action(ROOT / "Github/ci-environment", {
             "solution": "Fixture.slnx", "npm-workspaces": '["tests/e2e"]',
@@ -64,6 +65,10 @@ class PrerequisiteTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertEqual(["24.11.0"], [inputs["node-version"] for reference, inputs, _ in harness.external_calls
                                       if reference.startswith("actions/setup-node@")])
+        for _, _, environment in harness.external_calls:
+            self.assertFalse(environment.get("REGISTRY_PULL_PASSWORD"))
+            self.assertFalse(environment.get("REGISTRY_PULL_USERNAME"))
+        self.assertEqual([], list((fixture.root / "runner-temp").glob("hexalith-docker-*")))
         self.assertEqual(["npm", "npm"], [name for name, _, _ in fixture.effects()])
 
     def test_invalid_shared_inputs_fail_before_exact_node_installation(self):

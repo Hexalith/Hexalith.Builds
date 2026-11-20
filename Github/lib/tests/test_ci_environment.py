@@ -150,6 +150,10 @@ os.execv(sys.executable, [sys.executable, *args])
         return subprocess.CompletedProcess([], code, "".join(self.stdout), "".join(self.stderr))
 
     def value(self, expression, context):
+        if " != " in expression or " == " in expression:
+            return str(self.enabled(expression, context)).lower()
+        if " || " in expression:
+            return next((value for part in expression.split(" || ") if (value := self.value(part, context))), "")
         joined = re.fullmatch(r"join\(fromJSON\((.*?)\), '([\s\S]*)'\)", expression.strip())
         if joined:
             return joined[2].join(json.loads(self.value(joined[1], context)))
@@ -476,6 +480,15 @@ with (root / "environment-effects.jsonl").open("a") as stream:
     stream.write(json.dumps([name,args,sys.stdin.read() if name=="docker" else ""])+"\n")
 if name=="pwsh":
     assert pathlib.Path(args[args.index("-File")+1]).is_file()
+assert not os.environ.get("REGISTRY_PULL_USERNAME")
+assert not os.environ.get("REGISTRY_PULL_PASSWORD")
+if name=="docker" and args[0]=="login":
+    config=pathlib.Path(os.environ["DOCKER_CONFIG"])
+    assert config.parent==pathlib.Path(os.environ["RUNNER_TEMP"])
+    assert config.stat().st_mode & 0o777 == 0o700
+    auth_file=config / "config.json"
+    assert auth_file.stat().st_mode & 0o777 == 0o600
+    assert json.loads(auth_file.read_text())=={"auths":{"registry.hexalith.com":{}}}
 if os.environ.get("FAIL_ENVIRONMENT_TOOL")==name:
     sys.exit(29)
 (root / (name+"-ready")).touch()
@@ -503,9 +516,11 @@ if os.environ.get("FAIL_ENVIRONMENT_TOOL")==name:
     def hook(self, name, *, fail=False, expect_tools=False):
         directory = self.root / ".github/actions" / name
         directory.mkdir(parents=True)
-        command = ("from pathlib import Path; "
+        command = ("from pathlib import Path; import os; "
                    "assert Path('build-completed').read_text() == 'Release'; "
-                   + ("assert Path('pwsh-ready').is_file() and Path('docker-ready').is_file(); " if expect_tools else "")
+                   + ("assert Path('pwsh-ready').is_file() and Path('docker-ready').is_file(); "
+                      "assert Path(os.environ['DOCKER_CONFIG']).is_dir(); "
+                      "assert not os.environ.get('REGISTRY_PULL_PASSWORD'); " if expect_tools else "")
                    + ("assert 'test/Fixture.IntegrationTests.csproj:passing-test-completed' "
                       "in Path('tests-completed').read_text().splitlines(); "
                       if name == "after-integration-tests" else "")
@@ -745,7 +760,7 @@ else:
         (self.root / "build-completed").write_text("Release")
         runner = self.root / "second-dapr-runner"
         runner.mkdir()
-        environment = dict(self.fixture.environment, GITHUB_PATH=str(path), RUNNER_TEMP=str(runner),
+        environment = dict(self.fixture.environment, GITHUB_PATH=str(path), RUNNER_TEMP=str(runner), GITHUB_ENV=str(runner / "env"),
                            REGISTRY_PULL_USERNAME="pull-user", REGISTRY_PULL_PASSWORD="pull-secret")
         with mock.patch.object(ENV, "urlopen", return_value=io.BytesIO(valid)) as download, \
                 mock.patch.dict(ENV.DAPR_CLI_DIGESTS, {"1.19.1": hashlib.sha256(valid).hexdigest()}), \
@@ -938,18 +953,15 @@ else:
         self.assertFalse(any("IntegrationTests" in " ".join(command)
                              for command in self.fixture.commands() if command[0] == "test"))
 
-    def test_successful_nested_password_print_is_observed_and_rejected_by_secrecy_assertion(self):
+    def test_failed_login_discards_disposable_credentials_and_keeps_diagnostics_private(self):
         self.fixture.document.update(registry=True)
         docker = self.fixture.bin / "docker"
-        docker.write_text(docker.read_text().replace('if name=="pwsh":',
-            'if name=="docker":\n    print(os.environ["REGISTRY_PULL_PASSWORD"])\n'
-            '    print("nested-stderr-marker", file=sys.stderr)\nif name=="pwsh":'))
+        docker.write_text("#!/bin/sh\ncat >&2\nexit 29\n")
         result = self.harness(secrets={"registry-pull-username": "pull-user",
-                                       "registry-pull-password": "deliberately-printed-password"})
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertIn("nested-stderr-marker", result.stderr)
-        with self.assertRaises(AssertionError):
-            self.assertNotIn("deliberately-printed-password", result.stdout + result.stderr)
+                                       "registry-pull-password": "test-only-marker"})
+        self.assertEqual(29, result.returncode)
+        self.assertNotIn("test-only-marker", result.stdout + result.stderr)
+        self.assertEqual([], list((self.root / "runner-temp").glob("hexalith-docker-*")))
 
     def test_hook_changes_to_config_runner_or_classification_fail_before_integration(self):
         mutations = {

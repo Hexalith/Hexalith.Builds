@@ -446,49 +446,15 @@ subscription to pull-request title edits.
 
 ### builds-submodule-init.ps1
 
-Adds or initializes the `Hexalith.Builds` Git submodule in a parent repository
-under `references/Hexalith.Builds`.
-
-#### Purpose
-
-The script automates:
-
-1. Checking that PowerShell is running with administrator privileges.
-2. Adding the `references/Hexalith.Builds` submodule when it is not already
-   declared.
-3. Initializing the existing `references/Hexalith.Builds` submodule when it is
-   declared.
-4. Updating the submodule.
-5. Checking out the `main` branch in the initialized build submodule.
-
-#### Requirements
-
-- Administrator privileges on Windows.
-- Git available in `PATH`.
-- PowerShell 5.0 or later.
-
-#### Usage
-
-Run the script from the root directory of your repository:
+Run the helper from the consumer root to initialize its recorded
+`references/Hexalith.Builds` gitlink. It uses ordinary Git permissions, checks
+populated worktrees for local changes, and verifies the checked-out revision.
 
 ```powershell
 .\references\Hexalith.Builds\Tools\builds-submodule-init.ps1
 ```
 
-If the submodule has not been added yet, you can download the script and run it:
-
-```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Hexalith/Hexalith.Builds/main/Tools/builds-submodule-init.ps1" -OutFile "builds-submodule-init.ps1"
-.\builds-submodule-init.ps1
-```
-
-#### Notes
-
-- The script does not use recursive or remote submodule updates.
-- When adding a new submodule, it adds the repository root and
-  `./references/Hexalith.Builds` to Git's global safe directory list.
-- The script does not create symlinks. Use `editorconfig-symlink.ps1` for the
-  shared `.editorconfig` link.
+For a fresh clone or first-time adoption, follow the [submodule setup instructions](../README.md#add-hexalithbuilds-as-a-submodule).
 
 ### editorconfig-symlink.ps1
 

@@ -139,9 +139,8 @@ jobs:
           aspire: ${{ steps.unit.outputs.aspire }}
           prerequisites: ${{ steps.unit.outputs.prerequisites }}
           additional-projects: ${{ steps.unit.outputs.additional-projects }}
-        env:
-          REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}
-          REGISTRY_PULL_PASSWORD: ${{ secrets.registry-pull-password }}
+          registry-pull-username: ${{ secrets.registry-pull-username }}
+          registry-pull-password: ${{ secrets.registry-pull-password }}
 
       - name: After unit tests hook
         if: steps.unit.outputs.after-unit-tests == 'true'

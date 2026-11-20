@@ -270,36 +270,41 @@ def ci_workflow(repository, workflow):
     return workflow
 
 
-def require_green_ci(api, sha, workflow, *, clock=time.monotonic, sleeper=time.sleep):
-    """Latest exact-source push/manual run governs; waiting has one fixed deadline."""
+def require_green_ci(api, sha, workflow, *, minutes=30, clock=time.monotonic, sleeper=time.sleep):
+    """Wait for the latest eligible run on this source, within a single deadline."""
     workflow = ci_workflow(api.repository, workflow)
-    deadline = clock() + 30 * 60
+    deadline = clock() + minutes * 60
     path = f"/repos/{api.repository}/actions/workflows/{workflow}/runs?head_sha={sha}&per_page=100"
-    while True:
+    run_link = ""
+
+    def expired():
+        return ReleaseError(f"CI success unconfirmed after {minutes} minutes for {sha}{run_link}. "
+                            "Retry release after CI completes.")
+
+    while clock() < deadline:
         try:
             runs = [run for run in api.pages(path, key="workflow_runs", deadline=deadline)
                     if run.get("head_sha") == sha and run.get("event") in ("push", "workflow_dispatch")]
-            if clock() >= deadline:
-                raise ReleaseError("main is red, nothing released (CI wait exceeded 30 minutes)")
-            if any(type(run.get("id")) is not int or run["id"] < 1 for run in runs):
-                raise ReleaseError("GitHub CI run has invalid identity")
-            latest = max(runs, key=lambda run: run["id"]) if runs else None
-            if latest is None or latest.get("status") == "completed":
-                if latest and latest.get("conclusion") == "success":
-                    return
-                raise ReleaseError("main is red, nothing released")
-            if latest.get("status") not in ("queued", "in_progress", "waiting", "pending", "requested"):
-                raise ReleaseError("GitHub CI run has unknown status")
-            remaining = deadline - clock()
-            if remaining <= 0:
-                raise ReleaseError("main is red, nothing released (CI wait exceeded 30 minutes)")
-            sleeper(min(60, remaining))
-            if clock() >= deadline:
-                raise ReleaseError("main is red, nothing released (CI wait exceeded 30 minutes)")
         except ReleaseError as error:
             if clock() >= deadline and "deadline" in str(error):
-                raise ReleaseError("main is red, nothing released (CI wait exceeded 30 minutes)") from error
+                raise expired() from error
             raise
+        if clock() >= deadline:
+            raise expired()
+        if any(type(run.get("id")) is not int or run["id"] < 1 for run in runs):
+            raise ReleaseError("GitHub CI run has invalid identity")
+        if not runs:
+            raise ReleaseError(f"No eligible CI run found for {sha}. Retry release after CI completes.")
+        latest = max(runs, key=lambda run: run["id"])
+        run_link = f" at https://github.com/{api.repository}/actions/runs/{latest['id']}"
+        if latest.get("status") == "completed":
+            if latest.get("conclusion") == "success":
+                return
+            raise ReleaseError(f"CI completed without success for {sha}{run_link}")
+        if latest.get("status") not in ("queued", "in_progress", "waiting", "pending", "requested"):
+            raise ReleaseError("GitHub CI run has unknown status")
+        sleeper(min(60, max(0, deadline - clock())))
+    raise expired()
 
 
 def outputs(values):
@@ -323,7 +328,8 @@ def dispatch_settings(git, sha, repository, module_root=""):
         path.write_bytes(git.blob(sha, relative))
         config = load_config(path, repository=repository, module_root=module_root)
     return {"codeql": json.dumps(config["codeql"], separators=(",", ":")),
-            "nightly-hook": str("nightly" in config["hooks"]).lower(), "config-valid": "true"}
+            "nightly-hook": str("nightly" in config["hooks"]).lower(), "config-valid": "true",
+            "ci-wait-minutes": min(config["ciTimeoutMinutes"], 350)}
 
 
 def resolve(git, api, *, sha, ref, switch, workflow="ci.yml", module_root="", delivered_sha="",
@@ -360,7 +366,8 @@ def resolve(git, api, *, sha, ref, switch, workflow="ci.yml", module_root="", de
         except expected_state.ExpectedStateError as error:
             raise _ExpectedReleaseError(error) from error
     try:
-        emit(dispatch_settings(git, sha, api.repository, module_root))
+        settings = dispatch_settings(git, sha, api.repository, module_root)
+        emit(settings)
     except (ConfigError, ReleaseError):
         if comparison is not None and comparison.drift:
             try:
@@ -381,7 +388,7 @@ def resolve(git, api, *, sha, ref, switch, workflow="ci.yml", module_root="", de
         print("publishing disabled")
         return selected
     if selected["mode"] == "create":
-        require_green_ci(api, selected["sha"], workflow)
+        require_green_ci(api, selected["sha"], workflow, minutes=settings["ci-wait-minutes"])
     return selected
 
 

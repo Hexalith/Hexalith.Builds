@@ -286,6 +286,7 @@ class DraftCreationTests(History):
         self.assertEqual(result["artifact-digest"], digest(self.payload))
         self.assertEqual(result["last-tag"], "v2.3.4")
         body = api.writes[0]["body"]
+        self.assertNotIn("Live runtime qualification", body)
         self.assertEqual(len(draft.RESERVED.findall(body)), 5)
         self.assertIn("hexalith-release-packages: Fixture.Package\n", body)
         self.assertIn("hexalith-release-containers: \n", body)
@@ -295,6 +296,20 @@ class DraftCreationTests(History):
         self.assertEqual(self.invoke(api), result)
         self.assertEqual(len(api.writes), 1)
         self.assertEqual(api.drafts[0]["body"], "untouched")
+
+    def test_builds_draft_discloses_live_status_and_preserves_a_preexisting_body(self):
+        api = self.api()
+        api.repository = draft.BUILDS_REPOSITORY
+        self.invoke(api)
+        body = api.writes[0]["body"]
+        self.assertIn("Live runtime qualification", body)
+        self.assertIn(f"/blob/{self.sha}/Props/Directory.Packages.props", body)
+        self.assertEqual(5, len(draft.RESERVED.findall(body)))
+        historical = "Earlier notes\n\n" + body[body.index("hexalith-release:"):]
+        api.drafts[0]["body"] = historical
+        self.invoke(api)
+        self.assertEqual(1, len(api.writes))
+        self.assertEqual(historical, api.drafts[0]["body"])
 
     def test_artifact_identity_failures_never_write(self):
         for change in ({"id": 1}, {"name": "other"}, {"expired": True}, {"digest": "sha256:" + "0" * 64},

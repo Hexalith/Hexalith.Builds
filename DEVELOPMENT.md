@@ -31,7 +31,18 @@ The complete CI document materializes required `ciTimeoutMinutes` (1–360,
 renderer default 30). Adopted callers forward that value through CiCd's
 generated workflow; select a compatible published Builds release before
 adopting this contract. Builds' own document records its existing 60-minute
-allowance. The shared environment's private Dapr receipt contract is documented
+allowance. A new release waits up to the configured CI budget for an active
+exact-source run, capped at 350 minutes within the 360-minute resolver job.
+If that wait expires, the diagnostic identifies the source and last observed
+run. Retry the release after CI succeeds. For Builds, release CodeQL runs both
+C# and Python. New Builds releases link to their exact source catalog and live
+qualification tooling. Acceptance requires a separate evidence packet with all
+required live tests executed and owned resources cleaned up. The G-4 runner
+expects the complete 13-case suite and needs a restored package consumer for
+its two installed-tool profiles. Supply that directory using
+`--package-consumer` or `HEXALITH_G4_PACKAGE_CONSUMER`.
+
+The shared environment's private Dapr receipt contract is documented
 in [Github/ci-environment/README.md](Github/ci-environment/README.md).
 
 ## Verified package preparation in domain workflows

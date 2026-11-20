@@ -68,7 +68,7 @@ This repository:
 ### Tools
 
 - [`Tools/`](Tools/README.md): Repository utility scripts.
-  - `builds-submodule-init.ps1`: Adds or initializes the `Hexalith.Builds`
+  - `builds-submodule-init.ps1`: Initializes the recorded `Hexalith.Builds`
     submodule under `references/` and checks it out on `main`.
   - `editorconfig-symlink.ps1`: Creates a parent repository `.editorconfig`
     symlink pointing to `references/Hexalith.Builds/.editorconfig`.
@@ -183,24 +183,27 @@ uses its own CI instead of this module command.
 
 ### Add Hexalith.Builds as a Submodule
 
-From a consuming repository root, add or initialize this repository as a
-root-declared submodule under `references/`:
+From a consuming repository root with a recorded Builds gitlink, initialize the
+selected revision with Git:
 
-```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Hexalith/Hexalith.Builds/main/Tools/builds-submodule-init.ps1" -OutFile "builds-submodule-init.ps1"
-.\builds-submodule-init.ps1
+```sh
+git -c submodule.recurse=false submodule update --init --checkout -- references/Hexalith.Builds
 ```
 
-After the submodule exists, the same script is available from the build
-submodule:
+For first-time adoption, select a reviewed release and verify its full commit SHA.
+Add the submodule, select that SHA and review the staged gitlink before committing:
 
-```powershell
-.\references\Hexalith.Builds\Tools\builds-submodule-init.ps1
+```sh
+: "${BUILDS_COMMIT:?Set BUILDS_COMMIT to the verified release SHA}"
+git -c submodule.recurse=false submodule add https://github.com/Hexalith/Hexalith.Builds.git references/Hexalith.Builds
+git -C references/Hexalith.Builds -c submodule.recurse=false checkout --detach "$BUILDS_COMMIT"
+git add -- .gitmodules references/Hexalith.Builds
+git diff --cached --submodule=short
 ```
 
-The script requires administrator privileges on Windows because related tooling
-may create symbolic links. It initializes only the
-`references/Hexalith.Builds` submodule and checks out `main`.
+After checkout, `Tools/builds-submodule-init.ps1` in the Builds submodule can
+repeat initialization from the consumer root as an ordinary user. It checks for
+local changes and verifies the resulting revision.
 
 ### Import Build Properties
 
@@ -741,7 +744,7 @@ The package EventStore seed
 enables its technical catalog receiver only for the actual resolved public Gateway
 4.0.4, 4.1.0 or 4.2.0 assembly; unknown and near-miss versions retain the existing finite receiver.
 
-The current catalog selects EventStore 4.2.0 from released source
+The SDK 4.2 compatibility views select EventStore 4.2.0 from released source
 `aa16227bd07f0564a3026d619a5abd973e02656f`. Its v2 declaration retains SHA-256
 `21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495`; the older
 4.1.0 release authority remains separately recorded. This adoption retains the
@@ -1350,9 +1353,9 @@ mutation-controls command record must be exactly the self-test's
 `G6-EVIDENCE-MUTATIONS-PASSED` result line, every count included. The pending
 2026-09-29 candidate baseline records the explicit Dapr runtime `1.18.2` / .NET
 package `1.18.10` exception with Toolkit `13.5.1-beta.770`; it is not a
-support-table-listed pair. The current catalog's Toolkit `17.0.0-beta.1052`
-and Fluent UI `5.0.1` need fresh G-6 acceptance before current live
-qualification. The executable fixture and installed runner implement public
+support-table-listed pair. The selected Toolkit and Fluent UI versions are maintained in
+`Props/Directory.Packages.props`. Live qualification requires fresh G-6
+acceptance for those exact versions. The executable fixture and installed runner implement public
 composition and the native `full`/`full-mtp` persisted profiles; retained Stage
 5 evidence qualifies their historical local scope. `HXR003` applies to the
 metadata-only descriptor fixture, and unsupported executable profiles return

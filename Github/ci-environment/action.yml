@@ -1,6 +1,12 @@
 name: Prepare shared CI environment
 description: Set up enabled Linux tools once; successful Dapr init exports HEXALITH_DAPR_INITIALIZATION_RECEIPT for fresh-backend checks.
 inputs:
+  registry-pull-username:
+    description: Dedicated pull-only registry username for enabled Linux setup.
+    default: ''
+  registry-pull-password:
+    description: Dedicated pull-only registry password for enabled Linux setup.
+    default: ''
   solution:
     description: Validated workspace-relative solution path, including any module-root prefix.
     required: true
@@ -31,10 +37,26 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Check enabled registry credentials
+      if: inputs.registry == 'true' && inputs.solution != 'none'
+      shell: bash
+      env:
+        HAS_USERNAME: ${{ inputs.registry-pull-username != '' || env.REGISTRY_PULL_USERNAME != '' }}
+        HAS_PASSWORD: ${{ inputs.registry-pull-password != '' || env.REGISTRY_PULL_PASSWORD != '' }}
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
+      run: |
+        if [[ "$HAS_USERNAME" != true || "$HAS_PASSWORD" != true ]]; then
+          echo 'registry setup requires the dedicated pull-only username and password' >&2
+          exit 1
+        fi
+
     - name: Validate shared prerequisite selections
       id: prerequisites
       shell: bash
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_ENVIRONMENT_SOLUTION: ${{ inputs.solution }}
         CI_ENVIRONMENT_PREREQUISITES: ${{ inputs.prerequisites }}
         CI_ENVIRONMENT_NPM_WORKSPACES: ${{ inputs.npm-workspaces }}
@@ -48,6 +70,9 @@ runs:
     - name: Install selected exact Node runtime
       if: steps.prerequisites.outputs.node-version != ''
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
       with:
         node-version: ${{ steps.prerequisites.outputs.node-version }}
         package-manager-cache: false
@@ -55,6 +80,8 @@ runs:
     - name: Set up enabled environment tools
       shell: bash
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_ENVIRONMENT_SOLUTION: ${{ inputs.solution }}
         CI_ENVIRONMENT_DAPR: ${{ inputs.dapr }}
         CI_ENVIRONMENT_BROWSERS: ${{ inputs.browsers }}
@@ -64,4 +91,14 @@ runs:
         CI_ENVIRONMENT_ASPIRE: ${{ inputs.aspire }}
         CI_ENVIRONMENT_PREREQUISITES: ${{ inputs.prerequisites }}
         CI_ENVIRONMENT_ADDITIONAL_PROJECTS: ${{ inputs.additional-projects }}
-      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_environment.py"
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_environment.py" --phase tools
+
+    - name: Log in to the pull-only registry
+      if: inputs.registry == 'true' && inputs.solution != 'none'
+      shell: bash
+      env:
+        REGISTRY_PULL_USERNAME: ${{ inputs.registry-pull-username || env.REGISTRY_PULL_USERNAME }}
+        REGISTRY_PULL_PASSWORD: ${{ inputs.registry-pull-password || env.REGISTRY_PULL_PASSWORD }}
+        CI_ENVIRONMENT_SOLUTION: ${{ inputs.solution }}
+        CI_ENVIRONMENT_REGISTRY: ${{ inputs.registry }}
+      run: python3 -I "$GITHUB_ACTION_PATH/../lib/ci_environment.py" --phase login

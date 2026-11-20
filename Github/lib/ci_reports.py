@@ -277,7 +277,6 @@ def coverage_summary(root: Path, paths: list[Path], policy: dict, *, enforce: bo
     validate_coverage_sources(root, policy)
     lines, covered = set(), set()
     branches = {}
-    targets = set()
     observed_scopes = set()
     scopes = policy.get("lineScope", [])
     branch_targets = policy.get("branchTargets", [])
@@ -288,8 +287,6 @@ def coverage_summary(root: Path, paths: list[Path], policy: dict, *, enforce: bo
             if not filename:
                 raise ReportError(f"Cobertura class has no filename: {path}")
             scope_matches = [scope for scope in scopes if filename.startswith(scope.rstrip("/") + "/")]
-            if filename in branch_targets:
-                targets.add(filename)
             for line in element.findall("./lines/line"):
                 key = (filename, int(line.attrib["number"]))
                 if not scopes or scope_matches:
@@ -334,7 +331,7 @@ def coverage_summary(root: Path, paths: list[Path], policy: dict, *, enforce: bo
             if failed:
                 raise ReportError(f"line coverage {line_percent:.2f}% does not satisfy {policy.get('lineComparison', 'at-least')} {minimum}%")
         if "minimumBranch" in policy:
-            missing = set(policy.get("branchTargets", [])) - targets
+            missing = set(branch_targets) - {filename for filename, _ in branches}
             if missing:
                 raise ReportError("coverage branch targets missing: " + ", ".join(sorted(missing)))
             if not branch_valid or branch_percent < policy["minimumBranch"]:

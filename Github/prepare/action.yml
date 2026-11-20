@@ -1,6 +1,12 @@
 name: Prepare module job
 description: Checkout and prepare one Release build, reusing validated CI outputs on Windows and macOS.
 inputs:
+  registry-pull-username:
+    description: Dedicated pull-only registry username for enabled Linux setup.
+    default: ''
+  registry-pull-password:
+    description: Dedicated pull-only registry password for enabled Linux setup.
+    default: ''
   solution:
     description: Validated workspace-relative solution output from shared CI, or none (Windows/macOS).
     default: ''
@@ -52,6 +58,9 @@ runs:
     - name: Prepare bounded mutation container prerequisites
       if: runner.os == 'Linux' && inputs.resource-profile == 'mutation'
       shell: bash
+      env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
       run: |
         set -euo pipefail
         apt-get update
@@ -62,12 +71,18 @@ runs:
     - name: Install the supported mutation preparation interpreter
       if: runner.os == 'Linux' && inputs.resource-profile == 'mutation'
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
       with:
         python-version: '3.12'
 
     - name: Enable long Git paths on disposable Windows runners
       if: runner.os == 'Windows' && runner.environment == 'github-hosted'
       shell: pwsh
+      env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
       run: |
         git config --global core.longpaths true
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -79,6 +94,8 @@ runs:
       if: inputs.environment == 'preserve'
       shell: bash
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_PREPARE_ENVIRONMENT: ${{ inputs.environment }}
         CI_AUTHORITY_SHA256: ${{ inputs.authority-sha256 }}
         CI_SOURCE_SHA: ${{ inputs.source-sha }}
@@ -87,6 +104,9 @@ runs:
     - name: Checkout module
       if: runner.os != 'Windows' || inputs.windows-checkout == '' || inputs.windows-checkout == 'null'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
       with:
         submodules: false
         persist-credentials: false
@@ -95,6 +115,8 @@ runs:
       if: runner.os == 'Windows' && inputs.windows-checkout != '' && inputs.windows-checkout != 'null'
       shell: pwsh
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         GITHUB_TOKEN: ${{ github.token }}
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
@@ -111,6 +133,8 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_REPOSITORY: ${{ github.repository }}
         CI_MODULE_ROOT: ${{ inputs.module-root }}
         CI_PREPARE_ENVIRONMENT: ${{ inputs.environment }}
@@ -121,34 +145,44 @@ runs:
       if: runner.os != 'Linux' && inputs.solution != 'none'
       shell: pwsh
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
-        CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
+        CI_PREPARE_PROTECTED_CHECKOUT: ${{ runner.os == 'Windows' && inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
         CI_PREPARE_ADDITIONAL_TEST_PROJECTS: ${{ inputs.additional-test-projects }}
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Validate'
 
     - name: Set up Linux module SDK
       if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none'
       uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+      env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
       with:
         global-json-file: ${{ steps.linux.outputs.global-json }}
         dotnet-version: ${{ inputs.additional-sdk-version }}
 
-    - name: Initialize Windows direct dependencies
-      if: runner.os == 'Windows' && inputs.solution != 'none'
+    - name: Initialize platform direct dependencies
+      if: runner.os != 'Linux' && inputs.solution != 'none'
       shell: pwsh
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
-        CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
+        CI_PREPARE_PROTECTED_CHECKOUT: ${{ runner.os == 'Windows' && inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
         CI_PREPARE_ADDITIONAL_TEST_PROJECTS: ${{ inputs.additional-test-projects }}
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Dependencies'
 
     - name: Set up platform module SDK
       if: runner.os != 'Linux' && inputs.solution != 'none'
       uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+      env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
       with:
         global-json-file: ${{ inputs.global-json }}
         dotnet-version: ${{ inputs.additional-sdk-version }}
@@ -158,6 +192,8 @@ runs:
       if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none'
       shell: bash
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_REPOSITORY: ${{ github.repository }}
         CI_MODULE_ROOT: ${{ inputs.module-root }}
         CI_PREPARE_ENVIRONMENT: ${{ inputs.environment }}
@@ -167,6 +203,9 @@ runs:
     - name: Set up locked npm runtime
       if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none' && steps.build.outputs.npmWorkspaces != '[]' && inputs.environment == 'setup'
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
       with:
         node-version: '24'
         package-manager-cache: false
@@ -175,6 +214,8 @@ runs:
       if: runner.os == 'Windows' && inputs.solution != 'none' && inputs.module-manifest != ''
       shell: pwsh
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_MODULE_MANIFEST: ${{ inputs.module-manifest }}
@@ -191,6 +232,8 @@ runs:
         dapr: ${{ steps.build.outputs.dapr }}
         browsers: ${{ steps.build.outputs.browsers }}
         registry: ${{ steps.build.outputs.registry }}
+        registry-pull-username: ${{ inputs.registry-pull-username || env.REGISTRY_PULL_USERNAME }}
+        registry-pull-password: ${{ inputs.registry-pull-password || env.REGISTRY_PULL_PASSWORD }}
         npm-workspaces: ${{ steps.build.outputs.npmWorkspaces }}
         dotnet-tools: ${{ steps.build.outputs.dotnetTools }}
         aspire: ${{ steps.build.outputs.aspire }}
@@ -199,14 +242,16 @@ runs:
       env:
         CI_MODULE_ROOT: ${{ inputs.module-root }}
 
-    - name: Initialize direct dependencies and build platform module
+    - name: Build prepared platform module
       if: runner.os != 'Linux' && inputs.solution != 'none'
       shell: pwsh
       env:
+        REGISTRY_PULL_USERNAME: ''
+        REGISTRY_PULL_PASSWORD: ''
         CI_PREPARE_SOLUTION: ${{ inputs.solution }}
         CI_PREPARE_GLOBAL_JSON: ${{ inputs.global-json }}
         CI_PREPARE_SUBMODULES: "${{ join(fromJSON(inputs.submodules), '\n') }}"
-        CI_PREPARE_PROTECTED_CHECKOUT: ${{ inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
+        CI_PREPARE_PROTECTED_CHECKOUT: ${{ runner.os == 'Windows' && inputs.windows-checkout != '' && inputs.windows-checkout != 'null' }}
         CI_PREPARE_DEPENDENCIES_READY: 'true'
         CI_PREPARE_ADDITIONAL_TEST_PROJECTS: ${{ inputs.additional-test-projects }}
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Build'

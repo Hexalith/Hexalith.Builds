@@ -201,7 +201,7 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn('publishing disabled', result.stdout)
         self.assertEqual({'sha': self.sha, 'mode': 'create', 'enabled': 'false', 'codeql': '["csharp"]',
-                          'nightly-hook': 'true', 'config-valid': 'true'}, values)
+                          'nightly-hook': 'true', 'config-valid': 'true', 'ci-wait-minutes': '45'}, values)
         self.assertEqual(1, len(self.requests))
 
     def test_invalid_switch_and_wrong_ref_retain_valid_current_settings(self):
@@ -224,7 +224,7 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.ci = 'failure'
         result, values = self.invoke(switch='true')
         self.assertEqual(1, result.returncode)
-        self.assertIn('main is red, nothing released', result.stderr)
+        self.assertIn('CI completed without success', result.stderr)
         self.assertEqual(self.sha, values['sha'])
 
     def test_complete_draft_uses_dispatch_config_without_historical_ci_or_checkout(self):

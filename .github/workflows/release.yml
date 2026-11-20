@@ -74,7 +74,8 @@ jobs:
   resolve:
     name: Resolve release identity
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # The CI wait is capped at 350 minutes, leaving time for resolve work.
+    timeout-minutes: 360
     permissions:
       contents: write
       actions: read
@@ -158,9 +159,8 @@ jobs:
         uses: $/Github/prepare
         with:
           module-root: ${{ inputs.module-root }}
-        env:
-          REGISTRY_PULL_USERNAME: ${{ secrets.registry-pull-username }}
-          REGISTRY_PULL_PASSWORD: ${{ secrets.registry-pull-password }}
+          registry-pull-username: ${{ secrets.registry-pull-username }}
+          registry-pull-password: ${{ secrets.registry-pull-password }}
 
       - name: Run enabled nightly hook
         uses: ./.github/actions/nightly

@@ -5,7 +5,8 @@
   "browsers": false,
   "registry": false,
   "codeql": [
-    "csharp"
+    "csharp",
+    "python"
   ],
   "tests": {
     "integration": [],

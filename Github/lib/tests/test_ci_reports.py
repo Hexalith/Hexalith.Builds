@@ -74,6 +74,17 @@ class ReportTests(unittest.TestCase):
         policy = dict(self.policy["coverage"], lineComparison="at-least")
         reports.coverage_summary(self.root, [path], policy, enforce=True)
 
+    def test_each_named_target_needs_an_instrumented_branch(self):
+        other = "src/Product/Other.cs"
+        self.file("// second source", other)
+        policy = self.policy["coverage"]
+        policy["branchTargets"].append(other)
+        first = self.file(cobertura([(1, 1, 'branch="true" condition-coverage="100% (2/2)"')]))
+        second = self.file(cobertura([(7, 1, "")], other), "other.xml")
+        with self.assertRaisesRegex(reports.ReportError, "branch targets missing: src/Product/Other.cs"):
+            reports.coverage_summary(self.root, [first, second], policy, enforce=True)
+        self.assertEqual(2, reports.coverage_summary(self.root, [first, second], policy, enforce=False)["branchesValid"])
+
     def test_missing_named_branch_target_and_missing_scope_fail(self):
         path = self.file(cobertura([(1, 1, "")], "src/Product/Other.cs"))
         with self.assertRaisesRegex(reports.ReportError, "branch targets missing"):

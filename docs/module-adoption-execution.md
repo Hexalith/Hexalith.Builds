@@ -106,6 +106,10 @@ before delivery; a stale/nonexistent scope or target must fail qualification.
 FrontComposer may select projects and reporting without either threshold. Do not
 introduce a coverage threshold as part of adoption.
 
+When a branch threshold is enabled, every named target must contribute at
+least one instrumented branch with a positive denominator. A class containing
+only line hits fails the gate even when the other targets have full coverage.
+
 Aggregation preserves Tenants' existing union of covered source lines and
 best-per-line branch counts. Cobertura counts alone cannot identify complementary
 covered branch arms, so two separate 50% observations do not establish 100%.

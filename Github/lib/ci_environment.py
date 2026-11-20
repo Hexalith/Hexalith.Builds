@@ -8,6 +8,7 @@ configuration again and never restores or builds the module.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import ctypes
 import ctypes.util
 from datetime import datetime, timezone
@@ -504,19 +505,50 @@ def npm_playwright(directory: Path) -> Path | None:
     return cli
 
 
-def login_registry(root: Path) -> None:
-    """Pass only the dedicated pull password on stdin and keep it out of logs."""
-    username = os.environ.get("REGISTRY_PULL_USERNAME", "")
-    password = os.environ.get("REGISTRY_PULL_PASSWORD", "")
+@contextmanager
+def registry_credentials():
+    """Keep legacy CLI credentials out of every spawned process."""
+    names = ("REGISTRY_PULL_USERNAME", "REGISTRY_PULL_PASSWORD")
+    values = [os.environ.pop(name, None) for name in names]
+    try:
+        yield values
+    finally:
+        for name, value in zip(names, values):
+            if value is not None:
+                os.environ[name] = value
+
+
+def login_registry(root: Path, username: str, password: str) -> None:
     if not username or not password:
         raise PipelineError("registry setup requires the dedicated pull-only username and password")
+    runner = Path(os.environ.get("RUNNER_TEMP", ""))
+    export = os.environ.get("GITHUB_ENV")
+    if (not runner.is_absolute() or not runner.is_dir() or not export
+            or any(ord(char) < 32 for char in str(runner))):
+        raise PipelineError("registry login requires RUNNER_TEMP and GITHUB_ENV")
+    # Actions clears RUNNER_TEMP at job end. Never touch the runner user's Docker config.
     try:
-        result = subprocess.run(["docker", "login", "registry.hexalith.com", f"--username={username}",
-                                 "--password-stdin"], cwd=root, input=password, text=True, check=False)
+        directory = tempfile.mkdtemp(prefix="hexalith-docker-", dir=runner)
     except OSError as error:
-        raise PipelineError(f"cannot execute docker registry login: {error}") from error
-    if result.returncode:
-        raise PipelineError("pull-only registry login failed", result.returncode)
+        raise PipelineError("cannot create private registry configuration") from error
+    try:
+        # An explicit auths entry keeps Docker from detecting a host credential helper.
+        config = Path(directory) / "config.json"
+        with os.fdopen(os.open(config, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), "w") as stream:
+            json.dump({"auths": {"registry.hexalith.com": {}}}, stream)
+        result = subprocess.run(["docker", "login", "registry.hexalith.com", f"--username={username}",
+                                 "--password-stdin"], cwd=root, input=password, text=True, check=False,
+                                env=dict(os.environ, DOCKER_CONFIG=directory),
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if result.returncode:
+            raise PipelineError("pull-only registry login failed", result.returncode)
+        with Path(export).open("a", encoding="utf-8") as stream:
+            stream.write(f"DOCKER_CONFIG={directory}\n")
+    except (OSError, PipelineError) as error:
+        shutil.rmtree(directory)
+        if isinstance(error, OSError):
+            raise PipelineError("cannot configure pull-only registry login") from error
+        raise
 
 
 def validate_prerequisites(value: object) -> dict:
@@ -631,11 +663,20 @@ def require_node_versions(root: Path, prerequisites: dict, *, npm_required: bool
         raise PipelineError("npm preparation requires the trusted Node 24 runtime")
 
 
-def setup_environment(workspace: Path, *, solution: str, module_root: str = "",
-                      dapr: bool = False, browsers: bool = False, registry: bool = False,
-                      npm_workspaces: list[str] | None = None, dotnet_tools: bool = False,
-                      aspire: bool = False, prerequisites: dict | None = None,
-                      additional_projects: list[str] | None = None) -> None:
+def setup_environment(workspace: Path, *, solution: str, registry: bool = False, **options) -> None:
+    with registry_credentials() as (username, password):
+        if solution != "none" and registry and not (username and password):
+            raise PipelineError("registry setup requires the dedicated pull-only username and password")
+        root = setup_tools(workspace, solution=solution, registry=registry, **options)
+        if registry and root is not None:
+            login_registry(root, username, password)
+
+
+def setup_tools(workspace: Path, *, solution: str, module_root: str = "",
+                dapr: bool = False, browsers: bool = False, registry: bool = False,
+                npm_workspaces: list[str] | None = None, dotnet_tools: bool = False,
+                aspire: bool = False, prerequisites: dict | None = None,
+                additional_projects: list[str] | None = None) -> Path | None:
     """Perform each enabled setup before hooks, with no disabled tool calls."""
     npm_workspaces = [] if npm_workspaces is None else npm_workspaces
     additional_projects = [] if additional_projects is None else additional_projects
@@ -658,9 +699,6 @@ def setup_environment(workspace: Path, *, solution: str, module_root: str = "",
     solution_path = contained_path(workspace, solution, kind="solution")
     if not root.is_dir() or not solution_path.is_file() or not solution_path.is_relative_to(root):
         raise PipelineError("environment solution must exist within the module root")
-    # Missing credentials fail before any tool installation or downloads.
-    if registry and not all(os.environ.get(name) for name in ("REGISTRY_PULL_USERNAME", "REGISTRY_PULL_PASSWORD")):
-        raise PipelineError("registry setup requires the dedicated pull-only username and password")
     if aspire and not dapr:
         raise PipelineError("native Aspire setup requires dapr=true")
     directories, manifest = preparation_inputs(root, npm_workspaces, dotnet_tools)
@@ -690,8 +728,7 @@ def setup_environment(workspace: Path, *, solution: str, module_root: str = "",
         for directory, cli in npm_browsers:
             if cli:
                 run_command(["node", str(cli), "install", "--with-deps"], directory)
-    if registry:
-        login_registry(root)
+    return root
 
 
 def boolean(value: str) -> bool:
@@ -705,7 +742,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace", type=Path, default=os.environ.get("GITHUB_WORKSPACE", "."))
     parser.add_argument("--module-root", default=os.environ.get("CI_MODULE_ROOT", ""))
-    parser.add_argument("--phase", choices=("inputs", "setup"), default="setup")
+    parser.add_argument("--phase", choices=("inputs", "setup", "tools", "login"), default="setup")
     parser.add_argument("--solution", default=os.environ.get("CI_ENVIRONMENT_SOLUTION"), required=not os.environ.get("CI_ENVIRONMENT_SOLUTION"))
     for name in ("dapr", "browsers", "registry", "aspire"):
         parser.add_argument(f"--{name}", type=boolean, default=os.environ.get(f"CI_ENVIRONMENT_{name.upper()}", "false"))
@@ -730,13 +767,16 @@ def main() -> int:
             workspace = args.workspace.resolve()
             root = contained_path(workspace, args.module_root, kind="module-root") if args.module_root else workspace
             additional_project_paths(root, additional)
+        if args.phase == "login":
+            if args.registry and args.solution != "none":
+                root = contained_path(args.workspace.resolve(), args.module_root, kind="module-root") if args.module_root else args.workspace
+                with registry_credentials() as (username, password):
+                    login_registry(root, username, password)
+            return 0
         if args.phase == "inputs":
             if args.solution == "none" and prerequisites:
                 raise PipelineError("prerequisites must be disabled when solution is none")
             if "nodeVersion" in prerequisites:
-                if args.registry and not all(os.environ.get(name) for name in (
-                        "REGISTRY_PULL_USERNAME", "REGISTRY_PULL_PASSWORD")):
-                    raise PipelineError("registry setup requires the dedicated pull-only username and password")
                 if args.aspire and not args.dapr:
                     raise PipelineError("native Aspire setup requires dapr=true")
                 workspace = args.workspace.resolve()
@@ -747,10 +787,11 @@ def main() -> int:
                 preparation_inputs(root, workspaces, args.dotnet_tools)
             publish_outputs({"node-version": prerequisites.get("nodeVersion", "")})
             return 0
-        setup_environment(args.workspace, solution=args.solution, module_root=args.module_root,
-                          dapr=args.dapr, browsers=args.browsers, registry=args.registry, aspire=args.aspire,
-                          npm_workspaces=workspaces, dotnet_tools=args.dotnet_tools, prerequisites=prerequisites,
-                          additional_projects=additional)
+        setup = setup_tools if args.phase == "tools" else setup_environment
+        setup(args.workspace, solution=args.solution, module_root=args.module_root,
+              dapr=args.dapr, browsers=args.browsers, registry=args.registry, aspire=args.aspire,
+              npm_workspaces=workspaces, dotnet_tools=args.dotnet_tools, prerequisites=prerequisites,
+              additional_projects=additional)
         return 0
     except (ConfigError, ValueError) as error:
         print(error, file=sys.stderr)

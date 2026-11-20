@@ -4,6 +4,15 @@ This composite prepares the enabled Dapr, browser and registry tools once after
 the shared Release package-mode solution build. Hooks reuse that environment.
 The local module checker does not initialize it.
 
+Use the `registry-pull-username` and `registry-pull-password` action inputs on
+`Github/prepare` and `Github/ci-environment` when registry access is enabled.
+The presence check runs before tool installation. Docker receives the password
+on stdin, then subsequent steps use a private `DOCKER_CONFIG` directory under
+`RUNNER_TEMP`. The runner clears that directory at job completion. Steps with
+access to this configuration can pull images for the remainder of the job.
+Pass secrets as action inputs so earlier product commands and unrelated steps
+execute without ambient registry credentials.
+
 With Dapr enabled, successful initialization exports
 `HEXALITH_DAPR_INITIALIZATION_RECEIPT` through `GITHUB_ENV`. The path is a private
 mode-0600 `hexalith-dapr-initialization.json` file directly under the real,

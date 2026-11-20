@@ -193,7 +193,7 @@ class RealApiCiGateTests(unittest.TestCase):
                 self.assertEqual(f"GitHub API /actions/workflows/ci.yml/runs returned HTTP {code}", str(raised.exception))
                 self.assertEqual(1, len(requests))
 
-    def test_api_deadline_during_ci_polling_reports_the_red_ci_bound(self):
+    def test_api_deadline_during_ci_polling_reports_unconfirmed_ci(self):
         offset = [0.0]
 
         def clock():
@@ -210,7 +210,7 @@ class RealApiCiGateTests(unittest.TestCase):
         with self.http(respond) as (base, requests):
             api = state.Api(REPOSITORY, "ci-gate-token", base, clock=clock)
             with self.assertRaisesRegex(state.ReleaseError,
-                                        r"^main is red, nothing released \(CI wait exceeded 30 minutes\)$") as raised:
+                                        r"CI success unconfirmed after 30 minutes") as raised:
                 state.require_green_ci(api, "c" * 40, "ci.yml", clock=clock, sleeper=lambda _seconds: None)
         self.assertIn("deadline exceeded", str(raised.exception.__cause__))
         self.assertEqual(1, len(requests))
@@ -587,7 +587,7 @@ class ReleaseStateTests(unittest.TestCase):
             self.assertIn("/actions/workflows/ci.yml/runs?head_sha=" + self.dispatch, api.requests[0][0])
         api = ApiControl(runs=[[ci_run(self.dispatch, identifier=1),
                                 ci_run(self.dispatch, identifier=2, conclusion="failure")]])
-        with self.assertRaisesRegex(state.ReleaseError, "main is red, nothing released"):
+        with self.assertRaisesRegex(state.ReleaseError, "CI completed without success"):
             state.require_green_ci(api, self.dispatch, "ci.yml")
 
     def test_no_ci_and_each_non_success_conclusion_fail_without_waiting(self):
@@ -596,7 +596,7 @@ class ReleaseStateTests(unittest.TestCase):
                        ("failure", "cancelled", "neutral", "skipped", "timed_out", "action_required", None)]):
             with self.subTest(runs=runs):
                 clock = Clock()
-                with self.assertRaisesRegex(state.ReleaseError, "main is red, nothing released"):
+                with self.assertRaisesRegex(state.ReleaseError, "CI completed without success|No eligible CI run"):
                     state.require_green_ci(ApiControl(runs=[runs]), self.dispatch, "ci.yml",
                                            clock=clock, sleeper=clock.sleep)
                 self.assertEqual([], clock.sleeps)
@@ -610,12 +610,33 @@ class ReleaseStateTests(unittest.TestCase):
         self.assertEqual([1800] * 3, [deadline for _path, _key, deadline in api.requests])
         clock = Clock()
         api = ApiControl(runs=[[ci_run(self.dispatch, status="in_progress", conclusion=None)]])
-        with self.assertRaisesRegex(state.ReleaseError, "main is red, nothing released.*30 minutes"):
+        with self.assertRaisesRegex(state.ReleaseError, "CI success unconfirmed after 30 minutes"):
             state.require_green_ci(api, self.dispatch, "ci.yml", clock=clock, sleeper=clock.sleep)
         self.assertEqual(1800, clock.now)
         self.assertEqual([60] * 30, clock.sleeps)
         self.assertEqual(30, api.ci_reads)
         self.assertEqual({1800}, {deadline for _path, _key, deadline in api.requests})
+
+    def test_resolve_uses_the_selected_ci_budget_with_headroom_for_the_job(self):
+        api = ApiControl(repository=BUILDS)
+        for configured, budget in ((60, 60), (360, 350)):
+            config = dict(configuration(), ciTimeoutMinutes=configured)
+            del config["buildsTag"]
+            sha = self.commit(config, f"timeout-{configured}")
+            with patch.object(state, "require_green_ci") as gate:
+                self.resolve(api, sha=sha, switch="true", workflow="builds-ci.yml")
+            gate.assert_called_once_with(api, sha, "builds-ci.yml", minutes=budget)
+
+    def test_long_ci_can_finish_under_the_configured_budget(self):
+        clock = Clock()
+        pending = [ci_run(self.dispatch, status="in_progress", conclusion=None)]
+        api = ApiControl(runs=[pending] * 38 + [[ci_run(self.dispatch)]])
+        state.require_green_ci(api, self.dispatch, "ci.yml", minutes=60, clock=clock, sleeper=clock.sleep)
+        self.assertEqual(38 * 60, clock.now)
+        self.assertEqual({3600}, {deadline for _path, _key, deadline in api.requests})
+        with self.assertRaisesRegex(state.ReleaseError, r"https://github.com/Example/ReleaseFixture/actions/runs/"):
+            state.require_green_ci(ApiControl(runs=[pending]), self.dispatch, "ci.yml",
+                                   minutes=1, clock=clock, sleeper=clock.sleep)
 
     def test_api_time_counts_toward_fixed_deadline_even_when_the_run_is_green(self):
         class TimedApi(ApiControl):
@@ -630,7 +651,7 @@ class ReleaseStateTests(unittest.TestCase):
                 if elapsed < 1800:
                     state.require_green_ci(api, self.dispatch, "ci.yml", clock=clock, sleeper=clock.sleep)
                 else:
-                    with self.assertRaisesRegex(state.ReleaseError, "main is red, nothing released.*30 minutes"):
+                    with self.assertRaisesRegex(state.ReleaseError, "CI success unconfirmed after 30 minutes"):
                         state.require_green_ci(api, self.dispatch, "ci.yml", clock=clock, sleeper=clock.sleep)
                 self.assertEqual([], clock.sleeps)
                 self.assertEqual([1800], [deadline for _path, _key, deadline in api.requests])
@@ -638,7 +659,7 @@ class ReleaseStateTests(unittest.TestCase):
         elapsed = 1790
         clock = Clock()
         api = TimedApi(runs=[[ci_run(self.dispatch, status="in_progress", conclusion=None)]])
-        with self.assertRaisesRegex(state.ReleaseError, "main is red, nothing released.*30 minutes"):
+        with self.assertRaisesRegex(state.ReleaseError, "CI success unconfirmed after 30 minutes"):
             state.require_green_ci(api, self.dispatch, "ci.yml", clock=clock, sleeper=clock.sleep)
         self.assertEqual(1800, clock.now)
         self.assertEqual([10], clock.sleeps, "API time must shorten the final polling sleep")
@@ -653,7 +674,7 @@ class ReleaseStateTests(unittest.TestCase):
     def test_selected_sha_and_settings_survive_red_ci(self):
         emitted = {}
         api = ApiControl(runs=[[ci_run(self.dispatch, conclusion="failure")]])
-        with self.assertRaisesRegex(state.ReleaseError, "main is red, nothing released"):
+        with self.assertRaisesRegex(state.ReleaseError, "CI completed without success"):
             state.resolve(self.git, api, sha=self.dispatch, ref="refs/heads/main", switch="true", emit=emitted.update, transport=self.transport)
         self.assertEqual(self.dispatch, emitted["sha"])
         self.assertEqual("create", emitted["mode"])

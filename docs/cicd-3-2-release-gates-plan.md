@@ -57,8 +57,9 @@ The switch accepts exactly `true` or `false`. False logs `publishing disabled`;
 unset/other values fail with
 `HEXALITH_RELEASE_PUBLISH_ENABLED must be exactly true or false`. Create mode
 then requires the latest exact-SHA `ci.yml` run with push/manual event to be
-successful. Wait at most 30 minutes for an unfinished run, polling every minute;
-otherwise fail `main is red, nothing released`. Only Builds can override the
+successful. Poll unfinished runs once per minute within the configured CI
+budget (up to 350 minutes). Report a missing run, an exhausted wait and a
+completed unsuccessful run separately. Only Builds can override the
 CI identity to `builds-ci.yml`. Complete mode skips this CI check.
 
 Publish current-SHA CodeQL/hook settings before switch/CI failures so the

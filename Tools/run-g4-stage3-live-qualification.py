@@ -18,7 +18,9 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE_ROOT = ROOT / "_bmad-output/implementation-artifacts/qualification-evidence"
 JWT = re.compile(rb"eyJ[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}")
-SUITE_SUMMARY = re.compile(r"Total: (\d+), Errors: (\d+), Failed: (\d+), Skipped: (\d+)")
+SUITE_SUMMARY = re.compile(r"Total: (\d+), Errors: (\d+), Failed: (\d+), Skipped: (\d+), Not Run: (\d+)")
+# One deterministic case and twelve live cases, including both installed-package profiles.
+EXPECTED_TESTS = 13
 RUN_TAG = b"HEXALITH_G4_RUN_ID="
 
 
@@ -193,7 +195,7 @@ def probe_redaction(log_dir):
 
 
 def qualifies(exit_code, suite, before, after, baseline, probes):
-    return (exit_code == 0 and suite == (11, 0, 0, 0)
+    return (exit_code == 0 and suite == (EXPECTED_TESTS, 0, 0, 0, 0)
             and before == baseline and after == baseline
             and all(probe["status"] == "verified" and probe["count"] == 0
                     for probe in probes.values()))
@@ -203,6 +205,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence-dir", type=Path, required=True)
     parser.add_argument("--dapr-home", type=Path, required=True)
+    parser.add_argument("--package-consumer", type=Path, default=os.environ.get("HEXALITH_G4_PACKAGE_CONSUMER"),
+                        help="Restored local-tool consumer used by the full and full-mtp profiles.")
     parser.add_argument("--count", type=int, default=10)
     parser.add_argument("--nuget-packages", type=Path)
     args = parser.parse_args()
@@ -211,6 +215,8 @@ def main():
         parser.error("evidence directory must be Builds-owned qualification evidence and count must be positive")
     if not args.dapr_home.is_dir():
         parser.error("Dapr home does not exist")
+    if args.package_consumer is None or not args.package_consumer.is_dir():
+        parser.error("supply a restored local-tool directory with --package-consumer or HEXALITH_G4_PACKAGE_CONSUMER")
     evidence_dir.mkdir(parents=True, exist_ok=False)
     try:
         baseline = snapshot()
@@ -238,7 +244,8 @@ def main():
                    "-noColor"]
         environment = os.environ.copy()
         environment.update(HEXALITH_G4_LIVE="1", HEXALITH_DAPR_HOME=str(args.dapr_home.resolve()),
-                           HEXALITH_G4_LOG_DIR=str(run_dir))
+                           HEXALITH_G4_LOG_DIR=str(run_dir),
+                           HEXALITH_G4_PACKAGE_CONSUMER=str(args.package_consumer.resolve()))
         if args.nuget_packages:
             environment["NUGET_PACKAGES"] = str(args.nuget_packages.resolve())
         since_ticks = boot_ticks()
@@ -267,7 +274,8 @@ def main():
         passed = qualifies(exit_code, suite, before, after, baseline, probes)
         result = {"run": index, "start": started, "end": ended, "status": "passed" if passed else "failed",
                   "exit": exit_code, "executionError": execution_error, "fingerprintError": fingerprint_error,
-                  "suiteSummary": suite,
+                  "suiteSummary": suite[:4] if suite is not None else None,
+                  "notRun": suite[4] if suite is not None else None,
                   "command": shlex.join(command),
                   "environment": {key: environment.get(key) for key in
                                   ("HEXALITH_G4_LIVE", "HEXALITH_DAPR_HOME", "HEXALITH_G4_LOG_DIR", "NUGET_PACKAGES")},

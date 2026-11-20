@@ -73,12 +73,28 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Include a recorded gitlink in the macOS sample
+        id: dependencies
+        shell: bash
+        env:
+          SAMPLE_SUBMODULES: ${{ needs.sample.outputs.submodules }}
+        run: |
+          paths=$(jq -c '. + ["references/Hexalith.AI.Tools"] | unique' <<< "$SAMPLE_SUBMODULES")
+          echo "paths=$paths" >> "$GITHUB_OUTPUT"
+
       - name: Prepare module
         uses: $/Github/prepare
         with:
           solution: ${{ needs.sample.outputs.solution }}
-          submodules: ${{ needs.sample.outputs.submodules }}
+          submodules: ${{ steps.dependencies.outputs.paths }}
           global-json: ${{ needs.sample.outputs.global-json }}
+
+      - name: Verify the recorded direct dependency
+        shell: bash
+        run: |
+          expected=$(git rev-parse --verify HEAD:references/Hexalith.AI.Tools)
+          actual=$(git -C references/Hexalith.AI.Tools rev-parse --verify HEAD)
+          test "$actual" = "$expected"
 
       - name: Run module action
         uses: ./.github/actions/sample-macos

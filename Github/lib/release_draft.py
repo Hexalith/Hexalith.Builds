@@ -26,7 +26,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from release_state import Api, Git, NoRedirect, ReleaseError, SHA, STABLE, highest_reachable_stable_tag, outputs, select_release
+from release_state import (BUILDS_REPOSITORY, Api, Git, NoRedirect, ReleaseError, SHA, STABLE,
+                           highest_reachable_stable_tag, outputs, select_release)
 
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
 PACKAGE_ID = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}\Z")
@@ -374,12 +375,22 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None,
         raise ReleaseError("invalid release artifact archive") from error
 
 
-def release_body(notes, *, sha, run_id, artifact_id, digest, inventory):
+def release_body(notes, *, sha, run_id, artifact_id, digest, inventory, disclose_live_status=False):
     if not isinstance(notes, str):
         raise ReleaseError("release notes must be text")
     notes = notes.replace("\r\n", "\n").replace("\r", "\n")
     if RESERVED.search(notes):
         raise ReleaseError("release notes contain a reserved release trailer")
+    if disclose_live_status:
+        source = f"https://github.com/{BUILDS_REPOSITORY}/blob/{sha}"
+        notes = notes.rstrip() + (
+            "\n\n### Live runtime qualification\n\n"
+            "**Unverified by release CI.** The opt-in G-4 suite and G-6 acceptance run separately. "
+            "Live qualification for this release requires a separate exact-source evidence record "
+            "with all required tests executed and owned resources cleaned up.\n\n"
+            f"[Package catalog]({source}/Props/Directory.Packages.props) · "
+            f"[Live runner]({source}/Tools/run-g4-stage3-live-qualification.py) · "
+            f"[G-6 evidence validator]({source}/Tools/g6_current.py)")
     values = (sha, str(run_id), f"{artifact_id} {digest}", ",".join(inventory["packages"]),
               ",".join(inventory["containers"]))
     body = notes.rstrip() + ("\n\n" if notes.strip() else "") + "\n".join(
@@ -439,9 +450,10 @@ def create_draft(git, api, *, sha, version, artifact_id, digest, run_id, notes,
     artifact_metadata(metadata, artifact_id=artifact_id, run_id=run_id, digest=digest, sha=sha)
     inventory = artifact_inventory(api.artifact_bytes(artifact_id), sha=sha, version=version,
                                    digest=digest, repository=api.repository)
-    body = release_body(notes, sha=sha, run_id=run_id, artifact_id=artifact_id, digest=digest, inventory=inventory)
     drafts = list(api.pages(f"/repos/{api.repository}/releases?per_page=100", deadline=api.clock() + 120))
     selected = select_release(git, drafts, sha)
+    body = release_body(notes, sha=sha, run_id=run_id, artifact_id=artifact_id, digest=digest, inventory=inventory,
+                        disclose_live_status=api.repository == BUILDS_REPOSITORY and selected["mode"] == "create")
     if selected["mode"] == "complete":
         draft = next(item for item in drafts if str(item.get("id")) == selected["draft-id"])
         validate_draft(git, draft, sha=sha, version=version, body=body)
