@@ -37,7 +37,7 @@
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.1.1</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.4</HexalithProjectsVersion>
     <!-- Folders.Aspire is a stable public package; all other consumers retain the preview integration. -->
-    <HexalithAspireHostingDaprVersion>17.0.0-beta.1078</HexalithAspireHostingDaprVersion>
+    <HexalithAspireHostingDaprVersion>17.0.0-preview.1.261120-0454</HexalithAspireHostingDaprVersion>
     <HexalithAspireHostingDaprVersion Condition="'$(MSBuildProjectName)' == 'Hexalith.Folders.Aspire'">13.0.0</HexalithAspireHostingDaprVersion>
     <HexalithAspireAppHostSdkVersion>17.0.0</HexalithAspireAppHostSdkVersion>
     <HexalithDaprRuntimeVersion>1.19.2</HexalithDaprRuntimeVersion>
