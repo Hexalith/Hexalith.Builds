@@ -1,20 +1,14 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "107bd1ff2d3504e6ce79a2ff8b4181d4f3634a45",
+  "generatedFromRevision": "15125cc2f8bf86c0dc40862a99fa59f9bb2a947b",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "6b098000956d60acf57d006cf3feda1bc59162294ec996a8ec69de16b90dda2e",
-  "catalogRawSha256": "214a23ceaa433ba2e4dec5bcd3a90b15f29660b4dce034a440f0affc4d8df3bf",
+  "catalogSha256": "e48789fb691154f2eddacdf41c855eed3e007ecea1010f957b4476ae4890ff2e",
+  "catalogRawSha256": "a5a4cf41e50af42ebeb1aa0cc5a6c221378f4fcddfabe4420df9114cd8417e40",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-20T16:38:26.6757888+00:00",
+    "auditedAtUtc": "2026-11-20T16:50:07.3499312+00:00",
     "refreshedFamilies": [
-      "package:jsonschema.net",
-      "package:microsoft.build",
-      "package:microsoft.build.framework",
-      "package:microsoft.build.utilities.core",
-      "package:nuget.versioning",
-      "package:stackexchange.redis",
-      "package:yamldotnet"
+      "hexalith-eventstore"
     ],
     "preservedFamilies": [
       "aspire",
@@ -28,7 +22,6 @@
       "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
-      "hexalith-eventstore",
       "hexalith-folders",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
@@ -99,6 +92,7 @@
       "package:hotchocolate",
       "package:humanizer",
       "package:iso3166",
+      "package:jsonschema.net",
       "package:kreuzberg",
       "package:libgit2sharp",
       "package:mailkit",
@@ -106,7 +100,10 @@
       "package:messagepack",
       "package:microsoft.azure.cosmos",
       "package:microsoft.bot.builder",
+      "package:microsoft.build",
+      "package:microsoft.build.framework",
       "package:microsoft.build.locator",
+      "package:microsoft.build.utilities.core",
       "package:microsoft.graph",
       "package:microsoft.identity.client",
       "package:microsoft.net.test.sdk",
@@ -131,6 +128,7 @@
       "package:nredisstack",
       "package:nsubstitute",
       "package:nswag.msbuild",
+      "package:nuget.versioning",
       "package:nulid",
       "package:objectcomparator",
       "package:octokit",
@@ -152,6 +150,7 @@
       "package:serilog.sinks.file",
       "package:shouldly",
       "package:sonaranalyzer.csharp",
+      "package:stackexchange.redis",
       "package:stylecop.analyzers",
       "package:swashbuckle.aspnetcore",
       "package:swashbuckle.aspnetcore.swaggerui",
@@ -164,6 +163,7 @@
       "package:system.threading.tasks.extensions",
       "package:testcontainers",
       "package:threenine.data",
+      "package:yamldotnet",
       "roslyn",
       "verify",
       "xunit"
@@ -182,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "107bd1ff2d3504e6ce79a2ff8b4181d4f3634a45",
+    "repositoryRevision": "15125cc2f8bf86c0dc40862a99fa59f9bb2a947b",
     "sha256": "86017a8734ec8677655a606d3867478964cc8c6e6c18a89c9bffe90557c813d0",
     "entries": [
       {
@@ -9491,8 +9491,8 @@
         "test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-20T15:59:27.7704890+00:00",
-        "generatedFromRevision": "602159eb036805799d9ba6c1ad1532b07f99c603",
+        "auditedAtUtc": "2026-11-20T16:50:07.3499312+00:00",
+        "generatedFromRevision": "15125cc2f8bf86c0dc40862a99fa59f9bb2a947b",
         "familySelectionSha256": "64937eebbf65127013debc995d73d15f01021ed6493160fd1ffa1b36c7a64439",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "b551152f4bbd46538fe60a429eb8dfa4e2286a18edc0106a514f9b8debc2e102",
