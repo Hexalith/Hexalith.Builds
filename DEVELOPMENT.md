@@ -119,8 +119,10 @@ its exact EventStore4.2.0, Dapr runtime/SDK1.19.1 and FrontComposer5.0.0 pins.
 `PlatformVersionCatalog.Current`, whose current v2 default selects EventStore 5.4.0.
 The byte-bound schema, corpus, cleanup proofs and negative expectations stay unchanged.
 
-Parties projects use the current catalog cohort with EventStore 5.4.0,
-Memories 4.1.0, Tenants 8.0.2 and McpCli 3.0.0.
+The catalog removes `HexalithPartiesSdk42CatalogView`. When adopting this
+release, remove references to that property from consumer builds. Parties
+projects use the current catalog cohort with EventStore 5.4.0, Memories
+4.1.0, Tenants 8.0.2 and McpCli 3.0.0.
 
 The catalog records an exact named SDK4.2 view for thirty-three Platform projects
 selected at Platform `32643bde39b4da0e4538f8388e225727f82122f6`. This view keeps
