@@ -54,11 +54,11 @@ def validate_binding(binding, require_publication=True):
         version = publication["version"]
         if not isinstance(version, str) or re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", version) is None:
             raise ValueError("Published preparation requires an exact stable producer version.")
-        match = re.fullmatch(r"(?:4|5|6)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?", version) if isinstance(version, str) else None
-        if not match or any(int(number) > 2147483647 for number in match.group(1, 2)) or any(identifier.isdigit() and len(identifier) > 1 and identifier.startswith("0") for identifier in (match.group(3) or "").split(".")):
-            raise ValueError("Publication requires an exact supported 4.x NuGet semantic version or 5.x/6.x NET11 version with valid prerelease identifiers.")
-        if version.startswith(("5.", "6.")) and not shared:
-            raise ValueError("NET11 Builds " + version.split(".")[0] + " requires the shared release handoff; legacy inventory authority is unavailable.")
+        major, minor, patch = map(int, version.split("."))
+        if major < 4 or max(major, minor, patch) > 2147483647:
+            raise ValueError("Unsupported producer version.")
+        if major >= 5 and not shared:
+            raise ValueError("NET11 Builds " + str(major) + " requires the shared release handoff; legacy inventory authority is unavailable.")
         if publication["sourceRevision"] != producer["sourceRevision"] or publication["releaseTag"] != "v" + version:
             raise ValueError("Publication source/tag differs from the exact producer binding.")
         if publication["catalogSha256"] != catalog["sha256"]:
@@ -208,6 +208,8 @@ def inputs(prepared, authority, *, git, real, pin, tool, digest):
 
 def prepare(prepared, workspace, *, read=read_official, download=None, run=None):
     value = binding(prepared)
+    if int(value["publication"]["version"].split(".")[0]) < 5:
+        raise ConfigError("Module preparation requires a published .NET 11 Builds tool.")
     verify_handoff(value, read)
     publication = value["publication"]
     version, source = publication["version"], value["producer"]["sourceRevision"]
@@ -231,8 +233,7 @@ def prepare(prepared, workspace, *, read=read_official, download=None, run=None)
         path = extracted / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(body)
-    framework = "net11.0" if version.startswith(("5.", "6.")) else "net10.0"
-    prefix = "tools/" + framework + "/any/"
+    prefix = "tools/net11.0/any/"
     tool = extracted / prefix
     if hashlib.sha256(files.get(prefix + "Hexalith.Builds.Tooling.dll", b"")).hexdigest() != publication["toolingSha256"]:
         raise ConfigError("historical Tooling assembly SHA-256 differs")

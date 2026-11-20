@@ -133,8 +133,8 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         fail("$/docs", "expected off, warn or fail")
     if "additionalSdkVersion" in document:
         version = document["additionalSdkVersion"]
-        if not isinstance(version, str) or SDK_VERSION.fullmatch(version) is None:
-            fail("$/additionalSdkVersion", "expected an exact stable MAJOR.MINOR.PATCH SDK version")
+        if not isinstance(version, str) or SDK_VERSION.fullmatch(version) is None or not version.startswith("11.0."):
+            fail("$/additionalSdkVersion", "expected an exact stable .NET 11 SDK version")
     if "buildsTag" not in document:
         if repository != BUILDS_REPOSITORY or module_root:
             fail("$/buildsTag", "required outside Builds' own repository, including samples")

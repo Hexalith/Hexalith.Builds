@@ -606,8 +606,8 @@
     },
     "additionalSdkVersion": {
       "type": "string",
-      "pattern": "^(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)(?![\\s\\S])",
-      "description": "Optional exact SDK for older targeting packs and isolated package-consumer fixtures. Forwarded to shared CI preparation, never installed by a module action."
+      "pattern": "^11\\.0\\.(?:0|[1-9][0-9]*)(?![\\s\\S])",
+      "description": "Optional exact .NET 11 SDK for package-consumer fixtures. Forwarded to shared CI preparation, never installed by a module action."
     },
     "publishedBuilds": {
       "anyOf": [

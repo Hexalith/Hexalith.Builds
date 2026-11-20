@@ -23,7 +23,9 @@
     <HexalithAspNetCoreMvcTestingVersion>11.0.0</HexalithAspNetCoreMvcTestingVersion>
     <HexalithAspNetCoreTestHostVersion>11.0.0</HexalithAspNetCoreTestHostVersion>
     <HexalithAspNetCoreOpenIdConnectVersion>11.0.0</HexalithAspNetCoreOpenIdConnectVersion>
+    <_HexalithSelectCatalogEventStore Condition="'$(HexalithEventStoreVersion)' == ''">true</_HexalithSelectCatalogEventStore>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.4.0</HexalithEventStoreVersion>
+    <HexalithCatalogEventStoreVersion Condition="'$(_HexalithSelectCatalogEventStore)' == 'true'">$(HexalithEventStoreVersion)</HexalithCatalogEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.1</HexalithFrontComposerVersion>
@@ -534,4 +536,20 @@
   <!-- Metadata-only catalog copies do not require build-time analyzer selection. -->
   <Import Project="$(MSBuildThisFileDirectory)Logging.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)Logging.Build.targets')" />
   <Import Project="$(MSBuildThisFileDirectory)AspireAppHost.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)AspireAppHost.Build.targets')" />
+  <Target Name="ValidateHexalithFramework" BeforeTargets="PrepareForBuild">
+    <Error Condition="!$(NETCoreSdkVersion.StartsWith('11.0.')) or ('$(TargetFrameworkIdentifier)' != '.NETStandard' and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(TargetFrameworkVersion)' != 'v11.0'))"
+           Text="$(MSBuildProjectName) requires the .NET 11 SDK and a net11.0 target. Selected SDK $(NETCoreSdkVersion), framework $(TargetFramework)." />
+  </Target>
+  <Target Name="ValidateHexalithEventStoreReferences" AfterTargets="ResolveReferences"
+          Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <_HexalithResolvedEventStore Include="@(ReferencePath)" Condition="$([System.String]::Copy('%(ReferencePath.NuGetPackageId)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
+    </ItemGroup>
+    <XmlPeek Condition="'@(_HexalithResolvedEventStore)' != ''" XmlInputPath="$(MSBuildThisFileFullPath)"
+             Query="/Project/PropertyGroup/HexalithEventStoreVersion/text()">
+      <Output TaskParameter="Result" PropertyName="_HexalithCurrentEventStoreVersion" />
+    </XmlPeek>
+    <Error Condition="'@(_HexalithResolvedEventStore)' != '' and '%(_HexalithResolvedEventStore.NuGetPackageVersion)' != '$(_HexalithCurrentEventStoreVersion)'"
+           Text="$(MSBuildProjectName) resolved %(_HexalithResolvedEventStore.NuGetPackageId) %(_HexalithResolvedEventStore.NuGetPackageVersion). The Builds catalog requires $(_HexalithCurrentEventStoreVersion)." />
+  </Target>
 </Project>

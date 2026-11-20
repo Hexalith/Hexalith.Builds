@@ -296,7 +296,7 @@ def package_identity(data, *, package_id, version, sha):
         raise ReleaseError("invalid package metadata") from error
 
 
-def artifact_inventory(payload, *, sha, version, digest, repository, files=None, package_policies=None):
+def artifact_inventory(payload, *, sha, version, digest, repository, files=None, package_policies=None, package_paths=None):
     """Read bounded ZIP members in memory; inventory never supplies executable code."""
     if len(payload) > MAX_ARCHIVE or "sha256:" + hashlib.sha256(payload).hexdigest() != digest:
         raise ReleaseError("downloaded artifact digest mismatch")
@@ -328,6 +328,7 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None,
                     or manifest["sha"] != sha or manifest["version"] != version):
                 raise ReleaseError("release manifest source/version mismatch")
             expected, result, validated, policies = {"release-manifest.json"}, {}, {}, {}
+            paths_by_id = {}
             for kind, key, expression, suffix in (("packages", "id", PACKAGE_ID, ".nupkg"),
                                                   ("containers", "name", CONTAINER_NAME, ".tar")):
                 values = manifest[kind]
@@ -349,6 +350,7 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None,
                     validated[item["path"]] = data
                     if kind == "packages":
                         package_identity(data, package_id=item[key], version=version, sha=sha)
+                        paths_by_id[item[key]] = item["path"]
                         if item.get("verifyPublishedPackage"):
                             from package_archive import body_inventory
                             try:
@@ -368,6 +370,8 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None,
             # Expose original bytes only after the entire archive has passed.
             if files is not None:
                 files.update(validated)
+            if package_paths is not None:
+                package_paths.update(paths_by_id)
             if package_policies is not None:
                 package_policies.update(policies)
             return result

@@ -167,12 +167,11 @@ internal static partial class CatalogVersionMaterializer
         IReadOnlyList<string> projectNames = ConditionalProjectNames(pinnedFiles.Keys.Select(path => (
             Path: Path.Combine(treeDirectory, path),
             Text: ReadPinnedText(Path.Combine(treeDirectory, path)))));
-        Dictionary<string, string> versions = await EvaluateAsync(directory, catalogPath, "__HXW_DefaultCatalog__", pin, cancellationToken).ConfigureAwait(false);
-        Dictionary<string, IReadOnlyDictionary<string, string>> projectVersions = [with(StringComparer.OrdinalIgnoreCase)];
-        foreach (string projectName in projectNames)
-        {
-            projectVersions.Add(projectName, await EvaluateAsync(directory, catalogPath, projectName, pin, cancellationToken).ConfigureAwait(false));
-        }
+        const string defaultProject = "__HXW_DefaultCatalog__";
+        Dictionary<string, IReadOnlyDictionary<string, string>> projectVersions = await EvaluateCatalogViewsAsync(
+            directory, catalogPath, [defaultProject, .. projectNames], pin, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<string, string> versions = projectVersions[defaultProject];
+        _ = projectVersions.Remove(defaultProject);
 
         string catalogFileHash = pinnedFiles["Props/Directory.Packages.props"];
         CatalogVersionSnapshot snapshot = new(
@@ -280,7 +279,18 @@ internal static partial class CatalogVersionMaterializer
             try
             {
                 XDocument document = XDocument.Parse(catalog);
-                foreach (string condition in document.Root!.DescendantsAndSelf().Attributes("Condition")
+                foreach (XElement item in document.Root!.Elements("ItemGroup").Elements("HexalithCatalogConsumer"))
+                {
+                    string name = (string?)item.Attribute("Include") ?? string.Empty;
+                    if (!ConsumerName().IsMatch(name) || name is "." or ".." || name.Equals("__HXW_DefaultCatalog__", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidDataException($"Invalid catalog consumer identity '{name}'.");
+                    }
+
+                    _ = names.Add(name);
+                }
+
+                foreach (string condition in document.Root.DescendantsAndSelf().Attributes("Condition")
                     .Select(attribute => attribute.Value)
                     .Where(value => value.Contains("MSBuildProjectName", StringComparison.OrdinalIgnoreCase)))
                 {
@@ -309,6 +319,63 @@ internal static partial class CatalogVersionMaterializer
         }
 
         return [.. names.Order(StringComparer.Ordinal)];
+    }
+
+    private static async Task<Dictionary<string, IReadOnlyDictionary<string, string>>> EvaluateCatalogViewsAsync(
+        string directory, string catalogPath, IReadOnlyList<string> names, string pin, CancellationToken cancellationToken)
+    {
+        // Run a trusted driver in a separate SDK process. The task evaluates each pinned
+        // project without executing targets from any imported catalog.
+        string batch = Path.Combine(directory, "catalog-evaluations", Guid.NewGuid().ToString("N"));
+        EnsureDirectory(batch);
+        try
+        {
+            XElement projects = new("ItemGroup");
+            foreach (string name in names)
+            {
+                string wrapper = Path.Combine(batch, name + ".proj");
+                await WritePinnedTextAsync(wrapper, new XElement("Project", new XElement("Import", new XAttribute("Project", catalogPath))).ToString(), cancellationToken).ConfigureAwait(false);
+                projects.Add(new XElement("CatalogProject", new XAttribute("Include", wrapper)));
+            }
+
+            string driver = Path.Combine(batch, "evaluate.targets");
+            XElement root = new(
+                "Project",
+                projects,
+                new XElement("UsingTask", new XAttribute("TaskName", typeof(CatalogEvaluationTask).FullName!), new XAttribute("AssemblyFile", typeof(CatalogEvaluationTask).Assembly.Location)),
+                new XElement("Target", new XAttribute("Name", "Evaluate"), new XElement(nameof(CatalogEvaluationTask), new XAttribute("Projects", "@(CatalogProject)"))));
+            await WritePinnedTextAsync(driver, root.ToString(), cancellationToken).ConfigureAwait(false);
+            CompositionProcessResult result = await CompositionProcess.RunAsync(
+                CompositionProcess.CreateStartInfo("dotnet", ["msbuild", driver, "-t:Evaluate", "-nologo", "-noAutoResponse", "-nr:false"], directory, null),
+                TimeSpan.FromMinutes(2),
+                1_048_576,
+                cancellationToken).ConfigureAwait(false);
+            if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0)
+            {
+                throw Failure($"Pinned Builds catalog {pin} could not be evaluated: {result.ErrorOutput} {result.Output}", catalogPath);
+            }
+
+            Dictionary<string, IReadOnlyDictionary<string, string>> views = [with(StringComparer.OrdinalIgnoreCase)];
+            foreach (string name in names)
+            {
+                string path = Path.Combine(batch, name + ".proj.json");
+                if (new FileInfo(path).Length > 1_048_576)
+                {
+                    throw Failure($"Evaluated catalog for '{name}' exceeds the size limit.", catalogPath);
+                }
+
+                string json = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
+                Dictionary<string, string> values = JsonSerializer.Deserialize<Dictionary<string, string>>(json)
+                    ?? throw Failure($"Missing evaluated catalog for '{name}'.", catalogPath);
+                views.Add(name, new Dictionary<string, string>(values, StringComparer.OrdinalIgnoreCase));
+            }
+
+            return views;
+        }
+        finally
+        {
+            Directory.Delete(batch, recursive: true);
+        }
     }
 
     private static async Task<Dictionary<string, string>> EvaluateAsync(
@@ -410,6 +477,9 @@ internal static partial class CatalogVersionMaterializer
             throw Failure($"I/O failure writing pinned catalog snapshot '{path}': {exception.Message}", path);
         }
     }
+
+    [GeneratedRegex(@"\A[A-Za-z0-9_][A-Za-z0-9_.-]*\z", RegexOptions.CultureInvariant, 1000)]
+    private static partial Regex ConsumerName();
 
     [GeneratedRegex("[\\\"']\\$\\(MSBuildProjectName\\)[\\\"']\\s*(?:==|!=)\\s*[\\\"'](?<name>[A-Za-z0-9_.-]+)[\\\"']|[\\\"'](?<name>[A-Za-z0-9_.-]+)[\\\"']\\s*(?:==|!=)\\s*[\\\"']\\$\\(MSBuildProjectName\\)[\\\"']|\\$\\(MSBuildProjectName\\.Equals\\('(?<name>[A-Za-z0-9_.-]+)'\\)\\)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, 1000)]
     private static partial Regex ProjectNameCondition();

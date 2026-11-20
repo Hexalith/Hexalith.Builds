@@ -377,8 +377,9 @@ def _verify_environment(prepared, authority: dict, environment: BuildEnvironment
             raise ConfigError("published preparation state, identities or producer bytes changed")
         import published_builds
         version = published_builds.binding(prepared)["publication"]["version"]
-        framework = "net11.0" if version.startswith(("5.", "6.")) else "net10.0"
-        if environment.values["HexalithBuildsPublishedToolRoot"] != str(environment.workspace / "published" / "tools" / framework / "any"):
+        if int(version.split(".")[0]) < 5:
+            raise ConfigError("Module preparation requires a published .NET 11 Builds tool.")
+        if environment.values["HexalithBuildsPublishedToolRoot"] != str(environment.workspace / "published" / "tools" / "net11.0" / "any"):
             raise ConfigError("published tool root differs from verified workspace")
         return
     if (environment.workspace is None or environment.authority != authority or _inputs(prepared, authority, qualification=qualification) != environment.inputs

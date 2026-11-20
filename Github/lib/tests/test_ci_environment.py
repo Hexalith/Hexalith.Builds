@@ -499,7 +499,7 @@ if os.environ.get("FAIL_ENVIRONMENT_TOOL")==name:
         (self.root / ".github/hexalith-ci.json").write_text(json.dumps(self.fixture.document))
         (self.root / "fake-sdk.json").write_text(json.dumps(self.fixture.data))
 
-    def built_playwright(self, version="1.64.1", project="test/A space/A.Tests.csproj", framework="net10.0"):
+    def built_playwright(self, version="1.64.1", project="test/A space/A.Tests.csproj", framework="net11.0"):
         output = self.root / Path(project).parent / "bin/Release" / framework
         (output / ".playwright/package").mkdir(parents=True, exist_ok=True)
         (output / "playwright.ps1").write_text("# built package tooling")
@@ -630,7 +630,7 @@ else:
 
     def test_distinct_browser_versions_and_cross_targeted_repeated_outputs_install_once(self):
         first = self.built_playwright(version="1.60.0")
-        second = self.built_playwright(version="1.61.0", framework="net9.0")
+        second = self.built_playwright(version="1.61.0", framework="net11.0-windows")
         duplicate = self.built_playwright(version="1.61.0", project="test/Z.Tests/Z.Tests.csproj")
         self.fixture.data.update(cross=True, metadata={"test/Fixture.IntegrationTests.csproj": {
             "TargetPath": str(duplicate.parent / "Fixture.IntegrationTests.dll")}})
@@ -641,7 +641,7 @@ else:
         self.assertEqual([str(first), str(second)], [effect[1][3] for effect in effects])
         evaluated = {argument for command in self.fixture.commands() for argument in command
                      if argument.startswith("-p:TargetFramework=")}
-        self.assertEqual({"-p:TargetFramework=net10.0", "-p:TargetFramework=net9.0"}, evaluated)
+        self.assertEqual({"-p:TargetFramework=net11.0", "-p:TargetFramework=net11.0-windows"}, evaluated)
 
     def test_mixed_complete_and_incomplete_playwright_outputs_fail_before_installing_any_version(self):
         self.built_playwright(version="1.60.0")

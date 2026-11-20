@@ -61,8 +61,8 @@ if args[0] == "nuget":
         intermediate.write(b"intermediate signing archive")
 if args[0] == "msbuild":
     package = pathlib.Path(args[1]).stem
-    target = root / pathlib.Path(args[1]).parent / "bin/Release/net10.0" / (package+".dll")
-    values={"PackageId":package,"PackageVersion":version,"IsPackable":"true","TargetFramework":"net10.0",
+    target = root / pathlib.Path(args[1]).parent / "bin/Release/net11.0" / (package+".dll")
+    values={"PackageId":package,"PackageVersion":version,"IsPackable":"true","TargetFramework":"net11.0",
             "TargetFrameworks":"","TargetPath":str(target),"AssemblyName":package}
     values.update(data.get("metadata",{}).get(package,{}))
     print(json.dumps({"Properties":values}))
@@ -77,11 +77,11 @@ elif args[0] == "pack":
         with zipfile.ZipFile(feed / (package+"."+version+"."+suffix), "w") as archive:
             actual = "9.9.9" if package == data.get("wrong_archive_version") else version
             archive.writestr(package+".nuspec", "<package><metadata><id>"+package+"</id><version>"+actual+"</version></metadata></package>")
-            archive.writestr("lib/net10.0/"+package+(".dll" if suffix == "nupkg" else ".pdb"), b"built product")
+            archive.writestr("lib/net11.0/"+package+(".dll" if suffix == "nupkg" else ".pdb"), b"built product")
     if package == data.get("extra_archive"):
         (feed / "Unexpected.1.0.0.nupkg").write_bytes(b"extra")
     if package == data.get("rewrite_output"):
-        (root / pathlib.Path(args[1]).parent / "bin/Release/net10.0" / (package+".dll")).write_bytes(b"rebuilt")
+        (root / pathlib.Path(args[1]).parent / "bin/Release/net11.0" / (package+".dll")).write_bytes(b"rebuilt")
 elif args[0] == "restore":
     project=ET.parse(cwd / "Consumer.csproj")
     package=project.find(".//PackageReference").get("Include")
@@ -179,7 +179,7 @@ while True:
     if data.get("rewrite_symbols"):
         next(pathlib.Path(args[2]).parent.glob("*.snupkg")).write_bytes(b"changed symbols")
     if data.get("rewrite_output_during_signing"):
-        next(root.glob("src/*/bin/Release/net10.0/*.dll")).write_bytes(b"changed original assembly")
+        next(root.glob("src/*/bin/Release/net11.0/*.dll")).write_bytes(b"changed original assembly")
 elif args[:2] == ["nuget", "verify"]:
     try:
         with zipfile.ZipFile(args[2]) as archive:
@@ -198,7 +198,7 @@ elif args[0] == "build":
     assert '!= "'+version+'"' in (cwd / "Program.cs").read_text()
     if package == data.get("consumer_build_failure"):
         sys.exit(23)
-    output=cwd / "bin/Release/net10.0/Consumer.dll"
+    output=cwd / "bin/Release/net11.0/Consumer.dll"
     output.parent.mkdir(parents=True)
     output.write_text(package)
 else:
@@ -223,7 +223,7 @@ class ProductValidationTests(unittest.TestCase):
             project = self.root / relative
             project.parent.mkdir(parents=True)
             project.write_text("<Project />")
-            output = project.parent / "bin/Release/net10.0" / (identity + ".dll")
+            output = project.parent / "bin/Release/net11.0" / (identity + ".dll")
             output.parent.mkdir(parents=True)
             output.write_bytes(b"existing compiled assembly")
             output.with_suffix(".pdb").write_bytes(b"existing compiled symbols")
@@ -234,7 +234,7 @@ class ProductValidationTests(unittest.TestCase):
             consumers[identity] = consumer.relative_to(self.root).as_posix()
         self.manifest = {"packages": rows}
         self.contract = {"schema": "hexalith.product-validation.v1", "manifest": "packages.json",
-                         "archiveValidator": "validate.py", "targetFramework": "net10.0", "consumers": consumers}
+                         "archiveValidator": "validate.py", "targetFramework": "net11.0", "consumers": consumers}
         (self.root / "global.json").write_text('{"sdk":{"version":"11.0.100"}}')
         (self.root / "validate.py").write_text('''import json, os, pathlib, sys, zipfile
 root=pathlib.Path(os.environ["PRODUCT_TEST_ROOT"])
@@ -418,7 +418,7 @@ sys.exit(31 if data.get("validator_failure") else 0)
         self.assert_refused("duplicate package")
 
     def test_missing_existing_release_output_refuses_without_pack(self):
-        next(self.root.glob("src/*/bin/Release/net10.0/*.dll")).unlink()
+        next(self.root.glob("src/*/bin/Release/net11.0/*.dll")).unlink()
         self.assert_refused("existing Release assembly/symbol output is missing")
         self.assertFalse(any(item["args"][0] == "pack" for item in self.commands()))
 

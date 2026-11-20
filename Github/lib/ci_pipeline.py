@@ -70,7 +70,7 @@ def build_flags(nuget_config: Path = NUGET_CONFIG) -> list[str]:
 
 
 def test_flags(runner: str) -> list[str]:
-    """Adapt engine switches to SDK 10 MTP's in-process MSBuild evaluation.
+    """Adapt engine switches to MTP's in-process MSBuild evaluation.
 
     MTP forwards unknown switches to test applications: -noAutoResponse and
     -warnaserror cause an invalid-option handshake failure. Its in-process
@@ -156,6 +156,8 @@ def prepare_config(workspace: Path, *, repository: str, module_root: str = "",
     if (not isinstance(sdk, dict) or not isinstance(sdk.get("sdk"), dict)
             or not isinstance(sdk["sdk"].get("version"), str) or not sdk["sdk"]["version"]):
         raise PipelineError(f"{global_json}: sdk.version is required")
+    if not re.fullmatch(r"11\.0\.[0-9]{3}", sdk["sdk"]["version"]):
+        raise PipelineError(f"{global_json}: modules require a .NET 11 SDK (11.0.x)")
     test_runner(root)  # Reject malformed runner metadata before setup-dotnet.
     prefix = f"{module_root}/" if module_root else ""
     # In Builds' own repository, including a module-root fixture, the workspace

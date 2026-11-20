@@ -509,7 +509,7 @@ os.execv(REAL_GIT, [REAL_GIT, *args])
             target = module / project
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("<Project />")
-        output = module / "test/A space/bin/Release/net10.0"
+        output = module / "test/A space/bin/Release/net11.0"
         (output / ".playwright/package").mkdir(parents=True)
         (output / "playwright.ps1").write_text("# tooling")
         (output / "Microsoft.Playwright.dll").touch()
@@ -642,7 +642,7 @@ sys.exit(71)
         (self.root / "test/Fixture.E2E.Tests.csproj").write_text("<Project />")
         self.fixture.document["hooks"] = ["after-unit-tests"]
         self.fixture.document["registry"] = True
-        output = self.root / "test/A space/bin/Release/net10.0"
+        output = self.root / "test/A space/bin/Release/net11.0"
         (output / ".playwright/package").mkdir(parents=True)
         (output / "playwright.ps1").write_text("# tooling")
         (output / "Microsoft.Playwright.dll").touch()
@@ -673,7 +673,7 @@ args=sys.argv[1:]
 assert args[:2]==["test", "--project"]
 project=pathlib.Path(args[2])
 assert project.is_file()
-assert (project.parent / "bin/Release/net10.0" / (project.stem+".dll")).is_file()
+assert (project.parent / "bin/Release/net11.0" / (project.stem+".dll")).is_file()
 assert args[3:]==["--no-build", "--no-restore", "--configuration", "Release", "--stop-on-fail", "off"]
 with pathlib.Path("delegated-tests.jsonl").open("a") as stream:
     stream.write(json.dumps(args)+"\n")
@@ -683,7 +683,7 @@ sys.exit(int(os.environ.get("FAIL_DELEGATED_TEST", "0")))
         for name, lane in (("after-unit-tests", "HookTests"), ("sample-windows", "WindowsTests"),
                            ("sample-macos", "MacOSTests")):
             with self.subTest(action=name):
-                assembly = module / f"test/Hexalith.Sample.{lane}/bin/Release/net10.0/Hexalith.Sample.{lane}.dll"
+                assembly = module / f"test/Hexalith.Sample.{lane}/bin/Release/net11.0/Hexalith.Sample.{lane}.dll"
                 assembly.parent.mkdir(parents=True)
                 assembly.touch()
                 (module / f"test/Hexalith.Sample.{lane}/Hexalith.Sample.{lane}.csproj").touch()

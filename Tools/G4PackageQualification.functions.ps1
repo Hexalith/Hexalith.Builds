@@ -30,22 +30,9 @@ function Assert-PackagedHostCatalogViews {
     param([string] $CatalogPath = (Join-Path $PSScriptRoot '../Props/Directory.Packages.props'))
 
     $roles = @('Hexalith.Builds.Module.AppHost', 'Hexalith.Builds.Module.EventStoreHost', 'Hexalith.Builds.Module.UiHost')
-    [xml] $document = [IO.File]::ReadAllText($CatalogPath)
-    $selectors = @($document.SelectNodes('/Project/PropertyGroup/HexalithBuildsPackagedHostSdk42CatalogView'))
-    if ($selectors.Count -ne 2 -or $selectors[0].HasAttributes -or $selectors[0].InnerText -cne 'false' -or
-        $selectors[1].Attributes.Count -ne 1 -or $selectors[1].InnerText -cne 'true') {
-        throw 'Packaged host compatibility requires the exact finite default-false and named selector.'
-    }
-    $pattern = '\$\(MSBuildProjectName\.Equals\(''([^'']+)''\)\)'
-    $condition = $selectors[1].GetAttribute('Condition')
-    $names = @([regex]::Matches($condition, $pattern) | ForEach-Object { $_.Groups[1].Value })
-    if ($names.Count -ne 3 -or @($names | Select-Object -Unique -CaseInsensitive:$false).Count -ne 3 -or
-        @($names | Where-Object { $_ -cnotin $roles }).Count -ne 0 -or
-        ([regex]::Replace($condition, $pattern, 'NAME').Trim() -cnotmatch '^NAME(?:\s+or\s+NAME)*$')) {
-        throw 'Packaged host compatibility requires exactly the three admitted producer roles.'
-    }
     $pwsh = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
-    foreach ($role in $roles) {
+    $baseline = $null
+    foreach ($role in (@('Hexalith.Catalog.Default') + $roles)) {
         # Use a fresh process without inherited SDK, catalog, build-import or response-file selections.
         $start = [Diagnostics.ProcessStartInfo]::new($pwsh)
         $start.UseShellExecute = $false
@@ -75,13 +62,22 @@ function Assert-PackagedHostCatalogViews {
         $sdk = @($packages | Where-Object { $_.Identity.StartsWith('Hexalith.EventStore.', [StringComparison]::Ordinal) })
         $aspnet = @($packages | Where-Object Identity -CEQ 'Microsoft.AspNetCore.OpenApi')
         $openapi = @($packages | Where-Object Identity -CEQ 'Microsoft.OpenApi')
-        if ($sdk.Count -ne 13 -or @($sdk | Where-Object Version -CNE '4.2.0').Count -ne 0 -or
-            $aspnet.Count -ne 1 -or $aspnet[0].Version -cne '10.0.15' -or
-            $openapi.Count -ne 1 -or $openapi[0].Version -cne '2.13.0') {
-            throw "Packaged host '$role' changed its admitted SDK4.2/OpenAPI tuple."
+        $selection = [ordered] @{}
+        foreach ($package in (@($sdk) + @($aspnet) + @($openapi))) {
+            $selection.Add($package.Identity, $package.Version)
+        }
+        if ($null -eq $baseline) {
+            $baseline = $selection
+            $version = $selection['Hexalith.EventStore.Gateway']
+            if (-not $version -or $aspnet.Count -ne 1 -or $openapi.Count -ne 1 -or @($sdk | Where-Object Version -CNE $version).Count) {
+                throw 'The default EventStore family is incomplete or inconsistent.'
+            }
+        }
+        if ($baseline.Count -ne $selection.Count -or @($baseline.Keys | Where-Object { $selection[$_] -cne $baseline[$_] }).Count) {
+            throw "Packaged host '$role' differs from the default catalog."
         }
     }
-    return [string] $sdk[0].Version
+    return $version
 }
 
 function Get-VerifiedSourceCiRun {

@@ -295,8 +295,7 @@ Assert-SourceValidation -Qualification $qualification
 # Frozen v1 evidence is validated against its immutable schema, independently of the current default.
 $frozenV1Pins = Get-FrozenV1PlatformPins
 $qualifiedEventStoreVersion = $frozenV1Pins.eventStoreVersion
-$qualifiedHostSdk = Assert-PackagedHostCatalogViews
-if ($qualifiedHostSdk -cne $qualifiedEventStoreVersion) { throw 'The independently qualified host view differs from the immutable v1 contract.' }
+$null = Assert-PackagedHostCatalogViews
 
 $fixtureBinding = $qualification.fixtures
 if ($null -eq $fixtureBinding -or

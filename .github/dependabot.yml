@@ -27,6 +27,48 @@ updates:
       prefix: "ci(deps)"
 
   - package-ecosystem: nuget
+    ignore:
+      # The daily EventStore updater commits the complete family and audit together.
+      - dependency-name: "Hexalith.EventStore.*"
+    groups:
+      hexalith-applications:
+        patterns: ["Hexalith.Applications", "Hexalith.Applications.*"]
+      hexalith-chatbot:
+        patterns: ["Hexalith.Chatbot", "Hexalith.Chatbot.*"]
+      hexalith-commons:
+        patterns: ["Hexalith.Commons", "Hexalith.Commons.*"]
+      hexalith-conversations:
+        patterns: ["Hexalith.Conversations", "Hexalith.Conversations.*"]
+      hexalith-documents:
+        patterns: ["Hexalith.Documents", "Hexalith.Documents.*"]
+      hexalith-domains:
+        patterns: ["Hexalith.Domains", "Hexalith.Domains.*"]
+      hexalith-folders:
+        patterns: ["Hexalith.Folders", "Hexalith.Folders.*"]
+      hexalith-frontcomposer:
+        patterns: ["Hexalith.FrontComposer", "Hexalith.FrontComposer.*"]
+      hexalith-identitystores:
+        patterns: ["Hexalith.IdentityStores", "Hexalith.IdentityStores.*"]
+      hexalith-keyvaluestorages:
+        patterns: ["Hexalith.KeyValueStorages", "Hexalith.KeyValueStorages.*"]
+      hexalith-mcpcli:
+        patterns: ["Hexalith.McpCli", "Hexalith.McpCli.*"]
+      hexalith-memories:
+        patterns: ["Hexalith.Memories", "Hexalith.Memories.*"]
+      hexalith-netaspire:
+        patterns: ["Hexalith.NetAspire", "Hexalith.NetAspire.*"]
+      hexalith-parties:
+        patterns: ["Hexalith.Parties", "Hexalith.Parties.*"]
+      hexalith-polymorphicserializations:
+        patterns: ["Hexalith.PolymorphicSerializations", "Hexalith.PolymorphicSerializations.*"]
+      hexalith-projects:
+        patterns: ["Hexalith.Projects", "Hexalith.Projects.*"]
+      hexalith-security:
+        patterns: ["Hexalith.Security", "Hexalith.Security.*"]
+      hexalith-tenants:
+        patterns: ["Hexalith.Tenants", "Hexalith.Tenants.*"]
+      hexalith-works:
+        patterns: ["Hexalith.Works", "Hexalith.Works.*"]
     directory: "/"
     schedule:
       interval: weekly
