@@ -103,6 +103,16 @@ class ReleaseVersionTests(unittest.TestCase):
             self.assertIsNone(self.analyze([f"{kind}!: change"], "builds"))
         self.assertEqual("minor", self.analyze(["feat: feature"], "builds"))
 
+    def test_packaged_readme_scope_releases_only_modules(self):
+        self.git("tag", "v2.3.4")
+        self.commit("docs(readme): revise package quickstart")
+        self.assertEqual("2.3.5", self.compute()["version"])
+        self.assertEqual("true", self.compute(selection="builds")["no-version"])
+        for message in ("docs: revise guide", "docs(guides): revise guide", "docs(readme-extra): revise guide"):
+            with self.subTest(message=message):
+                self.assertIsNone(self.analyze([message]))
+        self.assertEqual("minor", self.analyze(["docs(readme): update sample", "feat: add capability"]))
+
     def test_builds_rules_and_sample_context_cannot_be_selected_by_modules(self):
         for repository, selection, root in ((MODULE, "builds", ""),
                 (BUILDS, "builds", "Samples/Hexalith.Sample"),

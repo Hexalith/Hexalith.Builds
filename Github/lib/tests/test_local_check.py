@@ -198,6 +198,16 @@ else:
                                  if name and (git.root / name).is_file()})
         return observations
 
+    def test_local_fail_mode_reports_stale_readme_badge_without_sdk(self):
+        self.document["docs"] = "fail"
+        self.module.write("README.md", "![CI](https://github.com/Example/Fixture/actions/workflows/old.yml/badge.svg)")
+        self.record()
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), self.assertRaisesRegex(ci_pipeline.PipelineError, "README checks failed"):
+            self.run_check()
+        self.assertIn('"rule": "D-BADGE"', output.getvalue())
+        self.assertEqual([], self.commands())
+
     def test_none_runs_real_guard_and_empty_range_without_sdk_or_actions_outputs(self):
         before = self.unchanged()
         output = self.root / "output"

@@ -24,6 +24,12 @@
     "schema": {
       "const": "hexalith.ci.v1"
     },
+    "docs": {
+      "description": "Apply README checks in warning or failing mode. The renderer enables warnings on adoption of this contract. Previously delivered documents may omit this field.",
+      "type": "string",
+      "enum": ["off", "warn", "fail"],
+      "default": "warn"
+    },
     "buildsTag": {
       "type": "string",
       "description": "Exact stable release tag. Required by the loader outside Builds itself, including samples.",

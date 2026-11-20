@@ -165,7 +165,8 @@ Supported types and their usual release effect are:
 | --- | --- | --- |
 | `feat` | New feature | Minor |
 | `fix` | Bug fix | Patch |
-| `docs` | Documentation only | None |
+| `docs(readme)` | Republish an updated package README through the shared module release | Patch in modules |
+| `docs` | Other documentation | None |
 | `style` | Formatting or whitespace | None |
 | `refactor` | Refactoring without a feature or fix | None |
 | `perf` | Performance improvement | Patch |

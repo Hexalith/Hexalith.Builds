@@ -42,6 +42,7 @@ def release_rules(repository, selection, module_root=""):
                       {"type": "!(docs|test|style)", "breaking": True, "release": "major"},
                       {"type": "feat", "release": "minor"}])
     else:
+        rules.append({"type": "docs", "scope": "readme", "release": "patch"})
         for kind, increment in (("feat", "minor"), ("fix", "patch"), ("perf", "patch")):
             rules.extend([{"type": kind, "release": increment},
                           {"type": kind, "breaking": True, "release": "major"}])

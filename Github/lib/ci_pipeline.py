@@ -167,6 +167,15 @@ def prepare_config(workspace: Path, *, repository: str, module_root: str = "",
                           prefix + "global.json", submodules)
 
 
+def check_documentation(prepared: PreparedConfig, repository: str, *, summary: Path | None = None) -> None:
+    mode = prepared.document.get("docs", "off")
+    if mode == "off":
+        return
+    from docs_check import check
+    if not check(prepared.root, repository, mode, summary=summary):
+        raise PipelineError("README checks failed; fix the reported findings")
+
+
 def initialize_submodules(prepared: PreparedConfig) -> None:
     """Initialize only explicit gitlinks declared in the checkout's root file."""
     if not prepared.submodules:
@@ -624,6 +633,8 @@ def main() -> int:
         prepared = prepare_config(args.workspace, repository=args.repository,
                                   module_root=args.module_root, expected_source=args.expected_source)
         if args.phase in ("prepare", "all"):
+            summary = os.environ.get("GITHUB_STEP_SUMMARY")
+            check_documentation(prepared, args.repository, summary=Path(summary) if summary else None)
             initialize_submodules(prepared)
             write_outputs(prepared, repository=args.repository)
         if args.phase in ("build", "unit", "integration", "all") and (prepared.document.get("moduleManifest") or prepared.document.get("publishedBuilds")):

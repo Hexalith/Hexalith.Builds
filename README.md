@@ -137,8 +137,22 @@ python3 references/Hexalith.Builds/check.py
 
 It runs the same guard, Release package-mode restore/build and classified unit
 test executors as CI stages 1–3. All tests in a failing project complete, and
-later projects stop. `solution: "none"` runs the guard alone. The command does
+later projects stop. `solution: "none"` runs the guard and any enabled README checks. The command does
 not run hooks, integration tests or environment setup, and installs no Git hook.
+
+The optional `docs` setting in the delivered CI configuration selects `off`,
+`warn` or `fail`. The next schema-aware CiCd render enables warnings by
+default. Older configurations with no setting skip this check. After the guard,
+the reusable CI prepare stage and local checker examine the root README and
+README files alongside projects under `src/libraries/`. The check reports
+missing or unreadable README files at the root, README length over 150 lines,
+and badges naming a missing local workflow. Each finding includes its file,
+line, rule ID and correction hint. Network access is unnecessary for these
+checks. Preview them on uncommitted documentation with the same implementation:
+
+```bash
+python3 references/Hexalith.Builds/Github/lib/docs_check.py --root . --mode warn
+```
 
 Commit all module inputs first. Builds and every dependency listed in
 `.github/hexalith-ci.json` must already be initialized at the module HEAD's
@@ -1402,6 +1416,12 @@ Releases are driven by semantic-release and Angular Conventional Commits.
 Release jobs analyze commits, calculate the next version, create a Git tag and
 GitHub release, and publish the configured tool or NuGet packages. They do not
 commit generated release files back to protected branches.
+
+In modules using the shared `release.yml`, a documentation change with the
+exact scope `readme` selects a patch so NuGet can display the updated packaged
+README. Use `docs(readme)` for a change to the README shipped in a package.
+Other documentation scopes leave the module version unchanged. The normal
+CI, approval, and publication checks still apply.
 
 Builds uses the local shared `release.yml` runtime and caller-owned
 `Github/publish` composite. Manual dispatch on main requires green exact-source

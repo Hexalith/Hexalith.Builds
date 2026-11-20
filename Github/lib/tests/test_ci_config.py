@@ -33,6 +33,21 @@ class SharedContractTests(unittest.TestCase):
         Draft202012Validator.check_schema(SCHEMA)
         cls.validator = Draft202012Validator(SCHEMA)
 
+    def test_docs_mode_is_optional_and_strict(self):
+        document = copy.deepcopy(CORPUS[0]["document"])
+        self.validator.validate(document)
+        CONFIG.validate_config(document, repository=BUILDS)
+        for mode in ("off", "warn", "fail", "invalid", {}, True):
+            with self.subTest(mode=mode):
+                document["docs"] = mode
+                if mode in ("off", "warn", "fail"):
+                    self.validator.validate(document)
+                    CONFIG.validate_config(document, repository=BUILDS)
+                else:
+                    self.assertFalse(self.validator.is_valid(document))
+                    with self.assertRaisesRegex(CONFIG.ConfigError, "expected off, warn or fail"):
+                        CONFIG.validate_config(document, repository=BUILDS)
+
     def test_shared_positive_and_negative_fixtures_agree(self):
         self.assertEqual(len(CORPUS), len({case["name"] for case in CORPUS}))
         self.assertTrue(any(case["valid"] for case in CORPUS))

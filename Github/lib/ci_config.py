@@ -128,7 +128,9 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
     closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes",
                                          "moduleManifest", "windowsCheckout", "additionalSdkVersion",
                                          "releaseTimeoutMinutes", "nightlyTimeoutMinutes", "prerequisites",
-                                         "publishedBuilds", "buildProjects")), "$")
+                                         "publishedBuilds", "buildProjects", "docs")), "$")
+    if "docs" in document and document["docs"] not in ("off", "warn", "fail"):
+        fail("$/docs", "expected off, warn or fail")
     if "additionalSdkVersion" in document:
         version = document["additionalSdkVersion"]
         if not isinstance(version, str) or SDK_VERSION.fullmatch(version) is None:
