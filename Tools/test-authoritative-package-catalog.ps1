@@ -255,12 +255,12 @@ function Test-OwnedCatalogView {
     param([string] $ProjectName, [string] $ExpectedSdk, [string] $ExpectedAspNetOpenApi,
           [string] $ExpectedOpenApi, [string] $ExpectedPartiesView, [string] $ExpectedPlatformView,
           [string] $SelectedSdk = '', [string] $ExpectedBuildsHostView = 'false',
-          [string] $ExpectedOpenIdConnect = '11.0.0', [string] $ExpectedFrontComposerView = 'false',
+          [string] $ExpectedOpenIdConnect = '11.0.0', [string] $ExpectedFrontComposerView = 'false', [string] $TargetFramework = 'net11.0',
           [string] $ExpectedImmutable = '11.0.0', [string] $ExpectedImmutableView = 'false',
           [string] $SelectedMemories = '', [string] $SelectedTenants = '', [string] $UseProjectReferences = '', [string] $EventStoreFromSource = '', [string] $McpCliFromSource = '', [string] $SelectedMcpCli = '')
     $probe = Join-Path $viewProbeRoot "$ProjectName.proj"
     $escapedCatalog = [Security.SecurityElement]::Escape([IO.Path]::GetFullPath($catalogPath))
-    [IO.File]::WriteAllText($probe, "<Project><Import Project=`"$escapedCatalog`" /></Project>")
+    [IO.File]::WriteAllText($probe, "<Project><Import Project=`"$escapedCatalog`" /><PropertyGroup><TargetFramework>$TargetFramework</TargetFramework></PropertyGroup></Project>")
     $stdout = Join-Path $viewProbeRoot 'evaluation.stdout'
     $stderr = Join-Path $viewProbeRoot 'evaluation.stderr'
     $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" }; if ($SelectedMemories) { "-p:HexalithMemoriesVersion=$SelectedMemories" }; if ($SelectedTenants) { "-p:HexalithTenantsVersion=$SelectedTenants" }; if ($UseProjectReferences) { "-p:UseHexalithProjectReferences=$UseProjectReferences" }; if ($EventStoreFromSource) { "-p:HexalithEventStoreFromSource=$EventStoreFromSource" }; if ($McpCliFromSource) { "-p:HexalithMcpCliFromSource=$McpCliFromSource" }; if ($SelectedMcpCli) { "-p:HexalithMcpCliVersion=$SelectedMcpCli" })
@@ -379,9 +379,14 @@ try {
                         'Hexalith.FrontComposer.Testing', 'Hexalith.FrontComposer.Testing.Tests',
                         'Hexalith.FrontComposer.UI', 'Hexalith.FrontComposer.UI.Tests')) {
         Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
-            -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true' `
+            -TargetFramework 'net10.0' -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true' `
             -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
     }
+    Test-OwnedCatalogView 'Hexalith.FrontComposer.UI' '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
+        -ExpectedFrontComposerView 'true' -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
+    Test-OwnedCatalogView 'Hexalith.FrontComposer.UI' '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
+        -TargetFramework 'net10.0-windows' -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true' `
+        -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
     # These net10 consumers need the Immutable view without the separate Shell/OpenIdConnect view.
     foreach ($name in @('Hexalith.FrontComposer.Cli', 'Hexalith.FrontComposer.Cli.Tests',
                         'Hexalith.FrontComposer.Contracts', 'Hexalith.FrontComposer.Contracts.Tests',
