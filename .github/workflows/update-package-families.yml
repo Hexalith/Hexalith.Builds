@@ -51,10 +51,27 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Check for a previous proposal
+        id: previous
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="automation/$FAMILY-$VERSION"
+          state=$(gh pr list --state all --head "$branch" --base main --limit 1 --json state --jq '.[0].state // "NONE"')
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          status=0
+          git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null || status=$?
+          case "$status" in
+            0) echo 'exists=true' >> "$GITHUB_OUTPUT" ;;
+            2) echo 'exists=false' >> "$GITHUB_OUTPUT" ;;
+            *) exit "$status" ;;
+          esac
       - uses: ./Github/initialize-dotnet
+        if: steps.previous.outputs.state == 'NONE' && steps.previous.outputs.exists == 'false'
         with:
           global-json-file: global.json
       - name: Commit the family selection and its revision-bound audit
+        if: steps.previous.outputs.state == 'NONE' && steps.previous.outputs.exists == 'false'
         shell: bash
         run: |
           python3 Tools/ci/update_package_family.py --apply "$FAMILY" "$VERSION"
@@ -69,6 +86,7 @@ jobs:
           git add Tools/package-version-audit.json
           git commit -m "build(deps): refresh $FAMILY audit"
       - name: Open the update for review and run CI on the audited revision
+        if: steps.previous.outputs.state == 'NONE' || steps.previous.outputs.state == 'OPEN'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

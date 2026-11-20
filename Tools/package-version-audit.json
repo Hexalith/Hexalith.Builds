@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "bcca8e34949fc42c8229c4aa00884014754cd6ff",
+  "generatedFromRevision": "602159eb036805799d9ba6c1ad1532b07f99c603",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "3e414e81f51ac2c094452134ac56fbe1579f38f78b004a59e62af993e43eba02",
-  "catalogRawSha256": "92a0d869109434b662f8f05d6d89146873c6bd36d277e3d8d1638cf6e6f68588",
+  "catalogSha256": "6b098000956d60acf57d006cf3feda1bc59162294ec996a8ec69de16b90dda2e",
+  "catalogRawSha256": "214a23ceaa433ba2e4dec5bcd3a90b15f29660b4dce034a440f0affc4d8df3bf",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-20T15:47:26.4504721+00:00",
+    "auditedAtUtc": "2026-11-20T15:59:27.7704890+00:00",
     "refreshedFamilies": [
       "hexalith-eventstore"
     ],
@@ -182,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "bcca8e34949fc42c8229c4aa00884014754cd6ff",
+    "repositoryRevision": "602159eb036805799d9ba6c1ad1532b07f99c603",
     "sha256": "fc77d5d9054aac09aec66cea0aaac9a4a8fe35949354fac948fd4f5360bcf153",
     "entries": [
       {
@@ -9491,8 +9491,8 @@
         "test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-20T15:47:26.4504721+00:00",
-        "generatedFromRevision": "bcca8e34949fc42c8229c4aa00884014754cd6ff",
+        "auditedAtUtc": "2026-11-20T15:59:27.7704890+00:00",
+        "generatedFromRevision": "602159eb036805799d9ba6c1ad1532b07f99c603",
         "familySelectionSha256": "64937eebbf65127013debc995d73d15f01021ed6493160fd1ffa1b36c7a64439",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "b551152f4bbd46538fe60a429eb8dfa4e2286a18edc0106a514f9b8debc2e102",
