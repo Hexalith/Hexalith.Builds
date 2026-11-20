@@ -1,6 +1,7 @@
 """Propose complete stable releases for the Hexalith families in the catalog audit."""
 
 import argparse
+import gzip
 from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
@@ -27,6 +28,15 @@ def stable_versions(package):
         return {version for version in json.load(response)["versions"] if VERSION.fullmatch(version)}
 
 
+def listed(package, version):
+    url = f"https://api.nuget.org/v3/registration5-gz-semver2/{package.lower()}/{version}.json"
+    with urlopen(url, timeout=30) as response:
+        raw = response.read()
+    if raw.startswith(b"\x1f\x8b"):
+        raw = gzip.decompress(raw)
+    return json.loads(raw)["listed"] is True
+
+
 def replace_version(content, pattern, old, new):
     pattern = pattern.encode() + re.escape(old.encode()) + rb'(?=["<])'
     updated, count = re.subn(pattern, lambda match: match[1] + new.encode(), content)
@@ -35,15 +45,17 @@ def replace_version(content, pattern, old, new):
     return updated
 
 
-def newest_complete_release(rows, published):
+def newest_complete_release(rows, published, is_listed=listed):
     if any(row["selectedVersion"] not in versions for row, versions in zip(rows, published, strict=True)):
         raise ValueError("A selected family member is missing from NuGet")
     common = {version for version in set.intersection(*published) if VERSION.fullmatch(version)}
-    if not common:
-        return None
-    latest = max(common, key=version_key)
-    current = max((row["selectedVersion"] for row in rows), key=version_key)
-    return latest if version_key(latest) > version_key(current) else None
+    current = max(version_key(row["selectedVersion"]) for row in rows)
+    for candidate in sorted(common, key=version_key, reverse=True):
+        if version_key(candidate) <= current:
+            break
+        if all(is_listed(row["id"], candidate) for row in rows):
+            return candidate
+    return None
 
 
 def update_family(content, rows, latest):

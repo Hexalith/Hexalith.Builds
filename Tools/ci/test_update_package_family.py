@@ -8,7 +8,8 @@ class PackageFamilies(unittest.TestCase):
     def test_partial_and_prerelease_publications_do_not_move_the_family(self):
         rows = [{"id": "a", "selectedVersion": "5.4.0"}, {"id": "b", "selectedVersion": "5.4.0"}]
         self.assertIsNone(newest_complete_release(rows, [{"5.4.0", "6.0.0", "7.0.0-rc.1"}, {"5.4.0", "7.0.0-rc.1"}]))
-        self.assertEqual("6.0.0", newest_complete_release(rows, [{"5.4.0", "6.0.0"}] * 2))
+        self.assertEqual("6.0.0", newest_complete_release(rows, [{"5.4.0", "6.0.0"}] * 2, lambda *_: True))
+        self.assertIsNone(newest_complete_release(rows, [{"5.4.0", "6.0.0"}] * 2, lambda package, _: package == "a"))
         with self.assertRaises(ValueError):
             newest_complete_release(rows, [{"5.4.0"}, {"6.0.0"}])
 

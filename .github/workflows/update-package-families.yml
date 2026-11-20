@@ -81,7 +81,8 @@ jobs:
             gh pr create --base main --head "$branch" --title "build(deps): update $FAMILY to $VERSION" --body 'Updates the family and its audit together. Merge with a merge commit to retain the source revision recorded by the audit.'
           fi
           # Pull requests created with GITHUB_TOKEN need an explicit CI dispatch.
-          runs=$(gh run list --workflow builds-ci.yml --branch "$branch" --event workflow_dispatch --limit 1 --json databaseId --jq length)
+          revision=$(git ls-remote --exit-code origin "refs/heads/$branch" | cut -f1)
+          runs=$(gh run list --workflow builds-ci.yml --commit "$revision" --branch "$branch" --event workflow_dispatch --limit 1 --json databaseId --jq length)
           if [ "$runs" = 0 ]; then
             gh workflow run builds-ci.yml --ref "$branch"
           fi

@@ -537,8 +537,20 @@
   <Import Project="$(MSBuildThisFileDirectory)Logging.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)Logging.Build.targets')" />
   <Import Project="$(MSBuildThisFileDirectory)AspireAppHost.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)AspireAppHost.Build.targets')" />
   <Target Name="ValidateHexalithFramework" BeforeTargets="PrepareForBuild">
-    <Error Condition="!$(NETCoreSdkVersion.StartsWith('11.0.')) or ('$(TargetFrameworkIdentifier)' != '.NETStandard' and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(TargetFrameworkVersion)' != 'v11.0'))"
+    <Error Condition="!$(NETCoreSdkVersion.StartsWith('11.0.')) or !(('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFrameworkVersion)' == 'v11.0') or ('$(IsRoslynComponent)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETStandard' and '$(TargetFrameworkVersion)' == 'v2.0'))"
            Text="$(MSBuildProjectName) requires the .NET 11 SDK and a net11.0 target. Selected SDK $(NETCoreSdkVersion), framework $(TargetFramework)." />
+  </Target>
+  <Target Name="ValidateHexalithEventStoreSelection" BeforeTargets="CollectPackageReferences" Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+    <ItemGroup>
+      <_HexalithEventStoreDependency Include="@(PackageReference)" Condition="$([System.String]::Copy('%(PackageReference.Identity)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
+      <_HexalithEventStoreRow Include="@(PackageVersion)" Condition="$([System.String]::Copy('%(PackageVersion.Identity)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
+    </ItemGroup>
+    <XmlPeek Condition="'@(_HexalithEventStoreDependency)' != ''" XmlInputPath="$(MSBuildThisFileFullPath)"
+             Query="/Project/PropertyGroup/HexalithEventStoreVersion/text()">
+      <Output TaskParameter="Result" PropertyName="_HexalithCurrentEventStoreVersion" />
+    </XmlPeek>
+    <Error Condition="'@(_HexalithEventStoreDependency)' != '' and '%(_HexalithEventStoreRow.Version)' != '$(_HexalithCurrentEventStoreVersion)'"
+           Text="$(MSBuildProjectName) selects %(_HexalithEventStoreRow.Identity) %(_HexalithEventStoreRow.Version). Restore the Builds catalog version $(_HexalithCurrentEventStoreVersion)." />
   </Target>
   <Target Name="ValidateHexalithEventStoreReferences" AfterTargets="ResolveReferences"
           Condition="'$(Configuration)' == 'Release'">
