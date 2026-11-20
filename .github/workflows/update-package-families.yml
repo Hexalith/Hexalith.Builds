@@ -79,7 +79,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git switch -c "automation/$FAMILY-$VERSION"
           cp Tools/package-version-audit.json "$RUNNER_TEMP/prior-audit.json"
-          git add Props/Directory.Packages.props
+          git add Props/Directory.Packages.props Props/release-declarations.json
           git commit -m "build(deps): update $FAMILY to $VERSION"
           pwsh -NoProfile -File Tools/audit-central-package-versions.ps1 -ChangedFamily "$FAMILY" -PriorAuditPath "$RUNNER_TEMP/prior-audit.json" -OutputPath Tools/package-version-audit.json
           pwsh -NoProfile -File Tools/validate-package-version-audit.ps1

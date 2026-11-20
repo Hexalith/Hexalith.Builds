@@ -108,7 +108,12 @@ def main():
         family, latest = args.apply
         if not VERSION.fullmatch(latest):
             raise ValueError("Expected a stable release")
-        CATALOG.write_bytes(update_family(content, families[family], latest))
+        updated = update_family(content, families[family], latest)
+        from release_declarations import OWNERS, record
+        owner = family.removeprefix("hexalith-")
+        if owner in OWNERS:
+            record(owner, latest)
+        CATALOG.write_bytes(updated)
         return
     changes = []
     with ThreadPoolExecutor(max_workers=4) as pool:
