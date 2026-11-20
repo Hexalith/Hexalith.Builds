@@ -122,6 +122,9 @@ jobs:
           --configuration Release -p:UseHexalithProjectReferences=false
           -p:RestoreConfigFile="${{ github.workspace }}/NuGet.ci.Config"
 
+      - name: Test coordinated family updates
+        run: python3 -m unittest discover -s Tools/ci -p test_update_package_family.py
+
       - name: Validate central package versions
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1
