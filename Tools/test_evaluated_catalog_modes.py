@@ -72,13 +72,26 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
 
     def test_named_package_snapshots_ignore_inherited_source_mode(self):
         with patch.dict(os.environ, {"UseHexalithProjectReferences": "true"}):
-            for name in ("Hexalith.Parties", "Hexalith.Platform.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost"):
+            for name in ("Hexalith.Platform.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost"):
                 with self.subTest(name=name):
                     properties, versions = evaluate_catalog(CATALOG, consumer_project_name=name)
                     self.assertEqual("4.2.0", properties["HexalithEventStoreVersion"])
                     self.assertEqual("10.0.15", versions["Microsoft.AspNetCore.OpenApi"])
                     self.assertEqual("2.13.0", versions["Microsoft.OpenApi"])
                     self.assertEqual("2.0.1", versions["Hexalith.McpCli.Abstractions"])
+
+    def test_parties_package_snapshots_use_the_current_cohort(self):
+        for name in ("Hexalith.Parties", "Hexalith.Parties.Contracts", "Hexalith.Parties.EventStoreGateway.TestHost",
+                     "Hexalith.Parties.Platform.AttachedLifecycleTests"):
+            with self.subTest(name=name):
+                properties, versions = evaluate_catalog(CATALOG, consumer_project_name=name)
+                self.assertEqual("5.4.0", properties["HexalithEventStoreVersion"])
+                self.assertEqual("5.4.0", versions["Hexalith.EventStore.Gateway"])
+                self.assertEqual("4.1.0", versions["Hexalith.Memories.Contracts"])
+                self.assertEqual("8.0.2", versions["Hexalith.Tenants.Contracts"])
+                self.assertEqual("3.0.0", versions["Hexalith.McpCli.Abstractions"])
+                self.assertEqual("11.0.0", versions["Microsoft.AspNetCore.OpenApi"])
+                self.assertEqual("3.11.1", versions["Microsoft.OpenApi"])
 
     def test_unknown_snapshot_retains_the_unqualified_current_catalog(self):
         _, versions = evaluate_catalog(CATALOG, consumer_project_name="Hexalith.Platform.EventStoreHost.Future")

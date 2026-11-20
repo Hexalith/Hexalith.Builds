@@ -171,7 +171,7 @@ foreach ($family in $cohortFamilies.GetEnumerator()) {
 }
 
 # Clean probes keep current defaults and explicit historical views independently evaluated.
-$partiesSdk42Consumers = @(
+$partiesConsumers = @(
     'Hexalith.Parties'
     'Hexalith.Parties.AdminPortal'
     'Hexalith.Parties.AdminPortal.Tests'
@@ -253,7 +253,7 @@ $viewProbeRoot = Join-Path ([IO.Path]::GetTempPath()) "sdk42-catalog-views-$([Gu
 $viewCount = 0
 function Test-OwnedCatalogView {
     param([string] $ProjectName, [string] $ExpectedSdk, [string] $ExpectedAspNetOpenApi,
-          [string] $ExpectedOpenApi, [string] $ExpectedPartiesView, [string] $ExpectedPlatformView,
+          [string] $ExpectedOpenApi, [string] $ExpectedPlatformView,
           [string] $SelectedSdk = '', [string] $ExpectedBuildsHostView = 'false',
           [string] $ExpectedOpenIdConnect = '11.0.0', [string] $ExpectedFrontComposerView = 'false', [string] $TargetFramework = 'net11.0',
           [string] $ExpectedImmutable = '11.0.0', [string] $ExpectedImmutableView = 'false',
@@ -264,11 +264,11 @@ function Test-OwnedCatalogView {
     $stdout = Join-Path $viewProbeRoot 'evaluation.stdout'
     $stderr = Join-Path $viewProbeRoot 'evaluation.stderr'
     $properties = @(if ($SelectedSdk) { "-p:HexalithEventStoreVersion=$SelectedSdk" }; if ($SelectedMemories) { "-p:HexalithMemoriesVersion=$SelectedMemories" }; if ($SelectedTenants) { "-p:HexalithTenantsVersion=$SelectedTenants" }; if ($UseProjectReferences) { "-p:UseHexalithProjectReferences=$UseProjectReferences" }; if ($EventStoreFromSource) { "-p:HexalithEventStoreFromSource=$EventStoreFromSource" }; if ($McpCliFromSource) { "-p:HexalithMcpCliFromSource=$McpCliFromSource" }; if ($SelectedMcpCli) { "-p:HexalithMcpCliVersion=$SelectedMcpCli" })
-    $expectedMemories = if ($SelectedMemories) { $SelectedMemories } elseif ($ExpectedSdk -ceq '4.2.0' -and ($ExpectedPartiesView -ceq 'true' -or $ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '3.0.27' } else { '4.1.0' }
-    $expectedTenants = if ($SelectedTenants) { $SelectedTenants } elseif ($ExpectedSdk -ceq '4.2.0' -and ($ExpectedPartiesView -ceq 'true' -or $ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '7.0.7' } else { '8.0.2' }
-    $expectedMcpCli = if ($SelectedMcpCli) { $SelectedMcpCli } elseif ($ExpectedSdk -ceq '4.2.0' -and ($UseProjectReferences -cne 'true' -or $McpCliFromSource -ceq 'false') -and ($ExpectedPartiesView -ceq 'true' -or $ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '2.0.1' } else { '3.0.0' }
+    $expectedMemories = if ($SelectedMemories) { $SelectedMemories } elseif ($ExpectedSdk -ceq '4.2.0' -and ($ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '3.0.27' } else { '4.1.0' }
+    $expectedTenants = if ($SelectedTenants) { $SelectedTenants } elseif ($ExpectedSdk -ceq '4.2.0' -and ($ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '7.0.7' } else { '8.0.2' }
+    $expectedMcpCli = if ($SelectedMcpCli) { $SelectedMcpCli } elseif ($ExpectedSdk -ceq '4.2.0' -and ($UseProjectReferences -cne 'true' -or $McpCliFromSource -ceq 'false') -and ($ExpectedPlatformView -ceq 'true' -or $ExpectedBuildsHostView -ceq 'true')) { '2.0.1' } else { '3.0.0' }
     & dotnet msbuild $probe -nologo -noAutoResponse -nr:false @properties `
-        -getProperty:HexalithEventStoreVersion,HexalithMemoriesVersion,HexalithTenantsVersion,HexalithPartiesSdk42CatalogView,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView,HexalithFrontComposerImmutable10CatalogView,HexalithImmutableVersion `
+        -getProperty:HexalithEventStoreVersion,HexalithMemoriesVersion,HexalithTenantsVersion,HexalithPlatformSdk42CatalogView,HexalithBuildsPackagedHostSdk42CatalogView,HexalithFrontComposerNet10CatalogView,HexalithFrontComposerImmutable10CatalogView,HexalithImmutableVersion `
         -getItem:PackageVersion 1> $stdout 2> $stderr
     if ($LASTEXITCODE -ne 0) { throw "Clean catalog view '$ProjectName' failed: $([IO.File]::ReadAllText($stderr))" }
     $observed = [IO.File]::ReadAllText($stdout) | ConvertFrom-Json
@@ -281,7 +281,6 @@ function Test-OwnedCatalogView {
     if ($observed.Properties.HexalithEventStoreVersion -cne $ExpectedSdk -or
         $observed.Properties.HexalithMemoriesVersion -cne $expectedMemories -or
         $observed.Properties.HexalithTenantsVersion -cne $expectedTenants -or
-        $observed.Properties.HexalithPartiesSdk42CatalogView -cne $ExpectedPartiesView -or
         $observed.Properties.HexalithPlatformSdk42CatalogView -cne $ExpectedPlatformView -or
         $observed.Properties.HexalithBuildsPackagedHostSdk42CatalogView -cne $ExpectedBuildsHostView -or
         $observed.Properties.HexalithFrontComposerNet10CatalogView -cne $ExpectedFrontComposerView -or
@@ -316,61 +315,63 @@ function Test-OwnedCatalogView {
 }
 try {
     [void] [IO.Directory]::CreateDirectory($viewProbeRoot)
-    foreach ($name in $partiesSdk42Consumers) {
-        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true' 'false'
-        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedSdk '4.2.0'
+    foreach ($name in $partiesConsumers) {
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' -UseProjectReferences 'false'
+        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' 'false' -SelectedSdk '4.2.0'
     }
     foreach ($name in $platformSdk42Consumers) {
-        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'true'
-        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedSdk '4.2.0'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'true' -SelectedSdk '4.2.0'
     }
-    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedMemories '3.0.26'
-    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedMemories '4.0.0'
-    Test-OwnedCatalogView 'Hexalith.Parties' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '3.0.26'
-    Test-OwnedCatalogView 'Hexalith.Parties' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '4.0.0'
-    Test-OwnedCatalogView 'Hexalith.Parties.Contracts' '4.2.0' '10.0.15' '2.13.0' 'true' 'false' -SelectedMemories '3.0.26'
-    Test-OwnedCatalogView 'Hexalith.Builds.Module.EventStoreHost' '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' -SelectedMemories '3.0.26'
-    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'false' 'true' -SelectedTenants '8.0.0'
-    Test-OwnedCatalogView 'Unrelated.Consumer' '5.4.0' '11.0.0' '3.11.1' 'false' 'false' -SelectedTenants '7.0.7'
-    foreach ($name in $buildsHostSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' 'false' -ExpectedBuildsHostView 'true' }
+    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'true' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'true' -SelectedMemories '4.0.0'
+    Test-OwnedCatalogView 'Hexalith.Parties' '5.4.0' '11.0.0' '3.11.1' 'false' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Parties' '5.4.0' '11.0.0' '3.11.1' 'false' -SelectedMemories '4.0.0'
+    Test-OwnedCatalogView 'Hexalith.Parties' '5.4.0' '11.0.0' '3.11.1' 'false' -SelectedTenants '7.0.6'
+    Test-OwnedCatalogView 'Hexalith.Parties' '5.4.0' '11.0.0' '3.11.1' 'false' -SelectedTenants '8.0.0'
+    Test-OwnedCatalogView 'Hexalith.Parties.Contracts' '5.4.0' '11.0.0' '3.11.1' 'false' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Builds.Module.EventStoreHost' '4.2.0' '10.0.15' '2.13.0' 'false' -ExpectedBuildsHostView 'true' -SelectedMemories '3.0.26'
+    Test-OwnedCatalogView 'Hexalith.Platform.Composition' '4.2.0' '10.0.15' '2.13.0' 'true' -SelectedTenants '8.0.0'
+    Test-OwnedCatalogView 'Unrelated.Consumer' '5.4.0' '11.0.0' '3.11.1' 'false' -SelectedTenants '7.0.7'
+    foreach ($name in $buildsHostSdk42Consumers) { Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' 'false' -ExpectedBuildsHostView 'true' }
     foreach ($name in @('Unrelated.Consumer', 'Hexalith.Parties.Future', 'Hexalith.Parties.Tests.Future',
                         'hexalith.Parties.Tests', 'Hexalith.Platform.Future', 'Hexalith.Platform.EventStoreHost.Future',
                         'hexalith.Platform.EventStoreHost', 'Hexalith.platform.Composition',
                         'Hexalith.Builds.Module.AppHost.Future', 'Hexalith.Builds.Module.EventStoreHost.Future', 'Hexalith.Builds.Module.UiHost.Future',
                         'hexalith.Builds.Module.AppHost', 'hexalith.Builds.Module.EventStoreHost', 'hexalith.Builds.Module.UiHost')) {
-        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false'
-        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' 'false' 'false' -SelectedSdk '4.2.0'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false'
+        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' 'false' -SelectedSdk '4.2.0'
     }
     foreach ($name in (@('Hexalith.Parties.Tests', 'Hexalith.Platform.EventStoreHost') + $buildsHostSdk42Consumers)) {
-        $partiesView = if ($name -eq 'Hexalith.Parties.Tests') { 'true' } else { 'false' }
         $platformView = if ($name -eq 'Hexalith.Platform.EventStoreHost') { 'true' } else { 'false' }
         $buildsHostView = if ($name -cin $buildsHostSdk42Consumers) { 'true' } else { 'false' }
         foreach ($sdk in @('4.0.4', '4.1.0', '4.3.0', '5.0.0', '5.0.1', '5.1.0', '5.1.1', '5.2.0', '5.3.0', '5.3.1', '5.4.0')) {
-            Test-OwnedCatalogView $name $sdk '11.0.0' '3.11.1' $partiesView $platformView $sdk -ExpectedBuildsHostView $buildsHostView
+            Test-OwnedCatalogView $name $sdk '11.0.0' '3.11.1' $platformView $sdk -ExpectedBuildsHostView $buildsHostView
         }
     }
     # The current source graph uses the .NET11 ABI without changing any packaged SDK4.2 pin.
-    foreach ($name in ($partiesSdk42Consumers + $platformSdk42Consumers + $buildsHostSdk42Consumers)) {
-        $partiesView = if ($name -cin $partiesSdk42Consumers) { 'true' } else { 'false' }
+    foreach ($name in ($partiesConsumers + $platformSdk42Consumers + $buildsHostSdk42Consumers)) {
         $platformView = if ($name -cin $platformSdk42Consumers) { 'true' } else { 'false' }
         $buildsHostView = if ($name -cin $buildsHostSdk42Consumers) { 'true' } else { 'false' }
-        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
     }
-    foreach ($name in @('Hexalith.Parties', 'Hexalith.Platform.EventStoreHost', 'Hexalith.Builds.Module.EventStoreHost')) {
-        $partiesView = if ($name -ceq 'Hexalith.Parties') { 'true' } else { 'false' }
+    Test-OwnedCatalogView 'Hexalith.Parties' '5.4.0' '11.0.0' '3.11.1' 'false' -UseProjectReferences 'true' -EventStoreFromSource 'false' -McpCliFromSource 'false'
+    Test-OwnedCatalogView 'Hexalith.Parties' '4.2.0' '11.0.0' '3.11.1' 'false' -SelectedSdk '4.2.0' -UseProjectReferences 'true' -EventStoreFromSource 'false' -McpCliFromSource 'false'
+    Test-OwnedCatalogView 'Hexalith.Parties' '4.2.0' '11.0.0' '3.11.1' 'false' -SelectedSdk '4.2.0' -SelectedMcpCli '2.0.1'
+    foreach ($name in @('Hexalith.Platform.EventStoreHost', 'Hexalith.Builds.Module.EventStoreHost')) {
         $platformView = if ($name -ceq 'Hexalith.Platform.EventStoreHost') { 'true' } else { 'false' }
         $buildsHostView = if ($name -ceq 'Hexalith.Builds.Module.EventStoreHost') { 'true' } else { 'false' }
-        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
-        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'false'
-        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'false'
-        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'false'
-        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' $partiesView $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
-        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
-        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -McpCliFromSource 'false'
-        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $partiesView $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -SelectedMcpCli '3.0.0'
+        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'false'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'false'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'false'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' $platformView -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
+        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -EventStoreFromSource 'true'
+        Test-OwnedCatalogView $name '4.2.0' '11.0.0' '3.11.1' $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -UseProjectReferences 'true' -McpCliFromSource 'false'
+        Test-OwnedCatalogView $name '4.2.0' '10.0.15' '2.13.0' $platformView -SelectedSdk '4.2.0' -ExpectedBuildsHostView $buildsHostView -SelectedMcpCli '3.0.0'
     }
     foreach ($name in @('Unrelated.Consumer', 'Hexalith.Platform.EventStoreHost.Future', 'hexalith.Platform.EventStoreHost')) {
-        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false' -UseProjectReferences 'true'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' -UseProjectReferences 'true'
     }
     # Include the supported source samples: their central transitive pins consume Shell too.
     foreach ($name in @('Counter.Domain', 'Counter.Specimens', 'Counter.Specimens.Domain', 'Counter.Web', 'IdeParityCounter',
@@ -378,13 +379,13 @@ try {
                         'Hexalith.FrontComposer.Shell.Tests.Bench', 'Hexalith.FrontComposer.SourceTools.Tests',
                         'Hexalith.FrontComposer.Testing', 'Hexalith.FrontComposer.Testing.Tests',
                         'Hexalith.FrontComposer.UI', 'Hexalith.FrontComposer.UI.Tests')) {
-        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' `
             -TargetFramework 'net10.0' -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true' `
             -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
     }
-    Test-OwnedCatalogView 'Hexalith.FrontComposer.UI' '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
+    Test-OwnedCatalogView 'Hexalith.FrontComposer.UI' '5.4.0' '11.0.0' '3.11.1' 'false' `
         -ExpectedFrontComposerView 'true' -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
-    Test-OwnedCatalogView 'Hexalith.FrontComposer.UI' '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
+    Test-OwnedCatalogView 'Hexalith.FrontComposer.UI' '5.4.0' '11.0.0' '3.11.1' 'false' `
         -TargetFramework 'net10.0-windows' -ExpectedOpenIdConnect '10.0.15' -ExpectedFrontComposerView 'true' `
         -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
     # These net10 consumers need the Immutable view without the separate Shell/OpenIdConnect view.
@@ -394,13 +395,13 @@ try {
                         'Hexalith.FrontComposer.CounterFixture', 'Hexalith.FrontComposer.Mcp',
                         'Hexalith.FrontComposer.Mcp.Tests', 'Hexalith.FrontComposer.Schema',
                         'Hexalith.FrontComposer.SourceTools')) {
-        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false' `
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' `
             -ExpectedImmutable '10.0.15' -ExpectedImmutableView 'true'
     }
     foreach ($name in @('Hexalith.Memories.Server', 'Hexalith.Memories.Web', 'Hexalith.FrontComposer.Future',
                         'Hexalith.FrontComposer.Shell.Future', 'Counter.Web.Future', 'Counter.Specimens.Domain.Future',
                         'counter.Web', 'ideParityCounter', 'hexalith.FrontComposer.Shell')) {
-        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false' 'false'
+        Test-OwnedCatalogView $name '5.4.0' '11.0.0' '3.11.1' 'false'
     }
     Write-Output "Owned catalog views passed $viewCount exact positive/negative probes."
 }

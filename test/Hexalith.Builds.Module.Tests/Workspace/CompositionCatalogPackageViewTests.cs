@@ -376,46 +376,6 @@ public sealed class CompositionCatalogPackageViewTests
         CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
         string[] retainedConsumers =
         [
-            "Hexalith.Parties",
-            "Hexalith.Parties.AdminPortal",
-            "Hexalith.Parties.AdminPortal.Tests",
-            "Hexalith.Parties.AppHost",
-            "Hexalith.Parties.Aspire",
-            "Hexalith.Parties.Aspire.Tests",
-            "Hexalith.Parties.Authentication",
-            "Hexalith.Parties.Authentication.Tests",
-            "Hexalith.Parties.Catalog.Tests",
-            "Hexalith.Parties.Ci.Tests",
-            "Hexalith.Parties.Client",
-            "Hexalith.Parties.Client.Tests",
-            "Hexalith.Parties.ConsumerPortal",
-            "Hexalith.Parties.ConsumerPortal.Tests",
-            "Hexalith.Parties.Contracts",
-            "Hexalith.Parties.Contracts.Tests",
-            "Hexalith.Parties.EventStoreAdminUI.TestHost",
-            "Hexalith.Parties.EventStoreExtensions",
-            "Hexalith.Parties.EventStoreGateway.TestHost",
-            "Hexalith.Parties.EventStoreSample.Contracts.TestArtifact",
-            "Hexalith.Parties.EventStoreSample.TestHost",
-            "Hexalith.Parties.IntegrationTests",
-            "Hexalith.Parties.Mcp",
-            "Hexalith.Parties.Mcp.Tests",
-            "Hexalith.Parties.Picker",
-            "Hexalith.Parties.Picker.Tests",
-            "Hexalith.Parties.Platform.AttachedLifecycleTests",
-            "Hexalith.Parties.Platform.IntegrationTests",
-            "Hexalith.Parties.Platform.LifecycleTests",
-            "Hexalith.Parties.Projections",
-            "Hexalith.Parties.Projections.Tests",
-            "Hexalith.Parties.Sample",
-            "Hexalith.Parties.Sample.Tests",
-            "Hexalith.Parties.Security",
-            "Hexalith.Parties.Security.Tests",
-            "Hexalith.Parties.Server.Tests",
-            "Hexalith.Parties.Testing",
-            "Hexalith.Parties.Tests",
-            "Hexalith.Parties.UI",
-            "Hexalith.Parties.UI.Tests",
             "Hexalith.Platform.CatalogBuilder",
             "Hexalith.Platform.Composition",
             "Hexalith.Platform.Composition.Tests",
@@ -475,10 +435,6 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogVersion("tenants", "probe").ShouldBe("8.0.2");
         options.CatalogVersion("tenants", "probe", "Hexalith.Platform.Composition").ShouldBe("7.0.7");
         options.CatalogVersion("memories", "probe", "Hexalith.Platform.Composition").ShouldBe("3.0.27");
-        options.CatalogVersion("memories", "probe", "Hexalith.Parties").ShouldBe("3.0.27");
-        options.CatalogPackageVersion("Hexalith.Memories.Client.Rest", "probe", "Hexalith.Parties").ShouldBe("3.0.27");
-        options.CatalogVersion("memories", "probe", "Hexalith.Parties.Contracts").ShouldBe("3.0.27");
-        options.CatalogVersion("memories", "probe", "Hexalith.Parties.EventStoreExtensions").ShouldBe("3.0.27");
         options.CatalogVersion("memories", "probe", "Hexalith.Builds.Module.EventStoreHost").ShouldBe("3.0.27");
         options.CatalogVersion("eventstore", "probe").ShouldBe("5.4.0");
         options.CatalogVersion("eventstore", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
@@ -492,9 +448,20 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.Platform.TestExtension", "probe", "Hexalith.Platform.EventStoreHost").ShouldBeNull();
-        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Parties.EventStoreGateway.TestHost").ShouldBe("4.2.0");
         options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.Composition").ShouldBe("4.2.0");
-        foreach (string unknown in new[] { "Hexalith.Parties.Future", "Hexalith.Parties.Tests.Future", "Hexalith.Platform.Future", "Hexalith.Builds.Module.Future", "Hexalith.Builds.Module.EventStoreHost.Future" })
+        snapshot.ProjectVersions.Keys.ShouldNotContain(consumer => consumer.StartsWith("Hexalith.Parties", StringComparison.Ordinal));
+        foreach (string unknown in new[]
+        {
+            "Hexalith.Parties",
+            "Hexalith.Parties.Contracts",
+            "Hexalith.Parties.EventStoreExtensions",
+            "Hexalith.Parties.EventStoreGateway.TestHost",
+            "Hexalith.Parties.Future",
+            "Hexalith.Parties.Tests.Future",
+            "Hexalith.Platform.Future",
+            "Hexalith.Builds.Module.Future",
+            "Hexalith.Builds.Module.EventStoreHost.Future",
+        })
         {
             snapshot.ProjectVersions.ContainsKey(unknown).ShouldBeFalse();
             Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", unknown))
@@ -505,7 +472,7 @@ public sealed class CompositionCatalogPackageViewTests
     }
 
     /// <summary>Preserves an explicitly selected historical SDK while recording the actual composed-host view.</summary>
-    /// <param name="consumer">The exact retained Parties or Platform consumer.</param>
+    /// <param name="consumer">The exact retained Platform consumer.</param>
     /// <param name="selected">The explicit historical SDK selection.</param>
     /// <param name="aspNetOpenApi">The consumer's compatible ASP.NET OpenAPI selection.</param>
     /// <param name="openApi">The consumer's compatible OpenAPI ABI selection.</param>
@@ -515,10 +482,6 @@ public sealed class CompositionCatalogPackageViewTests
     [InlineData("Hexalith.Platform.EventStoreHost", "4.1.0", "11.0.0", "3.11.1")]
     [InlineData("Hexalith.Platform.EventStoreHost", "4.2.0", "10.0.15", "2.13.0")]
     [InlineData("Hexalith.Platform.EventStoreHost", "5.1.0", "11.0.0", "3.11.1")]
-    [InlineData("Hexalith.Parties", "4.0.4", "11.0.0", "3.11.1")]
-    [InlineData("Hexalith.Parties", "4.1.0", "11.0.0", "3.11.1")]
-    [InlineData("Hexalith.Parties", "4.2.0", "10.0.15", "2.13.0")]
-    [InlineData("Hexalith.Parties", "5.1.0", "11.0.0", "3.11.1")]
     public async Task OwningHostViewPreservesExplicitHistoricalSdkSelectionAsync(string consumer, string selected, string aspNetOpenApi, string openApi)
     {
         string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -550,13 +513,11 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.1");
     }
 
-    /// <summary>Retains an explicit Memories selection in both exact SDK4.2 owner views.</summary>
+    /// <summary>Retains an explicit Memories selection in the retained SDK4.2 Platform view.</summary>
     /// <param name="consumer">The finite owning consumer.</param>
     /// <param name="selected">The explicit Memories selection.</param>
     /// <returns>The real materialized owner/default selection assertions.</returns>
     [Theory]
-    [InlineData("Hexalith.Parties", "3.0.26")]
-    [InlineData("Hexalith.Parties", "4.0.0")]
     [InlineData("Hexalith.Platform.EventStoreHost", "3.0.26")]
     [InlineData("Hexalith.Platform.EventStoreHost", "4.0.0")]
     public async Task OwningSdk42ViewPreservesExplicitMemoriesSelectionAsync(string consumer, string selected)
@@ -582,13 +543,11 @@ public sealed class CompositionCatalogPackageViewTests
         options.CatalogPackageVersion("Hexalith.Memories.Client.Rest", "probe", consumer).ShouldBe(selected);
     }
 
-    /// <summary>Retains an ordinary Tenants property selection in both exact SDK4.2 owner views.</summary>
+    /// <summary>Retains an ordinary Tenants property selection in the retained SDK4.2 Platform view.</summary>
     /// <param name="consumer">The finite owning consumer.</param>
     /// <param name="selected">The explicit Tenants selection.</param>
     /// <returns>The real materialized owner/default family and lookup assertions.</returns>
     [Theory]
-    [InlineData("Hexalith.Parties", "7.0.6")]
-    [InlineData("Hexalith.Parties", "8.0.0")]
     [InlineData("Hexalith.Platform.EventStoreHost", "7.0.6")]
     [InlineData("Hexalith.Platform.EventStoreHost", "8.0.0")]
     public async Task OwningSdk42ViewPreservesExplicitTenantsSelectionAsync(string consumer, string selected)

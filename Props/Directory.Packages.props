@@ -40,48 +40,6 @@
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.0</HexalithPolymorphicSerializationsVersion>
     <!-- Record the composed-host consumer while keeping one canonical SDK version authority. -->
     <HexalithPlatformEventStoreHostCatalogView Condition="'$(MSBuildProjectName)' == 'Hexalith.Platform.EventStoreHost'">true</HexalithPlatformEventStoreHostCatalogView>
-    <!-- Exact measured retained SDK4.2 consumers; other project names keep the current SDK5 catalog. -->
-    <HexalithPartiesSdk42CatalogView>false</HexalithPartiesSdk42CatalogView>
-    <HexalithPartiesSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Parties'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.AdminPortal'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.AdminPortal.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.AppHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Aspire'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Aspire.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Authentication'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Authentication.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Catalog.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Ci.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Client'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Client.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.ConsumerPortal'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.ConsumerPortal.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Contracts'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Contracts.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreAdminUI.TestHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreExtensions'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreGateway.TestHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreSample.Contracts.TestArtifact'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.EventStoreSample.TestHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.IntegrationTests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Mcp'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Mcp.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Picker'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Picker.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Platform.AttachedLifecycleTests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Platform.IntegrationTests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Platform.LifecycleTests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Projections'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Projections.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Sample'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Sample.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Security'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Security.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Server.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Testing'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.UI'))
-        or $(MSBuildProjectName.Equals('Hexalith.Parties.UI.Tests'))">true</HexalithPartiesSdk42CatalogView>
     <!-- Preserve OpenAPI2 only when a Platform consumer explicitly selects historical SDK4.2. -->
     <HexalithPlatformSdk42CatalogView>false</HexalithPlatformSdk42CatalogView>
     <HexalithPlatformSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Platform.CatalogBuilder'))
@@ -175,25 +133,25 @@
     <HexalithBuildsPackagedHostSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Builds.Module.AppHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.EventStoreHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">5.4.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
     <!-- Published EventStore 5.4.0 remains the current net11 default; SDK4.2 consumers keep 4.2.0. -->
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.4.0</HexalithEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
     <!-- Packaged SDK4.2 uses OpenApi2; current source projects consume the .NET11 OpenAPI ABI. -->
-    <HexalithAspNetCoreOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">10.0.15</HexalithAspNetCoreOpenApiVersion>
-    <HexalithOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">2.13.0</HexalithOpenApiVersion>
+    <HexalithAspNetCoreOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">10.0.15</HexalithAspNetCoreOpenApiVersion>
+    <HexalithOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">2.13.0</HexalithOpenApiVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.1</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.0.1</HexalithFoldersVersion>
     <!-- Retain the qualified MCP2 package ABI only for the finite SDK4.2 roles; source MCP keeps its current catalog. -->
-    <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithMcpCliFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">2.0.1</HexalithMcpCliVersion>
+    <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithMcpCliFromSource)' == 'false') and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">2.0.1</HexalithMcpCliVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">3.0.0</HexalithMcpCliVersion>
-    <!-- Every finite SDK4.2 role uses the admitted Memories cohort, including private Parties producers; explicit selections remain authoritative. -->
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">3.0.27</HexalithMemoriesVersion>
+    <!-- The remaining SDK4.2 views use the admitted Memories cohort; explicit selections remain authoritative. -->
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">3.0.27</HexalithMemoriesVersion>
     <!-- Current package selection; historical declarations retain their separately pinned release inputs. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.0</HexalithMemoriesVersion>
     <!-- SDK4.2 consumers retain Tenants7; Tenants8 requires the current SDK5 cohort. -->
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">7.0.7</HexalithTenantsVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">7.0.7</HexalithTenantsVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.2</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">3.1.1</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.1.1</HexalithPartiesAspireVersion>
