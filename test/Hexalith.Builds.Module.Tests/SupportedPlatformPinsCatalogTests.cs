@@ -28,7 +28,7 @@ public sealed class SupportedPlatformPinsCatalogTests
             .Value.Trim().ShouldBe(PlatformVersionCatalog.Current.EventStoreVersion);
         catalog.Descendants("HexalithFrontComposerVersion").Single().Value.Trim().ShouldBe(PlatformVersionCatalog.Current.FrontComposerVersion);
         catalog.Descendants("HexalithAspireAppHostSdkVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.AspireAppHostSdkVersion);
-        catalog.Descendants("HexalithDaprRuntimeVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.DaprRuntimeVersion);
+        catalog.Descendants("HexalithDaprRuntimeVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.DaprRuntimeVersion);
         catalog.Descendants("HexalithDaprCliVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.DaprCliVersion);
     }
 
@@ -42,7 +42,8 @@ public sealed class SupportedPlatformPinsCatalogTests
         SupportedPlatformPins.FrontComposerVersion.ShouldBe("5.0.0");
         catalog.FrontComposerVersion.ShouldBe("6.0.1");
         SupportedPlatformPins.DaprSdkVersion.ShouldBe(catalog.DaprSdkVersion);
-        SupportedPlatformPins.DaprRuntimeVersion.ShouldBe(catalog.DaprRuntimeVersion);
+        SupportedPlatformPins.DaprRuntimeVersion.ShouldBe("1.19.1");
+        CompositionToolchainPins.DaprRuntimeVersion.ShouldBe(catalog.DaprRuntimeVersion);
         CompositionToolchainPins.DaprCliVersion.ShouldBe(catalog.DaprCliVersion);
         CompositionToolchainPins.AspireAppHostSdkVersion.ShouldBe(catalog.AspireAppHostSdkVersion);
         CompositionToolchainPins.RedisImageReference.ShouldBe($"{catalog.RedisImage}:{catalog.RedisImageTag}@{catalog.RedisImageDigest}");

@@ -31,5 +31,5 @@ public static class CompositionToolchainPins
     public static string AspireAppHostSdkVersion => PlatformVersionCatalog.Current.AspireAppHostSdkVersion;
 
     /// <summary>Gets the Dapr runtime version selected by the accepted G-6 tuple.</summary>
-    public static string DaprRuntimeVersion => SupportedPlatformPins.DaprRuntimeVersion;
+    public static string DaprRuntimeVersion => PlatformVersionCatalog.Current.DaprRuntimeVersion;
 }

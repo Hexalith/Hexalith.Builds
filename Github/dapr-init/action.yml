@@ -5,9 +5,8 @@ inputs:
   version:
     description: 'Dapr CLI version to install and legacy fallback runtime version'
     required: false
-    default: '1.19.1'
   runtime-version:
-    description: 'Dapr runtime version for dapr init; defaults to version when omitted'
+    description: 'Dapr runtime version for dapr init; defaults to an explicit CLI version or the catalog runtime'
     required: false
 
 runs:
@@ -19,13 +18,13 @@ runs:
       # publishes only major-line tags (v1, v2), so v2 is the narrowest tag available.
       uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
       with:
-        version: ${{ inputs.version }}
+        version: ${{ inputs.version || '1.19.1' }}
 
     - name: Initialize Dapr
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
       env:
         DAPR_DEFAULT_IMAGE_REGISTRY: ghcr
-        DAPR_RUNTIME_VERSION: ${{ inputs.runtime-version || inputs.version }}
+        DAPR_RUNTIME_VERSION: ${{ inputs.runtime-version || inputs.version || '1.19.2' }}
         GITHUB_TOKEN: ${{ github.token }}
       with:
         timeout_minutes: 5

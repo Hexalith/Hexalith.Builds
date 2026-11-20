@@ -6,13 +6,13 @@ modules. It factors the common skeleton: checkout with submodules, .NET SDK from
 consumer validation, Dapr bootstrap, multi-tier tests, optional coverage gate,
 and artifact upload.
 
-`dapr-version` and `dapr-runtime-version` default to CLI and runtime `1.19.1`.
-Both values are passed to every Dapr bootstrap tier. The Dapr .NET SDK and
-embedded components remain at `1.19.0`.
+`dapr-version` and `dapr-runtime-version` default to CLI `1.19.1` and runtime `1.19.2`.
+Both values are passed to every Dapr bootstrap tier. The catalog selects the Dapr .NET packages separately.
 
-The defaults adopt EventStore Story 3.21's
-[hosted run 42532776864](https://github.com/Hexalith/Hexalith.EventStore/actions/runs/42532776864)
-at commit `0a6725d51bb17a9eae28a24a53f3636bab9d48d7`: routing/actors/snapshots
+The [1.19.2 runtime qualification](../../docs/dapr-runtime-1.19.2.md) records the native services and EventStore tests exercised on Linux x64.
+
+For the previous runtime, EventStore Story 3.21 ran the [1.19.1 hosted qualification](https://github.com/Hexalith/Hexalith.EventStore/actions/runs/42532776864)
+at commit `0a6725d51bb17a9eae28a24a53f3636bab9d48d7`. Routing, actors and snapshots
 passed 15/15, admission passed 1/1, and compatibility passed 2/2. The broker lane
 failed separately; this adoption grants no broker or production qualification.
 `Tools/runtime-toolchain-baseline.json` remains the hash-bound historical

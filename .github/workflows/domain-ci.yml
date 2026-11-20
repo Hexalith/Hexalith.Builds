@@ -40,7 +40,7 @@ on:
         description: 'Dapr runtime version for integration/aspire tiers.'
         required: false
         type: string
-        default: '1.19.1'
+        default: '1.19.2'
       test-platform:
         description: >-
           Test command contract: vstest uses --logger/--collect; microsoft-testing-platform

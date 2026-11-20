@@ -541,7 +541,7 @@ args=sys.argv[1:]
 with (root / "dapr-events").open("a") as stream:
     stream.write(" ".join(args)+"\n")
 if args[0]=="init":
-    assert args==["init", "--runtime-version", "1.19.1"]
+    assert args==["init", "--runtime-version", "1.19.2"]
     import json
     receipt=pathlib.Path(os.environ["RUNNER_TEMP"]) / "hexalith-dapr-initialization.json"
     document=json.loads(receipt.read_text())
@@ -744,14 +744,14 @@ else:
                 mock.patch.dict(ENV.DAPR_CLI_DIGESTS, {"1.19.1": hashlib.sha256(valid).hexdigest()}), \
                 mock.patch.dict(os.environ, environment):
             ENV.setup_dapr(self.root)
-        self.assertEqual("init --runtime-version 1.19.1", (self.root / "dapr-init").read_text())
+        self.assertEqual("init --runtime-version 1.19.2", (self.root / "dapr-init").read_text())
         self.assertTrue(Path(path.read_text().strip(), "dapr").is_file())
         self.assertEqual("https://github.com/dapr/cli/releases/download/v1.19.1/dapr_linux_amd64.tar.gz",
                          download.call_args.args[0])
         poisoned = self.root / "references/Hexalith.Builds/Props"
         poisoned.mkdir(parents=True)
         (poisoned / "Directory.Packages.props").write_text("poison")
-        self.assertEqual(("1.19.1", "1.19.1"), ENV.dapr_versions())
+        self.assertEqual(("1.19.2", "1.19.1"), ENV.dapr_versions())
 
         # Enable all three tools together: CLI/runtime initialization and the
         # built browser/registry subprocesses each execute exactly once.
@@ -767,7 +767,7 @@ else:
                 mock.patch.dict(os.environ, environment):
             ENV.setup_environment(self.root, solution="Fixture.slnx", dapr=True, browsers=True, registry=True)
         self.assertEqual(1, download.call_count)
-        self.assertEqual("init --runtime-version 1.19.1", (self.root / "dapr-init").read_text())
+        self.assertEqual("init --runtime-version 1.19.2", (self.root / "dapr-init").read_text())
         self.assertEqual(["pwsh", "docker"], [json.loads(line)[0] for line in self.effects.read_text().splitlines()])
 
     def test_actual_actions_run_enabled_hooks_with_existing_build_and_environment(self):
@@ -809,7 +809,7 @@ else:
     def test_receipt_precedes_init_and_exports_only_selected_actual_resource_metadata(self):
         runner, binary, environment = self.receipt_fixture()
         with mock.patch.dict(os.environ, environment):
-            receipt = ENV.initialize_dapr(binary, "1.19.1", self.root)
+            receipt = ENV.initialize_dapr(binary, "1.19.2", self.root)
             self.assertEqual(str(receipt), os.environ[ENV.DAPR_RECEIPT_ENV])
         document = json.loads(receipt.read_text())
         self.assertEqual("hexalith.dapr-initialization.v1", document["schema"])
@@ -831,7 +831,7 @@ else:
         self.assertEqual(0o600, receipt.stat().st_mode & 0o777)
         self.assertNotIn("private-marker", receipt.read_text())
         self.assertEqual(f"{ENV.DAPR_RECEIPT_ENV}={receipt}\n", (runner / "github-env").read_text())
-        self.assertEqual(["init --runtime-version 1.19.1"], (self.root / "dapr-events").read_text().splitlines())
+        self.assertEqual(["init --runtime-version 1.19.2"], (self.root / "dapr-events").read_text().splitlines())
 
     def test_retained_old_malformed_mismatched_and_symlink_receipts_are_never_overwritten(self):
         runner, binary, environment = self.receipt_fixture()
@@ -840,14 +840,14 @@ else:
             with self.subTest(retained=retained), mock.patch.dict(os.environ, environment):
                 receipt.write_bytes(retained)
                 with self.assertRaisesRegex(ENV.PipelineError, "exclusively create"):
-                    ENV.initialize_dapr(binary, "1.19.1", self.root)
+                    ENV.initialize_dapr(binary, "1.19.2", self.root)
                 self.assertEqual(retained, receipt.read_bytes())
                 receipt.unlink()
         target = runner / "private-evidence"
         target.write_text("retain")
         receipt.symlink_to(target)
         with mock.patch.dict(os.environ, environment), self.assertRaisesRegex(ENV.PipelineError, "exclusively create"):
-            ENV.initialize_dapr(binary, "1.19.1", self.root)
+            ENV.initialize_dapr(binary, "1.19.2", self.root)
         self.assertEqual("retain", target.read_text())
         self.assertFalse((self.root / "dapr-events").exists())
         self.assertFalse((runner / "github-env").exists())
@@ -855,13 +855,13 @@ else:
     def test_repeated_init_and_supplied_receipt_paths_refuse_before_another_init(self):
         runner, binary, environment = self.receipt_fixture()
         with mock.patch.dict(os.environ, environment):
-            receipt = ENV.initialize_dapr(binary, "1.19.1", self.root)
+            receipt = ENV.initialize_dapr(binary, "1.19.2", self.root)
             original = receipt.read_bytes()
             with self.assertRaisesRegex(ENV.PipelineError, "already supplied"):
-                ENV.initialize_dapr(binary, "1.19.1", self.root)
+                ENV.initialize_dapr(binary, "1.19.2", self.root)
             os.environ.pop(ENV.DAPR_RECEIPT_ENV)
             with self.assertRaisesRegex(ENV.PipelineError, "exclusively create"):
-                ENV.initialize_dapr(binary, "1.19.1", self.root)
+                ENV.initialize_dapr(binary, "1.19.2", self.root)
             self.assertEqual(original, receipt.read_bytes())
         self.assertEqual(1, len((self.root / "dapr-events").read_text().splitlines()))
 
@@ -871,11 +871,11 @@ else:
                                   ("GITHUB_RUN_ATTEMPT", "01"), ("GITHUB_JOB", "ci\nother")):
             with self.subTest(variable=variable), mock.patch.dict(os.environ, dict(environment, **{variable: invalid})):
                 with self.assertRaisesRegex(ENV.PipelineError, variable):
-                    ENV.initialize_dapr(binary, "1.19.1", self.root)
+                    ENV.initialize_dapr(binary, "1.19.2", self.root)
         with mock.patch.dict(os.environ, environment):
             os.environ.pop("GITHUB_RUN_ID", None)
             with self.assertRaisesRegex(ENV.PipelineError, "GITHUB_RUN_ID"):
-                ENV.initialize_dapr(binary, "1.19.1", self.root)
+                ENV.initialize_dapr(binary, "1.19.2", self.root)
         self.assertFalse((runner / ENV.DAPR_RECEIPT_NAME).exists())
         self.assertFalse((self.root / "dapr-events").exists())
 
@@ -883,7 +883,7 @@ else:
         runner, binary, environment = self.receipt_fixture(FAIL_DAPR_INIT="true")
         with mock.patch.dict(os.environ, environment):
             with self.assertRaises(ENV.PipelineError) as caught:
-                ENV.initialize_dapr(binary, "1.19.1", self.root)
+                ENV.initialize_dapr(binary, "1.19.2", self.root)
             self.assertEqual(37, caught.exception.returncode)
             self.assertNotIn(ENV.DAPR_RECEIPT_ENV, os.environ)
         receipt = runner / ENV.DAPR_RECEIPT_NAME
@@ -894,7 +894,7 @@ else:
         with mock.patch.dict(os.environ, environment), \
                 mock.patch.object(ENV, "dapr_created_resources", side_effect=ENV.PipelineError("malformed metadata")):
             with self.assertRaisesRegex(ENV.PipelineError, "malformed metadata"):
-                ENV.initialize_dapr(binary, "1.19.1", self.root)
+                ENV.initialize_dapr(binary, "1.19.2", self.root)
             self.assertNotIn(ENV.DAPR_RECEIPT_ENV, os.environ)
         self.assertEqual("initializing", json.loads(receipt.read_text())["status"])
         self.assertFalse((runner / "github-env").exists())
@@ -933,7 +933,7 @@ else:
         archive = self.controlled_dapr_archive()
         result = self.harness(dapr_archive=archive)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertEqual(["init --runtime-version 1.19.1", "probe"], (self.root / "dapr-events").read_text().splitlines())
+        self.assertEqual(["init --runtime-version 1.19.2", "probe"], (self.root / "dapr-events").read_text().splitlines())
         self.assertIn("dapr-hook-stdout", result.stdout)
         self.assertIn("dapr-hook-stderr", result.stderr)
         self.assertTrue((self.root / "hook-after-integration-tests").exists())
