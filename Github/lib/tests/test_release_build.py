@@ -303,7 +303,7 @@ class BuildTests(unittest.TestCase):
     def test_duplicate_and_conditional_framework_identity_rejected(self):
         project = self.prepared.root / "Package/Release.Package.csproj"
         text = project.read_text()
-        project.write_text(text.replace("</Project>", '<PropertyGroup Condition="\'$(TargetFramework)\' == \'net9.0\'">'
+        project.write_text(text.replace("</Project>", '<PropertyGroup Condition="\'$(TargetFramework)\' == \'net11.0-windows\'">'
                            '<PackageId>Conflicting</PackageId></PropertyGroup></Project>'))
         with self.assertRaisesRegex(PipelineError, "differ across"):
             build.discover_projects(self.prepared, self.flags)
@@ -325,7 +325,7 @@ class BuildTests(unittest.TestCase):
         path.write_text(path.read_text().replace("</PropertyGroup>", "<IsTestProject>true</IsTestProject></PropertyGroup>"))
         self.assertFalse(any(project.container for project in build.discover_projects(self.prepared, self.flags)))
         path.write_text(path.read_text().replace("<IsTestProject>true</IsTestProject>",
-            "<TargetFrameworks>net9.0;net10.0</TargetFrameworks><TargetFramework />"))
+            "<TargetFrameworks>net11.0-windows;net11.0</TargetFrameworks><TargetFramework />"))
         with self.assertRaisesRegex(PipelineError, "container requires one evaluated target framework"):
             build.discover_projects(self.prepared, self.flags)
         for rid in ("linux-x64", "linux-musl-arm64", "win-x64", "linux-arm"):
@@ -445,7 +445,7 @@ class BuildTests(unittest.TestCase):
         diagnostic = io.StringIO()
         with redirect_stdout(diagnostic), self.assertRaises(PipelineError):
             build.audited_command(["dotnet", "publish", str(provenance / "Release.Provenance.csproj"), "--no-restore",
-                "-t:PublishContainer", "--runtime", "linux-x64", "-p:TargetFramework=net10.0",
+                "-t:PublishContainer", "--runtime", "linux-x64", "-p:TargetFramework=net11.0",
                 "-p:ContainerRuntimeIdentifiers=", "-p:ContainerRuntimeIdentifier=linux-x64",
                 f"-p:ContainerArchiveOutputPath={self.root / 'without-instant.tar.gz'}", *self.flags],
                 self.prepared.root, VERSION)
@@ -454,7 +454,7 @@ class BuildTests(unittest.TestCase):
 
     def test_created_label_mismatch_fails_inspection_and_writes_no_manifest(self):
         prepared = fixture(self.root / "mismatch", "Release.slnx")
-        project = build.Project("Container/Release.Container.csproj", "", "product/image", "net10.0",
+        project = build.Project("Container/Release.Container.csproj", "", "product/image", "net11.0",
                                 ("linux-x64", "linux-arm64"))
         later = "2026-11-20T00:00:00Z"
         cases = {"honored": {}, "differs from instant": {"linux-x64": later, "linux-arm64": later},

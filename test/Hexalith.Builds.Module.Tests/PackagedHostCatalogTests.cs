@@ -25,7 +25,7 @@ public sealed class PackagedHostCatalogTests
     [InlineData("Hexalith.Builds.Module.AppHost")]
     [InlineData("Hexalith.Builds.Module.EventStoreHost")]
     [InlineData("Hexalith.Builds.Module.UiHost")]
-    public async Task ActualHostUsesTheRetainedSdkAndOpenApiPairAsync(string role)
+    public async Task ActualHostUsesCurrentCatalogAsync(string role)
     {
         string root = CompositionTestFiles.RepositoryRoot();
         string project = Path.Combine(root, "src", "hosts", role, role + ".csproj");
@@ -49,7 +49,7 @@ public sealed class PackagedHostCatalogTests
                 [
                     "msbuild", project, "-nologo", "-noAutoResponse", "-nodeReuse:false", "-p:Configuration=Release", "-p:UseHexalithProjectReferences=false",
                     "-p:CustomAfterMicrosoftCommonTargets=" + observation, "-target:ObserveHostCohort",
-                    "-getProperty:HexalithEventStoreVersion,HexalithBuildsPackagedHostSdk42CatalogView,NuGetAudit,RestoreEnablePackagePruning,CentralPackageTransitivePinningEnabled", "-getTargetResult:ObserveHostCohort",
+                    "-getProperty:HexalithEventStoreVersion,TargetFramework,HexalithAspNetCoreOpenApiVersion,HexalithOpenApiVersion,NuGetAudit,RestoreEnablePackagePruning,CentralPackageTransitivePinningEnabled", "-getTargetResult:ObserveHostCohort",
                 ],
                 root,
                 null);
@@ -62,8 +62,9 @@ public sealed class PackagedHostCatalogTests
             result.ExitCode.ShouldBe(0, result.Output + result.ErrorOutput);
             using JsonDocument document = JsonDocument.Parse(result.Output);
             JsonElement properties = document.RootElement.GetProperty("Properties");
-            properties.GetProperty("HexalithEventStoreVersion").GetString().ShouldBe("4.2.0");
-            properties.GetProperty("HexalithBuildsPackagedHostSdk42CatalogView").GetString().ShouldBe("true");
+            string sdkVersion = Hexalith.Builds.Tooling.Manifest.PlatformVersionCatalog.Current.EventStoreVersion;
+            properties.GetProperty("HexalithEventStoreVersion").GetString().ShouldBe(sdkVersion);
+            properties.GetProperty("TargetFramework").GetString().ShouldBe("net11.0");
             properties.GetProperty("NuGetAudit").GetString().ShouldBe("true");
             properties.GetProperty("RestoreEnablePackagePruning").GetString().ShouldBe("false");
             properties.GetProperty("CentralPackageTransitivePinningEnabled").GetString().ShouldBe("true");
@@ -71,9 +72,9 @@ public sealed class PackagedHostCatalogTests
                 .ToDictionary(item => item.GetProperty("Identity").GetString()!, item => item.GetProperty("Version").GetString()!, StringComparer.Ordinal);
             KeyValuePair<string, string>[] sdk = [.. packages.Where(item => item.Key.StartsWith("Hexalith.EventStore.", StringComparison.Ordinal))];
             sdk.Length.ShouldBe(13);
-            sdk.ShouldAllBe(item => item.Value == "4.2.0");
-            packages["Microsoft.AspNetCore.OpenApi"].ShouldBe("10.0.15");
-            packages["Microsoft.OpenApi"].ShouldBe("2.13.0");
+            sdk.ShouldAllBe(item => item.Value == sdkVersion);
+            packages["Microsoft.AspNetCore.OpenApi"].ShouldBe(properties.GetProperty("HexalithAspNetCoreOpenApiVersion").GetString());
+            packages["Microsoft.OpenApi"].ShouldBe(properties.GetProperty("HexalithOpenApiVersion").GetString());
         }
         finally
         {

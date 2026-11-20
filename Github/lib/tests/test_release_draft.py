@@ -51,7 +51,7 @@ def package(sha, *, package_id="Fixture.Package", version=VERSION):
     return zip_bytes([(package_id + ".nuspec", '<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">'
         '<metadata><id>' + package_id + '</id><version>' + version + '</version>'
         '<repository type="git" url="https://github.com/' + REPOSITORY + '" commit="' + sha + '"/>'
-        '</metadata></package>'), ("lib/net10.0/Fixture.dll", b"original-payload")])
+        '</metadata></package>'), ("lib/net11.0/Fixture.dll", b"original-payload")])
 
 
 def artifact(sha, *, version=VERSION, packages=True, manifest=None, extra=(), nuspec=None):

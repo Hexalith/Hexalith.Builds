@@ -1,0 +1,30 @@
+{
+  "eventstore/5.4.0": {
+    "repository": "Hexalith.EventStore",
+    "version": "5.4.0",
+    "commit": "2ec21f631a2e292fba8c5537fe665ab275ed1081",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495"
+  },
+  "memories/4.1.0": {
+    "repository": "Hexalith.Memories",
+    "version": "4.1.0",
+    "commit": "0856785c7c764a0dc305af058227d6485b65c697",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840"
+  },
+  "parties/3.1.1": {
+    "repository": "Hexalith.Parties",
+    "version": "3.1.1",
+    "commit": "84e3df796ac977041a21ec7bd8e5789bdc44241a",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348"
+  },
+  "tenants/8.0.2": {
+    "repository": "Hexalith.Tenants",
+    "version": "8.0.2",
+    "commit": "30b233026648488ca71fe5904fd218b7af934aed",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522"
+  }
+}

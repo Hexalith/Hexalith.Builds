@@ -54,7 +54,7 @@ function New-ConsumerFixture {
         $ProjectContent = @'
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <PackageVersion>1.0.0</PackageVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -262,25 +262,25 @@ exit $LASTEXITCODE
         -ExpectedOutput 'consumer PackageVersion Update'
 
     $attributeRoot = New-ConsumerFixture -Name 'package-reference-version' -ProjectContent @'
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fixture.Package" Version="1.2.3" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fixture.Package" Version="1.2.3" /></ItemGroup></Project>
 '@
     Test-Scenario -Name 'PackageReference Version attribute' -RepositoryRoot $attributeRoot -ExpectedExitCode 1 `
         -ExpectedOutput 'PackageReference Version'
 
     $nestedRoot = New-ConsumerFixture -Name 'package-reference-nested-version' -ProjectContent @'
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fixture.Package"><Version>1.2.3</Version></PackageReference></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fixture.Package"><Version>1.2.3</Version></PackageReference></ItemGroup></Project>
 '@
     Test-Scenario -Name 'PackageReference nested Version' -RepositoryRoot $nestedRoot -ExpectedExitCode 1 `
         -ExpectedOutput 'PackageReference nested Version'
 
     $overrideRoot = New-ConsumerFixture -Name 'version-override' -ProjectContent @'
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fixture.Package" VersionOverride="2.0.0" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fixture.Package" VersionOverride="2.0.0" /></ItemGroup></Project>
 '@
     Test-Scenario -Name 'PackageReference VersionOverride' -RepositoryRoot $overrideRoot -ExpectedExitCode 1 `
         -ExpectedOutput 'PackageReference VersionOverride'
 
     $nestedOverrideRoot = New-ConsumerFixture -Name 'nested-version-override' -ProjectContent @'
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fixture.Package"><VersionOverride>2.0.0</VersionOverride></PackageReference></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Fixture.Package"><VersionOverride>2.0.0</VersionOverride></PackageReference></ItemGroup></Project>
 '@
     Test-Scenario -Name 'PackageReference nested VersionOverride' -RepositoryRoot $nestedOverrideRoot `
         -ExpectedExitCode 1 -ExpectedOutput 'PackageReference nested VersionOverride'
@@ -298,13 +298,13 @@ exit $LASTEXITCODE
         -ExpectedExitCode 1 -ExpectedOutput 'GlobalPackageReference Version'
 
     $optOutRoot = New-ConsumerFixture -Name 'cpm-opt-out' -ProjectContent @'
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally></PropertyGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally></PropertyGroup></Project>
 '@
     Test-Scenario -Name 'CPM opt-out' -RepositoryRoot $optOutRoot -ExpectedExitCode 1 `
         -ExpectedOutput 'ManagePackageVersionsCentrally=false'
 
     $overrideOptInRoot = New-ConsumerFixture -Name 'override-opt-in' -ProjectContent @'
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><CentralPackageVersionOverrideEnabled>true</CentralPackageVersionOverrideEnabled></PropertyGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework><CentralPackageVersionOverrideEnabled>true</CentralPackageVersionOverrideEnabled></PropertyGroup></Project>
 '@
     Test-Scenario -Name 'Override opt-in' -RepositoryRoot $overrideOptInRoot -ExpectedExitCode 1 `
         -ExpectedOutput 'enables CentralPackageVersionOverrideEnabled'
@@ -349,7 +349,7 @@ exit $LASTEXITCODE
         -ExpectedOutput 'consumer package authority validation passed'
 
     $missingRowRoot = New-ConsumerFixture -Name 'missing-catalog-row' -ProjectContent @'
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Missing.Package" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Missing.Package" /></ItemGroup></Project>
 '@
     Test-Scenario -Name 'Missing catalog row' -RepositoryRoot $missingRowRoot -ExpectedExitCode 1 `
         -ExpectedOutput "PackageReference 'Missing.Package' has no authoritative catalog row"
@@ -358,7 +358,7 @@ exit $LASTEXITCODE
     $shimPath = Join-Path $shimRoot 'src/libraries/Hexalith.Builds.Module.Cli/pack/projects/EventStore/Host.csproj'
     Write-Utf8File -Path $shimPath -Content @'
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps></PropertyGroup>
+  <PropertyGroup><TargetFramework>net11.0</TargetFramework><ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps></PropertyGroup>
 </Project>
 '@
     Test-Scenario -Name 'Package-free host shim' -RepositoryRoot $shimRoot -ExpectedExitCode 0 `
@@ -366,7 +366,7 @@ exit $LASTEXITCODE
 
     Write-Utf8File -Path $shimPath -Content @'
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps></PropertyGroup>
+  <PropertyGroup><TargetFramework>net11.0</TargetFramework><ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps></PropertyGroup>
   <ItemGroup><PackageReference Include="Fixture.Package" /></ItemGroup>
 </Project>
 '@
@@ -376,13 +376,13 @@ exit $LASTEXITCODE
     $probeRoot = New-ConsumerFixture -Name 'standalone-probe'
     Write-Utf8File -Path (Join-Path $probeRoot 'evidence/probe/Probe.csproj') -Content @'
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally></PropertyGroup>
+  <PropertyGroup><TargetFramework>net11.0</TargetFramework><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally></PropertyGroup>
   <ItemGroup><PackageReference Include="Published.Package" Version="1.0.0" /></ItemGroup>
 </Project>
 '@
     Write-Utf8File -Path (Join-Path $probeRoot 'evidence/other/Probe.csproj') -Content @'
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally></PropertyGroup>
+  <PropertyGroup><TargetFramework>net11.0</TargetFramework><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally></PropertyGroup>
   <ItemGroup><PackageReference Include="Published.Package" Version="0.9.0" /></ItemGroup>
 </Project>
 '@

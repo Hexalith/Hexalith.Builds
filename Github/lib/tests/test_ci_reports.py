@@ -37,16 +37,16 @@ class ReportTests(unittest.TestCase):
 
     def passing_session(self, stage="Unit"):
         session = reports.ReportSession(self.root, stage, (self.project,), self.policy)
-        directory = session.directory_for(self.project, "net10.0")
+        directory = session.directory_for(self.project, "net11.0")
         (directory / "results.trx").write_text('<TestRun xmlns="urn:test"><Results><UnitTestResult outcome="Passed" /></Results><ResultSummary outcome="Completed"><Counters total="1" executed="1" passed="1" failed="0" /></ResultSummary></TestRun>')
         (directory / "coverage.cobertura.xml").write_text(cobertura([(1, 1, 'branch="True" condition-coverage="100% (2/2)"')]))
-        session.record(self.project, "net10.0", directory, success=True)
+        session.record(self.project, "net11.0", directory, success=True)
         session.finish()
         return session, directory
 
     def test_engine_specific_switches_do_not_use_vstest_collection_in_mtp(self):
         session = reports.ReportSession(self.root, "Unit", (self.project,), self.policy)
-        directory = session.directory_for(self.project, "net10.0")
+        directory = session.directory_for(self.project, "net11.0")
         mtp = session.options(self.project, directory, runner="Microsoft.Testing.Platform", xunit=True)
         self.assertIn("--report-xunit-trx", mtp)
         self.assertIn("--coverage-output-format", mtp)
@@ -196,10 +196,10 @@ class ReportTests(unittest.TestCase):
     def test_new_session_invalidates_old_success_and_never_uses_its_reports(self):
         _, old_directory = self.passing_session()
         session = reports.ReportSession(self.root, "Unit", (self.project,), self.policy)
-        directory = session.directory_for(self.project, "net10.0")
+        directory = session.directory_for(self.project, "net11.0")
         self.assertNotEqual(directory, old_directory)
         with self.assertRaisesRegex(reports.ReportError, "missing required"):
-            session.record(self.project, "net10.0", directory, success=True)
+            session.record(self.project, "net11.0", directory, success=True)
         with self.assertRaisesRegex(reports.ReportError, "incomplete"):
             reports.aggregate_reports(self.root, self.policy, ("Unit",), enforce=True)
 
@@ -216,10 +216,10 @@ class ReportTests(unittest.TestCase):
 
     def test_symlinked_report_or_output_directory_is_refused(self):
         session = reports.ReportSession(self.root, "Unit", (self.project,), self.policy)
-        directory = session.directory_for(self.project, "net10.0")
+        directory = session.directory_for(self.project, "net11.0")
         (directory / "results.trx").symlink_to(self.file("<TestRun />", "outside.trx"))
         with self.assertRaisesRegex(reports.ReportError, "escapes"):
-            session.record(self.project, "net10.0", directory, success=True)
+            session.record(self.project, "net11.0", directory, success=True)
         other = self.root / "other"
         other.mkdir()
         (other / "TestResults").symlink_to(self.root / "TestResults", target_is_directory=True)

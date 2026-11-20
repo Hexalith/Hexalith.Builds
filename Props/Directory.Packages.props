@@ -15,143 +15,23 @@
     <_HexalithNearestPackageOwner Condition="'$(_HexalithNearestPackageProps)' != ''">$([System.IO.Path]::GetDirectoryName('$(_HexalithNearestPackageProps)'))</_HexalithNearestPackageOwner>
     <_HexalithSelectedPackageProps Condition="'$(DirectoryPackagesPropsPath)' != ''">$([MSBuild]::NormalizePath('$(DirectoryPackagesPropsPath)'))</_HexalithSelectedPackageProps>
     <_HexalithWorksOwnsMSBuildPackageVersions Condition="'$(DirectoryPackagesPropsPath)' != '' and '$(_HexalithSelectedPackageProps)' == '$(_HexalithNearestPackageProps)' and Exists('$(_HexalithNearestPackageOwner)/Hexalith.Works.slnx')">true</_HexalithWorksOwnsMSBuildPackageVersions>
-    <!-- Preserve the measured net10 product/consumer contract for these exact Timesheets identities. -->
-    <HexalithTimesheetsNet10CatalogView>false</HexalithTimesheetsNet10CatalogView>
-    <HexalithTimesheetsNet10CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Timesheets'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.AppHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.ArchitectureTests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Client'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Contracts'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Contracts.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.IntegrationTests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Projections'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Projections.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.ReadModels'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Server'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Server.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.ServiceDefaults'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Testing'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Works'))
-        or $(MSBuildProjectName.Equals('Hexalith.Timesheets.Works.Tests'))">true</HexalithTimesheetsNet10CatalogView>
-    <HexalithCommonsVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true' and '$(HexalithCommonsVersion)' == ''">2.30.11</HexalithCommonsVersion>
-    <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true' and '$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.9</HexalithPolymorphicSerializationsVersion>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">3.0.1</HexalithCommonsVersion>
     <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.1.0</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.0</HexalithPolymorphicSerializationsVersion>
-    <!-- Record the composed-host consumer while keeping one canonical SDK version authority. -->
-    <HexalithPlatformEventStoreHostCatalogView Condition="'$(MSBuildProjectName)' == 'Hexalith.Platform.EventStoreHost'">true</HexalithPlatformEventStoreHostCatalogView>
-    <!-- Preserve OpenAPI2 only when a Platform consumer explicitly selects historical SDK4.2. -->
-    <HexalithPlatformSdk42CatalogView>false</HexalithPlatformSdk42CatalogView>
-    <HexalithPlatformSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Platform.CatalogBuilder'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Composition'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Composition.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Custody'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Custody.Component'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Custody.Component.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Custody.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.EventStoreHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Identity'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Identity.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.OwnerServices.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection.Qualification.Enrollment'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection.Qualification.Executor'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection.Qualification.Observer'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Protection.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.ArchiveProcessFixture'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Authority'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Authority.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Custody'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Custody.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Inventory'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Inventory.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Qualification.Enrollment'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Qualification.Executor'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Qualification.Observer'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Runtime'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Secrets.Runtime.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.TenantRegistry.Host'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.TestExtension'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.TestExtension.Qualification.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Works.Runtime'))
-        or $(MSBuildProjectName.Equals('Hexalith.Platform.Works.Tests'))">true</HexalithPlatformSdk42CatalogView>
-    <!-- Only these projects qualify for the OIDC 10 compatibility pin when targeting net10.
-         Include Shell's transitive CPM consumers. The PackageVersion checks the actual target framework. -->
-    <HexalithFrontComposerNet10CatalogView>false</HexalithFrontComposerNet10CatalogView>
-    <HexalithFrontComposerNet10CatalogView Condition="$(MSBuildProjectName.Equals('Counter.Domain'))
-        or $(MSBuildProjectName.Equals('Counter.Specimens'))
-        or $(MSBuildProjectName.Equals('Counter.Specimens.Domain'))
-        or $(MSBuildProjectName.Equals('Counter.Web'))
-        or $(MSBuildProjectName.Equals('IdeParityCounter'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.AppHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests.Bench'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.SourceTools.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI.Tests'))">true</HexalithFrontComposerNet10CatalogView>
-    <!-- FrontComposer net10 compiler and generator consumers retain the supported Immutable ABI. -->
-    <HexalithFrontComposerImmutable10CatalogView>false</HexalithFrontComposerImmutable10CatalogView>
-    <HexalithFrontComposerImmutable10CatalogView Condition="$(MSBuildProjectName.Equals('Counter.Domain'))
-        or $(MSBuildProjectName.Equals('Counter.Specimens'))
-        or $(MSBuildProjectName.Equals('Counter.Specimens.Domain'))
-        or $(MSBuildProjectName.Equals('Counter.Web'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.AppHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Cli'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Cli.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Contracts'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Contracts.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Contracts.UI'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Contracts.UI.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.CounterFixture'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Mcp'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Mcp.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Schema'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Shell.Tests.Bench'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.SourceTools'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.SourceTools.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.Testing.Tests'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI'))
-        or $(MSBuildProjectName.Equals('Hexalith.FrontComposer.UI.Tests'))
-        or $(MSBuildProjectName.Equals('IdeParityCounter'))">true</HexalithFrontComposerImmutable10CatalogView>
     <HexalithImmutableVersion>11.0.0</HexalithImmutableVersion>
-    <HexalithImmutableVersion Condition="'$(HexalithFrontComposerImmutable10CatalogView)' == 'true'">10.0.15</HexalithImmutableVersion>
     <HexalithAspNetCoreJwtBearerVersion>11.0.0</HexalithAspNetCoreJwtBearerVersion>
-    <HexalithAspNetCoreJwtBearerVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreJwtBearerVersion>
     <HexalithAspNetCoreMvcTestingVersion>11.0.0</HexalithAspNetCoreMvcTestingVersion>
-    <HexalithAspNetCoreMvcTestingVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreMvcTestingVersion>
     <HexalithAspNetCoreTestHostVersion>11.0.0</HexalithAspNetCoreTestHostVersion>
-    <HexalithAspNetCoreTestHostVersion Condition="'$(HexalithTimesheetsNet10CatalogView)' == 'true'">10.0.15</HexalithAspNetCoreTestHostVersion>
     <HexalithAspNetCoreOpenIdConnectVersion>11.0.0</HexalithAspNetCoreOpenIdConnectVersion>
-    <!-- These finite producer host roles and Platform consumers retain the admitted SDK4.2/OpenAPI2 ABI. -->
-    <HexalithBuildsPackagedHostSdk42CatalogView>false</HexalithBuildsPackagedHostSdk42CatalogView>
-    <HexalithBuildsPackagedHostSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Builds.Module.AppHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.EventStoreHost'))
-        or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
-    <!-- Published EventStore 5.4.0 remains the current net11 default; SDK4.2 consumers keep 4.2.0. -->
+    <_HexalithSelectCatalogEventStore Condition="'$(HexalithEventStoreVersion)' == ''">true</_HexalithSelectCatalogEventStore>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.4.0</HexalithEventStoreVersion>
+    <HexalithCatalogEventStoreVersion Condition="'$(_HexalithSelectCatalogEventStore)' == 'true'">$(HexalithEventStoreVersion)</HexalithCatalogEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
-    <!-- Packaged SDK4.2 uses OpenApi2; current source projects consume the .NET11 OpenAPI ABI. -->
-    <HexalithAspNetCoreOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">10.0.15</HexalithAspNetCoreOpenApiVersion>
-    <HexalithOpenApiVersion Condition="('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">2.13.0</HexalithOpenApiVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.1</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.0.1</HexalithFoldersVersion>
-    <!-- Retain the qualified MCP2 package ABI only for the finite SDK4.2 roles; source MCP keeps its current catalog. -->
-    <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithMcpCliFromSource)' == 'false') and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">2.0.1</HexalithMcpCliVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">3.0.0</HexalithMcpCliVersion>
-    <!-- The remaining SDK4.2 views use the admitted Memories cohort; explicit selections remain authoritative. -->
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">3.0.27</HexalithMemoriesVersion>
-    <!-- Current package selection; historical declarations retain their separately pinned release inputs. -->
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.0</HexalithMemoriesVersion>
-    <!-- SDK4.2 consumers retain Tenants7; Tenants8 requires the current SDK5 cohort. -->
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == '' and '$(HexalithEventStoreVersion)' == '4.2.0' and ('$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">7.0.7</HexalithTenantsVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.2</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">3.1.1</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.1.1</HexalithPartiesAspireVersion>
@@ -167,6 +47,126 @@
     <HexalithRedisImageDigest>sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf</HexalithRedisImageDigest>
     <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.83.0</HexalithChatbotVersion>
   </PropertyGroup>
+  <!-- Named consumers whose verified catalog snapshot is available to composition callers. -->
+  <ItemGroup>
+    <HexalithCatalogConsumer Include="Counter.Domain" />
+    <HexalithCatalogConsumer Include="Counter.Specimens" />
+    <HexalithCatalogConsumer Include="Counter.Specimens.Domain" />
+    <HexalithCatalogConsumer Include="Counter.Web" />
+    <HexalithCatalogConsumer Include="Hexalith.Builds.Module.AppHost" />
+    <HexalithCatalogConsumer Include="Hexalith.Builds.Module.EventStoreHost" />
+    <HexalithCatalogConsumer Include="Hexalith.Builds.Module.UiHost" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.AppHost" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Cli" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Cli.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Contracts" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Contracts.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Contracts.UI" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Contracts.UI.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.CounterFixture" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Mcp" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Mcp.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Schema" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Shell" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Shell.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Shell.Tests.Bench" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.SourceTools" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.SourceTools.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Testing" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.Testing.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.UI" />
+    <HexalithCatalogConsumer Include="Hexalith.FrontComposer.UI.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.AdminPortal" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.AdminPortal.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.AppHost" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Aspire" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Aspire.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Authentication" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Authentication.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Catalog.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Ci.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Client" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Client.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.ConsumerPortal" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.ConsumerPortal.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Contracts" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Contracts.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.EventStoreAdminUI.TestHost" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.EventStoreExtensions" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.EventStoreGateway.TestHost" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.EventStoreSample.Contracts.TestArtifact" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.EventStoreSample.TestHost" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.IntegrationTests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Mcp" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Mcp.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Picker" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Picker.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Platform.AttachedLifecycleTests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Platform.IntegrationTests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Platform.LifecycleTests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Projections" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Projections.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Sample" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Sample.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Security" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Security.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Server.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Testing" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.UI" />
+    <HexalithCatalogConsumer Include="Hexalith.Parties.UI.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.CatalogBuilder" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Composition" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Composition.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Custody" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Custody.Component" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Custody.Component.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Custody.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.EventStoreHost" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Identity" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Identity.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.OwnerServices.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Protection" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Protection.Qualification.Enrollment" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Protection.Qualification.Executor" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Protection.Qualification.Observer" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Protection.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.ArchiveProcessFixture" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Authority" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Authority.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Custody" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Custody.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Inventory" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Inventory.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Qualification.Enrollment" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Qualification.Executor" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Qualification.Observer" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Runtime" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Secrets.Runtime.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.TenantRegistry.Host" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.TestExtension" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.TestExtension.Qualification.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Works.Runtime" />
+    <HexalithCatalogConsumer Include="Hexalith.Platform.Works.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.AppHost" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.ArchitectureTests" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Client" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Contracts" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Contracts.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.IntegrationTests" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Projections" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Projections.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.ReadModels" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Server" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Server.Tests" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.ServiceDefaults" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Testing" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Works" />
+    <HexalithCatalogConsumer Include="Hexalith.Timesheets.Works.Tests" />
+    <HexalithCatalogConsumer Include="IdeParityCounter" />
+  </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Applications" Version="1.0.6" />
     <PackageVersion Include="Hexalith.Applications.Abstractions" Version="1.0.6" />
@@ -372,10 +372,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(HexalithAspNetCoreJwtBearerVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="11.0.0" />
-    <!-- Package items see the project TFM even when it is set after this catalog is imported. -->
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(HexalithAspNetCoreOpenIdConnectVersion)">
-      <Version Condition="'$(HexalithFrontComposerNet10CatalogView)' == 'true' and ('$(TargetFramework)' == 'net10.0' or $(TargetFramework.StartsWith('net10.0-')))">10.0.15</Version>
-    </PackageVersion>
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(HexalithAspNetCoreOpenIdConnectVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.CustomElements" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0" />
@@ -539,4 +536,32 @@
   <!-- Metadata-only catalog copies do not require build-time analyzer selection. -->
   <Import Project="$(MSBuildThisFileDirectory)Logging.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)Logging.Build.targets')" />
   <Import Project="$(MSBuildThisFileDirectory)AspireAppHost.Build.targets" Condition="Exists('$(MSBuildThisFileDirectory)AspireAppHost.Build.targets')" />
+  <Target Name="ValidateHexalithFramework" BeforeTargets="PrepareForBuild">
+    <Error Condition="!$(NETCoreSdkVersion.StartsWith('11.0.')) or !(('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFrameworkVersion)' == 'v11.0') or (('$(IsRoslynComponent)' == 'true' or $([System.String]::Copy(';$(TargetFrameworks);').Contains(';net11.0;'))) and '$(TargetFrameworkIdentifier)' == '.NETStandard' and '$(TargetFrameworkVersion)' == 'v2.0'))"
+           Text="$(MSBuildProjectName) requires the .NET 11 SDK and a net11.0 target. Selected SDK $(NETCoreSdkVersion), framework $(TargetFramework)." />
+  </Target>
+  <Target Name="ValidateHexalithEventStoreSelection" BeforeTargets="CollectPackageReferences" Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+    <ItemGroup>
+      <_HexalithEventStoreDependency Include="@(PackageReference)" Condition="$([System.String]::Copy('%(PackageReference.Identity)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
+      <_HexalithEventStoreRow Include="@(PackageVersion)" Condition="$([System.String]::Copy('%(PackageVersion.Identity)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
+    </ItemGroup>
+    <XmlPeek Condition="'@(_HexalithEventStoreDependency)' != ''" XmlInputPath="$(MSBuildThisFileFullPath)"
+             Query="/Project/PropertyGroup/HexalithEventStoreVersion/text()">
+      <Output TaskParameter="Result" PropertyName="_HexalithCurrentEventStoreVersion" />
+    </XmlPeek>
+    <Error Condition="'@(_HexalithEventStoreDependency)' != '' and '%(_HexalithEventStoreRow.Version)' != '$(_HexalithCurrentEventStoreVersion)'"
+           Text="$(MSBuildProjectName) selects %(_HexalithEventStoreRow.Identity) %(_HexalithEventStoreRow.Version). Restore the Builds catalog version $(_HexalithCurrentEventStoreVersion)." />
+  </Target>
+  <Target Name="ValidateHexalithEventStoreReferences" AfterTargets="ResolveReferences"
+          Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <_HexalithResolvedEventStore Include="@(ReferencePath)" Condition="$([System.String]::Copy('%(ReferencePath.NuGetPackageId)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
+    </ItemGroup>
+    <XmlPeek Condition="'@(_HexalithResolvedEventStore)' != ''" XmlInputPath="$(MSBuildThisFileFullPath)"
+             Query="/Project/PropertyGroup/HexalithEventStoreVersion/text()">
+      <Output TaskParameter="Result" PropertyName="_HexalithCurrentEventStoreVersion" />
+    </XmlPeek>
+    <Error Condition="'@(_HexalithResolvedEventStore)' != '' and '%(_HexalithResolvedEventStore.NuGetPackageVersion)' != '$(_HexalithCurrentEventStoreVersion)'"
+           Text="$(MSBuildProjectName) resolved %(_HexalithResolvedEventStore.NuGetPackageId) %(_HexalithResolvedEventStore.NuGetPackageVersion). The Builds catalog requires $(_HexalithCurrentEventStoreVersion)." />
+  </Target>
 </Project>

@@ -114,10 +114,11 @@ public sealed class CompositionCatalogPackageViewTests
             File.Copy(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), catalog);
             SourceMapping mapping = new(WorkspaceMode.Package, root, "Hexalith.Platform", [], false);
             CompositionDeclarationOptions options = new(mapping, []);
-            options.CatalogVersion("tenants", "probe").ShouldBe("8.0.2");
+            string expected = System.Xml.Linq.XDocument.Load(catalog).Descendants("HexalithTenantsVersion").Single().Value;
+            options.CatalogVersion("tenants", "probe").ShouldBe(expected);
             foreach (string package in new[] { "Hexalith.Tenants.Aspire", "Hexalith.Tenants.Client", "Hexalith.Tenants.Contracts", "Hexalith.Tenants.Server", "Hexalith.Tenants.Testing" })
             {
-                options.CatalogPackageVersion(package, "probe").ShouldBe("8.0.2", package);
+                options.CatalogPackageVersion(package, "probe").ShouldBe(expected, package);
             }
         }
         finally
@@ -363,218 +364,28 @@ public sealed class CompositionCatalogPackageViewTests
         }
     }
 
-    /// <summary>Materializes every retained consumer view from the owning catalog while preserving its current default.</summary>
-    /// <returns>The finite consumer-view and unknown-name refusal assertions.</returns>
+    /// <summary>Verifies that the real pinned catalog records the current family for each named consumer.</summary>
+    /// <returns>The verified snapshot assertions.</returns>
     [Fact]
-    public async Task OwningCatalogMaterializesTheEventStoreHostViewWithoutAPrematureFixturePinAsync()
+    public async Task NamedConsumersUseTheCurrentEventStoreFamilyAsync()
     {
         string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(catalog).ConfigureAwait(true);
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        string workspace = Path.Combine(fixture.Directory, "actual-host-consumer");
+        string workspace = Path.Combine(fixture.Directory, "current-consumers");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
-        string[] retainedConsumers =
-        [
-            "Hexalith.Platform.CatalogBuilder",
-            "Hexalith.Platform.Composition",
-            "Hexalith.Platform.Composition.Tests",
-            "Hexalith.Platform.Custody",
-            "Hexalith.Platform.Custody.Component",
-            "Hexalith.Platform.Custody.Component.Tests",
-            "Hexalith.Platform.Custody.Tests",
-            "Hexalith.Platform.EventStoreHost",
-            "Hexalith.Platform.Identity",
-            "Hexalith.Platform.Identity.Tests",
-            "Hexalith.Platform.OwnerServices.Tests",
-            "Hexalith.Platform.Protection",
-            "Hexalith.Platform.Protection.Qualification.Enrollment",
-            "Hexalith.Platform.Protection.Qualification.Executor",
-            "Hexalith.Platform.Protection.Qualification.Observer",
-            "Hexalith.Platform.Protection.Tests",
-            "Hexalith.Platform.Secrets.ArchiveProcessFixture",
-            "Hexalith.Platform.Secrets.Authority",
-            "Hexalith.Platform.Secrets.Authority.Tests",
-            "Hexalith.Platform.Secrets.Custody",
-            "Hexalith.Platform.Secrets.Custody.Tests",
-            "Hexalith.Platform.Secrets.Inventory",
-            "Hexalith.Platform.Secrets.Inventory.Tests",
-            "Hexalith.Platform.Secrets.Qualification.Enrollment",
-            "Hexalith.Platform.Secrets.Qualification.Executor",
-            "Hexalith.Platform.Secrets.Qualification.Observer",
-            "Hexalith.Platform.Secrets.Runtime",
-            "Hexalith.Platform.Secrets.Runtime.Tests",
-            "Hexalith.Platform.TenantRegistry.Host",
-            "Hexalith.Platform.TestExtension",
-            "Hexalith.Platform.TestExtension.Qualification.Tests",
-            "Hexalith.Platform.Works.Runtime",
-            "Hexalith.Platform.Works.Tests",
-            "Hexalith.Builds.Module.AppHost",
-            "Hexalith.Builds.Module.EventStoreHost",
-            "Hexalith.Builds.Module.UiHost",
-        ];
-        foreach (string consumer in retainedConsumers)
+        string expected = Hexalith.Builds.Tooling.Manifest.PlatformVersionCatalog.Current.EventStoreVersion;
+        AssertEventStoreFamily(snapshot.Versions, expected, "default");
+        foreach (string consumer in new[] { "Hexalith.Timesheets", "Hexalith.Parties", "Hexalith.Platform.Composition", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.FrontComposer.Shell" })
         {
-            snapshot.ProjectVersions.ContainsKey(consumer).ShouldBeTrue(consumer);
-            IReadOnlyDictionary<string, string> versions = snapshot.ProjectVersions[consumer];
-            AssertEventStoreFamily(versions, "4.2.0", consumer);
-            versions["Hexalith.Tenants.Contracts"].ShouldBe("7.0.7", consumer);
-            versions["Hexalith.Tenants.Client"].ShouldBe("7.0.7", consumer);
-            versions["Microsoft.AspNetCore.OpenApi"].ShouldBe("10.0.15", consumer);
-            versions["Microsoft.OpenApi"].ShouldBe("2.13.0", consumer);
-            foreach (KeyValuePair<string, string> package in versions.Where(pair => pair.Key.StartsWith("Hexalith.Memories.", StringComparison.Ordinal)))
-            {
-                package.Value.ShouldBe("3.0.27", consumer + ":" + package.Key);
-            }
+            AssertEventStoreFamily(snapshot.ProjectVersions[consumer], expected, consumer);
+            CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace, ConsumerProjectName = consumer };
+            options.CatalogVersion("eventstore", "probe").ShouldBe(expected);
+            options.CatalogPackageVersion("Hexalith.EventStore.Gateway", "probe").ShouldBe(expected);
+            options.CatalogVersion("tenants", "probe").ShouldBe(snapshot.Versions["Hexalith.Tenants.Contracts"]);
+            options.CatalogVersion("memories", "probe").ShouldBe(snapshot.Versions["Hexalith.Memories.Contracts"]);
         }
-
-        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
-        AssertEventStoreFamily(snapshot.Versions, "5.4.0", "default");
-        snapshot.Versions["Hexalith.Memories.Contracts"].ShouldBe("4.1.0");
-        snapshot.Versions["Hexalith.Tenants.Contracts"].ShouldBe("8.0.2");
-        options.CatalogVersion("tenants", "probe").ShouldBe("8.0.2");
-        options.CatalogVersion("tenants", "probe", "Hexalith.Platform.Composition").ShouldBe("7.0.7");
-        options.CatalogVersion("memories", "probe", "Hexalith.Platform.Composition").ShouldBe("3.0.27");
-        options.CatalogVersion("memories", "probe", "Hexalith.Builds.Module.EventStoreHost").ShouldBe("3.0.27");
-        options.CatalogVersion("eventstore", "probe").ShouldBe("5.4.0");
-        options.CatalogVersion("eventstore", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
-        CompositionDeclarationOptions platform = options with { ConsumerProjectName = "Hexalith.Platform.EventStoreHost" };
-        platform.CatalogVersion("eventstore", "probe").ShouldBe("4.2.0");
-        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe").ShouldBe("5.4.0");
-        options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe").ShouldBe("11.0.0");
-        options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.1");
-        options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("10.0.15");
-        options.CatalogPackageVersion("Microsoft.OpenApi", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("2.13.0");
-        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
-        options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", "Hexalith.Platform.EventStoreHost").ShouldBe("4.2.0");
-        options.CatalogPackageVersion("Hexalith.Platform.TestExtension", "probe", "Hexalith.Platform.EventStoreHost").ShouldBeNull();
-        options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", "Hexalith.Platform.Composition").ShouldBe("4.2.0");
-        snapshot.ProjectVersions.Keys.ShouldNotContain(consumer => consumer.StartsWith("Hexalith.Parties", StringComparison.Ordinal));
-        foreach (string unknown in new[]
-        {
-            "Hexalith.Parties",
-            "Hexalith.Parties.Contracts",
-            "Hexalith.Parties.EventStoreExtensions",
-            "Hexalith.Parties.EventStoreGateway.TestHost",
-            "Hexalith.Parties.Future",
-            "Hexalith.Parties.Tests.Future",
-            "Hexalith.Platform.Future",
-            "Hexalith.Builds.Module.Future",
-            "Hexalith.Builds.Module.EventStoreHost.Future",
-        })
-        {
-            snapshot.ProjectVersions.ContainsKey(unknown).ShouldBeFalse();
-            Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.EventStore.DomainService", "probe", unknown))
-                .Message.ShouldContain(unknown);
-            Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.Memories.Client.Rest", "probe", unknown))
-                .Message.ShouldContain(unknown);
-        }
-    }
-
-    /// <summary>Preserves an explicitly selected historical SDK while recording the actual composed-host view.</summary>
-    /// <param name="consumer">The exact retained Platform consumer.</param>
-    /// <param name="selected">The explicit historical SDK selection.</param>
-    /// <param name="aspNetOpenApi">The consumer's compatible ASP.NET OpenAPI selection.</param>
-    /// <param name="openApi">The consumer's compatible OpenAPI ABI selection.</param>
-    /// <returns>The materialized host-view version assertion.</returns>
-    [Theory]
-    [InlineData("Hexalith.Platform.EventStoreHost", "4.0.4", "11.0.0", "3.11.1")]
-    [InlineData("Hexalith.Platform.EventStoreHost", "4.1.0", "11.0.0", "3.11.1")]
-    [InlineData("Hexalith.Platform.EventStoreHost", "4.2.0", "10.0.15", "2.13.0")]
-    [InlineData("Hexalith.Platform.EventStoreHost", "5.1.0", "11.0.0", "3.11.1")]
-    public async Task OwningHostViewPreservesExplicitHistoricalSdkSelectionAsync(string consumer, string selected, string aspNetOpenApi, string openApi)
-    {
-        string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        System.Xml.Linq.XDocument document = System.Xml.Linq.XDocument.Parse(catalog);
-        document.Root!.AddFirst(new System.Xml.Linq.XElement("PropertyGroup", new System.Xml.Linq.XElement("HexalithEventStoreVersion", selected)));
-        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(document.ToString()).ConfigureAwait(true);
-        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        string workspace = Path.Combine(fixture.Directory, "historical-host-consumer");
-        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
-        AssertEventStoreFamily(snapshot.Versions, selected, "default");
-        snapshot.Versions["Hexalith.Memories.Contracts"].ShouldBe("4.1.0");
-        snapshot.Versions["Hexalith.Tenants.Contracts"].ShouldBe("8.0.2");
-        AssertEventStoreFamily(snapshot.ProjectVersions[consumer], selected, consumer);
-        snapshot.ProjectVersions[consumer]["Hexalith.Tenants.Contracts"]
-            .ShouldBe(selected == "4.2.0" ? "7.0.7" : "8.0.2");
-        snapshot.ProjectVersions[consumer]["Hexalith.Memories.Contracts"]
-            .ShouldBe(selected == "4.2.0" ? "3.0.27" : "4.1.0");
-        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
-        options.CatalogVersion("eventstore", "probe").ShouldBe(selected);
-        options.CatalogVersion("eventstore", "probe", consumer).ShouldBe(selected);
-        CompositionDeclarationOptions platform = options with { ConsumerProjectName = consumer };
-        platform.CatalogVersion("eventstore", "probe").ShouldBe(selected);
-        options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe", consumer).ShouldBe(selected);
-        options.CatalogPackageVersion("Hexalith.EventStore.Server", "probe").ShouldBe(selected);
-        options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe", consumer).ShouldBe(aspNetOpenApi);
-        options.CatalogPackageVersion("Microsoft.OpenApi", "probe", consumer).ShouldBe(openApi);
-        options.CatalogPackageVersion("Microsoft.AspNetCore.OpenApi", "probe").ShouldBe("11.0.0");
-        options.CatalogPackageVersion("Microsoft.OpenApi", "probe").ShouldBe("3.11.1");
-    }
-
-    /// <summary>Retains an explicit Memories selection in the retained SDK4.2 Platform view.</summary>
-    /// <param name="consumer">The finite owning consumer.</param>
-    /// <param name="selected">The explicit Memories selection.</param>
-    /// <returns>The real materialized owner/default selection assertions.</returns>
-    [Theory]
-    [InlineData("Hexalith.Platform.EventStoreHost", "3.0.26")]
-    [InlineData("Hexalith.Platform.EventStoreHost", "4.0.0")]
-    public async Task OwningSdk42ViewPreservesExplicitMemoriesSelectionAsync(string consumer, string selected)
-    {
-        string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        System.Xml.Linq.XDocument document = System.Xml.Linq.XDocument.Parse(catalog);
-        document.Root!.AddFirst(new System.Xml.Linq.XElement("PropertyGroup", new System.Xml.Linq.XElement("HexalithMemoriesVersion", selected)));
-        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(document.ToString()).ConfigureAwait(true);
-        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        string workspace = Path.Combine(fixture.Directory, "explicit-memories-consumer");
-        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
-        AssertEventStoreFamily(snapshot.Versions, "5.4.0", "default");
-        AssertEventStoreFamily(snapshot.ProjectVersions[consumer], "4.2.0", consumer);
-        foreach (KeyValuePair<string, string> package in snapshot.ProjectVersions[consumer].Where(pair => pair.Key.StartsWith("Hexalith.Memories.", StringComparison.Ordinal)))
-        {
-            package.Value.ShouldBe(selected, consumer + ":" + package.Key);
-        }
-
-        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
-        options.CatalogVersion("memories", "probe").ShouldBe(selected);
-        options.CatalogVersion("memories", "probe", consumer).ShouldBe(selected);
-        options.CatalogPackageVersion("Hexalith.Memories.Client.Rest", "probe", consumer).ShouldBe(selected);
-    }
-
-    /// <summary>Retains an ordinary Tenants property selection in the retained SDK4.2 Platform view.</summary>
-    /// <param name="consumer">The finite owning consumer.</param>
-    /// <param name="selected">The explicit Tenants selection.</param>
-    /// <returns>The real materialized owner/default family and lookup assertions.</returns>
-    [Theory]
-    [InlineData("Hexalith.Platform.EventStoreHost", "7.0.6")]
-    [InlineData("Hexalith.Platform.EventStoreHost", "8.0.0")]
-    public async Task OwningSdk42ViewPreservesExplicitTenantsSelectionAsync(string consumer, string selected)
-    {
-        string catalog = await File.ReadAllTextAsync(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        System.Xml.Linq.XDocument document = System.Xml.Linq.XDocument.Parse(catalog);
-        document.Root!.AddFirst(new System.Xml.Linq.XElement("PropertyGroup", new System.Xml.Linq.XElement("HexalithTenantsVersion", selected)));
-        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync(document.ToString()).ConfigureAwait(true);
-        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        string workspace = Path.Combine(fixture.Directory, "explicit-tenants-consumer");
-        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
-        AssertEventStoreFamily(snapshot.Versions, "5.4.0", "default");
-        AssertEventStoreFamily(snapshot.ProjectVersions[consumer], "4.2.0", consumer);
-        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
-        foreach (string package in new[] { "Hexalith.Tenants.Aspire", "Hexalith.Tenants.Client", "Hexalith.Tenants.Contracts", "Hexalith.Tenants.Server", "Hexalith.Tenants.Testing" })
-        {
-            snapshot.Versions[package].ShouldBe(selected, "default:" + package);
-            snapshot.ProjectVersions[consumer][package].ShouldBe(selected, consumer + ":" + package);
-            options.CatalogPackageVersion(package, "probe").ShouldBe(selected, package);
-            options.CatalogPackageVersion(package, "probe", consumer).ShouldBe(selected, consumer + ":" + package);
-        }
-
-        options.CatalogVersion("tenants", "probe").ShouldBe(selected);
-        options.CatalogVersion("tenants", "probe", consumer).ShouldBe(selected);
-        CompositionDeclarationOptions owning = options with { ConsumerProjectName = consumer };
-        owning.CatalogVersion("tenants", "probe").ShouldBe(selected);
     }
 
     /// <summary>Owner and package APIs share an explicit consumer without changing the default view.</summary>

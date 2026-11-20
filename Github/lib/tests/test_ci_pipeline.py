@@ -63,16 +63,16 @@ elif command=="msbuild":
     else:
         project=args[1]
         inner=next((arg.split("=",1)[1] for arg in args if arg.startswith("-p:TargetFramework=")), "")
-        values={"IsTestProject":str(data["projects"][project]).lower(), "TargetFramework":"net10.0",
+        values={"IsTestProject":str(data["projects"][project]).lower(), "TargetFramework":"net11.0",
                 "TargetFrameworks":"", "IsCrossTargetingBuild":"", "XunitTestProject":str(data.get("xunit",True)).lower(),
-                "TargetPath":str(root / pathlib.Path(project).parent / "bin/Release/net10.0" / (pathlib.Path(project).stem+".dll"))}
+                "TargetPath":str(root / pathlib.Path(project).parent / "bin/Release/net11.0" / (pathlib.Path(project).stem+".dll"))}
         if data.get("cross") and project.endswith("A.Tests.csproj"):
-            values.update(TargetFrameworks=data.get("frameworks", "net10.0;net9.0"), IsCrossTargetingBuild="true")
+            values.update(TargetFrameworks=data.get("frameworks", "net11.0;net11.0-windows"), IsCrossTargetingBuild="true")
             if inner:
                 values["IsCrossTargetingBuild"]="false"
                 values["TargetFramework"]=inner
                 values["TargetPath"]=str(root / pathlib.Path(project).parent / "bin/Release" / inner / (pathlib.Path(project).stem+".dll"))
-                if data.get("inconsistent") and inner=="net9.0":
+                if data.get("inconsistent") and inner=="net11.0-windows":
                     values["IsTestProject"]="false"
                 if data.get("outer_only"):
                     values["IsTestProject"]="false"
@@ -144,7 +144,7 @@ class SubprocessPipelineTests(unittest.TestCase):
         (self.root / "src/Product").mkdir()
         (self.root / "src/Product/Target.cs").write_text("// product coverage fixture")
         (self.root / "Fixture.slnx").write_text("<Solution />", encoding="utf-8")
-        (self.root / "global.json").write_text(json.dumps({"sdk": {"version": "10.0.403", "rollForward": "latestPatch"},
+        (self.root / "global.json").write_text(json.dumps({"sdk": {"version": "11.0.100", "rollForward": "latestPatch"},
                                                            "test": {"runner": "Microsoft.Testing.Platform"}}))
         (self.root / ".github").mkdir()
         self.environment = os.environ.copy()
@@ -204,7 +204,7 @@ class SubprocessPipelineTests(unittest.TestCase):
         result = self.invoke()
         self.assertEqual(23, result.returncode, result.stdout + result.stderr)
         tests = [command for command in self.commands() if command[0] == "test"]
-        self.assertEqual(["net10.0", "net9.0"], [command[command.index("--framework") + 1] for command in tests])
+        self.assertEqual(["net11.0", "net11.0-windows"], [command[command.index("--framework") + 1] for command in tests])
         directories = [command[command.index("--results-directory") + 1] for command in tests]
         self.assertEqual(2, len(set(directories)))
         self.assertTrue(all(command[2] == "test/A space/A.Tests.csproj" for command in tests))
@@ -214,12 +214,12 @@ class SubprocessPipelineTests(unittest.TestCase):
 
     def test_later_framework_product_exit_wins_over_an_earlier_report_error(self):
         self.document["tests"]["reports"] = {"trx": True}
-        self.data.update(cross=True, missing_trx_frameworks=["net10.0"],
-                         fail_project="test/A space/A.Tests.csproj", fail_framework="net9.0")
+        self.data.update(cross=True, missing_trx_frameworks=["net11.0"],
+                         fail_project="test/A space/A.Tests.csproj", fail_framework="net11.0-windows")
         result = self.invoke("--phase", "unit")
         self.assertEqual(23, result.returncode, result.stdout + result.stderr)
         tests = [command for command in self.commands() if command[0] == "test"]
-        self.assertEqual(["net10.0", "net9.0"], [command[command.index("--framework") + 1] for command in tests])
+        self.assertEqual(["net11.0", "net11.0-windows"], [command[command.index("--framework") + 1] for command in tests])
 
     def test_unit_only_coverage_gate_fails_in_the_actual_unit_caller(self):
         first = "test/A space/A.Tests.csproj"
@@ -363,7 +363,7 @@ class SubprocessPipelineTests(unittest.TestCase):
         self.assertEqual([], self.commands())
 
     def test_vstest_is_positional_and_missing_runner_defaults_to_vstest(self):
-        (self.root / "global.json").write_text(json.dumps({"sdk": {"version": "10.0.403"}}))
+        (self.root / "global.json").write_text(json.dumps({"sdk": {"version": "11.0.100"}}))
         result = self.invoke()
         self.assertEqual(0, result.returncode, result.stderr)
         for command in self.commands():
@@ -469,7 +469,7 @@ class SubprocessPipelineTests(unittest.TestCase):
     def test_cross_targeting_evaluates_each_inner_build_and_rejects_disagreement(self):
         self.data["cross"] = True
         # MSBuild preserves property whitespace; the SDK trims and drops empty entries.
-        for frameworks in ("net10.0;net9.0", "\n    net10.0;\n    net9.0;\n  "):
+        for frameworks in ("net11.0;net11.0-windows", "\n    net11.0;\n    net11.0-windows;\n  "):
             with self.subTest(frameworks=frameworks):
                 (self.root / "commands.jsonl").unlink(missing_ok=True)
                 self.data["frameworks"] = frameworks
@@ -478,7 +478,7 @@ class SubprocessPipelineTests(unittest.TestCase):
                 evaluations = [command for command in self.commands() if command[0] == "msbuild"]
                 inner = {argument for command in evaluations for argument in command
                          if argument.startswith("-p:TargetFramework=")}
-                self.assertEqual({"-p:TargetFramework=net10.0", "-p:TargetFramework=net9.0"}, inner)
+                self.assertEqual({"-p:TargetFramework=net11.0", "-p:TargetFramework=net11.0-windows"}, inner)
                 # xUnit identity comes from the inner builds, so completion still holds.
                 tests = {command[2]: command for command in self.commands() if command[0] == "test"}
                 self.assertEqual(["--stop-on-fail", "off"], tests["test/A space/A.Tests.csproj"][-2:])
@@ -638,7 +638,7 @@ class SubprocessPipelineTests(unittest.TestCase):
     def test_runner_metadata_and_test_only_inputs_fail_before_product_commands(self):
         for value in ({"runner": "unsupported"}, [], {"runner": False}):
             with self.subTest(value=value):
-                (self.root / "global.json").write_text(json.dumps({"sdk": {"version": "10.0.403"}, "test": value}))
+                (self.root / "global.json").write_text(json.dumps({"sdk": {"version": "11.0.100"}, "test": value}))
                 result = self.invoke()
                 self.assertEqual(1, result.returncode)
                 self.assertEqual([], self.commands())
@@ -670,15 +670,15 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
             original = b'{ "stopOnFail": true, "culture": "fr-FR", "parallelizeTestCollections": false }\n'
             configs = {}
             targets = {}
-            for framework in ("net10.0", "net9.0"):
+            for framework in ("net11.0", "net11.0-windows"):
                 output = root / "artifacts" / framework
                 output.mkdir(parents=True)
                 targets[framework] = {"TargetPath": str(output / "Probe.dll")}
                 # Exercise both supported xUnit JSON configuration file names.
-                config = output / ("Probe.xunit.runner.json" if framework == "net9.0" else "xunit.runner.json")
+                config = output / ("Probe.xunit.runner.json" if framework == "net11.0-windows" else "xunit.runner.json")
                 config.write_bytes(original)
                 configs[framework] = config
-            properties = {"TargetFrameworks": "net10.0;net9.0"}
+            properties = {"TargetFrameworks": "net11.0;net11.0-windows"}
             with mock.patch.object(PIPE, "evaluated_properties",
                                    side_effect=lambda root, project, framework: targets[framework]):
                 with self.assertRaisesRegex(PIPE.PipelineError, "product failed"):
@@ -691,11 +691,11 @@ class ClassifierAndSubmoduleTests(unittest.TestCase):
                         raise PIPE.PipelineError("product failed", 23)
             for config in configs.values():
                 self.assertEqual(original, config.read_bytes())
-            subprocess.run(["git", "add", "--", str(configs["net10.0"])], cwd=root, check=True)
+            subprocess.run(["git", "add", "--", str(configs["net11.0"])], cwd=root, check=True)
             with self.assertRaisesRegex(PIPE.PipelineError, "tracked runner configuration"):
-                with PIPE.complete_xunit_vstest_configuration(root, project, {"TargetFrameworks": "", **targets["net10.0"]}):
+                with PIPE.complete_xunit_vstest_configuration(root, project, {"TargetFrameworks": "", **targets["net11.0"]}):
                     self.fail("tracked build-output configuration must remain untouched")
-            self.assertEqual(original, configs["net10.0"].read_bytes())
+            self.assertEqual(original, configs["net11.0"].read_bytes())
             source_config = (root / project).parent / "xunit.runner.json"
             source_config.write_bytes(original)
             with self.assertRaisesRegex(PIPE.PipelineError, "source runner configuration"):
@@ -940,7 +940,7 @@ class RealSdkTests(unittest.TestCase):
             for response_file in ("MSBuild.rsp", "Directory.Build.rsp"):
                 (directory / response_file).write_text("-invalid-poisoned-response-file-switch")
             project = directory / (name + ".csproj")
-            properties = "<TargetFramework>net10.0</TargetFramework>"
+            properties = "<TargetFramework>net11.0</TargetFramework>"
             references = ""
             if name != "Ordinary":
                 properties += '''<OutputType>Exe</OutputType>
@@ -988,7 +988,7 @@ public sealed class ProbeTests
         source_project = cls.root / "source-mode/Unavailable.Source.csproj"
         source_project.parent.mkdir()
         source_project.write_text('''<Project Sdk="Microsoft.NET.Sdk">
-<PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+<PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup>
 <Target Name="RejectSourceModeRestore" BeforeTargets="_GenerateRestoreGraphProjectEntry">
   <Error Text="Unavailable.Source.csproj must never be restored in package mode" />
 </Target>
@@ -1063,7 +1063,7 @@ public sealed class ProbeTests
                 self.assertEqual(["A.Tests:first:fr-FR", "A.Tests:second:fr-FR", "A.Tests:third:fr-FR"],
                                  sorted(marker.read_text().splitlines()))
                 for path in (prepared.root / "test dir/A.Tests/xunit.runner.json",
-                             prepared.root / "test dir/A.Tests/bin/Release/net10.0/xunit.runner.json"):
+                             prepared.root / "test dir/A.Tests/bin/Release/net11.0/xunit.runner.json"):
                     self.assertEqual(self.runner_configuration, path.read_bytes())
 
     def test_real_mtp_fail_skips_finishes_the_entire_project(self):
@@ -1105,7 +1105,7 @@ public sealed class ProbeTests
                 self.assertEqual(["A.Tests:first:fr-FR", "A.Tests:second:fr-FR", "A.Tests:third:fr-FR"],
                                  sorted(marker.read_text().splitlines()))
                 self.assertEqual(self.runner_configuration,
-                                 (prepared.root / "test dir/A.Tests/bin/Release/net10.0/xunit.runner.json").read_bytes())
+                                 (prepared.root / "test dir/A.Tests/bin/Release/net11.0/xunit.runner.json").read_bytes())
 
 
 class SinglePropertySdkTests(unittest.TestCase):
@@ -1114,10 +1114,10 @@ class SinglePropertySdkTests(unittest.TestCase):
             root = Path(directory)
             (root / "global.json").write_bytes((ROOT / "global.json").read_bytes())
             (root / "Fixture.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup>'
-                '<TargetFramework>net10.0</TargetFramework><PackageId>123</PackageId>'
+                '<TargetFramework>net11.0</TargetFramework><PackageId>123</PackageId>'
                 '<IsPackable>true</IsPackable></PropertyGroup></Project>')
             for name, expected in (("PackageId", "123"), ("IsPackable", "true"),
-                                   ("TargetFramework", "net10.0"), ("MissingProperty", "")):
+                                   ("TargetFramework", "net11.0"), ("MissingProperty", "")):
                 with self.subTest(property=name):
                     self.assertEqual({name: expected}, PIPE.evaluated_properties(root, "Fixture.csproj",
                         properties=(name,)))
@@ -1130,7 +1130,7 @@ class SinglePropertySdkTests(unittest.TestCase):
                         for item in ET.parse(ROOT / "Props/Directory.Packages.props").iter("PackageVersion")}
             library = root / "src/Product"
             library.mkdir(parents=True)
-            (library / "Product.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>')
+            (library / "Product.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup></Project>')
             (library / "Target.cs").write_text('''public static class Target
 {
     public static int Select(bool value)
@@ -1145,7 +1145,7 @@ class SinglePropertySdkTests(unittest.TestCase):
 ''')
             tests = root / "test/Product.Tests"
             tests.mkdir(parents=True)
-            (tests / "Product.Tests.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup>'
+            (tests / "Product.Tests.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework><OutputType>Exe</OutputType><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup>'
                 + ''.join(f'<PackageReference Include="{package}" Version="{versions[package]}" />'
                           for package in ("xunit.v3", "Microsoft.Testing.Extensions.CodeCoverage"))
                 + '<ProjectReference Include="../../src/Product/Product.csproj" /></ItemGroup></Project>')
@@ -1196,7 +1196,7 @@ class NuGetTrustPolicyTests(unittest.TestCase):
             (root / "global.json").write_bytes((ROOT / "global.json").read_bytes())
             (root / "Probe").mkdir()
             (root / "Probe/Probe.csproj").write_text(
-                '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
+                '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework>'
                 f'<PackageId>{self.PACKAGE}</PackageId><Version>1.0.0</Version><Authors>CI</Authors>'
                 '<Description>Unsigned trust probe</Description></PropertyGroup></Project>')
             (root / "Probe/Marker.cs").write_text("namespace Probe;\npublic static class Marker { }\n")
@@ -1206,7 +1206,7 @@ class NuGetTrustPolicyTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
             (root / "Consumer").mkdir()
             (root / "Consumer/Consumer.csproj").write_text(
-                '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
+                '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework>'
                 f'</PropertyGroup><ItemGroup><PackageReference Include="{self.PACKAGE}" Version="1.0.0" />'
                 '</ItemGroup></Project>')
             cases = (("signed", True, True, "NU3004"), ("control", True, False, None),

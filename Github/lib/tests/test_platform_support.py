@@ -344,7 +344,7 @@ class HistoricalTests(unittest.TestCase):
     def test_nonempty_cohorts_run_through_ci_local_and_release_and_stop_on_failure(self):
         import local_check
         (self.root / "compat").mkdir()
-        (self.root / "compat/Consumer.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Hexalith.EventStore.Contracts" Version="$(HexalithEventStoreVersion)" /></ItemGroup></Project>')
+        (self.root / "compat/Consumer.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Hexalith.EventStore.Contracts" Version="$(HexalithEventStoreVersion)" /></ItemGroup></Project>')
         (self.root / "Ship.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk"/>')
         (self.root / "Fixture.slnx").write_text('<Solution><Project Path="compat/Consumer.csproj" /></Solution>')
         self.prepared.document["buildProjects"] = [{"id": "sdk-" + version.replace(".", "-"), "project": "compat/Consumer.csproj", "versions": {"HexalithEventStoreVersion": version}} for version in ("4.1.0", "4.2.0")]
@@ -365,7 +365,7 @@ class HistoricalTests(unittest.TestCase):
             assert_instant(kwargs["flags"])
             values = {name: "" for name in kwargs["properties"]}
             values.update(dict(flag[3:].split("=", 1) for flag in kwargs["flags"] if flag.startswith("-p:")))
-            values["TargetFramework"] = "net10.0"
+            values["TargetFramework"] = "net11.0"
             return values
         clean = dict(os.environ)
         for route in ("ci", "local", "release"):
@@ -462,10 +462,10 @@ class DeclaredProjectTests(unittest.TestCase):
         self.base = Path(self.temporary.name)
         self.root = self.base / "source"
         initialize(self.root)
-        (self.root / "global.json").write_text('{"sdk":{"version":"10.0.404","rollForward":"disable"}}')
+        (self.root / "global.json").write_text('{"sdk":{"version":"11.0.100","rollForward":"disable"}}')
         (self.root / "compat").mkdir()
         self.project = self.root / "compat/Consumer.csproj"
-        self.project.write_text('''<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>
+        self.project.write_text('''<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net11.0</TargetFramework>
 <IsPackable>false</IsPackable></PropertyGroup><ItemGroup><PackageReference Include="Hexalith.EventStore.Contracts" Version="$(HexalithEventStoreVersion)" /></ItemGroup><Target Name="ObserveSelection" AfterTargets="Build">
 <WriteLinesToFile File="$(ArtifactsPath)/selection.txt" Lines="$(HexalithEventStoreVersion)" Overwrite="true" />
 <Error Condition="'$(UseHexalithProjectReferences)' != 'false'" Text="Package mode required" />
@@ -540,7 +540,7 @@ class DeclaredProjectTests(unittest.TestCase):
         self.project.write_text(original.replace('</Project>', '<Import Project="../Shared.props" /></Project>'))
         commit(self.root)
         cases.preflight(self.prepared)
-        for xml in ('<ItemGroup><ProjectReference Include="../Child.csproj"><SetTargetFramework>TargetFramework=net10.0;NuGetAudit=false</SetTargetFramework></ProjectReference></ItemGroup>',
+        for xml in ('<ItemGroup><ProjectReference Include="../Child.csproj"><SetTargetFramework>TargetFramework=net11.0;NuGetAudit=false</SetTargetFramework></ProjectReference></ItemGroup>',
                     '<ItemGroup><Compile Include="../../foreign.cs" /></ItemGroup>',
                     '<ItemGroup><Reference Include="Foreign"><HintPath>../../foreign.dll</HintPath></Reference></ItemGroup>',
                     '<ItemGroup><Analyzer Include="../../foreign.dll" /></ItemGroup>',
@@ -642,14 +642,14 @@ class StrictPackageTests(unittest.TestCase):
             if change == "unsigned":
                 del members[".signature.p7s"]
             elif change == "changed":
-                members["lib/net10.0/Fixture.dll"] = b"changed"
+                members["lib/net11.0/Fixture.dll"] = b"changed"
             elif change == "removed":
-                del members["lib/net10.0/Fixture.dll"]
+                del members["lib/net11.0/Fixture.dll"]
             elif change == "added":
-                members["lib/net10.0/Other.dll"] = b"added"
+                members["lib/net11.0/Other.dll"] = b"added"
             elif change == "unsafe":
                 members["../unsafe"] = b"unsafe"
-            data = zip_bytes([*members.items(), *(([("lib/net10.0/Fixture.dll", b"duplicate")]) if change == "duplicate" else [])])
+            data = zip_bytes([*members.items(), *(([("lib/net11.0/Fixture.dll", b"duplicate")]) if change == "duplicate" else [])])
             with self.subTest(change=change), self.assertRaises(ValueError):
                 release_publish.verify_packages(values, open_url=download(data), attempts=1, interval=0,
                     run=lambda *_a, **_k: SimpleNamespace(returncode=1 if change == "signature" else 0))
@@ -686,7 +686,7 @@ class StrictPackageTests(unittest.TestCase):
                 "id": "auxiliary", "project": projects[0].path, "versions": {"HexalithEventStoreVersion": "4.2.0"}}]))
             self.assertEqual((), release_build.discover_projects(excluded, flags))
             props.write_text(original.replace("</PropertyGroup>",
-                "<HexalithVerifyPublishedPackage Condition=\"'$(TargetFramework)' == 'net10.0'\">true</HexalithVerifyPublishedPackage></PropertyGroup>"))
+                "<HexalithVerifyPublishedPackage Condition=\"'$(TargetFramework)' == 'net11.0'\">true</HexalithVerifyPublishedPackage></PropertyGroup>"))
             with self.assertRaisesRegex(ValueError, "differs across"):
                 release_build.discover_projects(prepared, flags)
 

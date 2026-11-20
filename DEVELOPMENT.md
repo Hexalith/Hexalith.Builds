@@ -108,41 +108,21 @@ ASP.NET Core OpenApi 11. Retain the Dapr hosting integration required by the
 published EventStore package. Package migration evidence and remaining holds
 are recorded in `docs/dotnet-11-migration.md`.
 
-Older framework inputs in workspace MSBuild tests, catalog compatibility tests,
-release multi-target fixtures and byte-bound historical evidence are intentional.
-They exercise backward compatibility; installing SDK 10 alongside SDK 11 in CI
-supplies their offline reference packs and runtime without changing the active SDK.
+CI uses the .NET 11 SDK and runtimes. Historical framework reference packs
+are read as inputs to the API compatibility checks.
 
-The frozen `hexalith.module-manifest.v1` and G4 P0 acceptance contract retains
-its exact EventStore4.2.0, Dapr runtime/SDK1.19.1 and FrontComposer5.0.0 pins.
-`SupportedPlatformPins` describes that historical contract; it does not follow
-`PlatformVersionCatalog.Current`, whose current v2 default selects EventStore 5.4.0.
-The byte-bound schema, corpus, cleanup proofs and negative expectations stay unchanged.
+The frozen `hexalith.module-manifest.v1` and G4 P0 acceptance contract records
+EventStore 4.2.0, Dapr runtime/SDK 1.19.1 and FrontComposer 5.0.0.
+`SupportedPlatformPins` describes that historical contract.
 
-The catalog removes `HexalithPartiesSdk42CatalogView`. When adopting this
-release, remove references to that property from consumer builds. Parties
-projects use the current catalog cohort with EventStore 5.4.0, Memories
-4.1.0, Tenants 8.0.2 and McpCli 3.0.0.
-
-The catalog records an exact named SDK4.2 view for thirty-three Platform projects
-selected at Platform `32643bde39b4da0e4538f8388e225727f82122f6`. This view keeps
-the public SDK4.2 gateway's measured OpenAPI ABI pair: `Microsoft.AspNetCore.OpenApi/10.0.15`
-and `Microsoft.OpenApi/2.13.0`. A separate exact view retains this tuple for the
-three packaged Builds host roles: `Hexalith.Builds.Module.AppHost`,
-`Hexalith.Builds.Module.EventStoreHost`, and `Hexalith.Builds.Module.UiHost`.
-Their existing technical receiver admission does not include SDK5. The producer
-checks these role views independently of its embedded current default and frozen
-v1 schema pins. The Timesheets selector also keeps the SDK4.2 tuple for its
-named .NET 10 projects. Other project names retain SDK5 and the current
-OpenAPI11/3 pair. Explicit other SDK selections cannot acquire the compatibility
-pair. Independent clean project-name evaluation and the existing package-authority
-guard still prohibit consumer-local version declarations, crossed pairs and
-unrecorded views. Package auditing and transitive pinning remain required.
-These catalog views grant no native, image or new SDK5 Platform admission.
-
-The remaining SDK4.2 catalog views retain Tenants 7.0.7. Explicit Tenants
-selections remain authoritative. Both evaluated catalog probes and the real
-materialized consumer snapshot cover this retained family.
+Current consumers of `Props/Directory.Packages.props` use one EventStore version.
+This includes Parties, Platform, Timesheets and the packaged Builds hosts. When
+adopting this release, remove references to `HexalithPartiesSdk42CatalogView`
+and the other SDK 4.2 selectors. Read the current selection from
+`HexalithEventStoreVersion`. Each Hexalith package family advances independently.
+The build validates the resolved EventStore assemblies against the central
+selection. Project-name evaluation and the materialized consumer snapshot
+verify the selection used by the hosts.
 
 ## Composition catalog consumers
 

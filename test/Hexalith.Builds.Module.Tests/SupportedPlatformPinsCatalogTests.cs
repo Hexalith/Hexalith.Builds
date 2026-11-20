@@ -38,9 +38,9 @@ public sealed class SupportedPlatformPinsCatalogTests
     {
         PlatformVersionCatalog catalog = PlatformVersionCatalog.Current;
         SupportedPlatformPins.EventStoreVersion.ShouldBe("4.2.0");
-        catalog.EventStoreVersion.ShouldBe("5.4.0");
+
         SupportedPlatformPins.FrontComposerVersion.ShouldBe("5.0.0");
-        catalog.FrontComposerVersion.ShouldBe("6.0.1");
+
         SupportedPlatformPins.DaprSdkVersion.ShouldBe(catalog.DaprSdkVersion);
         SupportedPlatformPins.DaprRuntimeVersion.ShouldBe("1.19.1");
         CompositionToolchainPins.DaprRuntimeVersion.ShouldBe(catalog.DaprRuntimeVersion);

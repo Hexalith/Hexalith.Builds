@@ -432,7 +432,7 @@ class PublisherTests(History):
                 if mutation != "unsigned":
                     public[".signature.p7s"] = b"controlled signature subprocess"
                 if mutation == "changed":
-                    public["lib/net10.0/Fixture.dll"] = b"changed public bytes"
+                    public["lib/net11.0/Fixture.dll"] = b"changed public bytes"
                 response = io.BytesIO(zip_bytes(list(public.items())))
                 response.status, response.headers = 200, {}
                 environment = {"RELEASE_" + key.upper().replace("-", "_"): value for key, value in control.values.items()}

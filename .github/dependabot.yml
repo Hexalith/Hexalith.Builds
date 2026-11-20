@@ -27,6 +27,9 @@ updates:
       prefix: "ci(deps)"
 
   - package-ecosystem: nuget
+    ignore:
+      # The daily catalog workflow checks NuGet and commits one complete family and audit per PR.
+      - dependency-name: "Hexalith.*"
     directory: "/"
     schedule:
       interval: weekly

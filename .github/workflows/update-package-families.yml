@@ -1,0 +1,106 @@
+name: Update Hexalith package families
+on:
+  schedule:
+    - cron: '24 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: update-hexalith-catalog
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  discover:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      changes: ${{ steps.plan.outputs.changes }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Find complete stable family releases on NuGet
+        id: plan
+        run: |
+          changes=$(python3 Tools/ci/update_package_family.py)
+          echo "changes=$changes" >> "$GITHUB_OUTPUT"
+
+  update:
+    needs: discover
+    if: needs.discover.outputs.changes != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include: ${{ fromJSON(needs.discover.outputs.changes) }}
+    env:
+      FAMILY: ${{ matrix.family }}
+      VERSION: ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check for a previous proposal
+        id: previous
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="automation/$FAMILY-$VERSION"
+          state=$(gh pr list --state all --head "$branch" --base main --limit 1 --json state --jq '.[0].state // "NONE"')
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          status=0
+          git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null || status=$?
+          case "$status" in
+            0) echo 'exists=true' >> "$GITHUB_OUTPUT" ;;
+            2) echo 'exists=false' >> "$GITHUB_OUTPUT" ;;
+            *) exit "$status" ;;
+          esac
+      - uses: ./Github/initialize-dotnet
+        if: steps.previous.outputs.state == 'NONE' && steps.previous.outputs.exists == 'false'
+        with:
+          global-json-file: global.json
+      - name: Commit the family selection and its revision-bound audit
+        if: steps.previous.outputs.state == 'NONE' && steps.previous.outputs.exists == 'false'
+        shell: bash
+        run: |
+          python3 Tools/ci/update_package_family.py --apply "$FAMILY" "$VERSION"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "automation/$FAMILY-$VERSION"
+          cp Tools/package-version-audit.json "$RUNNER_TEMP/prior-audit.json"
+          git add Props/Directory.Packages.props Props/release-declarations.json
+          git commit -m "build(deps): update $FAMILY to $VERSION"
+          pwsh -NoProfile -File Tools/audit-central-package-versions.ps1 -ChangedFamily "$FAMILY" -PriorAuditPath "$RUNNER_TEMP/prior-audit.json" -OutputPath Tools/package-version-audit.json
+          pwsh -NoProfile -File Tools/validate-package-version-audit.ps1
+          git add Tools/package-version-audit.json
+          git commit -m "build(deps): refresh $FAMILY audit"
+      - name: Open the update for review and run CI on the audited revision
+        if: steps.previous.outputs.state == 'NONE' || steps.previous.outputs.state == 'OPEN'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="automation/$FAMILY-$VERSION"
+          gh auth setup-git
+          if ! git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null; then
+            git push origin "HEAD:refs/heads/$branch"
+          fi
+          if ! gh pr view "$branch" --json state --jq .state | grep -qx OPEN; then
+            gh pr create --base main --head "$branch" --title "build(deps): update $FAMILY to $VERSION" --body 'Updates the family and its audit together. Merge with a merge commit to retain the source revision recorded by the audit.'
+          fi
+          # Pull requests created with GITHUB_TOKEN need an explicit CI dispatch.
+          revision=$(git ls-remote --exit-code origin "refs/heads/$branch" | cut -f1)
+          runs=$(gh run list --workflow builds-ci.yml --commit "$revision" --branch "$branch" --event workflow_dispatch --limit 1 --json databaseId --jq length)
+          if [ "$runs" = 0 ]; then
+            gh workflow run builds-ci.yml --ref "$branch"
+          fi

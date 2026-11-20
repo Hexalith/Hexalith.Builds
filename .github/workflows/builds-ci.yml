@@ -29,8 +29,6 @@ jobs:
       contents: write
       actions: write
     with:
-      # Active projects use SDK 11; SDK 10 supplies offline backward-compatibility fixtures.
-      additional-sdk-version: '10.0.404'
       # The full catalog/workspace regression suite exceeds the shared 30-minute default.
       job-timeout-minutes: 60
     secrets:
@@ -118,10 +116,14 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Install .NET 10 targeting packs for offline catalog fixtures
-        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
-        with:
-          dotnet-version: '10.0.404'
+      - name: Compile the .NET 11 EventStore consumer
+        run: >-
+          dotnet build src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj
+          --configuration Release -p:UseHexalithProjectReferences=false
+          -p:RestoreConfigFile="${{ github.workspace }}/NuGet.ci.Config"
+
+      - name: Test coordinated family updates
+        run: python3 -m unittest discover -s Tools/ci -p test_update_package_family.py
 
       - name: Validate central package versions
         shell: pwsh
@@ -134,9 +136,6 @@ jobs:
       - name: Test logging generator selection
         run: python3 Tools/test-logging-generator-selection.py
 
-      - name: Test FrontComposer Immutable consumer view
-        run: python3 Tools/test-frontcomposer-immutable-view.py
-
       - name: Test Aspire AppHost catalog reference
         run: python3 Tools/test-aspire-apphost-catalog-reference.py
 
@@ -147,14 +146,6 @@ jobs:
       - name: Validate package version audit
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1
-
-      - name: Test package version audit generator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-package-version-audit-generator.ps1
-
-      - name: Test package version audit validator
-        shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1
 
       - name: Validate Builds consumer package authority
         shell: pwsh
@@ -187,6 +178,29 @@ jobs:
       - name: Test Dapr package validator
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1
+
+  audit-tests:
+    name: Package audit regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./Github/initialize-dotnet
+        with:
+          global-json-file: global.json
+
+      - name: Test package version audit generator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-package-version-audit-generator.ps1
+
+      - name: Test package version audit validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1
 
   quality:
     name: Workflow lint and public API

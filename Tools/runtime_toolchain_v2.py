@@ -47,8 +47,8 @@ CANONICAL_ARTIFACTS = {
 BUILD_ARGUMENTS = ["--configuration", "Debug", "--no-incremental", "-m:1", "-p:UseHexalithProjectReferences=true", "-v:minimal"]
 LIVE_PROJECT = "tests/Hexalith.EventStore.Server.LiveSidecar.Tests/Hexalith.EventStore.Server.LiveSidecar.Tests.csproj"
 SUPPORT_PROJECT = "tests/Hexalith.EventStore.Server.Tests/Hexalith.EventStore.Server.Tests.csproj"
-LIVE_DLL = "references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Debug/net10.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll"
-SUPPORT_DLL = "references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.Tests/bin/Debug/net10.0/Hexalith.EventStore.Server.Tests.dll"
+LIVE_DLL = "references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Debug/net11.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll"
+SUPPORT_DLL = "references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.Tests/bin/Debug/net11.0/Hexalith.EventStore.Server.Tests.dll"
 FIXTURE_CLASSES = ["Hexalith.EventStore.Server.LiveSidecar.Tests.Fixtures." + name for name in (
     "Oq8QualificationOverridesTests", "DockerPublishedPortResolverTests", "Oq8DiscoveryConfigurationTests",
     "Oq8InvocationDiagnosticHandlerTests", "Oq8OwnedContainerLaunchTests")]

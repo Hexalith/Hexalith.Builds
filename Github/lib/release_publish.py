@@ -232,27 +232,17 @@ def authenticate(git, api, values, directory, workflow_ref, *, registry=Registry
                       digest=values["artifact-digest"], sha=values["sha"])
     payload = api.artifact_bytes(positive(values["artifact-id"]))
     files, policies = {}, {}
+    package_paths = {}
     values["inventory"] = artifact_inventory(payload, sha=values["sha"], version=values["version"],
-        digest=values["artifact-digest"], repository=api.repository, files=files, package_policies=policies)
+        digest=values["artifact-digest"], repository=api.repository, files=files, package_policies=policies, package_paths=package_paths)
     if policies:
         values["package-policies"] = policies
     else:
         values.pop("package-policies", None)
     values["repository"] = api.repository
-    values["package-payloads"] = {}
-    for name, data in files.items():
-        if name.startswith("packages/"):
-            # IDs are authoritative manifest inventory entries, not guessed file names.
-            matches = []
-            for identity in values["inventory"]["packages"]:
-                try:
-                    package_identity(data, package_id=identity, version=values["version"], sha=values["sha"])
-                except ReleaseError:
-                    continue
-                matches.append(identity)
-            if len(matches) != 1:
-                raise ReleaseError("original package payload identity is ambiguous")
-            values["package-payloads"][matches[0]] = publication.payload_map(data)
+    values["package-payloads"] = {
+        identity: publication.payload_map(files[path]) for identity, path in package_paths.items()
+    }
     live = api.get(f"/repos/{api.repository}/releases/{values['draft-id']}", deadline=api.clock() + 120)
     validate_release(live, values, draft=True)
     values["body"] = live["body"]

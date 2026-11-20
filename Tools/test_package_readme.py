@@ -48,7 +48,7 @@ class PackageReadmeTests(unittest.TestCase):
         project = directory / "fixture.csproj"
         project.write_text(f'''<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Configuration>Debug</Configuration>
     <ProjectRoot>{escape(str(module))}</ProjectRoot>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -129,7 +129,7 @@ class PackageReadmeTests(unittest.TestCase):
                         built = self.invoke(directory, "build", str(project), "--configuration", configuration,
                                             f"-p:VersionSuffix={suffix}", "-m:1", "-v:minimal")
                         self.assertEqual(0, built.returncode, built.stdout + built.stderr)
-                        self.assertTrue((directory / f"bin/{configuration}/net10.0/fixture.dll").is_file())
+                        self.assertTrue((directory / f"bin/{configuration}/net11.0/fixture.dll").is_file())
                         for pattern in ("*.nupkg", "*.snupkg"):
                             self.assertFalse(list(directory.rglob(pattern)), built.stdout + built.stderr)
 

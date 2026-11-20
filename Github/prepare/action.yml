@@ -154,6 +154,14 @@ runs:
         CI_PREPARE_ADDITIONAL_TEST_PROJECTS: ${{ inputs.additional-test-projects }}
       run: '& "$env:GITHUB_ACTION_PATH/prepare_windows.ps1" -Phase Validate'
 
+    - name: Validate additional .NET 11 SDK
+      if: inputs.additional-sdk-version != ''
+      shell: bash
+      env:
+        ADDITIONAL_SDK: ${{ inputs.additional-sdk-version }}
+      run: |
+        [[ "$ADDITIONAL_SDK" =~ ^11\.0\.[0-9]{3}$ ]] || { echo 'Select an exact .NET 11 SDK.' >&2; exit 1; }
+
     - name: Set up Linux module SDK
       if: runner.os == 'Linux' && steps.linux.outputs.solution != 'none'
       uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0

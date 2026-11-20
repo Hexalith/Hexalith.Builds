@@ -1003,7 +1003,7 @@ try {
     $frozenV1Pins = Get-FrozenV1PlatformPins
     $expectedEventStoreVersion = $frozenV1Pins.eventStoreVersion
     $qualifiedHostSdk = Assert-PackagedHostCatalogViews
-    if ($qualifiedHostSdk -cne $expectedEventStoreVersion) { throw 'The independently qualified host view differs from the immutable v1 contract.' }
+    if ($qualifiedHostSdk -cne ($expectedCatalog | ConvertFrom-Json).eventStoreVersion) { throw 'Packaged host SDK differs from the current tool catalog.' }
 
     $env:NUGET_PACKAGES = Join-Path $consumerRoot '.nuget/packages'
     $env:DOTNET_CLI_HOME = Join-Path $consumerRoot '.dotnet'

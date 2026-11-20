@@ -241,10 +241,10 @@ class ContextAndInputTests(unittest.TestCase):
 
     def test_additional_sdk_is_optional_and_exact_in_both_readers(self):
         validator = Draft202012Validator(SCHEMA)
-        self.document["additionalSdkVersion"] = "10.0.404"
+        self.document["additionalSdkVersion"] = "11.0.100"
         validator.validate(self.document)
         CONFIG.validate_config(self.document, repository=MODULE)
-        for value in ("", "10.0.x", "10.0.404\n", "${{ vars.SDK }}", "010.0.404", 10):
+        for value in ("", "10.0.404", "10.0.x", "10.0.404\n", "${{ vars.SDK }}", "010.0.404", 10):
             with self.subTest(value=value):
                 self.document["additionalSdkVersion"] = value
                 self.assertFalse(validator.is_valid(self.document))

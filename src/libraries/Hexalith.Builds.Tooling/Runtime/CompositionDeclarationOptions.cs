@@ -20,8 +20,8 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     /// <summary>The actual project name of the shared Platform composition model.</summary>
     public const string PlatformCompositionProjectName = "Hexalith.Platform.Composition";
 
-    /// <summary>Gets the unchanged owner release commits shared by lifecycle startup and the Platform AppHost.</summary>
-    public static IReadOnlyDictionary<string, string> DefaultReleaseCommits { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    /// <summary>Gets the verified owner release commits shared by lifecycle startup and the Platform AppHost.</summary>
+    public static IReadOnlyDictionary<string, string> DefaultReleaseCommits { get; } = ReadReleaseAuthority("commit", new(StringComparer.Ordinal)
     {
         ["eventstore/3.120.0"] = "9b26956f9e825fd6771b62a79c7b81323ba856cf",
         ["tenants/5.8.0"] = "032573384d3df4bc7a5bc0e69945ecca4e00967f",
@@ -46,10 +46,10 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/3.0.27"] = "535ee97b694c79e6c7608e90a5a725f092ad982c",
         ["parties/3.1.0"] = "50904cc4ba53c9b0b2c082d5872a0d276be8f5c3",
         ["parties/3.1.1"] = "84e3df796ac977041a21ec7bd8e5789bdc44241a",
-    }.ToFrozenDictionary(StringComparer.Ordinal);
+    });
 
     /// <summary>Gets the shared released declaration hashes; absent entries have no released v2 declaration.</summary>
-    public static IReadOnlyDictionary<string, string> DefaultReleaseSnapshotHashes { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    public static IReadOnlyDictionary<string, string> DefaultReleaseSnapshotHashes { get; } = ReadReleaseAuthority("sha256", new(StringComparer.Ordinal)
     {
         ["eventstore/3.129.0"] = "a56951dcc4a8c53f22e449a2399516e51c4d2569bec1357f8197593a8d9e44a2",
         ["memories/3.0.12"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
@@ -71,7 +71,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         ["memories/3.0.27"] = "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840",
         ["parties/3.1.0"] = "d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348",
         ["parties/3.1.1"] = "d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348",
-    }.ToFrozenDictionary(StringComparer.Ordinal);
+    });
 
     /// <summary>Gets the actual consumer project name, or null to select the default catalog view.</summary>
     public string? ConsumerProjectName { get; init; }
@@ -165,6 +165,26 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         {
             throw new InvalidDataException($"{source}: {packageId}: Builds catalog metadata is malformed: {exception.Message}", exception);
         }
+    }
+
+    private static FrozenDictionary<string, string> ReadReleaseAuthority(string field, Dictionary<string, string> historical)
+    {
+        using Stream resource = typeof(CompositionDeclarationOptions).Assembly.GetManifestResourceStream("Hexalith.Builds.Tooling.ReleaseDeclarations.json")
+            ?? throw new InvalidDataException("The catalog release declarations are unavailable.");
+        using JsonDocument releases = JsonDocument.Parse(resource);
+        foreach (JsonProperty release in releases.RootElement.EnumerateObject())
+        {
+            string value = release.Value.GetProperty(field).GetString()
+                ?? throw new InvalidDataException($"The release declaration for {release.Name} is missing {field}.");
+            if (historical.TryGetValue(release.Name, out string? existing) && existing != value)
+            {
+                throw new InvalidDataException($"The catalog conflicts with the historical release declaration for {release.Name}.");
+            }
+
+            historical[release.Name] = value;
+        }
+
+        return historical.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
     private static string? ReadDefaultCatalogProperty(XDocument catalog, string property)

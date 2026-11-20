@@ -376,6 +376,15 @@ jobs:
       - name: Initialize root-declared submodules
         if: ${{ !inputs.governed-ci }}
         uses: Hexalith/Hexalith.Builds/Github/initialize-build@beb85e497957fedc66854013efd2cc4bd216ecbc # BUILD-REL-1
+      - name: Require the module SDK to be .NET 11
+        shell: pwsh
+        env:
+          GLOBAL_JSON: ${{ inputs.dotnet-global-json }}
+          ADDITIONAL_SDK: ${{ inputs.additional-sdk-version }}
+        run: |
+          $sdk = (Get-Content -Raw -LiteralPath $env:GLOBAL_JSON | ConvertFrom-Json).sdk.version
+          if ($sdk -notmatch '^11\.0\.[0-9]{3}\z') { throw 'The module global.json must select .NET 11.' }
+          if ($env:ADDITIONAL_SDK -and $env:ADDITIONAL_SDK -notmatch '^11\.0\.(?:[0-9]{3}|x)\z') { throw 'Additional SDKs must use .NET 11.' }
       - name: Initialize .NET
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
