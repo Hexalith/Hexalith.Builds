@@ -27,9 +27,8 @@ package IDs and unique existing project paths. The `source-branch` input remains
 for compatibility; only the literal value `main` is supported. Other values fail
 before preparation or publication.
 
-Set `additional-sdk-version: '10.0.404'` when SDK 11 builds net10.0 tools or
-hosts. Setup installs both the SDK from global.json and this additional SDK,
-including the .NET and ASP.NET Core 10 runtimes.
+The module's `global.json` selects the .NET 11 SDK for release builds. Leave
+`additional-sdk-version` empty unless the module needs a second .NET 11 feature band.
 
 The caller checks out `${{ github.sha }}` with full history, `submodules: false`,
 and `persist-credentials: false` before calling the action. Its job owns
