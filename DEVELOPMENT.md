@@ -116,27 +116,29 @@ supplies their offline reference packs and runtime without changing the active S
 The frozen `hexalith.module-manifest.v1` and G4 P0 acceptance contract retains
 its exact EventStore4.2.0, Dapr runtime/SDK1.19.1 and FrontComposer5.0.0 pins.
 `SupportedPlatformPins` describes that historical contract; it does not follow
-`PlatformVersionCatalog.Current`, whose current v2 default selects EventStore5.3.0.
+`PlatformVersionCatalog.Current`, whose current v2 default selects EventStore 5.4.0.
 The byte-bound schema, corpus, cleanup proofs and negative expectations stay unchanged.
 
-The catalog additionally records exact named SDK4.2 views for the forty current
-Parties projects and thirty-three Platform projects selected at Platform
-`32643bde39b4da0e4538f8388e225727f82122f6`. Each view keeps the public SDK4.2
-gateway's measured OpenAPI ABI pair: `Microsoft.AspNetCore.OpenApi/10.0.15`
+Parties projects use the current catalog cohort with EventStore 5.4.0,
+Memories 4.1.0, Tenants 8.0.2 and McpCli 3.0.0.
+
+The catalog records an exact named SDK4.2 view for thirty-three Platform projects
+selected at Platform `32643bde39b4da0e4538f8388e225727f82122f6`. This view keeps
+the public SDK4.2 gateway's measured OpenAPI ABI pair: `Microsoft.AspNetCore.OpenApi/10.0.15`
 and `Microsoft.OpenApi/2.13.0`. A separate exact view retains this tuple for the
 three packaged Builds host roles: `Hexalith.Builds.Module.AppHost`,
 `Hexalith.Builds.Module.EventStoreHost`, and `Hexalith.Builds.Module.UiHost`.
 Their existing technical receiver admission does not include SDK5. The producer
 checks these role views independently of its embedded current default and frozen
-v1 schema pins. Other project names retain SDK5 and the current
+v1 schema pins. The Timesheets selector also keeps the SDK4.2 tuple for its
+named .NET 10 projects. Other project names retain SDK5 and the current
 OpenAPI11/3 pair. Explicit other SDK selections cannot acquire the compatibility
 pair. Independent clean project-name evaluation and the existing package-authority
 guard still prohibit consumer-local version declarations, crossed pairs and
 unrecorded views. Package auditing and transitive pinning remain required.
 These catalog views grant no native, image or new SDK5 Platform admission.
 
-Tenants 8.0.1 is the current default and requires EventStore 5.3.0. The same
-finite SDK4.2 consumer identities retain Tenants 7.0.7; explicit Tenants
+The remaining SDK4.2 catalog views retain Tenants 7.0.7. Explicit Tenants
 selections remain authoritative. Both evaluated catalog probes and the real
 materialized consumer snapshot cover this retained family.
 
