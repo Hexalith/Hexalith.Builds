@@ -175,7 +175,7 @@
     <HexalithBuildsPackagedHostSdk42CatalogView Condition="$(MSBuildProjectName.Equals('Hexalith.Builds.Module.AppHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.EventStoreHost'))
         or $(MSBuildProjectName.Equals('Hexalith.Builds.Module.UiHost'))">true</HexalithBuildsPackagedHostSdk42CatalogView>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">4.2.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == '' and ('$(UseHexalithProjectReferences)' != 'true' or '$(HexalithEventStoreFromSource)' == 'false') and ('$(HexalithPartiesSdk42CatalogView)' == 'true' or '$(HexalithPlatformSdk42CatalogView)' == 'true' or '$(HexalithBuildsPackagedHostSdk42CatalogView)' == 'true' or '$(HexalithTimesheetsNet10CatalogView)' == 'true')">5.4.0</HexalithEventStoreVersion>
     <!-- Published EventStore 5.4.0 remains the current net11 default; SDK4.2 consumers keep 4.2.0. -->
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.4.0</HexalithEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
