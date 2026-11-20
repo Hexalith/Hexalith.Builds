@@ -277,6 +277,33 @@ class PrerequisiteTests(unittest.TestCase):
         with self.assertRaisesRegex(ENV.PipelineError, "not enabled"):
             PREPARE.environment_config(prepared, "unknown")
 
+    def test_custom_job_build_binds_published_builds_before_restore(self):
+        from ci_pipeline import PreparedConfig, TestProjects
+        document = {"publishedBuilds": "eng/tuple.json", "jobs": {"platform-parity": {"runner": "ubuntu-latest"}}}
+        prepared = PreparedConfig(self.root, self.root, document, "Fixture.slnx", "global.json", ())
+        classified = TestProjects((), (), ())
+        order = []
+
+        def ensure(prepared_argument, *, repository):
+            self.assertIs(prepared_argument, prepared)
+            self.assertEqual("Hexalith/Hexalith.Works", repository)
+            order.append("ensure")
+
+        def restore(prepared_argument):
+            self.assertIs(prepared_argument, prepared)
+            order.append("restore")
+
+        with mock.patch.dict(os.environ, {"CI_CUSTOM_JOB": "platform-parity", "CI_REPOSITORY": "Hexalith/Hexalith.Works",
+                                          "GITHUB_WORKSPACE": str(self.root)}), \
+                mock.patch.object(sys, "argv", ["prepare_linux.py", "--phase", "build"]), \
+                mock.patch.object(PREPARE, "prepare_config", return_value=prepared), \
+                mock.patch.object(PREPARE, "restore_and_build", side_effect=restore), \
+                mock.patch.object(PREPARE, "classified_projects", return_value=classified), \
+                mock.patch.object(PREPARE, "write_stage_outputs"), \
+                mock.patch("module_preparation.ensure_for_job", side_effect=ensure):
+            self.assertEqual(0, PREPARE.main())
+        self.assertEqual(["ensure", "restore"], order)
+
     def test_custom_job_explicit_browser_false_suppresses_unrelated_e2e_inference(self):
         from ci_pipeline import PreparedConfig, TestProjects
         document = {"browsers": True, "jobs": {"properties": {"runner": "ubuntu-latest",

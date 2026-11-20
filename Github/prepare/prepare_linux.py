@@ -50,7 +50,7 @@ def main() -> int:
             initialize_submodules(prepared)
             write_outputs(prepared, repository=repository)
         else:
-            if prepared.document.get("moduleManifest"):
+            if prepared.document.get("moduleManifest") or prepared.document.get("publishedBuilds"):
                 from module_preparation import ensure_for_job
                 ensure_for_job(prepared, repository=repository)
             restore_and_build(prepared)
