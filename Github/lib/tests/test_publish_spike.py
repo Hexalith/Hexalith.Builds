@@ -301,30 +301,52 @@ class PublishSpikeTests(unittest.TestCase):
             if key.strip():
                 self.assertNotIn(key, result.stdout + result.stderr)
 
-    def test_skopeo_command_executes_pinned_distribution_and_removes_authfile(self):
+    def test_skopeo_command_passes_scoped_auth_over_stdin_to_pinned_distribution(self):
         docker = self.root / "docker"
-        docker.write_text("#!/usr/bin/env python3\nimport json,os,sys\nfrom pathlib import Path\n"
-                          "if sys.argv[-1]=='--version': print(os.environ['TOOL_VERSION'])\n"
-                          "else: Path(os.environ['COMMAND_LOG']).write_text(json.dumps(sys.argv[1:]))\n")
+        docker.write_text("""#!/usr/bin/env python3
+import base64, json, os, sys
+from pathlib import Path
+
+log = Path(os.environ["COMMAND_LOG"])
+assert not (log.parent / "auth.json").exists()
+assert {"GITHUB_TOKEN", "NUGET_API_KEY", "REGISTRY_USERNAME", "REGISTRY_PASSWORD"}.isdisjoint(os.environ)
+credentials = b"scoped-user:synthetic-password"
+encoded = base64.b64encode(credentials).decode()
+assert all("synthetic-password" not in arg and encoded not in arg for arg in sys.argv)
+if sys.argv[-1] == "--version":
+    print(os.environ["TOOL_VERSION"])
+else:
+    auths = json.load(sys.stdin)["auths"]
+    assert list(auths) == ["registry.hexalith.com"]
+    assert auths["registry.hexalith.com"]["auth"] == encoded
+    log.write_text(json.dumps(sys.argv[1:]))
+""")
         docker.chmod(0o755)
         archive = self.root / "fixture.tar"
         archive.write_bytes(self.archive.read_bytes())
         log = self.root / "command.json"
         tool = json.loads((spike.ROOT / "Tools/spikes/publish-tools.json").read_text())["skopeo"]
         expected = f"skopeo version {tool["version"]} commit: {tool["source_commit"]}"
-        with patch.dict(os.environ, {"PATH": str(self.root) + os.pathsep + os.environ["PATH"],
-                                    "COMMAND_LOG": str(log), "TOOL_VERSION": expected}):
-            spike.skopeo_copy(archive, self.root, "scoped-user", "synthetic-password")
+        username, password = "scoped-user", "synthetic-password"
+        with patch.dict(os.environ, {
+                "PATH": str(self.root) + os.pathsep + os.environ["PATH"],
+                "COMMAND_LOG": str(log), "TOOL_VERSION": expected,
+                "REGISTRY_USERNAME": username, "REGISTRY_PASSWORD": password,
+                "GITHUB_TOKEN": "synthetic-github-token", "NUGET_API_KEY": "synthetic-nuget-key"}):
+            spike.skopeo_copy(archive, self.root, username, password)
         command = json.loads(log.read_text())
         self.assertIn("--all", command)
         self.assertIn("--preserve-digests", command)
-        tool = json.loads((spike.ROOT / "Tools/spikes/publish-tools.json").read_text())["skopeo"]
         self.assertIn(tool["distribution"] + "@" + tool["digest"], command)
-        self.assertNotIn("synthetic-password", log.read_text())
+        self.assertIn("--interactive", command)
+        mount = command[command.index("--tmpfs") + 1]
+        auth_directory, options = mount.split(":", 1)
+        self.assertIn("mode=0700", options.split(","))
+        self.assertEqual(command[command.index("sh") + 1], auth_directory + "/auth.json")
         self.assertFalse((self.root / "auth.json").exists())
 
 
-    def test_wrong_skopeo_version_prevents_copy_and_removes_authfile(self):
+    def test_wrong_skopeo_version_prevents_copy(self):
         docker = self.root / "docker"
         marker = self.root / "unexpected-copy"
         docker.write_text("#!/usr/bin/env python3\nimport os,sys\nfrom pathlib import Path\n"

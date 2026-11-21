@@ -560,6 +560,7 @@ class DraftCompositeTests(History):
             "-keyout", str(key), "-out", str(certificate), "-days", "1", "-subj", "/CN=127.0.0.1",
             "-addext", "subjectAltName=IP:127.0.0.1"], check=True, capture_output=True)
         tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        tls.minimum_version = ssl.TLSVersion.TLSv1_2
         tls.load_cert_chain(certificate, key)
         commands = work / "commands.jsonl"
         binaries = work / "bin"

@@ -17,6 +17,7 @@ import unittest
 import zipfile
 from pathlib import Path
 from unittest import mock
+from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -655,7 +656,7 @@ class PublicationBoundaryTests(unittest.TestCase):
                     return publication.Response(404, {}, b"")
                 if method == "POST" and url.endswith("/releases"):
                     return publication.Response(201, {}, json.dumps({"id": 70, "upload_url": "https://uploads.github.com/repos/Hexalith/Hexalith.FrontComposer/releases/70/assets{?name,label}"}).encode())
-                if method == "POST" and "uploads.github.com" in url:
+                if method == "POST" and urlsplit(url).hostname == "uploads.github.com":
                     return publication.Response(201, {}, b"{}")
                 if method == "PUT":
                     if headers.get("X-NuGet-ApiKey") != "secret-nuget-key":

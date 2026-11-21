@@ -233,25 +233,28 @@ def publish_archive(archive: Path, graph: dict, registry: Registry, copy) -> dic
 
 
 def skopeo_copy(archive: Path, work: Path, username: str, password: str) -> None:
-    """Run a version/digest pinned official distribution with a private authfile."""
+    """Run pinned Skopeo with registry auth held on a container-only tmpfs."""
     tool = json.loads((ROOT / "Tools/spikes/publish-tools.json").read_text())["skopeo"]
     image = tool["distribution"] + "@" + tool["digest"]
-    auth = work / "auth.json"
+    base = ["docker", "run", "--rm", "--volume", f"{work}:/spike:ro"]
+    environment = {name: value for name, value in os.environ.items()
+                   if name not in {"GITHUB_TOKEN", "NUGET_API_KEY", "REGISTRY_USERNAME", "REGISTRY_PASSWORD"}}
+    version = subprocess.check_output([*base, image, "--version"], env=environment, text=True).strip()
+    expected = f"skopeo version {tool["version"]} commit: {tool["source_commit"]}"
+    if version != expected:
+        raise SpikeError("Skopeo distribution version mismatch")
+
+    host = DESTINATION.split("/", 1)[0]
     encoded = base64.b64encode(f"{username}:{password}".encode()).decode()
-    auth.write_text(json.dumps({"auths": {"registry.hexalith.com": {"auth": encoded}}}))
-    auth.chmod(0o600)
-    base = ["docker", "run", "--rm", "--volume", f"{work}:/spike:ro", image]
-    try:
-        version = subprocess.check_output([*base, "--version"], text=True).strip()
-        expected = f"skopeo version {tool["version"]} commit: {tool["source_commit"]}"
-        if version != expected:
-            raise SpikeError("Skopeo distribution version mismatch")
-        command = [*base, "copy", "--all", "--preserve-digests", "--authfile", "/spike/auth.json",
-                   "oci-archive:/spike/" + str(archive.relative_to(work)),
-                   "docker://" + DESTINATION + ":" + TAG]
-        subprocess.run(command, check=True)
-    finally:
-        auth.unlink(missing_ok=True)
+    auth = json.dumps({"auths": {host: {"auth": encoded}}})
+    auth_directory = "/run/registry-auth"
+    command = [*base, "--interactive", "--tmpfs", f"{auth_directory}:mode=0700,noexec,nosuid,nodev",
+               "--entrypoint", "/bin/sh", image, "-c",
+               'umask 077 && cat > "$1" && exec skopeo copy --authfile "$@"',
+               "sh", f"{auth_directory}/auth.json", "--all", "--preserve-digests",
+               "oci-archive:/spike/" + str(archive.relative_to(work)),
+               "docker://" + DESTINATION + ":" + TAG]
+    subprocess.run(command, input=auth, env=environment, text=True, check=True)
 
 
 def main() -> int:
