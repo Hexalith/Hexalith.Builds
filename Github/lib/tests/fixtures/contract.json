@@ -3015,6 +3015,62 @@
     }
   },
   {
+    "name": "none-with-tests-{'minimumExpectedTests': {'test/Fixture.csproj': 1}}",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "none",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {
+          "test/Fixture.csproj": 1
+        },
+        "failSkips": false
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 30,
+      "npmWorkspaces": [],
+      "dotnetTools": false
+    }
+  },
+  {
+    "name": "none-with-tests-{'failSkips': True}",
+    "valid": false,
+    "document": {
+      "schema": "hexalith.ci.v1",
+      "buildsTag": "v4.45.1",
+      "solution": "none",
+      "dapr": false,
+      "browsers": false,
+      "registry": false,
+      "codeql": [
+        "csharp"
+      ],
+      "tests": {
+        "integration": [],
+        "exclude": {},
+        "minimumExpectedTests": {},
+        "failSkips": true
+      },
+      "hooks": [],
+      "jobs": {},
+      "submodules": [],
+      "ciTimeoutMinutes": 30,
+      "npmWorkspaces": [],
+      "dotnetTools": false
+    }
+  },
+  {
     "name": "unsafe-solution-0",
     "valid": false,
     "document": {

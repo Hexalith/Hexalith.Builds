@@ -422,6 +422,9 @@ class SubprocessPipelineTests(unittest.TestCase):
         self.assertEqual(2, len(tests))
         self.assertEqual(1, tests[0].count("--minimum-expected-tests"))
         self.assertEqual(["--stop-on-fail", "off", "--minimum-expected-tests", "2", "--fail-skips", "on"], tests[0][-6:])
+        # failSkips applies to every project, including one without a floor.
+        self.assertEqual(["--stop-on-fail", "off", "--fail-skips", "on"], tests[1][-4:])
+        self.assertNotIn("--minimum-expected-tests", tests[1])
         for changes, expected in (({"test_count": 1}, 24), ({"skipped": True}, 25)):
             with self.subTest(changes=changes):
                 (self.root / "commands.jsonl").unlink()
@@ -434,11 +437,29 @@ class SubprocessPipelineTests(unittest.TestCase):
                 for key in changes:
                     del self.data[key]
 
+    def test_integration_phase_applies_count_and_skip_policies(self):
+        integration = "test/Fixture.IntegrationTests.csproj"
+        self.document["tests"].update(minimumExpectedTests={integration: 2}, failSkips=True)
+        result = self.invoke("--phase", "integration")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        tests = [call for call in self.commands() if call[0] == "test"]
+        self.assertEqual([integration], [call[2] for call in tests])
+        self.assertEqual(["--stop-on-fail", "off", "--minimum-expected-tests", "2", "--fail-skips", "on"], tests[0][-6:])
+        (self.root / "commands.jsonl").unlink()
+        self.data["test_count"] = 1
+        result = self.invoke("--phase", "integration")
+        self.assertEqual(24, result.returncode, result.stdout + result.stderr)
+        self.assertEqual([integration], [call[2] for call in self.commands() if call[0] == "test"])
+        self.assertIn(f"dotnet test --project {integration} ", result.stderr)
+        self.assertIn("--minimum-expected-tests 2 --fail-skips on failed (24)", result.stderr)
+
     def test_unsupported_policy_and_unknown_or_excluded_minimum_fail_before_testing(self):
         first = "test/A space/A.Tests.csproj"
+        integration = "test/Fixture.IntegrationTests.csproj"
         self.document["tests"]["minimumExpectedTests"] = {first: 2}
         for setup, diagnostic in (({"xunit": False}, "require Microsoft.Testing.Platform"),
-                                  ({"metadata": {"test/Fixture.IntegrationTests.csproj": {"XunitTestProject": "false"}}}, "require Microsoft.Testing.Platform")):
+                                  ({"metadata": {integration: {"XunitTestProject": "false"}}},
+                                   f"{integration}: minimumExpectedTests and failSkips require Microsoft.Testing.Platform with xUnit")):
             self.document["tests"]["failSkips"] = True
             self.data.update(setup)
             result = self.invoke("--phase", "unit")
@@ -449,6 +470,7 @@ class SubprocessPipelineTests(unittest.TestCase):
                 del self.data[key]
         self.document["tests"]["minimumExpectedTests"] = {"test/Unknown.csproj": 1}
         result = self.invoke()
+        self.assertEqual(1, result.returncode, result.stderr)
         self.assertIn("unknown test projects", result.stderr)
         self.document["tests"].update(minimumExpectedTests={first: 1}, exclude={first: "after-unit-tests"})
         self.document["hooks"] = ["after-unit-tests"]
