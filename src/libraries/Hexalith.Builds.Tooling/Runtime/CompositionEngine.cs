@@ -1078,7 +1078,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <summary>Mirrors admission for selected local and same-job CI owners.</summary>
     /// <param name="session">The owned session.</param>
     /// <returns>Whether attachment withdrawal must precede stopping this session.</returns>
-    private static bool CanHoldAttachments(CompositionRunSession session) => session.Plan.SelectedTest is not null;
+    private static bool CanHoldAttachments(CompositionRunSession session)
+        => session.Plan.SelectedTest is not null && !CompositionFixtureProducer.RequiresProof(session.Plan);
 
     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
 

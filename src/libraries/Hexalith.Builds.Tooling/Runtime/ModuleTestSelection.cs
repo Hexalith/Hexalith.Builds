@@ -193,7 +193,8 @@ public sealed record ModuleTestSelection(
     /// <param name="next">The suite that would reuse it.</param>
     /// <returns>Whether owner, mode, composition, runtime and resource requirements agree.</returns>
     internal static bool Compatible(ModuleTestSelection first, ModuleTestSelection next) =>
-        first.ModuleId == next.ModuleId && first.Mode == next.Mode && first.ManifestHash == next.ManifestHash
+        !CompositionFixtureProducer.IsFixtureTest(first) && !CompositionFixtureProducer.IsFixtureTest(next)
+        && first.ModuleId == next.ModuleId && first.Mode == next.Mode && first.ManifestHash == next.ManifestHash
         && first.DaprRuntimeVersion == next.DaprRuntimeVersion
         && (first is { ModuleId: "memories", Name: "functional-retention" }) == (next is { ModuleId: "memories", Name: "functional-retention" });
 

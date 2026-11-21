@@ -6,9 +6,11 @@
 namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.IO.Compression;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
 
+using Hexalith.Builds.Tooling.Filesystem;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Workspace;
 
@@ -90,6 +92,10 @@ public sealed class CompositionFixtureProducer
 
     /// <summary>Gets the SHA-256 of the package's runtime assembly.</summary>
     public string LibrarySha256 { get; }
+
+    private static string ArchiveFileName => _package.ToLowerInvariant() + "." + _version + ".nupkg";
+
+    private static string FlatContainerPath => "/v3-flatcontainer/" + _package.ToLowerInvariant() + "/" + _version + "/" + ArchiveFileName;
 
     /// <summary>Checks whether the given plan requires the Platform fixture producer.</summary>
     /// <param name="plan">The owning run plan.</param>
@@ -180,11 +186,13 @@ public sealed class CompositionFixtureProducer
             return;
         }
 
-        string normalized = _package.ToLowerInvariant();
-        using HttpResponseMessage response = await _nuget.GetAsync(
-            new Uri($"https://api.nuget.org/v3-flatcontainer/{normalized}/{_version}/{normalized}.{_version}.nupkg"),
-            HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken).ConfigureAwait(false);
+        Uri packageUri = new("https://api.nuget.org" + FlatContainerPath, UriKind.Absolute);
+        using HttpResponseMessage initial = await _nuget.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        using HttpResponseMessage? redirected = IsRedirect(initial.StatusCode) && initial.Headers.Location is { } location
+            && Uri.TryCreate(packageUri, location, out Uri? resolved) && IsOfficialPackageRedirect(resolved)
+                ? await _nuget.GetAsync(resolved, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false)
+                : null;
+        HttpResponseMessage response = redirected ?? initial;
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidDataException($"The signed Platform fixture package is unavailable from NuGet ({(int)response.StatusCode}).");
@@ -225,6 +233,18 @@ public sealed class CompositionFixtureProducer
         return required ? plan with { FixtureProducerBinding = Convert.ToHexStringLower(Tag(plan, signingKey)) } : plan;
     }
 
+    /// <summary>Checks that an official package redirect keeps the exact approved package destination.</summary>
+    /// <param name="location">The fully resolved redirect target.</param>
+    /// <returns>Whether the exact package can be requested there.</returns>
+    internal static bool IsOfficialPackageRedirect(Uri location)
+        => location is { IsAbsoluteUri: true, Scheme: "https", IsDefaultPort: true, UserInfo.Length: 0, Fragment.Length: 0 }
+            && ((location.Host == "api.nuget.org" && location.AbsolutePath == FlatContainerPath)
+                || (location.Host == "globalcdn.nuget.org" && location.AbsolutePath == "/packages/" + ArchiveFileName));
+
+    private static bool IsRedirect(HttpStatusCode status)
+        => status is HttpStatusCode.MovedPermanently or HttpStatusCode.Redirect or HttpStatusCode.SeeOther
+            or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+
     private static string RequireSource(
         SourceMapping? mapping,
         string? activeModule,
@@ -238,7 +258,7 @@ public sealed class CompositionFixtureProducer
             && mapping.Entries.Any(entry => entry.Identity == mapping.ActiveModule && entry.Origin == "source" && entry.Path == mapping.Root)
             && activeModule == _module && selected is { ModuleId: _module, Name: _profile, Mode: "package", Executor: "mtp", Entry: _project }
             && selections.Count == 1 && selections[0] == selected
-            && manifests.Count == 1 && string.Equals(manifests[0], Path.Combine(mapping.Root, _manifest), StringComparison.Ordinal);
+            && manifests.Count == 1 && string.Equals(manifests[0], Path.GetFullPath(Path.Combine(mapping.Root, _manifest)), FilesystemPathRules.Comparison(mapping.Root));
         return valid ? mapping!.Root : throw new InvalidDataException(_refusal);
     }
 

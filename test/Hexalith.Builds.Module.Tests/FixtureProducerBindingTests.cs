@@ -101,6 +101,33 @@ public sealed class FixtureProducerBindingTests
             TestContext.Current.CancellationToken)).ConfigureAwait(true);
     }
 
+    /// <summary>Accepts only redirects for the exact fixture on the official HTTPS endpoints.</summary>
+    /// <param name="target">The redirect target.</param>
+    /// <param name="accepted">Whether it is one of the official destinations.</param>
+    [Theory]
+    [InlineData("https://api.nuget.org/v3-flatcontainer/hexalith.platform.testextension/2.2.5/hexalith.platform.testextension.2.2.5.nupkg", true)]
+    [InlineData("https://globalcdn.nuget.org/packages/hexalith.platform.testextension.2.2.5.nupkg?packageVersion=2.2.5", true)]
+    [InlineData("https://globalcdn.nuget.org/packages/hexalith.platform.testextension.2.2.6.nupkg", false)]
+    [InlineData("http://globalcdn.nuget.org/packages/hexalith.platform.testextension.2.2.5.nupkg", false)]
+    [InlineData("https://globalcdn.nuget.org.example.test/packages/hexalith.platform.testextension.2.2.5.nupkg", false)]
+    [InlineData("https://globalcdn.nuget.org:444/packages/hexalith.platform.testextension.2.2.5.nupkg", false)]
+    [InlineData("https://someone@globalcdn.nuget.org/packages/hexalith.platform.testextension.2.2.5.nupkg", false)]
+    [InlineData("packages/hexalith.platform.testextension.2.2.5.nupkg", false)]
+    public void OfficialRedirectResolvesOnlyTheExactArchive(string target, bool accepted)
+        => CompositionFixtureProducer.IsOfficialPackageRedirect(new Uri(target, UriKind.RelativeOrAbsolute)).ShouldBe(accepted);
+
+    /// <summary>Fixture owners and suites cannot share an attached environment.</summary>
+    [Fact]
+    public void FixtureSelectionRequiresAFreshOwner()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        ModuleTestSelection fixture = FixturePlan(workspace.Root).SelectedTest!;
+        ModuleTestSelection other = fixture with { Name = "other" };
+        fixture.RequiresOwnerGate().ShouldBeTrue();
+        ModuleTestSelection.Compatible(fixture, other).ShouldBeFalse();
+        ModuleTestSelection.Compatible(other, fixture).ShouldBeFalse();
+    }
+
     private static CompositionRunPlan FixturePlan(string root)
     {
         CompositionRunPlan plan = QualificationOwnerBindingTests.CreatePlan(root);
@@ -115,7 +142,7 @@ public sealed class FixtureProducerBindingTests
         return plan with
         {
             SourceMapping = mapping,
-            PlatformDeclarationPaths = [Path.Combine(root, _manifest)],
+            PlatformDeclarationPaths = [Path.GetFullPath(Path.Combine(root, _manifest))],
             PlatformActiveModule = _module,
             QualificationOwners = null,
             SelectedTest = selected,
