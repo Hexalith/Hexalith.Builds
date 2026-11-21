@@ -339,10 +339,14 @@ internal static partial class CatalogVersionMaterializer
             }
 
             string driver = Path.Combine(batch, "evaluate.targets");
+
+            // The SDK process loads the task and supplies its MSBuild dependencies.
+            Type taskAssemblyOwner = typeof(CatalogVersionMaterializer);
+            string taskName = taskAssemblyOwner.Namespace + "." + nameof(CatalogEvaluationTask);
             XElement root = new(
                 "Project",
                 projects,
-                new XElement("UsingTask", new XAttribute("TaskName", typeof(CatalogEvaluationTask).FullName!), new XAttribute("AssemblyFile", typeof(CatalogEvaluationTask).Assembly.Location)),
+                new XElement("UsingTask", new XAttribute("TaskName", taskName), new XAttribute("AssemblyFile", taskAssemblyOwner.Assembly.Location)),
                 new XElement("Target", new XAttribute("Name", "Evaluate"), new XElement(nameof(CatalogEvaluationTask), new XAttribute("Projects", "@(CatalogProject)"))));
             await WritePinnedTextAsync(driver, root.ToString(), cancellationToken).ConfigureAwait(false);
             CompositionProcessResult result = await CompositionProcess.RunAsync(
