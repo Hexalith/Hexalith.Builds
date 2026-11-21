@@ -20,6 +20,13 @@
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "d9c193b0e7b61601b8fcceb906b5dafe4769a1b9d7538a6ce164b4aa0840b348"
   },
+  "parties/4.0.1": {
+    "repository": "Hexalith.Parties",
+    "version": "4.0.1",
+    "commit": "f2b77d32cec947d8389ea20f675cc902dfee357a",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "a02a5e6c2213841ef1f0a573f3b69c5077c39bc9fcdb754b262c74f4bfb9d625"
+  },
   "tenants/8.0.2": {
     "repository": "Hexalith.Tenants",
     "version": "8.0.2",
