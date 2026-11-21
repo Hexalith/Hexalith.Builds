@@ -112,6 +112,7 @@ public static class TestEnvironmentDescriptorWriter
         IReadOnlyList<PlatformModuleDeclaration> closure;
         try
         {
+            _ = CompositionFixtureProducer.Verify(plan, session.SigningKey);
             catalog = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(plan.Workspace, "source-mapping", "catalog-versions.json"));
         }
         catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException)

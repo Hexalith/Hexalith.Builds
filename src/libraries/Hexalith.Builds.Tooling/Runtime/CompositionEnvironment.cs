@@ -49,4 +49,7 @@ public static class CompositionEnvironment
 
     /// <summary>Gets the parent marker requiring verification of an expanded qualification owner request.</summary>
     public static string QualificationOwnersRequired => "HEXALITH_G4_QUALIFICATION_OWNERS_REQUIRED";
+
+    /// <summary>Gets the parent marker requiring verification of the signed Platform fixture producer.</summary>
+    public static string FixtureProducerRequired => "HEXALITH_G4_FIXTURE_PRODUCER_REQUIRED";
 }

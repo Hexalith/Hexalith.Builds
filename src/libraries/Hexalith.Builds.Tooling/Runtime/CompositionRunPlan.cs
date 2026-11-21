@@ -63,6 +63,10 @@ public sealed record CompositionRunPlan(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? QualificationOwnersBinding { get; init; }
 
+    /// <summary>Gets the authentication tag for the finite signed Platform fixture producer.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? FixtureProducerBinding { get; init; }
+
     /// <summary>Gets the original executing CLI and Tooling binary identity, unavailable on legacy state.</summary>
     public TestEnvironment.ExecutingToolIdentity? ExecutingTool { get; init; }
 

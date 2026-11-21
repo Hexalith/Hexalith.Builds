@@ -121,6 +121,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             IReadOnlyList<PlatformModuleDeclaration>? closure = declarationOptions is null
                 ? null
                 : await CompositionDeclarationClosure.LoadForConsumerAsync(_options.DeclarationOptionsOverride?.Invoke(declarationOptions) ?? declarationOptions, startupBound.Token).ConfigureAwait(false);
+            await CompositionFixtureProducer.ValidateBeforeStartupAsync(
+                _options.SourceMapping,
+                activeModule,
+                _options.SelectedTest,
+                _options.SelectedTests,
+                Path.GetFullPath(manifestPath),
+                closure,
+                startupBound.Token).ConfigureAwait(false);
             deadline = CompositionStartupDeadlineResolver.Resolve(closure, _options.ReadinessTimeout);
             deadlineResolved = true;
             if (_options.SelectedTest is not null)
@@ -223,6 +231,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 preparedWorkspace ??= WorkspaceFor(runId);
                 CompositionWorkspace.CreatePrivateDirectory(preparedWorkspace);
                 await SourceMappingMaterializer.WriteAsync(mapping, preparedWorkspace, startupBound.Token).ConfigureAwait(false);
+                if (CompositionFixtureProducer.RequiresProof(mapping, activeModule, _options.SelectedTest))
+                {
+                    await CompositionFixtureProducer.RetrievePackageAsync(mapping, preparedWorkspace, startupBound.Token).ConfigureAwait(false);
+                }
+
                 if (PlatformManifestCommand.BuildsMcpCli(activeModule, mapping))
                 {
                     // McpCli is a run-scoped tool, not a server. A missing checkout or project raises
@@ -373,6 +386,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
             string signingKey = CompositionSigningKey.Create();
             plan = CompositionQualificationOwners.Bind(plan, signingKey);
+            plan = CompositionFixtureProducer.Bind(plan, signingKey);
             await CompositionDaprComponentRenderer.WriteAsync(plan, startupBound.Token).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, startupBound.Token).ConfigureAwait(false);
@@ -390,6 +404,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 if (plan.QualificationOwners is { Count: > 0 })
                 {
                     preflightEnvironment[CompositionEnvironment.QualificationOwnersRequired] = "1";
+                }
+
+                if (plan.FixtureProducerBinding is not null)
+                {
+                    preflightEnvironment[CompositionEnvironment.FixtureProducerRequired] = "1";
                 }
 
                 CompositionProcessResult preflight = await CompositionProcess.RunAsync(
@@ -1059,7 +1078,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <summary>Mirrors admission for selected local and same-job CI owners.</summary>
     /// <param name="session">The owned session.</param>
     /// <returns>Whether attachment withdrawal must precede stopping this session.</returns>
-    private static bool CanHoldAttachments(CompositionRunSession session) => session.Plan.SelectedTest is not null;
+    private static bool CanHoldAttachments(CompositionRunSession session)
+        => session.Plan.SelectedTest is not null && !CompositionFixtureProducer.RequiresProof(session.Plan);
 
     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
 
@@ -2354,6 +2374,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         if (plan.QualificationOwners is { Count: > 0 })
         {
             environment[CompositionEnvironment.QualificationOwnersRequired] = "1";
+        }
+
+        if (plan.FixtureProducerBinding is not null)
+        {
+            environment[CompositionEnvironment.FixtureProducerRequired] = "1";
         }
 
         if (plan.SourceMapping is not null)

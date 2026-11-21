@@ -104,6 +104,8 @@ function Invoke-Validator {
 
         [int] $EvaluationTimeoutSeconds = 60,
 
+        [string] $ConsumerProjectName = '',
+
         [switch] $EmitEvaluation
     )
 
@@ -120,6 +122,7 @@ function Invoke-Validator {
     }
 
     $arguments += @('-EvaluationTimeoutSeconds', [string] $EvaluationTimeoutSeconds)
+    if ($ConsumerProjectName) { $arguments += @('-ConsumerProjectName', $ConsumerProjectName) }
     if ($EmitEvaluation) { $arguments += '-EmitEvaluation' }
     $output = @(& $pwshExecutable @arguments 2>&1)
     return [pscustomobject] @{
@@ -147,12 +150,14 @@ function Test-Scenario {
 
         [int] $EvaluationTimeoutSeconds = 60,
 
+        [string] $ConsumerProjectName = '',
+
         [switch] $EmitEvaluation
     )
 
     $script:scenarioCount++
     $result = Invoke-Validator -CatalogPath $CatalogPath -EvaluatorScriptPath $EvaluatorScriptPath `
-        -EvaluationTimeoutSeconds $EvaluationTimeoutSeconds -EmitEvaluation:$EmitEvaluation
+        -EvaluationTimeoutSeconds $EvaluationTimeoutSeconds -ConsumerProjectName $ConsumerProjectName -EmitEvaluation:$EmitEvaluation
     if ($result.ExitCode -ne $ExpectedExitCode) {
         $script:failures.Add(
             "$Name expected exit code $ExpectedExitCode but received $($result.ExitCode). Output: $($result.Output)"
@@ -170,6 +175,32 @@ try {
     $stableCatalog = New-CatalogFixture -Name 'valid-stable' -Version '1.2.3'
     Test-Scenario -Name 'Valid stable version' -CatalogPath $stableCatalog -ExpectedExitCode 0 `
         -ExpectedOutput 'validation passed for 1 entries'
+
+    $namedCatalog = Join-Path $temporaryRoot 'named-consumer.props'
+    $namedBody = @'
+<Project>
+  <ItemGroup><HexalithCatalogConsumer Include="Fixture.Host" /></ItemGroup>
+  <ItemGroup><PackageVersion Include="Fixture.Package" Version="1.2.3" /></ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Fixture.Host'">
+    <PackageVersion Include="Fixture.Host.Package" Version="2.3.4" />
+  </ItemGroup>
+</Project>
+'@
+    Write-Utf8File -Path $namedCatalog -Content $namedBody
+    Test-Scenario -Name 'Default never selects the named package' -CatalogPath $namedCatalog -ExpectedExitCode 0 `
+        -ExpectedOutput 'validation passed for 1 entries'
+    Test-Scenario -Name 'Named view selects its exact package' -CatalogPath $namedCatalog -ExpectedExitCode 0 `
+        -ExpectedOutput 'validation passed for 2 entries' -ConsumerProjectName 'Fixture.Host'
+
+    $missingConsumer = Join-Path $temporaryRoot 'missing-consumer.props'
+    Write-Utf8File -Path $missingConsumer -Content ($namedBody.Replace('== ''Fixture.Host''', '== ''Foreign.Host'''))
+    Test-Scenario -Name 'Undeclared consumer is refused' -CatalogPath $missingConsumer -ExpectedExitCode 1 `
+        -ExpectedOutput "selects undeclared catalog consumer 'Foreign.Host'"
+
+    $missingNamedPackage = Join-Path $temporaryRoot 'missing-named-package.props'
+    Write-Utf8File -Path $missingNamedPackage -Content ($namedBody.Replace('Include="Fixture.Host.Package"', 'Condition="false" Include="Fixture.Host.Package"'))
+    Test-Scenario -Name 'Missing package in its named view is refused' -CatalogPath $missingNamedPackage -ExpectedExitCode 1 `
+        -ExpectedOutput "Source package 'Fixture.Host.Package' is missing" -ConsumerProjectName 'Fixture.Host'
 
     $prereleaseCatalog = New-CatalogFixture -Name 'valid-prerelease' -Version '1.2.3-alpha.1+build.5'
     Test-Scenario -Name 'Valid prerelease version' -CatalogPath $prereleaseCatalog -ExpectedExitCode 0 `

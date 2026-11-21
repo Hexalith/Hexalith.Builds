@@ -18,7 +18,10 @@ class EvaluatedCatalogModeTests(unittest.TestCase):
                      "Hexalith.Builds.Module.EventStoreHost", "Hexalith.FrontComposer.Shell", "Unrelated"):
             with self.subTest(name=name), patch.dict(os.environ, {"UseHexalithProjectReferences": "true"}):
                 properties, versions = evaluate_catalog(CATALOG, consumer_project_name=name)
-                self.assertEqual(baseline, versions)
+                expected = baseline
+                if name == "Hexalith.Platform.EventStoreHost":
+                    expected = baseline | {"Hexalith.Platform.TestExtension": "2.2.5"}
+                self.assertEqual(expected, versions)
                 self.assertEqual(properties["HexalithEventStoreVersion"], versions["Hexalith.EventStore.Client"])
 
     def test_project_sdk_inspection_preserves_its_source_context(self):

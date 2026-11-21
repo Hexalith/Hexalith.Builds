@@ -193,13 +193,15 @@ public sealed record ModuleTestSelection(
     /// <param name="next">The suite that would reuse it.</param>
     /// <returns>Whether owner, mode, composition, runtime and resource requirements agree.</returns>
     internal static bool Compatible(ModuleTestSelection first, ModuleTestSelection next) =>
-        first.ModuleId == next.ModuleId && first.Mode == next.Mode && first.ManifestHash == next.ManifestHash
+        !CompositionFixtureProducer.IsFixtureTest(first) && !CompositionFixtureProducer.IsFixtureTest(next)
+        && first.ModuleId == next.ModuleId && first.Mode == next.Mode && first.ManifestHash == next.ManifestHash
         && first.DaprRuntimeVersion == next.DaprRuntimeVersion
         && (first is { ModuleId: "memories", Name: "functional-retention" }) == (next is { ModuleId: "memories", Name: "functional-retention" });
 
     /// <summary>Gets whether the suite needs an owner retention gate or access observation, which attached runs never share.</summary>
     /// <returns>Whether the suite cannot run as a runner-owned attached run.</returns>
-    internal bool RequiresOwnerGate() => DaprRuntimeVersion is not null || this is { ModuleId: "memories", Name: "functional-retention" };
+    internal bool RequiresOwnerGate() => DaprRuntimeVersion is not null || this is { ModuleId: "memories", Name: "functional-retention" }
+        || CompositionFixtureProducer.IsFixtureTest(this);
 
     /// <summary>Checks ownership and bytes again at the execution boundary.</summary>
     /// <param name="manifestPath">The original declaration.</param>

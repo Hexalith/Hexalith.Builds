@@ -264,6 +264,7 @@ if ($sourcePackageVersions.Count -eq 0) {
 }
 
 $sourceByIdentity = @{}
+$namedConsumers = @($catalogXml.DocumentElement.SelectNodes("./*[local-name()='ItemGroup']/*[local-name()='HexalithCatalogConsumer']") | ForEach-Object { $_.GetAttribute('Include') })
 foreach ($sourcePackageVersion in $sourcePackageVersions) {
     $sourceIdentity = [string] $sourcePackageVersion.GetAttribute('Include')
     if ([string]::IsNullOrWhiteSpace($sourceIdentity)) {
@@ -283,7 +284,19 @@ foreach ($sourcePackageVersion in $sourcePackageVersions) {
         }
     }
 
-    $sourceByIdentity[$sourceIdentity] = $sourceVersion.Trim()
+    $consumer = ''
+    $group = $sourcePackageVersion.ParentNode
+    if ($group.LocalName -ceq 'ItemGroup' -and $group.ParentNode -eq $catalogXml.DocumentElement) {
+        $condition = [regex]::Match($group.GetAttribute('Condition'), '^\s*''\$\(MSBuildProjectName\)''\s*==\s*''([A-Za-z0-9_.-]+)''\s*$')
+        if ($condition.Success) {
+            $consumer = $condition.Groups[1].Value
+            if ($consumer -notin $namedConsumers) {
+                Stop-Validation "Source package '$sourceIdentity' selects undeclared catalog consumer '$consumer'."
+            }
+        }
+    }
+
+    $sourceByIdentity[$sourceIdentity] = @{ Version = $sourceVersion.Trim(); Consumer = $consumer }
 }
 
 $evaluationText = Invoke-CatalogEvaluation `
@@ -369,12 +382,21 @@ foreach ($packageVersion in $packageVersions) {
 }
 
 foreach ($sourceEntry in $sourceByIdentity.GetEnumerator()) {
-    if (-not $evaluatedByIdentity.ContainsKey($sourceEntry.Key)) {
+    $present = $evaluatedByIdentity.ContainsKey($sourceEntry.Key)
+    $consumer = $sourceEntry.Value.Consumer
+    if ($consumer -and $consumer -ne $ConsumerProjectName) {
+        if ($present) {
+            $failures.Add("Source package '$($sourceEntry.Key)' evaluated outside its named consumer '$consumer'.")
+        }
+        continue
+    }
+
+    if (-not $present) {
         $failures.Add("Source package '$($sourceEntry.Key)' is missing from the evaluated catalog.")
         continue
     }
 
-    $sourceVersion = [string] $sourceEntry.Value
+    $sourceVersion = [string] $sourceEntry.Value.Version
     $evaluatedVersion = [string] $evaluatedByIdentity[$sourceEntry.Key]
     if (
         -not [string]::IsNullOrWhiteSpace($sourceVersion) -and

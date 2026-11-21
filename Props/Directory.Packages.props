@@ -167,6 +167,9 @@
     <HexalithCatalogConsumer Include="Hexalith.Timesheets.Works.Tests" />
     <HexalithCatalogConsumer Include="IdeParityCounter" />
   </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Hexalith.Platform.EventStoreHost'">
+    <PackageVersion Include="Hexalith.Platform.TestExtension" Version="2.2.5" />
+  </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Applications" Version="1.0.6" />
     <PackageVersion Include="Hexalith.Applications.Abstractions" Version="1.0.6" />
