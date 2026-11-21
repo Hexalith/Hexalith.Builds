@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+  "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "f158a4052a05f8abd2660f73554ed0ab102bf0c54df770e1248c4888e1460dbd",
-  "catalogRawSha256": "dd8c60361af254165282ad981d88c6b312017372fc1f5068974b880cc6196339",
+  "catalogSha256": "884c9cc9e9e7d01645b36cb23eb3fb5609f7f3ed8885c2dcee90b97f1de4611d",
+  "catalogRawSha256": "682eafff2007140218918907a48d18345d4f80c0e38746d6a7ec25fc6742f12f",
   "snapshot": {
     "mode": "complete",
-    "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+    "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
     "refreshedFamilies": [
       "aspire",
       "bunit-html",
@@ -181,7 +181,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+    "repositoryRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
     "sha256": "86017a8734ec8677655a606d3867478964cc8c6e6c18a89c9bffe90557c813d0",
     "entries": [
       {
@@ -669,8 +669,8 @@
         "src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "15565c37d0be8a3a58e7dcd5c7bd071930c3c9661e6c74d41de0f2d155db4698",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "48af366633857fd0fe8928584910b720ed1c8a941387b12b9bf502f6183544e0",
@@ -1737,8 +1737,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "67e0029a7c16047e20a1554a17a917f044529651c7a2a0ff7320fa6b6d7b184f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "0e91db31322e922301cfec645b6a91be25dd70de87a30e2bde49385b0fd5e315",
@@ -2969,8 +2969,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b490d00bd6368a13f2715e15a8854fde6924f88ffc47985a67f84f203a43b713",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "26f7500c8bcd1cd19ceca37ce9c5cdf322516a8301e18d0bfc36eb9285e14fab",
@@ -3815,8 +3815,8 @@
         "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "a14bd753eb55463be8ce7dccf0f998b0dd3d9ed9e48ea1921e5a98b33c076c8b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "38bd1f7114f4ad8beb5fc1d9a1debd1cfa0ff28f00a8bec7c4c84a6863a81208",
@@ -6084,8 +6084,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "d4057d63193c623002b921e2443c4c8c80770e98317a0c76dea96e52575498d4",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "e91c4b55e2c235bac9254781dc7fa3dfac261960519a3ea5f5f2687e866e84de",
@@ -6586,8 +6586,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "1b40642f33ae9e7021b9175bf1bcc21fe8a6b5b346e54095410b23dca6297ad9",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "54690052fe8f90a9740a3fee74c3d97028700410426052153975d843a48785d0",
@@ -6981,8 +6981,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "dda063b3c9c45837290eeaabcdab46e9c008194a8981fca6784de04146aa1f04",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "26897af727fcd9e8c6daf629b237b559d69ad63b35c57ae4f41f7690303ce174",
@@ -7572,11 +7572,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
+        "packageMetadataSha256": "36a2d625a1ed8eed571c951c6745d26a2803979c84f0e5fabe8353df72267d92",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -8387,6 +8387,42 @@
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "packageIds": [
+            "Hexalith.Commons",
+            "Hexalith.Commons.Aspire",
+            "Hexalith.Commons.Configurations",
+            "Hexalith.Commons.Diagnostics",
+            "Hexalith.Commons.Http",
+            "Hexalith.Commons.Metadatas",
+            "Hexalith.Commons.Publication",
+            "Hexalith.Commons.Serialization",
+            "Hexalith.Commons.ServiceDefaults",
+            "Hexalith.Commons.StringEncoders",
+            "Hexalith.Commons.TenantAccess",
+            "Hexalith.Commons.UniqueIds"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -8403,8 +8439,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "3bef933463a2f552b1c230f49a9516434f74ee151c2fc7febc64dddad8708854",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "66ae32b12039ea6e1e0a2b58e9a3fff02648a6a82ec4cf057b4e7e0954e5c46b",
@@ -8767,8 +8803,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "a5bf2eece90b5a317f9a0a17d85cfb1a82ce70a30e90ef0155517c11f507d8db",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "164301e49b4a4338e5d223aaf942c6072a453ac2665b5fb191c3030a10d3b8c7",
@@ -9202,8 +9238,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "1b9651ba3d9daeac559cd28198dc3700ecf7110b38b318e21fae15d4e262482b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a384f19893ab288231ca227c40ef330a213b1bf26a15728387e80be4649caa5d",
@@ -9588,8 +9624,8 @@
         "test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "64937eebbf65127013debc995d73d15f01021ed6493160fd1ffa1b36c7a64439",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "b551152f4bbd46538fe60a429eb8dfa4e2286a18edc0106a514f9b8debc2e102",
@@ -12699,8 +12735,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "606d33a5a5e6cfb332e2b0e1b1c486965b9ccb3247e62c8e6e4ac5aaf538f1b9",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "69763f71367f171466cc066950e654ce0659718b69979540899fa871295d9aad",
@@ -13048,8 +13084,8 @@
         "test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "73e581a9a81540d65f296db63630bdcecd541e8f613843bc82eb70747c21a2fd",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c9cc11d6090fc15a6c64cccf2e23245ddbe6a535e836e575e1997a101c8480ae",
@@ -14056,8 +14092,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "bc02a3667e0bc45f9ced35e023dc8f8b51f3ad517ae5877b3b43ca1c315fafcf",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9a0b7f10479263875a4abc8dfba645b48e288f2648a6c9eed688e5a1f6004ad5",
@@ -14441,8 +14477,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "7df7e89aacc7c7e64bc3d88594cb86fa7ebe24f3209e8f572948d6a9e68a2272",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "fa6ee498120500af29f2cdee8e0ddce2f7219ae83b3a61305133b535ba9a254b",
@@ -14836,8 +14872,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "3721bd476d712d397c2c8f40adae50f43374bfd59357b65857536d17d8f75a3f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "85c9062d86d63cd1fead1581319b4761e6cfb2339e2e16e721f05223d05403ab",
@@ -14962,8 +14998,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "89719365bef7ebee67d138539e56724787493ef69accb9067419ce0e7e2c21f5",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "3d49cdaec99aaeb0f3623288d82b978b238e07c6eb74e7e23dd5a71630451a80",
@@ -16236,8 +16272,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "ee39b24d926688ff278a2639130972366bf40dee04c8a7410998f4ff54013cce",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "032b40fa5732854f619abaf489af422a7390968437767cc443cb78c2360ec55f",
@@ -16612,8 +16648,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "8225e793e45153c7fbc15be07d95beab76544069c30bc91d7a5148f23c76debe",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "3d1c617386066862f993affd634eed611893c5be43f87660c4f9e00177870266",
@@ -17752,11 +17788,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "180b67815287027512ddb480b9a1d09e33f63c1655f16fa7c5dd8d4c48cdf65c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "052c5a024bb24ffbff4bb209ceae70813124957f41606ce3b0235488fd811b72",
+        "packageMetadataSha256": "41e7daf71050bc62e7f5417879cc9f86226d054dc8397f8dbe29fce1c4edeb1e",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -18312,6 +18348,32 @@
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "family": "hexalith-polymorphicserializations",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-polymorphicserializations",
+          "packageIds": [
+            "Hexalith.PolymorphicSerializations",
+            "Hexalith.PolymorphicSerializations.CodeGenerators"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "180b67815287027512ddb480b9a1d09e33f63c1655f16fa7c5dd8d4c48cdf65c",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "052c5a024bb24ffbff4bb209ceae70813124957f41606ce3b0235488fd811b72",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -18331,8 +18393,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "6ce37afc8e02c860c6cb067cd9582361574cd68531a809bae60e229eb57d5036",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "380f9ddf87c3d975f43c7abb44ac09f5c5dbb9efc93067757fa07f45581130a0",
@@ -18645,8 +18707,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "663cd6e6b7c85fac90aadc0c81b470c21ef387fc9e3881bfcfc7d973285edd80",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a038cc625f5e3771ba8663bcf275e39c623f8cd72173d5a46deb314b48b39da1",
@@ -19031,8 +19093,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "c92e534a22cffa7869f761697ee5b60ac49649e88712143b86c185bd882b4515",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "3983817bef0af356f644dc5ee1f733ea0d0f8001429642c6ad8c00fc65450c11",
@@ -20217,8 +20279,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "7ff0e79bf70edb621f4eb24fcc2ef0bfb30eb2aac118b70a191cac6c98efb27a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "45cb39995646a2adb22286d19a32f7f1241595195686f8bd1235a66f8b8f7916",
@@ -20245,8 +20307,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "a26bb02bb599e35e16a550dd270ce5f11786d8a650db7ddf72be4c1dabbeefa7",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a6eac72d1589221aaa1fe9eff8abe28461a4927058ce1767c7d8377beef8ad3c",
@@ -21050,8 +21112,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "61a46d68322724c83dd3b40188cfd34a864b7436aa5df3e284600f1fc18f1924",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "589a1df60af94c9b9ed037009cf5a423daf4c2db44e482d74b72b663ff44253b",
@@ -21972,8 +22034,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "5dd0128c0aa8c1180c0e2455e0ef0422b5e2b3be11f1c0a0a4e231df9c2c1c30",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9037c09670fa3c2e172698467c77f5fe081e03311eeeeac089aee14bcdac03c1",
@@ -22328,8 +22390,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "f729c658e1a08474fbbbb0701a22d0cffee5eadde79abd819f741c6f3e2b9d2c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "7a34d8cd94068e03816152b863491ac536160ee798c42eadf7092d58034f0332",
@@ -22684,8 +22746,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "7ae795e9c56de204e487b71f7e6dab5ae0bf32c2f762730b31c4179f72598d58",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9c33f99eb55de78e07e04a130f198865d20f02c0d03c9adddadf3b3427287505",
@@ -23115,8 +23177,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "72980c4758dab767a2843db2c392c03ee8c2f5b8ae17b56792c2133e468ef8c8",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "709c20672ad993270a721b24c0df9d604bf1eacec9dd07da8bd769cc990bd2ff",
@@ -23546,8 +23608,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "2a51978bf527aeea42b3a205ce3c18b53705a909b9b2f084b4884f7f55e07a40",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "812ae9db564bb665a617d7dea73afa6d6cb28fbbd6c42c11eec854163ed06232",
@@ -23977,8 +24039,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "5da43f914fa0d45b1e584b96b61b1f5f79e00b1493b4c3b5334d5ffd64258702",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "26adf02dbccd600fec3d15da162bcff22054948b0e66dc26b16f0a65961a5006",
@@ -24408,8 +24470,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "123073cdfb499d7df3005c2c7b2ec410c281a38723201d404e8c93fc51e76302",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "ed4fa1af3174008bacf47544a59f63f2451772130c6c4ba8d3f3a0d3a11d4ada",
@@ -24839,8 +24901,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "81b23e87dfeeace29d4a95784a644a9ef0eac31a72deb161cb75db12654e9f61",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "36b5dedf86149452890a11fadf1635d2fabfc966354fa3a6813238def468fcf6",
@@ -25270,8 +25332,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "0479bf098fc36707bc6be835ffa4000cea9fd5dfe7b452934d096f6c496614c0",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a3f2a5ceecf323250d48659545cff15418686b2da797227c381582d3456c6808",
@@ -25701,8 +25763,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "849c6b7e176a27a0634ac6656c9fab8099a7275d3403b23ec3c16e700c71161d",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "26dbc3c99030494ad3d0e0e992a4daa1f73812f874bdc29e548a1cee65a75f66",
@@ -26132,8 +26194,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "c1157d7246b5ae8f0c4c5b815303f4bcc4b15b48112d756f1d040d46e6b6b12a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "8b028a42341fd5f2dec7e2a51da50e142ad970bbf48f2add0fc93833537406a2",
@@ -26563,8 +26625,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "3d869ab9a3142a874946a9bd9c4b4ee092562b92e444b3e1e7f5e19f9c9de1a3",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "6b87720ea224454ecf9c7893f45ce854abf7cb6f319c9b61b01095cae0578f0e",
@@ -26994,8 +27056,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "63224497c3c94f85c12915df16017f3f79b23efec0ca9d689e848000e8a17958",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "e5d5617916ef328f4c04f386458d0550320d259166d1a72604fdf21dd81fb1a5",
@@ -27425,8 +27487,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "040826cb4b3fef9c2c2230bf45c7dee423648d9dcc9dfa209df6ff8ae210576b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "1aba63a86626eaad23a6240d96a2e21d655cf8a371fc331d846a7178c3aa3817",
@@ -27856,8 +27918,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "7cf2881b8cd30b27313997fa3268303546c103d84920ca865aafff9a61119c42",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "cb5c3079424acef4c55a93ae00599144afbad621a53652e2750f6f67985d450e",
@@ -28287,8 +28349,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "e3337aeba3af37ebfe9e4c3e0c6ec48a14f5c6ae110ca8733c09fcb5c4712f2a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "533a16e314ef7b79927e540ab6c6fe73acc39a12f101030f5ccf5b292fb78b54",
@@ -28718,8 +28780,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "964fe4aec84d3b0ff8fbd4d9a389232ca6683794767d99202d49e1463ed03a83",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "0583c433d900af3b8445f7e1d7bb39080aa14a783f3bc94902e081915b420df4",
@@ -29149,8 +29211,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b2a7863d07cdce2395f340e1dbe7423baf076169f4fd4bb05b78ef9bdb4dd76d",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c4aebef5aa354f6c1ad8f11de3c97965145acc655174d85bb9d6a463512146fd",
@@ -29630,8 +29692,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "fd478d17df0b74baa45bf949eb0bd3a17a12dc58111471e74cf84ec24210fba2",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "5ce20a693acf2ff68549439b06eeeabd1bf36beeb63df9d32e1df11b97b193d9",
@@ -29677,8 +29739,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "ed676acac07979c42a2f7399bbab24446d543656d6038721303f5fa8b423cb2c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "fd197df3cc36a0061ce47632047114f314f71231be96a406ce3deea4918717f1",
@@ -30033,8 +30095,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "5f6a86ee7f1db9e4025ace62f762ca211fc703e65d2345bb53f76c427b219f6a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "b9b29d3c7bbefff7a919fcf24895c4bd0322d2811573ec7c17ea85a28e447b4f",
@@ -30389,8 +30451,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "490439c6d3bafcd57b097476daf294f3c2efdb0bd46336c4e3a5631e246b4955",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "d5ecf1bded903ac8e31969880e5147ea77fce9050693a87c94c5eba0ecb8389d",
@@ -30745,8 +30807,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "5d797d888ff2c268d9408c2cb25e643111e878d4b1db6a433c6cba560ffa3c02",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "59842d0e37a4bae442de96325e4340685b8b922320b5de13327f4f044ec0c67f",
@@ -31201,8 +31263,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "a81b0b44436c346e88265ac251013183f75ed0371030439dbb0421a6c7c8fccc",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9b92a23b6752ebb7b8a6ae5a35a31292dc1fcea8d6aa457fa190e25b1a659274",
@@ -31582,8 +31644,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "a442673f2b0a6a3707cbc83d1a6872c2a212d896f0ec4a3418ad5cdcf61ada09",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "786b19b07ef34068f74899f5e1fda2a90883b2a62135be6092534aef627f7eac",
@@ -31988,8 +32050,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "2d35304e907dc86f6e5efc35a600cd50de95e324eb870d30a1d665081befc3fb",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "3cf343fafdbe68f6faaa4a0599b81cbb0d1f604a5b657a830b0d30a221a07722",
@@ -32344,8 +32406,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "6c31600b24ef6f0247fe6f62a4a7b63d02de59741171eee31d2a4d2d37c4d11a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "8f4c3c5f9c29c090e0fbf8e0ff6653f7a679fa2a0840eabf892ea220ba607d33",
@@ -32391,8 +32453,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "7f0c13c173d6fd5801426884e9f21ecb2615311b36b8ac2a26b54737c2ddaa5f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "995d40d9158401f84d388e1925f3efedd40ebd133b94a40be6f4be4ec6b06d62",
@@ -32947,8 +33009,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "6390ef7110ca760006b3b6a99908331faa9aab10158a615a58168bd4e7a41683",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "038cd2368c2514073a1a4602089d0fe3a29d55e857ffbbf7a465a2c1eb23ed12",
@@ -33403,8 +33465,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "66a3e1d71bcf5d4d68150fd5808db22811bf604ce775d8f3f2a1d02ee872a84f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "999f64c11313042974a89a700f8a9740eb840fc968c61efe66c479d016d857ff",
@@ -33784,8 +33846,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "36d73dd7781b2c4a28cf6c6a4126da3bb8ee32882798a8f23f3867b425e5d3de",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a47aba64afab2b4bc4df2b86dcece9a041dda7b89aee448ae7149a5423519820",
@@ -34215,8 +34277,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "43488450a0049f3065e1c3c191335c406ff09ebdb5f8a90d385152a4ca898bb2",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "f3003f31db42989c6cd1d0efc4e259a629f2d83eaa772c0f3a71fa60acd81b87",
@@ -34573,8 +34635,8 @@
         "src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "e9f44c8cc5c4f0a28b32a53fd037617f2e5544b3f4c5a70f68190096fd381cb0",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "f5e25319015b6410db2c17b94b7ee15296db2aefa8fe123593e89a72f58e0b1a",
@@ -35664,8 +35726,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "517af03ac047001c713854d98f25890e24dfc584fad9ebab30bcd8633fa61725",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "370f90886f2d174b10b4a087e627dceb38b7c5f787912cf2fbdef8b2126cd797",
@@ -36020,8 +36082,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "c02f464b551f439d133578886c3c47a937bf2031e84ac9a42692835f68085060",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "cd6588971406bf7768555a491393e896df5419ad7911b433d8d44aa4e0b161b7",
@@ -36426,8 +36488,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "d45b95c119ae092797c9ee65235da592319941380809b3d1316c5e0efc720fa6",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "5ffd4b912972df619c53aad5d8aa1577550edd6e3d5945c54fc7d892ce4b0cf0",
@@ -36932,8 +36994,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "4ad56c284bf94bbaa0ef40966a7712f1638c284eb38f00234bd06000dd4fecc9",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "f30bca0928f73702fc9308af6830a0ae9cba4503b846a60ee2d523e5667561a1",
@@ -37438,8 +37500,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "731bbd4bed44560ca0762af087c543ac5a1445a1c8bc2f5b7b9657a176fbc282",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "57a861b5c4200da1d030c3165eee8ba3abc2d482b0a6bf50bccd54a7df554803",
@@ -37794,8 +37856,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "5fd51a26a3d5cfc11c6d63a1a0b5e4787d4efedb07786dd9f5d17951ae745d23",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a6961df58a6c1f397b34fb264b85529b5c5e4da88092e2cdcb35d5810fe735e0",
@@ -38200,8 +38262,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b2a2a321dacf396c67f87a2a0d5767720d415a1553f78bf34d6d8c2168a4eae3",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "42e334aafd6fa5aa4efe66215b46f0e18b6a3a4061a0157e7d92532acdfd398b",
@@ -38556,8 +38618,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "9a205dd700c2548eb0073985ae09aa61e2408e28396b2570ea2714cae3d30d04",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "4c45e058740e00dd3bf8e36dc199b22156a549d0b6b0a33d10bfb49365c2129b",
@@ -38912,8 +38974,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "e20b93ac614d270c7412ab2f7016179232337d15b5715f04d7c90a6b283bfa73",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "cba46641708b98fdda78be84df1e79fc2f3eb94a4dff82548e4787bb58754eb1",
@@ -39268,8 +39330,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "5097fbb12c0f743d04a085d887d63fb26fae3e3e0d8b1ea901c8853d43a6e5fa",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "eb0f913b5ffffd89793f582dea3656a33d3df39ad4299d0a13c9ea81dc0f424c",
@@ -39647,8 +39709,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "08ef0cd6f36efea1e0de2b74b41fb3dbb8369e2dfc84424af97369205e096230",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c4e09fc1d1aafbf86b354352eded244bf94b09054c94b2b0ddb5b801c2ca1ca0",
@@ -40026,8 +40088,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "d9ff01fd302fc5f3d46f9f464d36627e1cba9233949a2cae2edad1094802e08e",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "d401865dd0bcf84ccf309f86d0d58dc5136873890d618b8c32ee1a1748472d9f",
@@ -40382,8 +40444,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "ad7a07a26b1eb07aeb80c89d13b51a74204d7df3096472035835a39fa37f0324",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "e34e25176a354b3a42ea27b95e2d2c22e0948263d9c8cee48c8a8d20d17ff6e9",
@@ -40838,8 +40900,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "9f9c7223ec6eb017ce661aba7aefdf97ad1b71ca38061edf867c8ff4a73df6ad",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "960184caf0fd2b00752af95dfbce49c586a05650cff0ebef6b966fcc6e54a08b",
@@ -41194,8 +41256,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "a13ca692fb3c487c5bc24d7351fa2decf5cc7fd7ada84e00685699d5535a6721",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "efa26873653fd45ceb86f7de2245080cbe4da04707d16f8bcd3ba66441f69aaf",
@@ -41600,8 +41662,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "c7210087f114c2be8f3228e97e50e29e2450f7afb32bc3fdbe35adac674570c1",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "79104b344b4d10951cf13861115d1104bf56fdbbe0e1c7cc20d1e8ad13c25afa",
@@ -42006,8 +42068,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "e9c89230c75cb6932de826866f4a54f4dc205275ddb93d088609e6226e439d1e",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "0cb1ab569c44e3c4c1b804c3accc03f42b2a00571f1b13e01657503fab23721b",
@@ -42362,8 +42424,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "0a0f45bfae74a9cd04f21cd3444d23347e7c607811cf7fac4f2b23be8a3efd24",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "3ad3447ecefbb973a291d1e179b270a0b777ccdeb95db20269618c071765cc1f",
@@ -42866,8 +42928,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "d66a41dffa832a55a346b784567e96e1ba7dba1d9e14241d6a3b017f69aa4842",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "645fc96dc0f55d403f64ded8f1ac6ec501ce68a0974487e09407b082668dd5ff",
@@ -43370,8 +43432,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "dbc35c5bbf6072c194342cdfcf6e2aa105890dc5024bbbe37907007622e63d76",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9dd26a4849cc1b046e27d851935df9bcaa4f733998b3cc4cbe2b6fa9a24c40d6",
@@ -44375,8 +44437,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b10b7c02e36513e0a2c5670985fb501c5b1543cec7e68f24d354b454a83372dd",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "be733842093ebd0420ee9c75c7b20158270c21ed3f295d12b899000f002786d7",
@@ -44731,8 +44793,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "57fba91defc7f99b29e02057cb5184850868a8738a6c07c9b82a520e5b506799",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "627ad2c64940dc572828ebaba17c972688deeb66e83a737f12aed02cbc6ed9f6",
@@ -45089,8 +45151,8 @@
         "src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "66448f9f7ad86228d83d3bff9b0fc26172abf9605d74ae7313f77700c6e87419",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "09821987731fd36d5f08d10d358f9e0a35836ef9976ff27c9daf0ea2c1ba90d5",
@@ -45433,8 +45495,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "2c952213ba03b762352887339ea08ee0468b048306f5a198a299cedcd0fb4642",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a298271e931e15e481fc339de4a661f76aa7ffa8bc2938bd43358b6259d5a6d2",
@@ -45889,8 +45951,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "cea973e81b0c7c2dc90ba312df83f8afc1abb807a08053b884a9b902b3d8af09",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "91ac88c629fe0fc9ea79a7b908769a32e805b9922a48fdfe344f3129a7fa2ea5",
@@ -45910,8 +45972,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "0b2b15641688483392da391785dfaee29a20399fde0285467041c791e3e6c45d",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c95e26bd84a22a9fde21da1c1a971dee6286ed9dbfdec31dd3f9dbc76a197981",
@@ -46391,8 +46453,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "1b1d498a97a6b0f8c5444e791beb253dd106647f7d113de917fae904b8c31ed1",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "3b8045b27caeb560ec6ea7372be1a7f353df02f68def892c0ddfe298d5b81f8c",
@@ -46797,8 +46859,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "1211a97326bc638895dfe2b139ceb3e18fe657ddf51178e0874b7e509b5f43da",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "126e45c4ee47349803da6d6f0f0526dccf8c2eab6747394b243aadcc8a419a64",
@@ -47378,8 +47440,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "2c78a4de33f1447e4fd35170d13132aa3f425790bb62d6d76c32541ba3530025",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "15ab21bd1e78923649d26ed1c059d7ba888aa85cc7cead0d15e2de9c3433987f",
@@ -47934,8 +47996,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "3ebc8530e6f7bcaf4543f95b8e5545d01c623fb6ce2dd6d3dfb05fa53a841a6d",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "5f8e9c1cfd4b42b203501f0b056b1a456f7f4f304161e36eccd11c77aaf623a8",
@@ -48293,8 +48355,8 @@
         "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "2f2fb76da20761e3ff1c8bc9f0d39bd88c2db55e92b2f5d88e3865cdcf9d6657",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "32f67418d49c08fa0f63ea36d4e66ec76dd63071abc888655030f0c22ea692cb",
@@ -48452,8 +48514,8 @@
         "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "81296857bdbcc945762a40d24b270134c1dc93f6b0301ed8b448d4510ae65c4e",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "dde6acf3ecf7f32b5b578f16ecacc839b9cf6dd8c62393a901f802a3f000e35e",
@@ -48608,8 +48670,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "acb8fc0b7e496ffac7a8fbbbccc021836de4b4cb4a96e3c2f4100c2fafc0c0a1",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "bbaa2dbb352a68d413390e135301328487ed073e71643879a6d6cbf1fc385f9f",
@@ -48632,8 +48694,8 @@
         "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b5be770837408f07cacbf3e8487b254e232dc3c63d53f375e8be0b20ffdb4bd7",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "6021fc846b16c4bc6f207b63bdb40656f80330f8cd87cd890f4fb7cfa88b879d",
@@ -48738,8 +48800,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "5b7cb2bedd6ad154fbebc28d580bef142655ed7295bdad3a6ca4ebd2dfc7196f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "74c27030d40f102ae790df880e647f79e48be023b253806846522860f62e821a",
@@ -49269,8 +49331,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "5a6330a57ddb77583075553c4d1ad1e02c3ce65ee7ee388712ea5fa972d7afc1",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "71b1a84e32c5334a928b17c806770b4df73a2b87bee9e1e2c46b15d35d8cf7d8",
@@ -49880,8 +49942,8 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b495a589f00ba6e07789b37ab981165b39759570f48d9062c09fb543077b56a0",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9cbd36d8bf103a3d77857d2cd8944e1ea4855d3086e7f038f3f0eb756c86849e",
@@ -50609,8 +50671,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "a65f0540a07e21c4b21b6949c04e4bdd796bb73cc2d21d5156299d9f74e9c1d8",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "0c15dd99ccf1e2e19853da726a8d0b8972f2de5a739d671e160dc47dea1595bc",
@@ -51090,8 +51152,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "60ee7180f85aa0c8fa2fe76d236d32aa1fd87e15c030d6962a6037bab432e615",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "4100dc5c3b6988ffbf68520d008f90237d9cd8621ff09494337fe06272464c66",
@@ -51621,8 +51683,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "500abf22606ef519dceb44669eb39df630e6b7397287b20ebda83ee9b4bc85e3",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "1faa608e234615194892291ec4a382bacea70bc9c9065af1574ada3819b6062d",
@@ -52102,8 +52164,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "d03fce461f14184db427574f36a6edd9f293dbc54f739eb6afdb0754a18e8f3f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "e9755f3c5f7356194eb7fe12516239c4c0136797d40c6e61c38021884218b3e2",
@@ -52608,8 +52670,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "4063b014c40ed43e1344d7f5b683ac4fe69b422d72d6e7bb9d9bba0aa774c1bd",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "88ccd583120741915d6bd3e761b8af499d922a02293e4e576f268c702c57e645",
@@ -52964,8 +53026,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "06fdaf2af341650351abc209ac9f1a8785945430a35b96f720075cb726b69167",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "2b76af015327a3f6000b3d4ad6551b834095d3adf514f810c05cc3ec7410ba8f",
@@ -53112,8 +53174,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "46351b84377ec38a0c0bac8d4c421b7632a7dcfb70492e41322dbe7a63a2103a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c740ac352c183e34747bfb0fd47030f6c1ce11894850e9495ac5da16778daf71",
@@ -53470,8 +53532,8 @@
         "Hexalith.Build.props"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "77be40679b32868943abb0bb9944086263cb67f6a565a271838786de5b8bbe56",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "e856b103254c0b9490ac208033af17978d1b9b1ff01787527d7e1638c4c212b3",
@@ -53901,8 +53963,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "70c91ff05ee5a5ac0ea7b1d7b7cb94b5591dffba45585ffa1f740acf634441fa",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "50684077d3f82223c27e8cf5df29cc0b08170b3ba46a9a9a2ae53cc61bfac86b",
@@ -54332,8 +54394,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "f2238082357860dc2e5da37dad8c4495bb6a3e6a49f24f0d9bca0c33488fae01",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "96eb5868ab424729a5b7b8d12ce1e5623266e52f4dda2fc945b99e359667b9d5",
@@ -54839,8 +54901,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "e006da7a136eeb7f44ce38f89288254b0e1d49924bb0ed0e48bd7a83ef0b1177",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "dcb8a8a37ee7527ddd3a53ccef3d8b82f16ea8d9d31a797d05f98021b0670c97",
@@ -55346,8 +55408,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "572a29c8a2a99b7783aec95433e9c479c8f3d0d8fc1f470d65a726644c4f286c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "5e3f1622e46e18ca2cda0a29f172e6e9c3c80aae1b8d9245c68d154fb841375c",
@@ -55752,8 +55814,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "73588bed80e6bd99a9973adbc801a80bef9f288e133da1e36390d41238f74498",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "bf27d5ffb720675359b81818154b44a9b309c35059bd703bdeafa14a13ae81bb",
@@ -56108,8 +56170,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "4b5a5e488d40a153a844acaa461f069924420cff9ccee191150aee93eb585c6c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "de5dcc11961a2eded2560acb3def284e39679a7ebe2fcbaba3420741e2445486",
@@ -56714,8 +56776,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "f86e23170e06be8a677103d4c1cfe8ee93558b30b6df47776f4f94cbe4800799",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "cc57c361e9c4fecdc2877347b690fe31391fd87fa4bf141c08c0500afa79ca9e",
@@ -57095,8 +57157,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "f7d1ed499e6de294435a220cb428dc99bc3bcce7759fe622ae6d5ea801a208ed",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "263a153a76d44651b2406279fa38982a75eaab7f05607043804318c4bdc5a243",
@@ -57451,8 +57513,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "fdec25f825c4d1bdb403bd16c0573f2f2513c74a48c7e16884ca6ca7dc042e35",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "05c7f8ae9e0d9f044b639e85d3da07258493ec6fedb17fc0e7c13c5462303a84",
@@ -57832,8 +57894,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "cd7dff147caf8b39efb1c8f5fbc005e7649adbd06b0aef2430297a57fcc881b3",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "b25bfd13037b7c2dfff2a34cfcd0505b41eb228488c7098769c98ef1ba02d21f",
@@ -58188,8 +58250,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "1d74ddbbcdbdd18ad6f5e100ff23645d70079c9dc38b789336e29ce093140dc9",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "32bb24b163a5d7cdeba0968b88b40e22af0c2aede807688e8212e368a65804b3",
@@ -58617,8 +58679,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "edeac117747ca6e9f3a1a8c5f77dee03af2b9e9b516944365562945819d5e764",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c0e6b8664ce629cea3f6eab2047d177c8b22843e2e0b0ed05293aeb77e840082",
@@ -58973,8 +59035,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "ec76c156a52509fa8e9f39ebd920a3f07f2f4c8c787deeb0cbbe989b2f809d06",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "6f9ce016f493274b5cbbbaf6c7cf56881405beb3dde4c0c6cf29485404c7f39b",
@@ -59356,8 +59418,8 @@
         "src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b996dba3a7a8d503c2cd3a71ef0a792993a7d4918d6532eeb921e77429d2e24f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "56980794c6ad6dea7e8972a38f0ebdb021c1e78cdc21f98bb4fc243f96372e98",
@@ -59540,8 +59602,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b6119810e9623965683e426d89be3cb26f7f410f432a511486d5b1ca8254fa32",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a5e816e374756c6bbdb05cb13fa7220ba108eeda9cfe66c7e966f49086be5456",
@@ -59896,8 +59958,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "27260d6666160832a3ce885f256df515eafe8db197ed8295733b4b98d4af0adb",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "19992120a0f0cae66240d9053dc2ef31b51f663aa4a523aba0aca21e2ca6b710",
@@ -60252,8 +60314,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "c0db3fcd981a7228852bd2c3dc50519130bd8e3f3a3d7a0ee97bf24e80242f2c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "062f751ce26406a6e1d7f5acbd374c7da97c85dee9a2e39143e4694f6ac6836a",
@@ -60608,8 +60670,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "9f5a59c8873e75e2cf3606648c01abea0a14f7093b88714288cb5f7ab526c731",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "8e0e4239da774d8b2012e5b96adae68ece72f02ae924c98bfdfa4dc723689143",
@@ -60964,8 +61026,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "7a13186fbce3b9a4b900c23ae5b466178a014ce8b3a73eed6977c684facdc7b2",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "4658034fb56f96eb1b1261ee19f7bad561e80ffcd41dee94f48862a5b029e7f8",
@@ -61320,8 +61382,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "b2e7486ec35288d79df9eaa393ed766b1e0a9a31fdfdf626a2751ff15f5d713c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "5dd932a9c9c7ac1e5b2171861fdfd5130cf42211837a5fac64ccd732ecb6f882",
@@ -62401,8 +62463,8 @@
         "Hexalith.Build.props"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "ba5d83beea1c663397c1d6885f78ad7b5cfa691a2ce78fc9d93cd95c70fe7a4a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "e84f6e65e990e0d144250b72d0f0a4332e2b30664f469cfbbeb4dec550a8fa26",
@@ -62888,8 +62950,8 @@
         "Hexalith.Build.props"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "e7ea4b5a15d3c0a0a6071304be6cf80ff8155648ecde1e78bdeee47d47eb132c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "74300e278e554369d912f3988e734966f323a4172f3115d66e76aea28f9cd8fa",
@@ -63373,8 +63435,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "59ab9276ca5ce675b456d694b6fecb19efb6288a010b420a5e7e3aae3a465de7",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "87d512c16179432c0d1164915c83140613c1d2e8e18375d2a17e9e75582db3fa",
@@ -63952,8 +64014,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "6285ee7fbd6cade65be08dfb597b504f0ee45a77bf439aee03ffb8d55f3eb329",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "f7182f83fd7fd8d632bdff39df4fda522218b541894162e69dedd933a1a2c705",
@@ -64308,8 +64370,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "684ec5c77d0edae74c89a0848e2749853bb97089e0263d3949f88dc79369e62f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c140c2d3d5ea70a4ff1a1074a9ba8cfae0223328317cd57e1eab8c29e7e1306c",
@@ -64664,8 +64726,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "43bd01863e073b382d898a9e29c499f397b2f725312fefaa93bbbfe936956d2b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a67e9a6d2114d3d092b44544f67e4dda4e79eeda6a548715f253070e42dbe1d8",
@@ -65070,8 +65132,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "334741002a3993b746dccd4389b37c2ea4790515d78e0202df36b814632c75bb",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "d8275019ddb7bbb1e18606170bf021853a5d7bece213054ff12bc4f2caad0f87",
@@ -65426,8 +65488,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "158b95af9331f2b2921e792652dc8da4a718ea4374add27af467660076c77c7f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "da3feff0077b11c3c74582d67be3bb59b27d4dd92402e862c28a6d62d2f9c36e",
@@ -65782,8 +65844,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "bfc1c6189715c44c5699e050ab71ee3c62633b79fffc77134a80b66da18f9017",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9eb55c72352f9fa63d390f4d37d1e5a5cc23d26c3225c119afb3771000915c68",
@@ -66138,8 +66200,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "227eedef13a530309bfaa2d8d9c7a87b48bdf61dc90b19d0891d2518b8d0b6b5",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "aadd6a4e49c36da267a106f50bb5b27a1c5ffc9db9d40b240e6e068bdc3918db",
@@ -66494,8 +66556,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "0bc67994ed8608c2a0b6c6fb14d480b1c3ba22c3ca84324e55341d92a28ea072",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "24dccbdb782c1b30045bdf85f89522a851bac26936dd954d8ea09237347c2ba2",
@@ -66850,8 +66912,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "af0830780e5c308c1a49c2241be34b2b78e3d0239789d04782ab232802aaa46b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "86bc881bb1f7c8bd6f2f9cba0431bb1dd80a129be1fcb39931757dd32722937e",
@@ -67206,8 +67268,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "6fdbc2619a58a34b91ec1659b8931195b0ec6c7946a198d09497480104adb620",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "abc3da711a223bdd3b80ce48cd980f353f27fb33d7856c4fb0ece9a62bb1604f",
@@ -67568,8 +67630,8 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "de0bc2fc828ca39e075ef7430736456cbf11dd9c72ff960c815da89daba365b5",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "b78cf76fb469abd49de2fd485630b2afe74e57dc757dbf4b303e6f67610bdc1f",
@@ -68187,8 +68249,8 @@
         "Hexalith.Build.props"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "227a230c16e05677819752f76fd01b3aef024df095a4e2352e5361eee9967cbd",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a1b5e7652ba5899791c9a378c552163584a879f9a33482502f9acf2fa2bf29e3",
@@ -68779,8 +68841,8 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "0771f2a8b812551bcf71a301bcf9bd53853a7b15d86e167293011f6ff6bf30f3",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "bf9f252e7ae99c9c093f26ef38e4844dcf877a33598a0adcbcf1630e6d3e9c32",
@@ -69705,8 +69767,8 @@
         "Hexalith.Build.props"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "8c4a9320bf0a207c0bb00e9bf8fa1d90314543d603fccefa1a832dd632cff650",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "ac536aee993d2a2d6e9790ec34ef5447d18b037976d5dc94b727a95e73257a42",
@@ -70433,8 +70495,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "f76234b9a5201bd97684986b8809fa32188381cce4d1efa84a99eadb2282b9d2",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a46fd291d0e912102ef58dc7f1348abfaa233eca80ef5673c36ff61d83000cd9",
@@ -70939,8 +71001,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "2282b15e40fc869071f4a9992e9bd92dd9b82c72c6696594ab624f8314ba4256",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a1f875ec3489674358bc0c511fdc442e9a0012ec85fdda9a3b4c3f957c07a7e3",
@@ -71448,8 +71510,8 @@
         "src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "4ae8626fbf61365cb06eaf71c2dd41b61c9494987cc20bf6ff6a3d086a49e6c6",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "d5b8cd9151245555a48959f06699ea645c7666ab70a44f3da839d90e86652ad7",
@@ -72092,8 +72154,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "4373fa6b0a6a8bfec308689a3a0c1f8de5138c40b2585e03e8a55aede4ccd513",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "93569fd83d6813aa3298c1f2c49ef2e0fc2264139e9072f8357d655ff70232a6",
@@ -72450,8 +72512,8 @@
         "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "0c57a67f09a08d3e4a94b843053bc2b2ed15714e5ce7163d3c93ff877dd767d0",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "09a3e2b713e381311712567c022c4a9574fa60d133709d7fb879f97c65788a0b",
@@ -72499,8 +72561,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "4d5f7defad941c5f488179abefe04fb0d0202c7712c66f5e9f5bd6a2a1a365f1",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "7c7aa93bedd3443a099709ef696c1f2a9a0d2c60e55351e4ad94fc16c0832c09",
@@ -72855,8 +72917,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "fac288d02754d1bbfe8a0ab86ede06743dc44120dd318c159d94dd6324bdd12b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "6aeddb79eb2317e2118430c11a41116ff161648c791fa861e9ba532721d4622f",
@@ -72952,8 +73014,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "85ad28e2b5e9dd6430974f6d0dc2c3f7051887c26a0a93de7829d5da78499835",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "d66253ca7ef68edeefc4fcaf900cbc52c7f855aaa3786a12968e1e3597be38d5",
@@ -73049,8 +73111,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "e7146dfb89970c64bfa941a0a932d926cff005f1175b7fbe4ed73ac7e21b0460",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "72a348948623afd4188a511bdee6c2ec203c0809aaad70a05b0d446fd600b343",
@@ -73405,8 +73467,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "92fef90d300331f117a9cd18f0203befbe7ac4959a640ce6e0cf98ac0eb54d72",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "1fdc72e067df3f9717165478c3750428b8a65dd4d5b353261f203fdc3ae0bc55",
@@ -73861,8 +73923,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "9b23cacd41af57162973aa7622c926d16c6b23851b105749d6436cc00ec1f6e0",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "2ac75c015d887e95f1869ab195c4175bdbea17902f309009bb836b9ff551af19",
@@ -74219,8 +74281,8 @@
         "src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "e365465b8546f5214c250ea0aef21a21e6eff98435e36b7deff8989ac643357a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "3a11f9191dc0e3749e077b1156a64c47d824566b5d3b9a27a2443a9dea081f10",
@@ -74846,8 +74908,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "12c39e39ae2a31dfb0407a187fc28295aaf0be072aabd2220bde2cf6d3cb882d",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "34f6ed94d68f3faed95ca817c219a16223fd466bd19258d194875eec821fb164",
@@ -75284,8 +75346,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "98eb652ddc11bbc844f8d3f8420703304678eec38f795f73a5ef6ae02fee6e1c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "45e735da2c5b2ccf12de54ca05938dfc8eaf4e23968e9276e845428014a8e90f",
@@ -76211,8 +76273,8 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
-        "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+        "auditedAtUtc": "2026-11-21T12:46:41.2676650+00:00",
+        "generatedFromRevision": "c54cbb9844e097c9cc657ec9e90af9606103755c",
         "familySelectionSha256": "2738e3f69315288dcc2894932e5d2db0c904d7f259eef7076782aa8ef83b819f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c802fa0e9f80aab3e257f84751982cb36a1f3994dd4a8418aabdfa3f973f8338",
@@ -125694,20 +125756,20 @@
       "id": "Hexalith.Commons",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -126453,6 +126515,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -126463,20 +126561,20 @@
       "id": "Hexalith.Commons.Aspire",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -127222,6 +127320,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.Aspire",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -127232,20 +127366,20 @@
       "id": "Hexalith.Commons.Configurations",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -127991,6 +128125,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.Configurations",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -128001,20 +128171,20 @@
       "id": "Hexalith.Commons.Diagnostics",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -128304,6 +128474,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.Diagnostics",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -128314,20 +128520,20 @@
       "id": "Hexalith.Commons.Http",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -129073,6 +129279,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.Http",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -129083,20 +129325,20 @@
       "id": "Hexalith.Commons.Metadatas",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -129842,6 +130084,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.Metadatas",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -129852,20 +130130,20 @@
       "id": "Hexalith.Commons.Publication",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -130155,6 +130433,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.Publication",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -130165,20 +130479,20 @@
       "id": "Hexalith.Commons.Serialization",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -130504,6 +130818,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.Serialization",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -130514,20 +130864,20 @@
       "id": "Hexalith.Commons.ServiceDefaults",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -131273,6 +131623,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.ServiceDefaults",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -131283,20 +131669,20 @@
       "id": "Hexalith.Commons.StringEncoders",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -132042,6 +132428,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.StringEncoders",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -132052,20 +132474,20 @@
       "id": "Hexalith.Commons.TenantAccess",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -132358,6 +132780,42 @@
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.TenantAccess",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -132365,20 +132823,20 @@
       "id": "Hexalith.Commons.UniqueIds",
       "auditedVersion": "3.0.1",
       "selectedVersion": "3.0.1",
-      "latestStable": "3.0.1",
+      "latestStable": "3.0.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
       "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+      "rationale": "Retain 3.0.1 pending compatibility validation of listed stable candidate 3.0.2.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.0.1",
+          "latestStable": "3.0.2",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -133124,6 +133582,42 @@
             "familySelectionSha256": "31090790c196d00968f7b3e3057219520c320af10345002ca855765a5ff0f86e",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "949da8bff11368ba2a75270adfea26cd705943d5f47b484844be4446487bf451",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.Commons.UniqueIds",
+          "auditedVersion": "3.0.1",
+          "selectedVersion": "3.0.1",
+          "latestStable": "3.0.1",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-commons",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-commons",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.0.1, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.0.1",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "348d7ddad231517db055d65c75d46b974b0f90f70ced2412289fdd7be0ca2551",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "a82f900ebcfade85504046c5f7eca76f9448b1858aae78335a3c0c3a89f3316c",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -196012,20 +196506,20 @@
       "id": "Hexalith.PolymorphicSerializations",
       "auditedVersion": "2.0.0",
       "selectedVersion": "2.0.0",
-      "latestStable": "2.0.0",
+      "latestStable": "2.0.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-polymorphicserializations",
       "disposition": "retained",
       "rollbackGroup": "hexalith-polymorphicserializations",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.0, prerelease=",
+      "rationale": "Retain 2.0.0 pending compatibility validation of listed stable candidate 2.0.1.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.0.0",
+          "latestStable": "2.0.1",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -196663,6 +197157,42 @@
             "familySelectionSha256": "5e635b4395358c1475ac2dab25d3a50bb262402d336401bdfa191d754bbc0bb1",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "05deaea35ab5f95a02a17036cc0b7b9bf63ecae884191e1a7cf8d387d892cee8",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.PolymorphicSerializations",
+          "auditedVersion": "2.0.0",
+          "selectedVersion": "2.0.0",
+          "latestStable": "2.0.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-polymorphicserializations",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-polymorphicserializations",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "2.0.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "180b67815287027512ddb480b9a1d09e33f63c1655f16fa7c5dd8d4c48cdf65c",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "052c5a024bb24ffbff4bb209ceae70813124957f41606ce3b0235488fd811b72",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -196673,20 +197203,20 @@
       "id": "Hexalith.PolymorphicSerializations.CodeGenerators",
       "auditedVersion": "2.0.0",
       "selectedVersion": "2.0.0",
-      "latestStable": "2.0.0",
+      "latestStable": "2.0.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-polymorphicserializations",
       "disposition": "retained",
       "rollbackGroup": "hexalith-polymorphicserializations",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.0, prerelease=",
+      "rationale": "Retain 2.0.0 pending compatibility validation of listed stable candidate 2.0.1.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.0.0",
+          "latestStable": "2.0.1",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -197324,6 +197854,42 @@
             "familySelectionSha256": "5e635b4395358c1475ac2dab25d3a50bb262402d336401bdfa191d754bbc0bb1",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "05deaea35ab5f95a02a17036cc0b7b9bf63ecae884191e1a7cf8d387d892cee8",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+          "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+          "id": "Hexalith.PolymorphicSerializations.CodeGenerators",
+          "auditedVersion": "2.0.0",
+          "selectedVersion": "2.0.0",
+          "latestStable": "2.0.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-polymorphicserializations",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-polymorphicserializations",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "2.0.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-21T09:31:06.3392258+00:00",
+            "generatedFromRevision": "8e439af55797b4ae7a0bfe4fc1db7213c73c68b8",
+            "familySelectionSha256": "180b67815287027512ddb480b9a1d09e33f63c1655f16fa7c5dd8d4c48cdf65c",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "052c5a024bb24ffbff4bb209ceae70813124957f41606ce3b0235488fd811b72",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
