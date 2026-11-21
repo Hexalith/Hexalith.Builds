@@ -199,7 +199,8 @@ public sealed record ModuleTestSelection(
 
     /// <summary>Gets whether the suite needs an owner retention gate or access observation, which attached runs never share.</summary>
     /// <returns>Whether the suite cannot run as a runner-owned attached run.</returns>
-    internal bool RequiresOwnerGate() => DaprRuntimeVersion is not null || this is { ModuleId: "memories", Name: "functional-retention" };
+    internal bool RequiresOwnerGate() => DaprRuntimeVersion is not null || this is { ModuleId: "memories", Name: "functional-retention" }
+        || CompositionFixtureProducer.IsFixtureTest(this);
 
     /// <summary>Checks ownership and bytes again at the execution boundary.</summary>
     /// <param name="manifestPath">The original declaration.</param>
