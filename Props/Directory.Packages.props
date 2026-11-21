@@ -545,23 +545,15 @@
       <_HexalithEventStoreDependency Include="@(PackageReference)" Condition="$([System.String]::Copy('%(PackageReference.Identity)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
       <_HexalithEventStoreRow Include="@(PackageVersion)" Condition="$([System.String]::Copy('%(PackageVersion.Identity)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
     </ItemGroup>
-    <XmlPeek Condition="'@(_HexalithEventStoreDependency)' != ''" XmlInputPath="$(MSBuildThisFileFullPath)"
-             Query="/Project/PropertyGroup/HexalithEventStoreVersion/text()">
-      <Output TaskParameter="Result" PropertyName="_HexalithCurrentEventStoreVersion" />
-    </XmlPeek>
-    <Error Condition="'@(_HexalithEventStoreDependency)' != '' and '%(_HexalithEventStoreRow.Version)' != '$(_HexalithCurrentEventStoreVersion)'"
-           Text="$(MSBuildProjectName) selects %(_HexalithEventStoreRow.Identity) %(_HexalithEventStoreRow.Version). Restore the Builds catalog version $(_HexalithCurrentEventStoreVersion)." />
+    <Error Condition="'@(_HexalithEventStoreDependency)' != '' and '%(_HexalithEventStoreRow.Version)' != '$(HexalithEventStoreVersion)'"
+           Text="$(MSBuildProjectName) selects %(_HexalithEventStoreRow.Identity) %(_HexalithEventStoreRow.Version). Restore the selected EventStore version $(HexalithEventStoreVersion)." />
   </Target>
   <Target Name="ValidateHexalithEventStoreReferences" AfterTargets="ResolveReferences"
           Condition="'$(Configuration)' == 'Release'">
     <ItemGroup>
       <_HexalithResolvedEventStore Include="@(ReferencePath)" Condition="$([System.String]::Copy('%(ReferencePath.NuGetPackageId)').StartsWith('Hexalith.EventStore.', System.StringComparison.OrdinalIgnoreCase))" />
     </ItemGroup>
-    <XmlPeek Condition="'@(_HexalithResolvedEventStore)' != ''" XmlInputPath="$(MSBuildThisFileFullPath)"
-             Query="/Project/PropertyGroup/HexalithEventStoreVersion/text()">
-      <Output TaskParameter="Result" PropertyName="_HexalithCurrentEventStoreVersion" />
-    </XmlPeek>
-    <Error Condition="'@(_HexalithResolvedEventStore)' != '' and '%(_HexalithResolvedEventStore.NuGetPackageVersion)' != '$(_HexalithCurrentEventStoreVersion)'"
-           Text="$(MSBuildProjectName) resolved %(_HexalithResolvedEventStore.NuGetPackageId) %(_HexalithResolvedEventStore.NuGetPackageVersion). The Builds catalog requires $(_HexalithCurrentEventStoreVersion)." />
+    <Error Condition="'@(_HexalithResolvedEventStore)' != '' and '%(_HexalithResolvedEventStore.NuGetPackageVersion)' != '$(HexalithEventStoreVersion)'"
+           Text="$(MSBuildProjectName) resolved %(_HexalithResolvedEventStore.NuGetPackageId) %(_HexalithResolvedEventStore.NuGetPackageVersion). The Builds catalog requires $(HexalithEventStoreVersion)." />
   </Target>
 </Project>

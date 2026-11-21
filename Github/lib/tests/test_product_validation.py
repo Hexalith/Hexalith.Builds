@@ -427,7 +427,7 @@ sys.exit(31 if data.get("validator_failure") else 0)
         self.assert_refused("built package versions differ")
 
     def test_wrong_framework_refuses_without_pack(self):
-        self.data["metadata"] = {self.ids[0]: {"TargetFramework": "net11.0"}}
+        self.data["metadata"] = {self.ids[0]: {"TargetFramework": "net10.0"}}
         self.assert_refused("invalid evaluated Release package")
 
     def test_first_pack_failure_stops_later_packages_and_consumers(self):

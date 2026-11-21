@@ -15,6 +15,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOWS = REPOSITORY_ROOT / ".github" / "workflows"
@@ -767,28 +769,31 @@ class ShellBlockSyntaxTests(unittest.TestCase):
     """Every inline shell body must parse, including the ones a test cannot execute."""
 
     def test_every_run_block_in_the_governed_workflows_parses(self):
-        pattern = re.compile(r"^      - name: (?P<name>.+)$", re.MULTILINE)
+        shells = {
+            "bash": ["bash", "-n"],
+            "pwsh": [
+                "pwsh", "-NoProfile", "-Command",
+                "$errors = $null; "
+                "[System.Management.Automation.Language.Parser]::ParseInput("
+                "[Console]::In.ReadToEnd(), [ref]$null, [ref]$errors) > $null; "
+                "if ($errors) { $errors | Out-String | Write-Error; exit 1 }",
+            ],
+        }
         for path in (DOMAIN_RELEASE, DOMAIN_CI, DOMAIN_CI_V2):
-            workflow = read(path)
-            seen = {}
-            for match in pattern.finditer(workflow):
-                name = match.group("name")
-                occurrence = seen.get(name, 0)
-                seen[name] = occurrence + 1
-                try:
-                    script = extract_run_block(path, name, occurrence)
-                except (AssertionError, StopIteration):
-                    continue
-                with self.subTest(workflow=path.name, step=name, occurrence=occurrence):
-                    result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned script.
-                        ["bash", "-n"],
-                        input=script,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-
-                    self.assertEqual(0, result.returncode, result.stderr)
+            workflow = yaml.load(read(path), Loader=yaml.BaseLoader)
+            for job_id, job in workflow["jobs"].items():
+                for index, step in enumerate(job.get("steps", [])):
+                    if "run" not in step:
+                        continue
+                    with self.subTest(workflow=path.name, job=job_id, step=step.get("name", index)):
+                        result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned script.
+                            shells[step.get("shell", "bash")],
+                            input=step["run"],
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                        )
+                        self.assertEqual(0, result.returncode, result.stderr)
 
 
 class GovernedIdentityAndPinningTests(unittest.TestCase):
