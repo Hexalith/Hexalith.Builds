@@ -247,6 +247,7 @@ public sealed class DirectCatalogDeclarationTests
 
             SelectExplicitCatalogDefault(selectedCatalog, "HexalithEventStoreVersion", unknownVersion ? "999.0.0" : sdkVersion);
             SelectExplicitCatalogDefault(selectedCatalog, "HexalithTenantsVersion", "7.0.7");
+            SelectExplicitCatalogDefault(selectedCatalog, "HexalithPartiesVersion", "3.1.1");
 
             SelectExplicitCatalogDefault(selectedCatalog, "HexalithMemoriesVersion", unknownMemories ? "3.0.28" : memoriesVersion);
             catalog = selectedCatalog.ToString();
