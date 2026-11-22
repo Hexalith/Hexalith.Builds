@@ -952,8 +952,7 @@ PowerShell 7.6 or later.
 
 Run `pwsh -NoProfile -File Tools/validate-platform-version-catalog.ps1` to
 validate the Platform EventStore.Aspire/CommunityToolkit.Aspire.Hosting.Dapr
-pair using NuGet dependency range semantics. The Folders.Aspire exception
-continues to apply only to that project.
+pair using NuGet dependency range semantics.
 
 Before descriptor discovery or run resources, `run` and `test` of executable
 manifests probe `aspire --version` within a finite bound. Aspire CLI must match

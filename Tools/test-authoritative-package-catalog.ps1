@@ -6,29 +6,38 @@ $ErrorActionPreference = 'Stop'
 
 $catalogPath = Join-Path $PSScriptRoot '../Props/Directory.Packages.props'
 # SDK startup notices belong to stderr and cannot become catalog JSON.
-$evaluationDirectory = Join-Path ([IO.Path]::GetTempPath()) "catalog-evaluation-$([Guid]::NewGuid().ToString('N'))"
-try {
-    [void] [IO.Directory]::CreateDirectory($evaluationDirectory)
-    $stdout = Join-Path $evaluationDirectory 'stdout'
-    $stderr = Join-Path $evaluationDirectory 'stderr'
-    & dotnet msbuild $catalogPath -nologo -nr:false `
-        -getProperty:CentralPackageVersionOverrideEnabled `
-        -getProperty:HexalithCommonsVersion `
-        -getProperty:HexalithEventStoreVersion `
-        -getProperty:HexalithMcpCliVersion `
-        -getProperty:HexalithTenantsVersion `
-        -getProperty:HexalithFoldersVersion `
-        -getProperty:HexalithFrontComposerVersion `
-        -getItem:PackageVersion 1> $stdout 2> $stderr
-    $exitCode = $LASTEXITCODE
-    $evaluationText = [IO.File]::ReadAllText($stdout)
-    $diagnostic = [IO.File]::ReadAllText($stderr)
-    if ($exitCode -ne 0) { throw "Catalog evaluation failed with exit code $exitCode.`n$evaluationText`n$diagnostic" }
-    if ($diagnostic) { [Console]::Error.Write($diagnostic) }
-}
-finally { if (Test-Path -LiteralPath $evaluationDirectory) { [IO.Directory]::Delete($evaluationDirectory, $true) } }
+function Invoke-CatalogEvaluation {
+    param([Parameter(Mandatory = $true)][string[]] $Arguments)
 
-$evaluation = $evaluationText | ConvertFrom-Json -ErrorAction Stop
+    $evaluationDirectory = Join-Path ([IO.Path]::GetTempPath()) "catalog-evaluation-$([Guid]::NewGuid().ToString('N'))"
+    try {
+        [void] [IO.Directory]::CreateDirectory($evaluationDirectory)
+        $stdout = Join-Path $evaluationDirectory 'stdout'
+        $stderr = Join-Path $evaluationDirectory 'stderr'
+        & dotnet msbuild $catalogPath -nologo -nr:false @Arguments 1> $stdout 2> $stderr
+        $exitCode = $LASTEXITCODE
+        $evaluationText = [IO.File]::ReadAllText($stdout)
+        $diagnostic = [IO.File]::ReadAllText($stderr)
+        if ($exitCode -ne 0) { throw "Catalog evaluation failed with exit code $exitCode.`n$evaluationText`n$diagnostic" }
+        if ($diagnostic) { [Console]::Error.Write($diagnostic) }
+    }
+    finally { if (Test-Path -LiteralPath $evaluationDirectory) { [IO.Directory]::Delete($evaluationDirectory, $true) } }
+
+    return $evaluationText | ConvertFrom-Json -ErrorAction Stop
+}
+
+$evaluation = Invoke-CatalogEvaluation @(
+    '-getProperty:CentralPackageVersionOverrideEnabled'
+    '-getProperty:HexalithCommonsVersion'
+    '-getProperty:HexalithEventStoreVersion'
+    '-getProperty:HexalithMcpCliVersion'
+    '-getProperty:HexalithTenantsVersion'
+    '-getProperty:HexalithFoldersVersion'
+    '-getProperty:HexalithFrontComposerVersion'
+    '-getProperty:HexalithMemoriesVersion'
+    '-getProperty:HexalithAspireHostingDaprVersion'
+    '-getItem:PackageVersion'
+)
 $failures = [System.Collections.Generic.List[string]]::new()
 $requiredPackages = @(
     'Dapr.AI'
@@ -91,6 +100,8 @@ $requiredPackages = @(
     'Hexalith.EventStore.Testing'
     'Hexalith.EventStore.Testing.Integration'
     'Hexalith.McpCli.Abstractions'
+    'Hexalith.Memories.ServiceDefaults'
+    'Hexalith.Memories.Telemetry'
     'Hexalith.Tenants.Aspire'
     'Hexalith.Tenants.Client'
     'Hexalith.Tenants.Contracts'
@@ -117,6 +128,10 @@ $sharedPackageVersions = [ordered] @{
     'Hexalith.EventStore.Contracts' = [string] $evaluation.Properties.HexalithEventStoreVersion
     'Hexalith.EventStore.Gateway' = [string] $evaluation.Properties.HexalithEventStoreVersion
     'Hexalith.FrontComposer.Contracts.UI' = [string] $evaluation.Properties.HexalithFrontComposerVersion
+    'Hexalith.Memories.ServiceDefaults' = [string] $evaluation.Properties.HexalithMemoriesVersion
+    'Hexalith.Memories.Telemetry' = [string] $evaluation.Properties.HexalithMemoriesVersion
+    # The neutral Dapr integration is the catalog default that every consumer receives.
+    'CommunityToolkit.Aspire.Hosting.Dapr' = [string] $evaluation.Properties.HexalithAspireHostingDaprVersion
 }
 foreach ($sharedPackageVersion in $sharedPackageVersions.GetEnumerator()) {
     if ([string]::IsNullOrWhiteSpace($sharedPackageVersion.Value)) {
@@ -136,6 +151,26 @@ foreach ($sharedPackageVersion in $sharedPackageVersions.GetEnumerator()) {
     }
 }
 
+# Memories consumers take both hosted-profile rows from this catalog, and the rows follow a selected cohort.
+$memoriesPackages = @('Hexalith.Memories.ServiceDefaults', 'Hexalith.Memories.Telemetry')
+$syntheticMemoriesVersion = '9.8.7'
+$memoriesSelections = [ordered] @{
+    'Memories hosted-test profile' = @{ Arguments = @('-p:HexalithUsePublishedSdkForHostedTests=true'); Expected = [string] $evaluation.Properties.HexalithMemoriesVersion }
+    'selected Memories cohort' = @{ Arguments = @("-p:HexalithMemoriesVersion=$syntheticMemoriesVersion"); Expected = $syntheticMemoriesVersion }
+}
+foreach ($selection in $memoriesSelections.GetEnumerator()) {
+    $selected = Invoke-CatalogEvaluation (@($selection.Value.Arguments) + @('-getItem:PackageVersion'))
+    foreach ($package in $memoriesPackages) {
+        $rows = @($selected.Items.PackageVersion | Where-Object { [string]::Equals([string] $_.Identity, $package, [StringComparison]::OrdinalIgnoreCase) })
+        if ($rows.Count -ne 1) {
+            $failures.Add("The $($selection.Key) evaluation must select '$package' exactly once; found $($rows.Count).")
+        }
+        elseif ([string]::IsNullOrWhiteSpace($selection.Value.Expected) -or [string] $rows[0].Version -cne $selection.Value.Expected) {
+            $failures.Add("The $($selection.Key) evaluation selects '$package' $($rows[0].Version); expected '$($selection.Value.Expected)'.")
+        }
+    }
+}
+
 $overrideEnabled = [string] $evaluation.Properties.CentralPackageVersionOverrideEnabled
 if ($overrideEnabled -cne 'false') {
     $failures.Add(
@@ -149,6 +184,7 @@ $cohortFamilies = [ordered] @{
     'Hexalith.McpCli.' = 'HexalithMcpCliVersion'
     'Hexalith.Tenants.' = 'HexalithTenantsVersion'
     'Hexalith.Folders' = 'HexalithFoldersVersion'
+    'Hexalith.Memories.' = 'HexalithMemoriesVersion'
 }
 [xml] $catalog = Get-Content -LiteralPath $catalogPath -Raw
 foreach ($family in $cohortFamilies.GetEnumerator()) {
@@ -191,23 +227,37 @@ finally {
     if (Test-Path -LiteralPath $probeDirectory) { [IO.Directory]::Delete($probeDirectory, $true) }
 }
 
-# The approved stable selection belongs exclusively to Builds and retains one package identity.
-$stableOutput = @(& (Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })) `
+# A Folders.Aspire-named evaluation must match the neutral catalog row for row,
+# so its retired Dapr integration exception cannot return.
+$foldersOutput = @(& (Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })) `
         -NoLogo -NoProfile -File (Join-Path $PSScriptRoot 'validate-central-package-versions.ps1') `
         -CatalogPath $catalogPath -ConsumerProjectName 'Hexalith.Folders.Aspire' -EmitEvaluation 2>&1)
 if ($LASTEXITCODE -ne 0) {
-    $failures.Add("Folders.Aspire central evaluation failed: $([string]::Join("`n", $stableOutput))")
+    $failures.Add("Folders.Aspire central evaluation failed: $([string]::Join("`n", $foldersOutput))")
 }
 else {
-    $stableEvaluation = ([string]::Join("`n", $stableOutput)) | ConvertFrom-Json -ErrorAction Stop
-    $stableRows = @($stableEvaluation.Items.PackageVersion | Where-Object { $_.Identity -eq 'CommunityToolkit.Aspire.Hosting.Dapr' })
-    if ($stableRows.Count -ne 1 -or $stableRows[0].Version -cne '13.0.0') {
-        $failures.Add('Folders.Aspire must centrally select exactly one Dapr integration identity at stable 13.0.0.')
+    $foldersEvaluation = ([string]::Join("`n", $foldersOutput)) | ConvertFrom-Json -ErrorAction Stop
+    $foldersRows = @($foldersEvaluation.Items.PackageVersion)
+    $neutralRowCount = @($evaluation.Items.PackageVersion).Count
+    if ($foldersRows.Count -ne $neutralRowCount) {
+        $failures.Add("Folders.Aspire evaluates $($foldersRows.Count) central selections; the neutral catalog evaluates $neutralRowCount.")
     }
 
-    foreach ($row in @($stableEvaluation.Items.PackageVersion)) {
-        if ($row.Identity -ne 'CommunityToolkit.Aspire.Hosting.Dapr' -and $row.Version -cne $evaluatedPackages[$row.Identity]) {
-            $failures.Add("Folders.Aspire changes unrelated central selection '$($row.Identity)'.")
+    $foldersPackages = @{}
+    foreach ($row in $foldersRows) {
+        $identity = [string] $row.Identity
+        $foldersPackages[$identity] = [string] $row.Version
+        if (-not $evaluatedPackages.ContainsKey($identity)) {
+            $failures.Add("Folders.Aspire adds central selection '$identity' absent from the neutral catalog.")
+        }
+        elseif ([string] $row.Version -cne $evaluatedPackages[$identity]) {
+            $failures.Add("Folders.Aspire selects '$identity' $($row.Version); the neutral catalog selects $($evaluatedPackages[$identity]).")
+        }
+    }
+
+    foreach ($identity in $evaluatedPackages.Keys) {
+        if (-not $foldersPackages.ContainsKey($identity)) {
+            $failures.Add("Folders.Aspire loses neutral central selection '$identity'.")
         }
     }
 }
@@ -265,5 +315,5 @@ if ($failures.Count -gt 0) {
 }
 
 [Console]::Out.WriteLine(
-    "Authoritative package catalog tests passed for $($requiredPackages.Count) approved package identities, $($sharedPackageVersions.Count) shared package versions, and $($cohortFamilies.Count) canonical families with overrides prohibited."
+    "Authoritative package catalog tests passed for $($requiredPackages.Count) approved package identities, $($sharedPackageVersions.Count) shared package versions, $($memoriesSelections.Count) Memories selections, and $($cohortFamilies.Count) canonical families with overrides prohibited."
 )

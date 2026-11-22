@@ -210,18 +210,23 @@ try {
     $contextSnapshot = Get-Content (Join-Path $temporaryRoot 'conditional-release-context/catalog.json') -Raw | ConvertFrom-Json
     if ($contextSnapshot.daprRuntimeVersion -cne '2.3.4') { throw 'Configuration/TargetFramework context was not carried into standalone catalog generation.' }
 
-    # Prove evaluated Update/property selections and preserve the project-scoped Folders exception.
+    # Prove evaluated Update/property selections; the synthetic Folders condition above is historical input only.
     $evaluated = $catalogText.Replace('</Project>', '<ItemGroup><PackageVersion Update="Dapr.Client" Version="$(ChangedDaprSdk)" /></ItemGroup><PropertyGroup><ChangedDaprSdk>2.3.4</ChangedDaprSdk></PropertyGroup></Project>')
     Test-Catalog 'evaluated-item-update' $evaluated '3.117.1' '13.6.0-preview.1.261001-0243' 0
     $snapshot = Get-Content (Join-Path $temporaryRoot 'evaluated-item-update/catalog.json') -Raw | ConvertFrom-Json
     if ($snapshot.daprSdkVersion -cne '2.3.4') { throw 'The generated snapshot did not use evaluated CPM items.' }
-    # MSBuildProjectName is reserved; evaluate via a project actually named for the exception.
+    # MSBuildProjectName is reserved; evaluate via a project actually named Folders.Aspire.
+    # The real catalog must give it the neutral Dapr integration: no project-scoped exception remains.
+    $realCatalog = Join-Path $PSScriptRoot '../Props/Directory.Packages.props'
+    $neutral = @(& dotnet msbuild $realCatalog -nologo -getItem:PackageVersion) -join "`n" | ConvertFrom-Json
+    $neutralPins = @($neutral.Items.PackageVersion | Where-Object Identity -eq 'CommunityToolkit.Aspire.Hosting.Dapr')
+    if ($neutralPins.Count -ne 1 -or [string]::IsNullOrWhiteSpace($neutralPins[0].Version)) { throw 'The neutral catalog must select exactly one Dapr integration.' }
     $foldersProject = Join-Path $temporaryRoot 'Hexalith.Folders.Aspire.proj'
-    $escapedCatalog = [Security.SecurityElement]::Escape((Join-Path $PSScriptRoot '../Props/Directory.Packages.props'))
+    $escapedCatalog = [Security.SecurityElement]::Escape($realCatalog)
     [IO.File]::WriteAllText($foldersProject, "<Project><Import Project=`"$escapedCatalog`" /></Project>")
     $folders = @(& dotnet msbuild $foldersProject -nologo -getItem:PackageVersion) -join "`n" | ConvertFrom-Json
-    $foldersPin = @($folders.Items.PackageVersion | Where-Object Identity -eq 'CommunityToolkit.Aspire.Hosting.Dapr')[0].Version
-    if ($foldersPin -cne '13.0.0') { throw 'The Folders.Aspire exception changed.' }
+    $foldersPins = @($folders.Items.PackageVersion | Where-Object Identity -eq 'CommunityToolkit.Aspire.Hosting.Dapr')
+    if ($foldersPins.Count -ne 1 -or $foldersPins[0].Version -cne $neutralPins[0].Version) { throw "Folders.Aspire must select the neutral Dapr integration $($neutralPins[0].Version); found $(@($foldersPins | ForEach-Object Version) -join ', ')." }
     $count++
 
     if (-not $SkipRebuild) {

@@ -103,7 +103,7 @@ try {
         }
     }
     finally { Remove-Item -LiteralPath $preprocessedPath -Force -ErrorAction SilentlyContinue }
-    # A neutral project name validates the Platform pair, preserving the Folders.Aspire exception.
+    # A neutral project name validates the Platform pair that every consumer receives.
     $evaluation = (Invoke-CatalogProcess (@('msbuild', $CatalogPath, '-nologo', '-noAutoResponse', '-getItem:PackageVersion', $propertiesArgument) + $contextArguments)) | ConvertFrom-Json -Depth 100
     $snapshot = [ordered] @{ schemaVersion = '1' }
     foreach ($field in $packageFields.Keys) {
