@@ -32,7 +32,7 @@
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.0.1</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">3.0.0</HexalithMcpCliVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.0</HexalithMemoriesVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.2</HexalithTenantsVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.3</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">3.1.1</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">3.1.1</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.4</HexalithProjectsVersion>
