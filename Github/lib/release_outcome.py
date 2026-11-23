@@ -141,6 +141,10 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
                 or (last_tag != "" and (not last_tag.startswith("v")
                     or VERSION.fullmatch(last_tag[1:]) is None))):
             return failed("release publisher handoff has an invalid artifact digest or last tag")
+        if mode == "complete" and "last-tag" not in draft_outputs:
+            resolve_outputs = needs["resolve"].get("outputs", {})
+            if not isinstance(resolve_outputs, dict) or resolve_outputs.get("last-tag", "") != "":
+                return failed("release publisher handoff differs from the resolved last tag")
         if mode == "create":
             build_outputs = needs["build"].get("outputs", {})
             version_outputs = needs["version"].get("outputs", {})

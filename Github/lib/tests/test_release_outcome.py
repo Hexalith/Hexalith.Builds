@@ -244,6 +244,8 @@ class OutcomeReductionTests(unittest.TestCase):
         self.assert_failed(self.decide(**choices), "differs from the version or build")
         needs["version"] = needs["build"] = {"result": "skipped", "outputs": {}}
         self.assertEqual("true", self.decide(mode="complete", **choices)["publish"])
+        needs["resolve"]["outputs"] = {"last-tag": "v0.9.0"}
+        self.assert_failed(self.decide(mode="complete", **choices), "resolved last tag")
         needs["draft"]["outputs"]["version"] = "2.0.0"
         self.assert_failed(self.decide(mode="complete", **(choices | {"version": "2.0.0"})), "last tag")
 
