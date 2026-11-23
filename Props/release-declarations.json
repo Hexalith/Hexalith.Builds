@@ -6,6 +6,13 @@
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "21eda6da824d5ae6135ff342dd8a5aae950b02420319b953a836dddeb00ce495"
   },
+  "eventstore/5.5.1": {
+    "repository": "Hexalith.EventStore",
+    "version": "5.5.1",
+    "commit": "f2ade96970f929dd96e8865075339954233e61ed",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "8bff132b15500a47a8d655ca8df668efac6d80ed1e9136ec7bb8710effaf828d"
+  },
   "memories/4.1.0": {
     "repository": "Hexalith.Memories",
     "version": "4.1.0",
