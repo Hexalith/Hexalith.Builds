@@ -533,7 +533,9 @@ with (root / "setup-effects.jsonl").open("a") as stream:
         self.assertEqual(f"{prefix}/global.json", self.external[1][1]["global-json-file"])
         commands = [json.loads(line) for line in (module / "commands.jsonl").read_text().splitlines()]
         self.assertEqual(["restore", "build"], [args[0] for args in commands if args[0] in ("restore", "build")])
-        self.assertTrue(all(args[1] == solution for args in commands if args[0] in ("restore", "build")))
+        expected_solution = str((module / solution).resolve())
+        self.assertEqual([expected_solution, expected_solution],
+                         [args[1] for args in commands if args[0] in ("restore", "build")])
         self.assertFalse(any(args[0] == "test" for args in commands))
         self.assertEqual([], self.commands())
         effects = [json.loads(line) for line in (module / "setup-effects.jsonl").read_text().splitlines()]
