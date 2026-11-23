@@ -331,8 +331,9 @@ def restore_and_build(prepared: PreparedConfig) -> None:
     from build_projects import preflight
     preflight(prepared)
     solution = prepared.document["solution"]
-    run_command(["dotnet", "restore", solution, *build_flags()], prepared.root)
-    run_command(["dotnet", "build", solution, "--no-restore", *build_flags()], prepared.root)
+    sdk_solution = str(contained_path(prepared.root, solution, kind="solution"))
+    run_command(["dotnet", "restore", sdk_solution, *build_flags()], prepared.root)
+    run_command(["dotnet", "build", sdk_solution, "--no-restore", *build_flags()], prepared.root)
     from build_projects import build_declared
     build_declared(prepared, build_flags(), run_command)
     additional = tuple(prepared.document["tests"].get("additional", []))

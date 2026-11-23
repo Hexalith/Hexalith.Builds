@@ -8,6 +8,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -126,7 +127,7 @@ class SubprocessPipelineTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="ci-pipeline-")
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
+        self.root = Path(self.temporary.name).resolve()
         self.document = configuration()
         self.data = {"projects": {"test/Z.Tests/Z.Tests.csproj": True,
                                   "src/Ordinary.csproj": False,
@@ -188,6 +189,15 @@ class SubprocessPipelineTests(unittest.TestCase):
             self.assertEqual(["--stop-on-fail", "off"], command[-2:])
         self.assertIn("--no-restore", commands[1])
         self.assertIn('"integration": ["test/Fixture.IntegrationTests.csproj"]', result.stdout)
+
+    def test_leading_dash_solution_is_passed_as_an_absolute_path(self):
+        self.document["solution"] = "-consumer solution.slnx"
+        solution = self.root / self.document["solution"]
+        (self.root / "Fixture.slnx").rename(solution)
+        result = self.invoke()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual([["restore", str(solution)], ["build", str(solution)]],
+                         [call[:2] for call in self.commands() if call[0] in {"restore", "build"}])
 
     def test_failure_completes_the_project_and_preserves_status_without_starting_later_project(self):
         self.data["fail_project"] = "test/A space/A.Tests.csproj"
@@ -303,8 +313,8 @@ class SubprocessPipelineTests(unittest.TestCase):
         result = self.invoke()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         commands = self.commands()
-        self.assertEqual(["Fixture.slnx", additional], [call[1] for call in commands if call[0] == "restore"])
-        self.assertEqual(["Fixture.slnx", additional], [call[1] for call in commands if call[0] == "build"])
+        self.assertEqual([str(self.root / "Fixture.slnx"), additional], [call[1] for call in commands if call[0] == "restore"])
+        self.assertEqual([str(self.root / "Fixture.slnx"), additional], [call[1] for call in commands if call[0] == "build"])
         self.assertIn(additional, [call[2] for call in commands if call[0] == "test"])
 
     def test_additional_library_cannot_masquerade_as_a_test(self):
@@ -321,7 +331,8 @@ class SubprocessPipelineTests(unittest.TestCase):
                 self.data["failure"] = failing_command
                 result = self.invoke()
                 self.assertEqual(17, result.returncode, result.stderr)
-                self.assertIn(f"dotnet {failing_command} Fixture.slnx ", result.stderr)
+                expected = shlex.join(["dotnet", failing_command, str(self.root / "Fixture.slnx")])
+                self.assertIn(expected + " ", result.stderr)
                 self.assertEqual(["restore"] if failing_command == "restore" else ["restore", "build"],
                                  [command[0] for command in self.commands()])
 

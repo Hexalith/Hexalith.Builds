@@ -326,7 +326,12 @@ def dispatch_settings(git, sha, repository, module_root=""):
     with tempfile.TemporaryDirectory(prefix="hexalith-release-config-") as directory:
         path = Path(directory) / "hexalith-ci.json"
         path.write_bytes(git.blob(sha, relative))
-        config = load_config(path, repository=repository, module_root=module_root)
+        try:
+            config = load_config(path, repository=repository, module_root=module_root)
+        except ConfigError as error:
+            # ConfigError has already escaped any control characters in the path.
+            temporary_path = str(ConfigError(str(path)))
+            raise ConfigError(str(error).replace(temporary_path, relative)) from error
     return {"codeql": json.dumps(config["codeql"], separators=(",", ":")),
             "nightly-hook": str("nightly" in config["hooks"]).lower(), "config-valid": "true",
             "ci-wait-minutes": min(config["ciTimeoutMinutes"], 350)}

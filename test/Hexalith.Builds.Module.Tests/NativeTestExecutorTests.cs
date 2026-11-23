@@ -769,6 +769,7 @@ public sealed class NativeTestExecutorTests
     [InlineData("none")]
     [InlineData("foreign-owner")]
     [InlineData("sibling-run")]
+    [InlineData("descriptor-environment")]
     [InlineData("owner-role")]
     [InlineData("hold-owner")]
     [InlineData("hold-environment")]
@@ -790,7 +791,7 @@ public sealed class NativeTestExecutorTests
         {
             ["runId"] = fault == "sibling-run" ? CompositionRunPlanFactory.NewRunId() : attached?.RunId ?? plan.RunId,
             ["ownerRunId"] = fault is "foreign-owner" or "owner-descriptor-owner" ? CompositionRunPlanFactory.NewRunId() : plan.RunId,
-            ["environmentId"] = plan.EnvironmentId,
+            ["environmentId"] = fault == "descriptor-environment" ? CompositionRunPlanFactory.NewRunId() : plan.EnvironmentId,
             ["role"] = fault == "owner-role" || (attached is null && fault != "owner-descriptor-role") ? "owner" : "attached",
         };
         JsonObject catalog = new() { ["instanceId"] = plan.EnvironmentId + "-catalog", ["commit"] = plan.SourceMapping!.PlatformIdentity!.CatalogCommit };
@@ -798,7 +799,8 @@ public sealed class NativeTestExecutorTests
         byte[] descriptor = Encoding.UTF8.GetBytes(new JsonObject { ["bindings"] = bindings }.ToJsonString());
         if (fault is not ("none" or "owner-descriptor"))
         {
-            _ = await Should.ThrowAsync<InvalidDataException>(() => SelectedRoutingCatalogSnapshot.ReadAsync(plan, descriptor, TestContext.Current.CancellationToken, true, [], attached)).ConfigureAwait(true);
+            InvalidDataException error = await Should.ThrowAsync<InvalidDataException>(() => SelectedRoutingCatalogSnapshot.ReadAsync(plan, descriptor, TestContext.Current.CancellationToken, true, [], attached)).ConfigureAwait(true);
+            error.Message.ShouldBe("Routing observations differ from the validated descriptor instance.");
         }
         else
         {
@@ -1074,10 +1076,13 @@ public sealed class NativeTestExecutorTests
         workspace.Document["modules"]![0]!["tests"] = JsonNode.Parse("""
             [{"name":"verify","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":60,"stopTimeoutSeconds":30,"mode":"source"}]
             """);
+
+        // Keep manifest paths inside the fixture even when a temp ancestor has a repository marker.
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "Hexalith.Builds.slnx"), "<Solution />", TestContext.Current.CancellationToken).ConfigureAwait(false);
         await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), runner, TestContext.Current.CancellationToken).ConfigureAwait(false);
         string manifest = workspace.Save();
         PlatformManifestValidationResult validated = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
-        validated.IsValid.ShouldBeTrue();
+        validated.IsValid.ShouldBeTrue(string.Join(Environment.NewLine, validated.Diagnostics.Select(diagnostic => diagnostic.Message)));
         ModuleTestSelection selection = ModuleTestSelection.Select(validated.Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
         SourceMapping mapping = new(WorkspaceMode.Source, workspace.Root, "sample", [new SourceMappingEntry("sample", "source", workspace.Root)], false);
         CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selection, SourceMapping = mapping, Modules = [], UiMarkers = [] };

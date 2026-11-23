@@ -13,6 +13,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 import yaml
 
@@ -256,12 +257,33 @@ raise SystemExit(subprocess.call([{REAL_GIT!r},*a]))
         self.commit_config()
         result, values = self.invoke()
         self.assertEqual(1, result.returncode)
-        self.assertNotIn('config-valid', values)
-        self.assertIn('unknown keys', result.stderr)
+        self.assertEqual({'sha': self.sha, 'mode': 'create'}, values)
+        self.assertIn('.github/hexalith-ci.json: $: unknown keys: unexpected', result.stderr)
+        self.assertNotIn('hexalith-release-config-', result.stderr)
+        scratch = self.root / 'scratch\twith-tab'
+        scratch.mkdir()
+        with patch.dict(os.environ, {'TMPDIR': str(scratch)}):
+            repeated, repeated_values = self.invoke()
+        self.assertEqual(1, repeated.returncode)
+        self.assertEqual(result.stderr, repeated.stderr)
+        self.assertEqual(values, repeated_values)
         result, values = self.invoke(module_root='../escape')
         self.assertEqual(1, result.returncode)
         self.assertEqual({}, values)
         self.assertIn('both module-root and expected-source', result.stderr)
+
+    def test_malformed_sample_dispatch_config_names_its_committed_path(self):
+        sample_root, expected_source = self.sample_fixture()
+        relative = sample_root + '/.github/hexalith-ci.json'
+        (self.source / relative).write_text('{', encoding='utf-8')
+        self.commit_config()
+        self.drafts = [self.draft()]
+        result, values = self.invoke(module_root=sample_root, expected_source=expected_source)
+        self.assertEqual(1, result.returncode)
+        self.assertEqual('complete', values['mode'])
+        self.assertNotIn('config-valid', values)
+        self.assertIn(relative + ': Expecting property name', result.stderr)
+        self.assertNotIn('hexalith-release-config-', result.stderr)
 
     def test_paired_sample_inputs_reach_the_composite_and_select_sample_settings(self):
         sample_root, expected_source = self.sample_fixture()
