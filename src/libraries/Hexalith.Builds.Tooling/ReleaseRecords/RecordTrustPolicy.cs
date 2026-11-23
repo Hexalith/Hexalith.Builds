@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.Tooling.ReleaseRecords;
 
 using System.Collections.Immutable;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 
 /// <summary>
@@ -13,7 +14,7 @@ using System.Security.Cryptography;
 /// </summary>
 public sealed class RecordTrustPolicy
 {
-    private static readonly ImmutableHashSet<string> _roles = ImmutableHashSet.Create(StringComparer.Ordinal, "publication", "executor", "recovery-executor", "monitor", "administrator", "deputy");
+    private static readonly ImmutableHashSet<string> _roles = ImmutableHashSet.Create(StringComparer.Ordinal, "publication", "executor", "recovery-executor", "promotion-evaluator", "monitor", "administrator", "deputy");
     private readonly Dictionary<(string Writer, string Key), RecordWriterKey> _anchors = [];
 
     /// <summary>Initializes a new instance of the <see cref="RecordTrustPolicy"/> class from independent enrollment.</summary>
@@ -75,8 +76,32 @@ public sealed class RecordTrustPolicy
     /// <exception cref="CryptographicException">The key is not an admitted public P-256 key.</exception>
     internal static ECDsa ImportPublicKey(string pem)
     {
-        if (!pem.StartsWith("-----BEGIN PUBLIC KEY-----", StringComparison.Ordinal) ||
-            !pem.TrimEnd().EndsWith("-----END PUBLIC KEY-----", StringComparison.Ordinal))
+        ReadOnlySpan<char> text = pem.AsSpan().Trim();
+        if (!PemEncoding.TryFind(text, out PemFields fields) ||
+            fields.Location.GetOffsetAndLength(text.Length) != (0, text.Length) ||
+            !text[fields.Label].SequenceEqual("PUBLIC KEY"))
+        {
+            throw new CryptographicException();
+        }
+
+        byte[] der = new byte[fields.DecodedDataLength];
+        if (!Convert.TryFromBase64Chars(text[fields.Base64Data], der, out int decodedLength) || decodedLength != der.Length)
+        {
+            throw new CryptographicException();
+        }
+
+        try
+        {
+            // Check the public-key container before passing it to the platform importer.
+            // Some providers can decode private-key DER supplied to a public import API.
+            AsnReader reader = new(der, AsnEncodingRules.DER);
+            AsnReader spki = reader.ReadSequence();
+            _ = spki.ReadSequence();
+            _ = spki.ReadBitString(out _);
+            spki.ThrowIfNotEmpty();
+            reader.ThrowIfNotEmpty();
+        }
+        catch (AsnContentException)
         {
             throw new CryptographicException();
         }
@@ -84,7 +109,12 @@ public sealed class RecordTrustPolicy
         ECDsa key = ECDsa.Create();
         try
         {
-            key.ImportFromPem(pem);
+            key.ImportSubjectPublicKeyInfo(der, out int bytesRead);
+            if (bytesRead != der.Length)
+            {
+                throw new CryptographicException();
+            }
+
             EnsureP256(key);
             return key;
         }
@@ -100,7 +130,7 @@ public sealed class RecordTrustPolicy
     /// <exception cref="CryptographicException">The curve is unsupported.</exception>
     internal static void EnsureP256(ECDsa key)
     {
-        if (key.ExportParameters(false).Curve.Oid.Value != "1.2.840.10045.3.1.7")
+        if (key.ExportParameters(false).Curve.Oid?.Value != "1.2.840.10045.3.1.7")
         {
             throw new CryptographicException();
         }
@@ -129,6 +159,14 @@ public sealed class RecordTrustPolicy
             "attempt" => anchor.Roles.Contains("executor"),
             "qualification" or "latest-working" => IsExecutor(anchor, record.Environment),
             "production-promoted" => record.Environment == "production" && IsExecutor(anchor, record.Environment),
+            "promotion-decision" when record.Payload is PromotionDecisionRecord decision => decision.Action switch
+            {
+                "reserve-admission" => record.Environment == "production" && anchor.Roles.Contains("promotion-evaluator"),
+                "reserve-administrator" => anchor.Roles.Contains("administrator") && anchor.ExclusiveAdministratorCustody,
+                "supersede" => record.Environment == "staging" && anchor.Roles.Contains("executor"),
+                "complete" or "release-reservation" => record.Environment == "production" && anchor.Roles.Contains("executor"),
+                _ => false,
+            },
             "promotion-stop" => IsExecutor(anchor, record.Environment) || anchor.Roles.Overlaps(["monitor", "administrator", "deputy"]),
             _ => false,
         };

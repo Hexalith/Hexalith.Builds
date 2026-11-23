@@ -17,6 +17,7 @@ using System.Collections.Immutable;
 /// <param name="CatalogRootDigest">The current catalog root digest.</param>
 /// <param name="SecretContractDigest">The secret-contract digest.</param>
 /// <param name="RealmContractVersion">The applied realm-contract version.</param>
+/// <param name="OperationsDefinitionsDigest">The digest of the operations-repository definitions used by the attempt.</param>
 /// <param name="ActiveProfileDigest">The active environment profile digest.</param>
 /// <param name="Hostnames">The environment hostnames.</param>
 /// <param name="CredentialReferences">The credential references, never credentials.</param>
@@ -28,6 +29,7 @@ public sealed record EnvironmentCurrent(
     string CatalogRootDigest,
     string SecretContractDigest,
     string RealmContractVersion,
+    string OperationsDefinitionsDigest,
     string ActiveProfileDigest,
     ImmutableArray<string> Hostnames,
     ImmutableDictionary<string, string> CredentialReferences);

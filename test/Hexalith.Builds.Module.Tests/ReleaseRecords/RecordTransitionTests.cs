@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests.ReleaseRecords;
 
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Numerics;
 
@@ -76,6 +77,49 @@ public sealed class RecordTransitionTests
         Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAttempt(active, release, 2, active)).Code.ShouldBe("invalid-transition");
         VerifiedRecord<AttemptRecord> terminal = Attempt(context, release, "working");
         RecordTransitionValidator.ValidateAttempt(terminal, release, 2, terminal);
+    }
+
+    /// <summary>Active revisions preserve writer, identity, timing and environment bindings.</summary>
+    /// <param name="change">The proposed invalid revision.</param>
+    [Theory]
+    [InlineData("writer")]
+    [InlineData("first-mutation")]
+    [InlineData("record-id")]
+    [InlineData("created-time")]
+    [InlineData("recorded-time")]
+    [InlineData("operations-definitions")]
+    [InlineData("subject")]
+    [InlineData("rollout-at-new-epoch")]
+    [InlineData("verification-at-new-epoch")]
+    public void ActiveRevisionsPreserveExistingAuthorityAndHistory(string change)
+    {
+        using RecordTestContext context = new();
+        VerifiedRecord<ReleaseRecord> release = Release(context);
+        DateTimeOffset now = RecordTestContext.Now;
+        AttemptRecord initial = RecordTestContext.Attempt(release.Reference) with { FirstMutationUtc = now };
+        SignedRecord<AttemptRecord> envelope = RecordTestContext.Envelope(initial, "production", "production", "attempt") with { RecordedUtc = now.AddSeconds(10) };
+        VerifiedRecord<AttemptRecord> previous = context.Verify(envelope);
+        SignedRecord<AttemptRecord> next = change switch
+        {
+            "writer" => envelope with { WriterId = "other", KeyId = "other-key" },
+            "first-mutation" => envelope with { Payload = initial with { FirstMutationUtc = now.AddSeconds(1) } },
+            "record-id" => envelope with { RecordId = "different-attempt" },
+            "created-time" => envelope with { CreatedUtc = now.AddSeconds(-1) },
+            "recorded-time" => envelope with { RecordedUtc = now.AddSeconds(9) },
+            "operations-definitions" => envelope with
+            {
+                Payload = initial with { EnvironmentCurrent = initial.EnvironmentCurrent with { OperationsDefinitionsDigest = "sha256:" + new string('b', 64) } },
+            },
+            "subject" => envelope with { Subject = "different-release" },
+            "rollout-at-new-epoch" => envelope with { Payload = initial with { LockEpoch = 2, RolloutDeadlineUtc = now.AddMinutes(4) } },
+            _ => envelope with { Payload = initial with { LockEpoch = 2, VerificationDeadlineUtc = now.AddMinutes(4) } },
+        };
+        VerifiedRecord<AttemptRecord> proposed = context.Verify(next);
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAttempt(proposed, release, next.Payload.LockEpoch, previous)).Code.ShouldBe("invalid-transition");
+        if (change == "subject")
+        {
+            Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAttempt(proposed, release, next.Payload.LockEpoch)).Code.ShouldBe("invalid-transition");
+        }
     }
 
     /// <summary>Established ordinary phase deadlines and lifetime cannot be renewed or removed.</summary>
@@ -203,40 +247,44 @@ public sealed class RecordTransitionTests
     [InlineData("wrong-link")]
     [InlineData("wrong-environment")]
     [InlineData("stale-epoch")]
+    [InlineData("same-epoch")]
+    [InlineData("wrong-successor-reference")]
+    [InlineData("changed-predecessor-payload")]
+    [InlineData("no-predecessor")]
     public void SupersessionRequiresExactSuccessorEvidence(string change)
     {
         using RecordTestContext context = new();
         VerifiedRecord<ReleaseRecord> release = Release(context);
         VerifiedRecord<AttemptRecord> prior = Attempt(context, release);
-        SignedRecord<AttemptRecord> successorEnvelope = RecordTestContext.Envelope(RecordTestContext.Attempt(release.Reference, 2) with { Supersedes = prior.Reference }, "other", "production", "successor");
-        if (change == "wrong-link")
+        long currentEpoch = change == "same-epoch" ? 1 : 2;
+        long successorEpoch = change == "stale-epoch" ? 1 : currentEpoch;
+        RecordReference supersedes = change == "wrong-link" ? prior.Reference with { RecordId = "unrelated" } : prior.Reference;
+        string successorEnvironment = change == "wrong-environment" ? "staging" : "production";
+        AttemptRecord successorPayload = RecordTestContext.Attempt(release.Reference, successorEpoch) with { Supersedes = supersedes };
+        VerifiedRecord<AttemptRecord> successor = context.Verify(RecordTestContext.Envelope(successorPayload, "dual", successorEnvironment, "successor"));
+        string terminalWriter = change == "wrong-writer" ? "production" : successor.Record.WriterId;
+        RecordReference supersededBy = change == "wrong-successor-reference" ? successor.Reference with { RecordId = "unrelated" } : successor.Reference;
+        AttemptRecord terminalPayload = prior.Record.Payload with { Outcome = "superseded", LockEpoch = currentEpoch, SupersededBy = supersededBy };
+        if (change == "changed-predecessor-payload")
         {
-            successorEnvelope = successorEnvelope with { Payload = successorEnvelope.Payload with { Supersedes = new("unrelated", prior.Digest) } };
-        }
-        else if (change == "wrong-environment")
-        {
-            successorEnvelope = successorEnvelope with { WriterId = "staging", KeyId = "staging-key", Environment = "staging" };
-        }
-        else if (change == "stale-epoch")
-        {
-            successorEnvelope = successorEnvelope with { Payload = successorEnvelope.Payload with { LockEpoch = 1 } };
+            terminalPayload = terminalPayload with { PreIncidentIngress = "restricted" };
         }
 
-        VerifiedRecord<AttemptRecord> successor = context.Verify(successorEnvelope);
-        string terminalWriter = change is "wrong-writer" or "wrong-environment" ? "production" : successor.Record.WriterId;
         VerifiedRecord<AttemptRecord> superseded = context.Verify(prior.Record with
         {
             WriterId = terminalWriter,
             KeyId = terminalWriter + "-key",
-            Payload = prior.Record.Payload with { Outcome = "superseded", LockEpoch = 2, SupersededBy = successor.Reference },
+            Payload = terminalPayload,
         });
         if (change == "none")
         {
-            RecordTransitionValidator.ValidateAttempt(superseded, release, 2, prior, successor);
+            RecordTransitionValidator.ValidateAttempt(superseded, release, currentEpoch, prior, successor);
         }
         else
         {
-            _ = Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAttempt(superseded, release, 2, prior, change == "missing" ? null : successor));
+            VerifiedRecord<AttemptRecord>? previous = change == "no-predecessor" ? null : prior;
+            VerifiedRecord<AttemptRecord>? takeover = change is "missing" or "no-predecessor" ? null : successor;
+            Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAttempt(superseded, release, currentEpoch, previous, takeover)).Code.ShouldBe("invalid-transition");
         }
     }
 
@@ -275,15 +323,22 @@ public sealed class RecordTransitionTests
     }
 
     /// <summary>Recovery phase progress cannot extend the absolute recovery lifetime.</summary>
-    [Fact]
-    public void RecoveryLifetimeCannotBeExtendedWithinTheSameEpoch()
+    /// <param name="kind">The recovery attempt kind.</param>
+    /// <param name="writer">The enrolled writer for that kind.</param>
+    [Theory]
+    [InlineData("in-place-restore", "production")]
+    [InlineData("disaster-recovery", "recovery")]
+    public void RecoveryLifetimeCannotBeExtendedWithinTheSameEpoch(string kind, string writer)
     {
         using RecordTestContext context = new();
         VerifiedRecord<ReleaseRecord> release = Release(context);
-        AttemptRecord recovery = RecordTestContext.Attempt(release.Reference) with { AttemptKind = "in-place-restore", RecoveryAllowance = 0 };
-        VerifiedRecord<AttemptRecord> prior = context.Verify(RecordTestContext.Envelope(recovery, "production", "production", "recovery"));
-        VerifiedRecord<AttemptRecord> extended = context.Verify(prior.Record with { Payload = prior.Record.Payload with { MaximumLifetimeUtc = RecordTestContext.Now.AddHours(2) } });
-        _ = Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAttempt(extended, release, 1, prior));
+        AttemptRecord recovery = RecordTestContext.Attempt(release.Reference) with { AttemptKind = kind, RecoveryAllowance = 0, RenderMode = "recovery" };
+        VerifiedRecord<AttemptRecord> prior = context.Verify(RecordTestContext.Envelope(recovery, writer, "production", "recovery"));
+        DateTimeOffset rollout = RecordTestContext.Now.AddMinutes(10);
+        AttemptRecord progress = recovery with { RolloutDeadlineUtc = rollout };
+        RecordTransitionValidator.ValidateAttempt(context.Verify(prior.Record with { Payload = progress }), release, 1, prior);
+        VerifiedRecord<AttemptRecord> extended = context.Verify(prior.Record with { Payload = progress with { MaximumLifetimeUtc = rollout.AddSeconds(recovery.GraceSeconds) } });
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAttempt(extended, release, 1, prior)).Code.ShouldBe("invalid-transition");
     }
 
     /// <summary>Qualification and production-promoted belong to the exact issuing attempt's writer.</summary>
@@ -311,6 +366,69 @@ public sealed class RecordTransitionTests
         }
     }
 
+    /// <summary>Qualification and production promotion require the exact valid attempt and release.</summary>
+    /// <param name="change">The inconsistent subject, outcome, environment or reference.</param>
+    [Theory]
+    [InlineData("release-reference")]
+    [InlineData("attempt-reference")]
+    [InlineData("attempt-release-reference")]
+    [InlineData("record-subject")]
+    [InlineData("attempt-subject")]
+    [InlineData("attempt-outcome")]
+    [InlineData("attempt-environment")]
+    public void IssuanceRejectsIncorrectVerifiedContext(string change)
+    {
+        using RecordTestContext context = new();
+        VerifiedRecord<ReleaseRecord> release = Release(context);
+        RecordReference otherRelease = release.Reference with { Digest = "sha256:" + new string('b', 64) };
+        RecordReference attemptRelease = change == "attempt-release-reference" ? otherRelease : release.Reference;
+        string outcome = change == "attempt-outcome" ? "non-working" : "in-progress";
+        string environment = change == "attempt-environment" ? "staging" : "production";
+        string attemptSubject = change == "attempt-subject" ? "another-release" : "release-1";
+        AttemptRecord attemptPayload = RecordTestContext.Attempt(attemptRelease, outcome: outcome);
+        VerifiedRecord<AttemptRecord> attempt = context.Verify(RecordTestContext.Envelope(attemptPayload, "dual", environment, "attempt", attemptSubject));
+        RecordReference releaseReference = change == "release-reference" ? otherRelease : release.Reference;
+        RecordReference attemptReference = change == "attempt-reference" ? attempt.Reference with { RecordId = "different-attempt" } : attempt.Reference;
+        string subject = change == "record-subject" ? "another-release" : "release-1";
+        QualificationRecord qualificationPayload = new(releaseReference, attemptReference, RecordTestContext.Digest, [], [], []);
+        VerifiedRecord<QualificationRecord> qualification = context.Verify(RecordTestContext.Envelope(qualificationPayload, "dual", "production", "qualification", subject));
+        ProductionPromotedRecord promotionPayload = new(releaseReference, attemptReference, qualification.Reference, RecordTestContext.Digest);
+        VerifiedRecord<ProductionPromotedRecord> promotion = context.Verify(RecordTestContext.Envelope(promotionPayload, "dual", "production", "promotion", subject));
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateQualification(qualification, release, attempt)).Code.ShouldBe("invalid-transition");
+
+        // Give the promotion a valid qualification when only the issued record was altered.
+        if (change is "release-reference" or "attempt-reference" or "record-subject")
+        {
+            qualificationPayload = qualificationPayload with { Release = release.Reference, IssuingAttempt = attempt.Reference };
+            qualification = context.Verify(RecordTestContext.Envelope(qualificationPayload, "dual", "production", "qualification"));
+            promotion = context.Verify(promotion.Record with { Payload = promotionPayload with { Qualification = qualification.Reference } });
+        }
+
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateProductionPromoted(promotion, release, attempt, qualification)).Code.ShouldBe("invalid-transition");
+    }
+
+    /// <summary>Production promotion binds qualification content and its verified profile.</summary>
+    /// <param name="change">The independent qualification or profile substitution.</param>
+    [Theory]
+    [InlineData("qualification-reference")]
+    [InlineData("qualification-issuer")]
+    [InlineData("profile")]
+    public void PromotionRequiresItsExactValidQualification(string change)
+    {
+        using RecordTestContext context = new();
+        VerifiedRecord<ReleaseRecord> release = Release(context);
+        VerifiedRecord<AttemptRecord> attempt = Attempt(context, release);
+        const string alternateDigest = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        string qualificationWriter = change == "qualification-issuer" ? "other" : "production";
+        VerifiedRecord<QualificationRecord> qualification = context.Verify(RecordTestContext.Envelope(
+            new QualificationRecord(release.Reference, attempt.Reference, RecordTestContext.Digest, [], [], []), qualificationWriter, "production", "qualification"));
+        RecordReference reference = change == "qualification-reference" ? qualification.Reference with { Digest = alternateDigest } : qualification.Reference;
+        string profile = change == "profile" ? alternateDigest : RecordTestContext.Digest;
+        ProductionPromotedRecord payload = new(release.Reference, attempt.Reference, reference, profile);
+        VerifiedRecord<ProductionPromotedRecord> promotion = context.Verify(RecordTestContext.Envelope(payload, "production", "production", "promotion"));
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateProductionPromoted(promotion, release, attempt, qualification)).Code.ShouldBe("invalid-transition");
+    }
+
     /// <summary>Stale epochs, wrong profiles and substituted content references are rejected.</summary>
     [Fact]
     public void RejectsStaleEpochAndMismatchedReferencedContent()
@@ -331,6 +449,7 @@ public sealed class RecordTransitionTests
     [InlineData("non-working")]
     [InlineData("in-progress")]
     [InlineData("production")]
+    [InlineData("non-release-attempt")]
     [InlineData("release-reference")]
     [InlineData("attempt-reference")]
     [InlineData("attempt-release-reference")]
@@ -345,10 +464,12 @@ public sealed class RecordTransitionTests
         string environment = change == "production" ? "production" : "staging";
         string outcome = change is "non-working" or "in-progress" ? change : "working";
         AttemptRecord payload = RecordTestContext.Attempt(release.Reference, outcome: outcome);
-        if (change == "attempt-release-reference")
+        payload = change switch
         {
-            payload = payload with { Release = release.Reference with { Digest = alternateDigest } };
-        }
+            "attempt-release-reference" => payload with { Release = release.Reference with { Digest = alternateDigest } },
+            "non-release-attempt" => payload with { AttemptKind = "rotation" },
+            _ => payload,
+        };
 
         VerifiedRecord<AttemptRecord> staging = context.Verify(RecordTestContext.Envelope(payload, environment, environment, "staging-attempt", change == "attempt-subject" ? "other-release" : "release-1"));
         ReleaseAvailableRecord available = new(release.Reference, staging.Reference, release.Record.Payload.ComposedHostDigest);
@@ -373,24 +494,43 @@ public sealed class RecordTransitionTests
     [InlineData("wrong-environment")]
     [InlineData("stale-epoch")]
     [InlineData("equal-epoch")]
+    [InlineData("attempt-epoch")]
+    [InlineData("pointer-identity")]
+    [InlineData("attempt-subject")]
+    [InlineData("pointer-release-reference")]
+    [InlineData("pointer-attempt-reference")]
+    [InlineData("attempt-release-reference")]
     public void LatestWorkingEnforcesWriterOutcomeEnvironmentAndEpoch(string change)
     {
         using RecordTestContext context = new();
         VerifiedRecord<ReleaseRecord> release = Release(context);
         VerifiedRecord<AttemptRecord> first = Attempt(context, release, outcome: "working");
-        VerifiedRecord<LatestWorkingPointerRecord> previous = context.Verify(RecordTestContext.Envelope(new LatestWorkingPointerRecord(release.Reference, first.Reference, 1), "production", "production", "latest", "production"));
+        VerifiedRecord<LatestWorkingPointerRecord>? previous = context.Verify(RecordTestContext.Envelope(new LatestWorkingPointerRecord(release.Reference, first.Reference, 1), "production", "production", "latest", "production"));
+        long epoch = change == "equal-epoch" ? 1 : 2;
         string outcome = change switch { "nonterminal" => "in-progress", "non-working" => "non-working", _ => "working" };
-        VerifiedRecord<AttemptRecord> next = context.Verify(RecordTestContext.Envelope(RecordTestContext.Attempt(release.Reference, change == "equal-epoch" ? 1 : 2, outcome), "production", "production", "next-attempt"));
-        string writer = change switch { "wrong-writer" => "other", "wrong-environment" => "staging", _ => "production" };
+        string alternateDigest = "sha256:" + new string('b', 64);
+        RecordReference otherRelease = release.Reference with { Digest = alternateDigest };
+        RecordReference attemptRelease = change == "attempt-release-reference" ? otherRelease : release.Reference;
+        AttemptRecord attemptPayload = RecordTestContext.Attempt(attemptRelease, change == "attempt-epoch" ? 3 : epoch, outcome);
+        string attemptSubject = change == "attempt-subject" ? "different-release" : "release-1";
+        VerifiedRecord<AttemptRecord> next = context.Verify(RecordTestContext.Envelope(attemptPayload, "dual", "production", "next-attempt", attemptSubject));
         string environment = change == "wrong-environment" ? "staging" : "production";
-        VerifiedRecord<LatestWorkingPointerRecord> proposed = context.Verify(RecordTestContext.Envelope(new LatestWorkingPointerRecord(release.Reference, next.Reference, next.Record.Payload.LockEpoch), writer, environment, "latest", environment));
+        string writer = change == "wrong-writer" ? "other" : "dual";
+        string recordId = change == "pointer-identity" ? "different-pointer" : "latest";
+        RecordReference pointerRelease = change == "pointer-release-reference" ? otherRelease : release.Reference;
+        RecordReference pointerAttempt = change == "pointer-attempt-reference" ? next.Reference with { Digest = alternateDigest } : next.Reference;
+        LatestWorkingPointerRecord pointer = new(pointerRelease, pointerAttempt, epoch);
+        VerifiedRecord<LatestWorkingPointerRecord> proposed = context.Verify(RecordTestContext.Envelope(pointer, writer, environment, recordId, environment));
         if (change == "valid")
         {
-            RecordTransitionValidator.ValidateLatestWorking(proposed, release, next, 2, previous);
+            RecordTransitionValidator.ValidateLatestWorking(proposed, release, next, epoch, previous);
         }
         else
         {
-            _ = Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateLatestWorking(proposed, release, next, change == "stale-epoch" ? 3 : next.Record.Payload.LockEpoch, previous));
+            // With no prior pointer the attempt environment is the only environment comparison.
+            previous = change == "wrong-environment" ? null : previous;
+            long currentEpoch = change == "stale-epoch" ? 3 : epoch;
+            Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateLatestWorking(proposed, release, next, currentEpoch, previous)).Code.ShouldBe("invalid-transition");
         }
     }
 
@@ -409,6 +549,23 @@ public sealed class RecordTransitionTests
         RecordTransitionValidator.ValidatePromotionStop(stop, 0);
     }
 
+    /// <summary>Stop lineage binds the exact prior stop in the same environment.</summary>
+    /// <param name="change">The inconsistent lineage.</param>
+    [Theory]
+    [InlineData("wrong-reference")]
+    [InlineData("wrong-environment")]
+    public void StopRequiresSameEnvironmentAndExactPredecessor(string change)
+    {
+        using RecordTestContext context = new();
+        string previousEnvironment = change == "wrong-environment" ? "staging" : "production";
+        VerifiedRecord<PromotionStopRecord> previous = context.Verify(RecordTestContext.Envelope(
+            new PromotionStopRecord(1, null, "probe", []), "monitor", previousEnvironment, "stop-1", previousEnvironment));
+        RecordReference reference = change == "wrong-reference" ? previous.Reference with { RecordId = "different-stop" } : previous.Reference;
+        VerifiedRecord<PromotionStopRecord> next = context.Verify(RecordTestContext.Envelope(
+            new PromotionStopRecord(2, reference, "new-cause", []), "monitor", "production", "stop-2", "production"));
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidatePromotionStop(next, 1, previous)).Code.ShouldBe("invalid-transition");
+    }
+
     /// <summary>Stop clearance is bound to the exact current revision and Administrator action.</summary>
     [Fact]
     public void ClearanceCannotEraseALaterStop()
@@ -417,9 +574,10 @@ public sealed class RecordTransitionTests
         VerifiedRecord<PromotionStopRecord> stop = context.Verify(RecordTestContext.Envelope(new PromotionStopRecord(1, null, "probe", []), "monitor", "production", "stop-1", "production"));
         VerifiedRecord<PromotionStopRecord> later = context.Verify(RecordTestContext.Envelope(new PromotionStopRecord(2, stop.Reference, "other-cause", []), "deputy", "production", "stop-2", "production"));
         RecordTransitionValidator.ValidatePromotionStop(later, 1, stop);
-        VerifiedRecord<AdministratorRecord> clear = context.Verify(RecordTestContext.Envelope(new AdministratorRecord("clear-promotion-stop", "production", null, stop.Reference, 1, null, "reviewed", RecordTestContext.Map(("probe", "resolved")), null), "admin", "production", "clear", "production"));
-        RecordTransitionValidator.ValidateAdministrator(clear, stop);
-        _ = Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(clear, later));
+        VerifiedRecord<AttemptRecord> working = Attempt(context, Release(context), "working");
+        VerifiedRecord<AdministratorRecord> clear = context.Verify(RecordTestContext.Envelope(new AdministratorRecord("clear-promotion-stop", "production", working.Reference, stop.Reference, 1, null, "reviewed", RecordTestContext.Map(("probe", "resolved")), null), "admin", "production", "clear", "production"));
+        RecordTransitionValidator.ValidateAdministrator(clear, stop, working);
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(clear, later, working)).Code.ShouldBe("invalid-transition");
         _ = Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidatePromotionStop(later, 2, stop));
         _ = Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidatePromotionStop(later, 1));
     }
@@ -429,24 +587,29 @@ public sealed class RecordTransitionTests
     /// <param name="accepted">Whether the disposition authorizes local clearance.</param>
     [Theory]
     [InlineData(null, false)]
-    [InlineData("pending", false)]
-    [InlineData("ignored", false)]
-    [InlineData("RESOLVED", false)]
+    [InlineData("different-cause", false)]
     [InlineData("resolved", true)]
     [InlineData("accepted", true)]
     public void ClearanceRequiresTheCurrentCauseDisposition(string? disposition, bool accepted)
     {
         using RecordTestContext context = new();
         VerifiedRecord<PromotionStopRecord> stop = context.Verify(RecordTestContext.Envelope(new PromotionStopRecord(1, null, "probe", []), "monitor", "production", "stop", "production"));
-        AdministratorRecord payload = new("clear-promotion-stop", "production", null, stop.Reference, 1, null, "reviewed", disposition is null ? RecordTestContext.Map() : RecordTestContext.Map(("probe", disposition)), null);
+        VerifiedRecord<AttemptRecord> working = Attempt(context, Release(context), "working");
+        ImmutableDictionary<string, string> dispositions = disposition switch
+        {
+            null => RecordTestContext.Map(),
+            "different-cause" => RecordTestContext.Map(("different-cause", "resolved")),
+            _ => RecordTestContext.Map(("probe", disposition)),
+        };
+        AdministratorRecord payload = new("clear-promotion-stop", "production", working.Reference, stop.Reference, 1, null, "reviewed", dispositions, null);
         VerifiedRecord<AdministratorRecord> clear = context.Verify(RecordTestContext.Envelope(payload, "admin", "production", "clear", "production"));
         if (accepted)
         {
-            RecordTransitionValidator.ValidateAdministrator(clear, stop);
+            RecordTransitionValidator.ValidateAdministrator(clear, stop, working);
         }
         else
         {
-            Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(clear, stop)).Code.ShouldBe("invalid-transition");
+            Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(clear, stop, working)).Code.ShouldBe("invalid-transition");
         }
     }
 
@@ -462,6 +625,49 @@ public sealed class RecordTransitionTests
         _ = Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(revoke));
         VerifiedRecord<AdministratorRecord> unrelated = context.Verify(predecessor.Record with { RecordId = "unrelated" });
         _ = Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(revoke, predecessor: unrelated));
+        VerifiedRecord<AdministratorRecord> otherTarget = context.Verify(revoke.Record with { Subject = "other-actor", Payload = revoke.Record.Payload with { Target = "other-actor" } });
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(otherTarget, predecessor: predecessor)).Code.ShouldBe("invalid-transition");
+        VerifiedRecord<AdministratorRecord> otherFamily = context.Verify(revoke.Record with { Payload = revoke.Record.Payload with { Action = "revoke-management" } });
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(otherFamily, predecessor: predecessor)).Code.ShouldBe("invalid-transition");
+    }
+
+    /// <summary>Administrator links require exact, same-environment, verified attempt and stop evidence.</summary>
+    /// <param name="change">The inconsistency in the supplied attempt or stop evidence.</param>
+    [Theory]
+    [InlineData("non-working")]
+    [InlineData("in-progress")]
+    [InlineData("wrong-attempt-environment")]
+    [InlineData("wrong-attempt-reference")]
+    [InlineData("missing-attempt-context")]
+    [InlineData("wrong-stop-reference")]
+    [InlineData("wrong-stop-environment")]
+    [InlineData("wrong-stop-revision")]
+    [InlineData("revision-without-stop")]
+    public void AdministratorRejectsInconsistentLinkedEvidence(string change)
+    {
+        using RecordTestContext context = new();
+        VerifiedRecord<ReleaseRecord> release = Release(context);
+        string attemptEnvironment = change == "wrong-attempt-environment" ? "staging" : "production";
+        string outcome = change is "non-working" or "in-progress" ? change : "working";
+        VerifiedRecord<AttemptRecord> attempt = context.Verify(RecordTestContext.Envelope(
+            RecordTestContext.Attempt(release.Reference, outcome: outcome), "dual", attemptEnvironment, "attempt"));
+        string stopEnvironment = change == "wrong-stop-environment" ? "staging" : "production";
+        VerifiedRecord<PromotionStopRecord> stop = context.Verify(RecordTestContext.Envelope(
+            new PromotionStopRecord(1, null, "probe", []), "monitor", stopEnvironment, "stop", stopEnvironment));
+        string action = change is "non-working" or "in-progress" or "wrong-attempt-environment" ? "clear-promotion-stop" : "approve-release";
+        RecordReference attemptReference = change == "wrong-attempt-reference" ? attempt.Reference with { RecordId = "different-attempt" } : attempt.Reference;
+        RecordReference? stopReference = change switch
+        {
+            "revision-without-stop" => null,
+            "wrong-stop-reference" => stop.Reference with { RecordId = "different-stop" },
+            _ => stop.Reference,
+        };
+        long observedRevision = change == "wrong-stop-revision" ? 2 : 1;
+        AdministratorRecord payload = new(action, "production", attemptReference, stopReference, observedRevision, null, "reviewed", RecordTestContext.Map(("probe", "resolved")), null);
+        VerifiedRecord<AdministratorRecord> verified = context.Verify(RecordTestContext.Envelope(payload, "admin", "production", "action", "production"));
+        VerifiedRecord<AttemptRecord>? attemptContext = change == "missing-attempt-context" ? null : attempt;
+        VerifiedRecord<PromotionStopRecord>? stopContext = change == "revision-without-stop" ? null : stop;
+        Should.Throw<RecordValidationException>(() => RecordTransitionValidator.ValidateAdministrator(verified, stopContext, attemptContext)).Code.ShouldBe("invalid-transition");
     }
 
     private static VerifiedRecord<AttemptRecord> Attempt(RecordTestContext context, VerifiedRecord<ReleaseRecord> release, string outcome = "in-progress") => context.Verify(RecordTestContext.Envelope(RecordTestContext.Attempt(release.Reference, outcome: outcome), "production", "production", "attempt"));

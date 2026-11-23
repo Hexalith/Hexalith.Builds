@@ -20,12 +20,14 @@ internal sealed class RecordTestContext : IDisposable
     /// <summary>Initializes a new instance of the <see cref="RecordTestContext"/> class.</summary>
     internal RecordTestContext()
     {
-        string[] kinds = ["release", "attempt", "qualification", "production-promoted", "release-available", "latest-working", "promotion-stop", "administrator"];
+        string[] kinds = ["release", "attempt", "qualification", "production-promoted", "release-available", "latest-working", "promotion-stop", "administrator", "promotion-decision"];
         List<RecordWriterKey> anchors = [];
         foreach ((string writer, string role, string[] environments) in new (string, string, string[])[]
         {
             ("publication", "publication", []), ("staging", "executor", ["staging"]), ("production", "executor", ["production"]),
-            ("other", "executor", ["production"]), ("recovery", "recovery-executor", ["production"]),
+            ("other", "executor", ["production"]), ("dual", "executor", ["staging", "production"]),
+            ("evaluator", "promotion-evaluator", ["production"]), ("staging-evaluator", "promotion-evaluator", ["staging"]),
+            ("recovery", "recovery-executor", ["staging", "production"]),
             ("monitor", "monitor", ["staging", "production"]), ("admin", "administrator", ["staging", "production"]), ("deputy", "deputy", ["staging", "production"]),
         })
         {
@@ -70,7 +72,7 @@ internal sealed class RecordTestContext : IDisposable
 
     /// <summary>Builds a value-free environment snapshot.</summary>
     /// <returns>The environment bindings.</returns>
-    internal static EnvironmentCurrent Current() => new(Map(("database", "secret-ref")), Map(("database", "read-write")), 1, 1, Digest, Digest, "realm-v1", Digest, ["app.example"], Map(("deploy", "credential-ref")));
+    internal static EnvironmentCurrent Current() => new(Map(("database", "secret-ref")), Map(("database", "read-write")), 1, 1, Digest, Digest, "realm-v1", Digest, Digest, ["app.example"], Map(("deploy", "credential-ref")));
 
     /// <summary>Builds a finite attempt.</summary>
     /// <param name="release">The release reference.</param>
@@ -94,18 +96,20 @@ internal sealed class RecordTestContext : IDisposable
     /// <typeparam name="T">The payload type.</typeparam>
     /// <param name="record">The envelope.</param>
     /// <param name="signer">An alternate actual signer, if requested.</param>
+    /// <param name="version">The explicitly selected wire version.</param>
     /// <returns>The signed envelope.</returns>
-    internal SignedRecord<T> Sign<T>(SignedRecord<T> record, string? signer = null)
-        where T : class => ReleaseRecordCodec.Sign(record, _keys[signer ?? record.WriterId]);
+    internal SignedRecord<T> Sign<T>(SignedRecord<T> record, string? signer = null, ReleaseRecordVersion version = ReleaseRecordVersion.V1)
+        where T : class => ReleaseRecordCodec.Sign(record, _keys[signer ?? record.WriterId], version);
 
     /// <summary>Signs and verifies fixture content.</summary>
     /// <typeparam name="T">The payload type.</typeparam>
     /// <param name="record">The envelope.</param>
+    /// <param name="version">The explicitly selected wire version.</param>
     /// <returns>The independently verified content.</returns>
-    internal VerifiedRecord<T> Verify<T>(SignedRecord<T> record)
+    internal VerifiedRecord<T> Verify<T>(SignedRecord<T> record, ReleaseRecordVersion version = ReleaseRecordVersion.V1)
         where T : class
     {
-        RecordVerificationResult<T> result = ReleaseRecordCodec.Verify<T>(ReleaseRecordCodec.Encode(Sign(record)), Policy);
+        RecordVerificationResult<T> result = ReleaseRecordCodec.Verify<T>(ReleaseRecordCodec.Encode(Sign(record, version: version), version), Policy, version);
         result.FailureCode.ShouldBeNull();
         return result.Verified.ShouldNotBeNull();
     }

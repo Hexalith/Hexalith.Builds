@@ -34,10 +34,18 @@ public sealed class RecordSignatureTests
     public void TamperingNeverReturnsTrustedData(string field, string value)
     {
         using RecordTestContext context = new();
-        SignedRecord<ReleaseRecord> signed = context.Sign(RecordTestContext.Envelope(RecordTestContext.Release(), "publication", null, "release-record"));
+        RecordWriterKey dual = context.Anchors.Single(anchor => anchor.WriterId == "dual");
+        RecordTrustPolicy trust = new([dual, dual with { WriterId = "other" }, dual with { KeyId = "other-key" }]);
+        AttemptRecord payload = RecordTestContext.Attempt(new("release-record", RecordTestContext.Digest));
+        SignedRecord<AttemptRecord> signed = context.Sign(RecordTestContext.Envelope(payload, "dual", "staging", "attempt"));
         JsonObject json = JsonNode.Parse(ReleaseRecordCodec.Encode(signed)).ShouldBeOfType<JsonObject>();
         json[field] = value;
-        ReleaseRecordCodec.Verify<ReleaseRecord>(Encoding.UTF8.GetBytes(json.ToJsonString()), context.Policy).Verified.ShouldBeNull();
+        SignedRecord<AttemptRecord> alternative = json.Deserialize<SignedRecord<AttemptRecord>>(JsonSerializerOptions.Web).ShouldNotBeNull();
+        SignedRecord<AttemptRecord> resigned = context.Sign(alternative, "dual");
+        _ = ReleaseRecordCodec.Verify<AttemptRecord>(ReleaseRecordCodec.Encode(resigned), trust).Verified.ShouldNotBeNull();
+        RecordVerificationResult<AttemptRecord> result = ReleaseRecordCodec.Verify<AttemptRecord>(ReleaseRecordCodec.Encode(alternative), trust);
+        result.FailureCode.ShouldBe("invalid-signature");
+        result.Verified.ShouldBeNull();
     }
 
     /// <summary>Schema-valid alternatives prove every release payload field is signed.</summary>
@@ -77,15 +85,25 @@ public sealed class RecordSignatureTests
         }
     }
 
-    /// <summary>Contradictory phase and outage timestamps fail before signature trust.</summary>
-    /// <param name="change">The contradictory timestamp.</param>
+    /// <summary>Contradictory timing, recovery and successor fields fail before signature trust.</summary>
+    /// <param name="change">The contradictory field.</param>
     [Theory]
     [InlineData("rollout-before-entry")]
     [InlineData("verification-before-entry")]
     [InlineData("outage-after-record")]
     [InlineData("rollout-after-lifetime")]
     [InlineData("verification-after-lifetime")]
-    public void RejectsContradictoryAttemptTiming(string change)
+    [InlineData("grace-above-bound")]
+    [InlineData("consumption-above-allowance")]
+    [InlineData("recovery-with-allowance")]
+    [InlineData("entry-after-record")]
+    [InlineData("pre-mutation-deadline-at-entry")]
+    [InlineData("lifetime-at-entry")]
+    [InlineData("first-mutation-before-entry")]
+    [InlineData("first-mutation-after-record")]
+    [InlineData("superseded-without-successor")]
+    [InlineData("active-with-successor")]
+    public void RejectsContradictoryAttemptFields(string change)
     {
         using RecordTestContext context = new();
         AttemptRecord initial = RecordTestContext.Attempt(new("release", RecordTestContext.Digest));
@@ -95,7 +113,17 @@ public sealed class RecordSignatureTests
             "verification-before-entry" => initial with { VerificationDeadlineUtc = RecordTestContext.Now.AddSeconds(-1) },
             "outage-after-record" => initial with { OutageUtc = RecordTestContext.Now.AddSeconds(1) },
             "rollout-after-lifetime" => initial with { RolloutDeadlineUtc = initial.MaximumLifetimeUtc.AddSeconds(1) },
-            _ => initial with { VerificationDeadlineUtc = initial.MaximumLifetimeUtc.AddSeconds(1) },
+            "verification-after-lifetime" => initial with { VerificationDeadlineUtc = initial.MaximumLifetimeUtc.AddSeconds(1) },
+            "grace-above-bound" => initial with { GraceSeconds = initial.CheckTimeoutSeconds + 31 },
+            "consumption-above-allowance" => initial with { RecoveriesConsumed = 1, RecoveryAllowance = 0 },
+            "recovery-with-allowance" => initial with { AttemptKind = "in-place-restore" },
+            "entry-after-record" => initial with { EntryUtc = RecordTestContext.Now.AddSeconds(1) },
+            "pre-mutation-deadline-at-entry" => initial with { PreMutationDeadlineUtc = initial.EntryUtc },
+            "lifetime-at-entry" => initial with { MaximumLifetimeUtc = initial.EntryUtc },
+            "first-mutation-before-entry" => initial with { FirstMutationUtc = initial.EntryUtc.AddSeconds(-1) },
+            "first-mutation-after-record" => initial with { FirstMutationUtc = RecordTestContext.Now.AddSeconds(1) },
+            "superseded-without-successor" => initial with { Outcome = "superseded" },
+            _ => initial with { SupersededBy = new("successor", RecordTestContext.Digest) },
         };
         SignedRecord<AttemptRecord> signed = context.Sign(RecordTestContext.Envelope(initial, "production", "production", "attempt"));
         SignedRecord<AttemptRecord> invalid = signed with { Payload = changed };
@@ -108,6 +136,8 @@ public sealed class RecordSignatureTests
     [Theory]
     [InlineData("unsupported-curve")]
     [InlineData("public-only")]
+    [InlineData("explicit-curve")]
+    [InlineData("disposed")]
     public void SigningKeyFailuresHaveStableCodes(string failure)
     {
         using RecordTestContext context = new();
@@ -115,6 +145,16 @@ public sealed class RecordSignatureTests
         if (failure == "unsupported-curve")
         {
             key.GenerateKey(ECCurve.NamedCurves.nistP384);
+        }
+        else if (failure == "explicit-curve")
+        {
+            using ECDsa named = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            key.ImportParameters(named.ExportExplicitParameters(true));
+        }
+        else if (failure == "disposed")
+        {
+            key.GenerateKey(ECCurve.NamedCurves.nistP256);
+            key.Dispose();
         }
         else
         {
@@ -152,6 +192,18 @@ public sealed class RecordSignatureTests
         AssertDenied(context, RecordTestContext.Envelope(new LatestWorkingPointerRecord(reference, reference, 1), "monitor", "production", "latest", "production"));
         AssertDenied(context, RecordTestContext.Envelope(new PromotionStopRecord(1, null, "cause", []), "publication", "production", "stop", "production"));
         AssertDenied(context, RecordTestContext.Envelope(new AdministratorRecord("return-to-g2", "production", null, null, null, null, "reviewed", RecordTestContext.Map(), null), "monitor", "production", "administrator", "production"));
+    }
+
+    /// <summary>Enrollment in staging cannot grant production-only writer authority.</summary>
+    [Fact]
+    public void RejectsProductionOnlyWriterAuthorityInStaging()
+    {
+        using RecordTestContext context = new();
+        RecordReference reference = new("reference", RecordTestContext.Digest);
+        AssertDenied(context, RecordTestContext.Envelope(new ProductionPromotedRecord(reference, reference, reference, RecordTestContext.Digest), "staging", "staging", "promoted"));
+        AttemptRecord dr = RecordTestContext.Attempt(reference) with { AttemptKind = "disaster-recovery", RecoveryAllowance = 0 };
+        AssertDenied(context, RecordTestContext.Envelope(dr, "recovery", "staging", "dr"));
+        AssertDenied(context, RecordTestContext.Envelope(new QualificationRecord(reference, reference, RecordTestContext.Digest, [], [], []), "recovery", "staging", "qualification"));
     }
 
     /// <summary>Valid cryptography under the wrong enrolled key is insufficient.</summary>
@@ -230,12 +282,15 @@ public sealed class RecordSignatureTests
 
     /// <summary>Identity and public-key aliases cannot hide shared Administrator custody.</summary>
     /// <param name="alias">The conflicting enrollment form.</param>
+    /// <param name="code">The expected enrollment failure.</param>
     [Theory]
-    [InlineData("identity")]
-    [InlineData("key")]
-    [InlineData("mixed-role")]
-    [InlineData("no-custody")]
-    public void RejectsAdministratorCustodyOverlapAndAliases(string alias)
+    [InlineData("identity", "administrator-custody-overlap")]
+    [InlineData("key", "administrator-custody-overlap")]
+    [InlineData("revoked-identity", "administrator-custody-overlap")]
+    [InlineData("revoked-key", "administrator-custody-overlap")]
+    [InlineData("mixed-role", "invalid-trust-policy")]
+    [InlineData("no-custody", "invalid-trust-policy")]
+    public void RejectsAdministratorCustodyOverlapAndAliases(string alias, string code)
     {
         using RecordTestContext context = new();
         RecordWriterKey administrator = context.Anchors.Single(anchor => anchor.WriterId == "admin");
@@ -244,10 +299,12 @@ public sealed class RecordSignatureTests
         {
             "identity" => executor with { WriterId = administrator.WriterId },
             "key" => executor with { PublicKeyPem = administrator.PublicKeyPem.Replace("\n", "\r\n", StringComparison.Ordinal) },
+            "revoked-identity" => executor with { WriterId = administrator.WriterId, Revoked = true },
+            "revoked-key" => executor with { PublicKeyPem = administrator.PublicKeyPem, Revoked = true },
             "mixed-role" => administrator with { Roles = administrator.Roles.Add("executor"), KeyId = "alias-key" },
             _ => administrator with { ExclusiveAdministratorCustody = false, KeyId = "alias-key" },
         };
-        _ = Should.Throw<RecordValidationException>(() => new RecordTrustPolicy([administrator, conflicting]));
+        Should.Throw<RecordValidationException>(() => new RecordTrustPolicy([administrator, conflicting])).Code.ShouldBe(code);
     }
 
     /// <summary>Unsupported curves cannot enter independent public enrollment.</summary>
@@ -257,6 +314,47 @@ public sealed class RecordSignatureTests
         using RecordTestContext context = new();
         using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP384);
         RecordWriterKey anchor = context.Anchors[0] with { PublicKeyPem = key.ExportSubjectPublicKeyInfoPem() };
+        Should.Throw<RecordValidationException>(() => new RecordTrustPolicy([anchor])).Code.ShouldBe("invalid-trust-policy");
+    }
+
+    /// <summary>Enrollment accepts just one public SPKI block and rejects private material.</summary>
+    /// <param name="format">The inadmissible PEM or DER form.</param>
+    [Theory]
+    [InlineData("private-label")]
+    [InlineData("public-label-with-private-der")]
+    [InlineData("embedded-private-pem")]
+    [InlineData("trailing-der")]
+    [InlineData("explicit-curve")]
+    public void EnrollmentRejectsNonPublicOrNonNamedKeyContainers(string format)
+    {
+        using RecordTestContext context = new();
+        using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        byte[] publicDer = key.ExportSubjectPublicKeyInfo();
+        string pem;
+        switch (format)
+        {
+            case "private-label":
+                pem = key.ExportECPrivateKeyPem();
+                break;
+            case "public-label-with-private-der":
+                pem = PemEncoding.WriteString("PUBLIC KEY", key.ExportECPrivateKey());
+                break;
+            case "embedded-private-pem":
+                pem = "-----BEGIN PUBLIC KEY-----\n" + key.ExportECPrivateKeyPem() + "\n-----END PUBLIC KEY-----";
+                break;
+            case "trailing-der":
+                pem = PemEncoding.WriteString("PUBLIC KEY", [.. publicDer, 0]);
+                break;
+            default:
+                using (ECDsa explicitKey = ECDsa.Create(key.ExportExplicitParameters(false)))
+                {
+                    pem = explicitKey.ExportSubjectPublicKeyInfoPem();
+                }
+
+                break;
+        }
+
+        RecordWriterKey anchor = context.Anchors[0] with { PublicKeyPem = pem };
         Should.Throw<RecordValidationException>(() => new RecordTrustPolicy([anchor])).Code.ShouldBe("invalid-trust-policy");
     }
 
@@ -301,6 +399,26 @@ public sealed class RecordSignatureTests
         SignedRecord<PromotionStopRecord> envelope = RecordTestContext.Envelope(new PromotionStopRecord(1, null, "probe", []), "monitor", "production", "stop", "production");
         const string vector = """{"algorithm":"ES256","createdUtc":"2026-10-22T00:00:00\u002B00:00","environment":"production","keyId":"monitor-key","kind":"promotion-stop","payload":{"cause":"probe","evidenceDigests":[],"previousStop":null,"revision":1},"recordId":"stop","recordedUtc":"2026-10-22T00:00:00\u002B00:00","schema":"https://schemas.hexalith.com/platform/promotion-stop.v1","subject":"production","writerId":"monitor"}""";
         Encoding.UTF8.GetString(ReleaseRecordCodec.GetSigningBytes(envelope)).ShouldBe(vector);
+    }
+
+    /// <summary>Fixed Unicode vectors pin signing bytes, encoded bytes and the verified digest.</summary>
+    [Fact]
+    public void CanonicalUnicodeEncodingAndDigestVectorsAreStable()
+    {
+        using RecordTestContext context = new();
+        SignedRecord<PromotionStopRecord> envelope = RecordTestContext.Envelope(new PromotionStopRecord(1, null, "échec", []), "monitor", "production", "stop", "production");
+        const string signing = """{"algorithm":"ES256","createdUtc":"2026-10-22T00:00:00\u002B00:00","environment":"production","keyId":"monitor-key","kind":"promotion-stop","payload":{"cause":"\u00E9chec","evidenceDigests":[],"previousStop":null,"revision":1},"recordId":"stop","recordedUtc":"2026-10-22T00:00:00\u002B00:00","schema":"https://schemas.hexalith.com/platform/promotion-stop.v1","subject":"production","writerId":"monitor"}""";
+        const string encoded = """{"algorithm":"ES256","createdUtc":"2026-10-22T00:00:00\u002B00:00","environment":"production","keyId":"monitor-key","kind":"promotion-stop","payload":{"cause":"\u00E9chec","evidenceDigests":[],"previousStop":null,"revision":1},"recordId":"stop","recordedUtc":"2026-10-22T00:00:00\u002B00:00","schema":"https://schemas.hexalith.com/platform/promotion-stop.v1","signature":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==","subject":"production","writerId":"monitor"}""";
+        SignedRecord<PromotionStopRecord> fixedSignature = envelope with { Signature = Convert.ToBase64String(new byte[64]) };
+        Encoding.UTF8.GetString(ReleaseRecordCodec.GetSigningBytes(envelope)).ShouldBe(signing);
+        Encoding.UTF8.GetString(ReleaseRecordCodec.Encode(fixedSignature)).ShouldBe(encoded);
+        using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        byte[] signature = key.SignData(Encoding.UTF8.GetBytes(signing), HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        string signed = encoded.Replace(fixedSignature.Signature, Convert.ToBase64String(signature), StringComparison.Ordinal);
+        RecordWriterKey anchor = context.Anchors.Single(candidate => candidate.WriterId == "monitor") with { PublicKeyPem = key.ExportSubjectPublicKeyInfoPem() };
+        RecordVerificationResult<PromotionStopRecord> result = ReleaseRecordCodec.Verify<PromotionStopRecord>(Encoding.UTF8.GetBytes(signed), new([anchor]));
+        result.FailureCode.ShouldBeNull();
+        result.Verified.ShouldNotBeNull().Digest.ShouldBe("sha256:5a07410a37a465d4ba54925aca93cf234413126fea31f88f4a7e62a5cdca8430");
     }
 
     private static void AssertDenied<T>(RecordTestContext context, SignedRecord<T> envelope)

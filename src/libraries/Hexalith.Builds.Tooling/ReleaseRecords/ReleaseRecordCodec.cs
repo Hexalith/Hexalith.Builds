@@ -29,13 +29,32 @@ public static class ReleaseRecordCodec
         MaxDepth = 32,
     };
 
-    private static readonly JsonSchema _schema = ReadSchema();
+    private static readonly JsonSchema _schemaV1 = ReadSchema("v1");
+    private static readonly Lazy<JsonSchema> _schemaV2 = new(() => ReadSchema("v2"));
 
     /// <summary>Gets the distinct versioned schema identifier for a payload type.</summary>
     /// <typeparam name="T">The supported payload type.</typeparam>
     /// <returns>The schema identifier.</returns>
     public static string SchemaFor<T>()
-        where T : class => "https://schemas.hexalith.com/platform/" + KindFor<T>() + ".v1";
+        where T : class => SchemaFor<T>(ReleaseRecordVersion.V1);
+
+    /// <summary>Gets the schema identifier for the explicitly selected payload version.</summary>
+    /// <typeparam name="T">The supported payload type.</typeparam>
+    /// <param name="version">The requested wire version.</param>
+    /// <returns>The schema identifier.</returns>
+    /// <exception cref="RecordValidationException">The payload or version is unsupported.</exception>
+    public static string SchemaFor<T>(ReleaseRecordVersion version)
+        where T : class
+    {
+        string kind = KindFor<T>();
+        string suffix = version switch
+        {
+            ReleaseRecordVersion.V1 when kind != "promotion-decision" => ".v1",
+            ReleaseRecordVersion.V2 when kind is "attempt" or "promotion-decision" => ".v2",
+            _ => throw new RecordValidationException("unsupported-record"),
+        };
+        return "https://schemas.hexalith.com/platform/" + kind + suffix;
+    }
 
     /// <summary>Gets the fixed wire kind for a payload type.</summary>
     /// <typeparam name="T">The supported payload type.</typeparam>
@@ -52,6 +71,7 @@ public static class ReleaseRecordCodec
             nameof(LatestWorkingPointerRecord) when typeof(T) == typeof(LatestWorkingPointerRecord) => "latest-working",
             nameof(PromotionStopRecord) when typeof(T) == typeof(PromotionStopRecord) => "promotion-stop",
             nameof(AdministratorRecord) when typeof(T) == typeof(AdministratorRecord) => "administrator",
+            nameof(PromotionDecisionRecord) when typeof(T) == typeof(PromotionDecisionRecord) => "promotion-decision",
             _ => throw new RecordValidationException("unsupported-record"),
         };
 
@@ -62,6 +82,16 @@ public static class ReleaseRecordCodec
     /// <returns>The signed, still untrusted envelope.</returns>
     /// <exception cref="RecordValidationException">The record or caller-held signing key is invalid.</exception>
     public static SignedRecord<T> Sign<T>(SignedRecord<T> record, ECDsa privateKey)
+        where T : class => Sign(record, privateKey, ReleaseRecordVersion.V1);
+
+    /// <summary>Signs the closed envelope for the explicitly selected wire version.</summary>
+    /// <typeparam name="T">The supported payload type.</typeparam>
+    /// <param name="record">The envelope to sign.</param>
+    /// <param name="privateKey">The caller-held P-256 private key.</param>
+    /// <param name="version">The required wire version.</param>
+    /// <returns>The signed envelope.</returns>
+    /// <exception cref="RecordValidationException">The record or caller-held signing key is invalid.</exception>
+    public static SignedRecord<T> Sign<T>(SignedRecord<T> record, ECDsa privateKey, ReleaseRecordVersion version)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(record);
@@ -70,11 +100,11 @@ public static class ReleaseRecordCodec
         {
             RecordTrustPolicy.EnsureP256(privateKey);
             SignedRecord<T> candidate = record with { Signature = Convert.ToBase64String(new byte[64]) };
-            Validate(candidate);
+            Validate(candidate, version);
             byte[] signature = privateKey.SignData(Serialize(candidate, true), HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
             return candidate with { Signature = Convert.ToBase64String(signature) };
         }
-        catch (CryptographicException)
+        catch (Exception exception) when (exception is CryptographicException or ObjectDisposedException)
         {
             throw new RecordValidationException("invalid-signing-key");
         }
@@ -85,10 +115,18 @@ public static class ReleaseRecordCodec
     /// <param name="record">The untrusted signed envelope.</param>
     /// <returns>The canonical encoded bytes.</returns>
     public static byte[] Encode<T>(SignedRecord<T> record)
+        where T : class => Encode(record, ReleaseRecordVersion.V1);
+
+    /// <summary>Encodes a validated envelope for the explicitly selected wire version.</summary>
+    /// <typeparam name="T">The supported payload type.</typeparam>
+    /// <param name="record">The untrusted signed envelope.</param>
+    /// <param name="version">The required wire version.</param>
+    /// <returns>The canonical encoded bytes.</returns>
+    public static byte[] Encode<T>(SignedRecord<T> record, ReleaseRecordVersion version)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(record);
-        Validate(record);
+        Validate(record, version);
         return Serialize(record, false);
     }
 
@@ -97,10 +135,18 @@ public static class ReleaseRecordCodec
     /// <param name="record">The envelope whose content is to be signed.</param>
     /// <returns>Deterministic signing bytes.</returns>
     public static byte[] GetSigningBytes<T>(SignedRecord<T> record)
+        where T : class => GetSigningBytes(record, ReleaseRecordVersion.V1);
+
+    /// <summary>Returns canonical signing bytes for the explicitly selected wire version.</summary>
+    /// <typeparam name="T">The supported payload type.</typeparam>
+    /// <param name="record">The envelope whose content is to be signed.</param>
+    /// <param name="version">The required wire version.</param>
+    /// <returns>Deterministic signing bytes.</returns>
+    public static byte[] GetSigningBytes<T>(SignedRecord<T> record, ReleaseRecordVersion version)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(record);
-        Validate(record with { Signature = Convert.ToBase64String(new byte[64]) });
+        Validate(record with { Signature = Convert.ToBase64String(new byte[64]) }, version);
         return Serialize(record, true);
     }
 
@@ -110,6 +156,15 @@ public static class ReleaseRecordCodec
     /// <param name="trust">The independently supplied public trust configuration.</param>
     /// <returns>Immutable trusted content and its digest, or a fixed failure code.</returns>
     public static RecordVerificationResult<T> Verify<T>(ReadOnlyMemory<byte> utf8, RecordTrustPolicy trust)
+        where T : class => Verify<T>(utf8, trust, ReleaseRecordVersion.V1);
+
+    /// <summary>Verifies the decoded envelope exclusively under the selected wire version.</summary>
+    /// <typeparam name="T">The required payload type.</typeparam>
+    /// <param name="utf8">The bounded UTF-8 JSON input.</param>
+    /// <param name="trust">The independently supplied public trust configuration.</param>
+    /// <param name="version">The required wire version.</param>
+    /// <returns>Immutable trusted content and its digest, or a fixed failure code.</returns>
+    public static RecordVerificationResult<T> Verify<T>(ReadOnlyMemory<byte> utf8, RecordTrustPolicy trust, ReleaseRecordVersion version)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(trust);
@@ -127,14 +182,14 @@ public static class ReleaseRecordCodec
                 return new(null, "ambiguous-json");
             }
 
-            ValidateSchema(root);
+            ValidateSchema(root, version);
             SignedRecord<T>? record = root.Deserialize<SignedRecord<T>>(_json);
             if (record is null)
             {
                 return new(null, "schema-rejected");
             }
 
-            Validate(record);
+            Validate(record, version);
 
             // Reject alternative number/date spellings that would lose accepted fields on typed binding.
             if (!Canonicalize(root, false).AsSpan().SequenceEqual(Serialize(record, false)))
@@ -172,7 +227,7 @@ public static class ReleaseRecordCodec
     /// <summary>Checks the closed wire-kind vocabulary.</summary>
     /// <param name="kind">The candidate kind.</param>
     /// <returns>Whether the kind is supported.</returns>
-    internal static bool IsSupportedKind(string kind) => kind is "release" or "attempt" or "qualification" or "production-promoted" or "release-available" or "latest-working" or "promotion-stop" or "administrator";
+    internal static bool IsSupportedKind(string kind) => kind is "release" or "attempt" or "qualification" or "production-promoted" or "release-available" or "latest-working" or "promotion-stop" or "administrator" or "promotion-decision";
 
     /// <summary>Compares canonical typed content independent of dictionary order.</summary>
     /// <typeparam name="T">The content type.</typeparam>
@@ -193,9 +248,9 @@ public static class ReleaseRecordCodec
         return stream.ToArray();
     }
 
-    private static JsonSchema ReadSchema()
+    private static JsonSchema ReadSchema(string version)
     {
-        using Stream stream = typeof(ReleaseRecordCodec).Assembly.GetManifestResourceStream("Hexalith.Builds.Tooling.ReleaseRecords.hexalith.release-records.v1.json")
+        using Stream stream = typeof(ReleaseRecordCodec).Assembly.GetManifestResourceStream($"Hexalith.Builds.Tooling.ReleaseRecords.hexalith.release-records.{version}.json")
             ?? throw new InvalidOperationException("The embedded release records schema is missing.");
         using StreamReader reader = new(stream, Encoding.UTF8);
         return JsonSchema.FromText(reader.ReadToEnd(), new BuildOptions
@@ -205,12 +260,22 @@ public static class ReleaseRecordCodec
     }
 
     private static byte[] Serialize<T>(SignedRecord<T> record, bool omitSignature)
-        where T : class => Canonicalize(JsonSerializer.SerializeToElement(record, _json), omitSignature);
-
-    private static void Validate<T>(SignedRecord<T> record)
         where T : class
     {
-        if (record.Kind != KindFor<T>() || record.Schema != SchemaFor<T>())
+        try
+        {
+            return Canonicalize(JsonSerializer.SerializeToElement(record, _json), omitSignature);
+        }
+        catch (InvalidOperationException)
+        {
+            throw new RecordValidationException("invalid-record");
+        }
+    }
+
+    private static void Validate<T>(SignedRecord<T> record, ReleaseRecordVersion version)
+        where T : class
+    {
+        if (record.Kind != KindFor<T>() || record.Schema != SchemaFor<T>(version))
         {
             throw new RecordValidationException("unsupported-record");
         }
@@ -222,7 +287,13 @@ public static class ReleaseRecordCodec
         }
 
         using JsonDocument document = JsonDocument.Parse(encoded);
-        ValidateSchema(document.RootElement);
+        JsonElement root = document.RootElement;
+        if (JsonDuplicatePropertyValidator.FindDuplicateProperty(root) is not null)
+        {
+            throw new RecordValidationException("ambiguous-json");
+        }
+
+        ValidateSchema(root, version);
         if (record.CreatedUtc.Offset != TimeSpan.Zero || record.RecordedUtc.Offset != TimeSpan.Zero || record.RecordedUtc < record.CreatedUtc)
         {
             throw new RecordValidationException("invalid-timing");
@@ -256,15 +327,27 @@ public static class ReleaseRecordCodec
         }
 
         if (record.Payload is AdministratorRecord { Action: "clear-promotion-stop" } clear &&
-            (clear.ObservedStop is null || clear.ExpectedStopRevision is null))
+            (clear.Attempt is null || clear.ObservedStop is null || clear.ExpectedStopRevision is null))
         {
             throw new RecordValidationException("invalid-stop-clearance");
         }
+
+        if (record.Payload is AdministratorRecord { Action: "start-recovery", NamedRecovery: null } or
+            AdministratorRecord { Action: "approve-release" or "authorize-takeover", Attempt: null })
+        {
+            throw new RecordValidationException("invalid-administrator-action");
+        }
     }
 
-    private static void ValidateSchema(JsonElement root)
+    private static void ValidateSchema(JsonElement root, ReleaseRecordVersion version)
     {
-        if (!_schema.Evaluate(root).IsValid)
+        JsonSchema schema = version switch
+        {
+            ReleaseRecordVersion.V1 => _schemaV1,
+            ReleaseRecordVersion.V2 => _schemaV2.Value,
+            _ => throw new RecordValidationException("unsupported-record"),
+        };
+        if (!schema.Evaluate(root).IsValid)
         {
             throw new RecordValidationException("schema-rejected");
         }

@@ -31,7 +31,8 @@ public sealed class RecordSchemaTests
         VerifiedRecord<ReleaseAvailableRecord> available = context.Verify(RecordTestContext.Envelope(new ReleaseAvailableRecord(release.Reference, staging.Reference, RecordTestContext.Digest), "publication", null, "available"));
         VerifiedRecord<LatestWorkingPointerRecord> latest = context.Verify(RecordTestContext.Envelope(new LatestWorkingPointerRecord(release.Reference, staging.Reference, 1), "staging", "staging", "latest-staging", "staging"));
         VerifiedRecord<PromotionStopRecord> stop = context.Verify(RecordTestContext.Envelope(new PromotionStopRecord(1, null, "probe-failed", [RecordTestContext.Digest]), "monitor", "production", "stop", "production"));
-        VerifiedRecord<AdministratorRecord> administrator = context.Verify(RecordTestContext.Envelope(new AdministratorRecord("clear-promotion-stop", "production", null, stop.Reference, 1, null, "reviewed", RecordTestContext.Map(("probe-failed", "resolved")), null), "admin", "production", "clear", "production"));
+        VerifiedRecord<AttemptRecord> working = context.Verify(production.Record with { Payload = production.Record.Payload with { Outcome = "working" } });
+        VerifiedRecord<AdministratorRecord> administrator = context.Verify(RecordTestContext.Envelope(new AdministratorRecord("clear-promotion-stop", "production", working.Reference, stop.Reference, 1, null, "reviewed", RecordTestContext.Map(("probe-failed", "resolved")), null), "admin", "production", "clear", "production"));
         string[] schemas = [release.Record.Schema, staging.Record.Schema, qualification.Record.Schema, promoted.Record.Schema, available.Record.Schema, latest.Record.Schema, stop.Record.Schema, administrator.Record.Schema];
         schemas.Distinct(StringComparer.Ordinal).Count().ShouldBe(8);
         RecordTransitionValidator.ValidateAttempt(staging, release, 1);
@@ -40,7 +41,7 @@ public sealed class RecordSchemaTests
         RecordTransitionValidator.ValidateReleaseAvailable(available, release, staging);
         RecordTransitionValidator.ValidateLatestWorking(latest, release, staging, 1);
         RecordTransitionValidator.ValidatePromotionStop(stop, 0);
-        RecordTransitionValidator.ValidateAdministrator(administrator, stop);
+        RecordTransitionValidator.ValidateAdministrator(administrator, stop, working);
     }
 
     /// <summary>Unknown fields and unsupported discriminators fail before trusted data is returned.</summary>
@@ -111,9 +112,128 @@ public sealed class RecordSchemaTests
     {
         using RecordTestContext context = new();
         ReleaseRecordCodec.Verify<ReleaseRecord>(new byte[ReleaseRecordCodec.MaximumRecordBytes + 1], context.Policy).FailureCode.ShouldBe("record-too-large");
-        ReleaseRecordCodec.Verify<ReleaseRecord>(new byte[] { 0xff }, context.Policy).Verified.ShouldBeNull();
-        string deep = new string('[', 40) + "0" + new string(']', 40);
-        ReleaseRecordCodec.Verify<ReleaseRecord>(Encoding.UTF8.GetBytes(deep), context.Policy).Verified.ShouldBeNull();
+        ReleaseRecordCodec.Verify<ReleaseRecord>(new byte[] { 0xff }, context.Policy).FailureCode.ShouldBe("invalid-record");
+        string deep = new string('[', 33) + "0" + new string(']', 33);
+        ReleaseRecordCodec.Verify<ReleaseRecord>(Encoding.UTF8.GetBytes(deep), context.Policy).FailureCode.ShouldBe("invalid-record");
+        string withinDepth = new string('[', 32) + "0" + new string(']', 32);
+        ReleaseRecordCodec.Verify<ReleaseRecord>(Encoding.UTF8.GetBytes(withinDepth), context.Policy).FailureCode.ShouldBe("schema-rejected");
+    }
+
+    /// <summary>BOM and invalid UTF-8 inside a valid record's string both fail closed.</summary>
+    [Fact]
+    public void RejectsBomAndMalformedUtf8InsideString()
+    {
+        using RecordTestContext context = new();
+        byte[] json = Encoding.UTF8.GetBytes(SignedRelease(context).ToJsonString());
+        byte[] withBom = [.. Encoding.UTF8.Preamble, .. json];
+        ReleaseRecordCodec.Verify<ReleaseRecord>(withBom, context.Policy).FailureCode.ShouldBe("invalid-record");
+        json[json.AsSpan().IndexOf("release-record"u8)] = 0xff;
+        ReleaseRecordCodec.Verify<ReleaseRecord>(json, context.Policy).FailureCode.ShouldBe("invalid-record");
+    }
+
+    /// <summary>Schema-valid but invalid envelope values fail with their specific codes.</summary>
+    /// <param name="field">The substituted envelope field.</param>
+    /// <param name="value">The substituted value.</param>
+    /// <param name="code">The expected validation failure code.</param>
+    [Theory]
+    [InlineData("subject", "unrelated-release", "invalid-subject")]
+    [InlineData("createdUtc", "2026-10-22T00:00:00Z", "noncanonical-value")]
+    [InlineData("createdUtc", "2026-10-23T00:00:00+00:00", "invalid-timing")]
+    [InlineData("recordedUtc", "2026-10-22T01:00:00+01:00", "invalid-timing")]
+    public void RejectsInvalidEnvelopeValues(string field, string value, string code)
+    {
+        using RecordTestContext context = new();
+        JsonObject json = SignedRelease(context);
+        json[field] = value;
+        RecordVerificationResult<ReleaseRecord> result = ReleaseRecordCodec.Verify<ReleaseRecord>(Encoding.UTF8.GetBytes(json.ToJsonString()), context.Policy);
+        result.FailureCode.ShouldBe(code);
+        result.Verified.ShouldBeNull();
+    }
+
+    /// <summary>The operations definitions digest is required, validated and authenticated.</summary>
+    [Fact]
+    public void AttemptBindsOperationsDefinitionsDigest()
+    {
+        using RecordTestContext context = new();
+        AttemptRecord payload = RecordTestContext.Attempt(new("release", RecordTestContext.Digest));
+        SignedRecord<AttemptRecord> envelope = RecordTestContext.Envelope(payload, "staging", "staging", "attempt");
+        context.Verify(envelope).Record.Payload.EnvironmentCurrent.OperationsDefinitionsDigest.ShouldBe(RecordTestContext.Digest);
+        SignedRecord<AttemptRecord> signed = context.Sign(envelope);
+        JsonObject json = JsonNode.Parse(ReleaseRecordCodec.Encode(signed)).ShouldBeOfType<JsonObject>();
+        JsonObject current = json["payload"]!["environmentCurrent"]!.AsObject();
+        current.Remove("operationsDefinitionsDigest").ShouldBeTrue();
+        ReleaseRecordCodec.Verify<AttemptRecord>(Encoding.UTF8.GetBytes(json.ToJsonString()), context.Policy).FailureCode.ShouldBe("schema-rejected");
+        current["operationsDefinitionsDigest"] = "sha256:bad";
+        ReleaseRecordCodec.Verify<AttemptRecord>(Encoding.UTF8.GetBytes(json.ToJsonString()), context.Policy).FailureCode.ShouldBe("schema-rejected");
+        current["operationsDefinitionsDigest"] = "sha256:" + new string('b', 64);
+        ReleaseRecordCodec.Verify<AttemptRecord>(Encoding.UTF8.GetBytes(json.ToJsonString()), context.Policy).FailureCode.ShouldBe("invalid-signature");
+    }
+
+    /// <summary>Administrator actions enforce their minimum payload shapes.</summary>
+    /// <param name="action">The Administrator action.</param>
+    /// <param name="field">A mandatory action-specific field removed from the payload.</param>
+    /// <param name="code">The expected validation failure code.</param>
+    [Theory]
+    [InlineData("clear-promotion-stop", "attempt", "invalid-stop-clearance")]
+    [InlineData("clear-promotion-stop", "observedStop", "invalid-stop-clearance")]
+    [InlineData("clear-promotion-stop", "expectedStopRevision", "invalid-stop-clearance")]
+    [InlineData("start-recovery", "namedRecovery", "invalid-administrator-action")]
+    [InlineData("approve-release", "attempt", "invalid-administrator-action")]
+    [InlineData("authorize-takeover", "attempt", "invalid-administrator-action")]
+    public void AdministratorActionsRequireTheirEvidence(string action, string field, string code)
+    {
+        using RecordTestContext context = new();
+        RecordReference reference = new("reference", RecordTestContext.Digest);
+        AdministratorRecord payload = new(action, "production", reference, reference, 1, null, "reviewed", RecordTestContext.Map(), new("restore", ["smoke"], 1));
+        SignedRecord<AdministratorRecord> envelope = RecordTestContext.Envelope(payload, "admin", "production", "action", "production");
+        _ = context.Verify(envelope);
+        RecordVerificationResult<AdministratorRecord> result = VerifySignedMutation(context, envelope, json => json["payload"]![field] = null);
+        result.FailureCode.ShouldBe(code);
+        result.Verified.ShouldBeNull();
+    }
+
+    /// <summary>Only the two disposition values are admitted for any Administrator action.</summary>
+    /// <param name="disposition">The invalid disposition spelling.</param>
+    [Theory]
+    [InlineData("pending")]
+    [InlineData("ignored")]
+    [InlineData("RESOLVED")]
+    public void RejectsUnrecognizedCauseDispositions(string disposition)
+    {
+        using RecordTestContext context = new();
+        AdministratorRecord payload = new("return-to-g2", "production", null, null, null, null, "reviewed", RecordTestContext.Map(), null);
+        SignedRecord<AdministratorRecord> envelope = RecordTestContext.Envelope(payload, "admin", "production", "action", "production");
+        RecordVerificationResult<AdministratorRecord> result = VerifySignedMutation(context, envelope, json => json["payload"]!["causeDispositions"] = new JsonObject { ["cause"] = disposition });
+        result.FailureCode.ShouldBe("schema-rejected");
+        result.Verified.ShouldBeNull();
+    }
+
+    /// <summary>Default immutable arrays are malformed typed inputs and expose metadata-only failures.</summary>
+    [Fact]
+    public void DefaultImmutableArrayHasStableFailureAcrossEncodingApis()
+    {
+        using RecordTestContext context = new();
+        SignedRecord<ReleaseRecord> valid = context.Sign(RecordTestContext.Envelope(RecordTestContext.Release(), "publication", null, "release"));
+        SignedRecord<ReleaseRecord> invalid = valid with { Payload = valid.Payload with { QualifiedEnvironmentLayer = default } };
+        Should.Throw<RecordValidationException>(() => context.Sign(invalid)).Code.ShouldBe("invalid-record");
+        Should.Throw<RecordValidationException>(() => ReleaseRecordCodec.Encode(invalid)).Code.ShouldBe("invalid-record");
+        Should.Throw<RecordValidationException>(() => ReleaseRecordCodec.GetSigningBytes(invalid)).Code.ShouldBe("invalid-record");
+    }
+
+    /// <summary>Dictionary keys that serialize to the same JSON name fail every encoding entry point.</summary>
+    [Fact]
+    public void DuplicateSerializedDictionaryKeysHaveStableFailureAcrossEncodingApis()
+    {
+        using RecordTestContext context = new();
+        SignedRecord<ReleaseRecord> valid = context.Sign(RecordTestContext.Envelope(RecordTestContext.Release(), "publication", null, "release"));
+        ReleaseRecord payload = valid.Payload with
+        {
+            ModuleArtifactDigests = RecordTestContext.Map(("\uD800", RecordTestContext.Digest), ("\uD801", RecordTestContext.Digest)),
+        };
+        SignedRecord<ReleaseRecord> invalid = valid with { Payload = payload };
+        Should.Throw<RecordValidationException>(() => context.Sign(invalid)).Code.ShouldBe("ambiguous-json");
+        Should.Throw<RecordValidationException>(() => ReleaseRecordCodec.Encode(invalid)).Code.ShouldBe("ambiguous-json");
+        Should.Throw<RecordValidationException>(() => ReleaseRecordCodec.GetSigningBytes(invalid)).Code.ShouldBe("ambiguous-json");
     }
 
     /// <summary>The requested typed contract cannot reinterpret another valid record kind.</summary>
@@ -215,7 +335,7 @@ public sealed class RecordSchemaTests
     public void NamedRecoveryDurationMatchesTheInt32Boundary(long duration, bool accepted)
     {
         using RecordTestContext context = new();
-        AdministratorRecord payload = new("approve-release", "release-1", null, null, null, null, "reviewed", RecordTestContext.Map(), new("restore", ["smoke"], 1));
+        AdministratorRecord payload = new("start-recovery", "release-1", null, null, null, null, "reviewed", RecordTestContext.Map(), new("restore", ["smoke"], 1));
         SignedRecord<AdministratorRecord> envelope = RecordTestContext.Envelope(payload, "admin", "production", "approval");
         RecordVerificationResult<AdministratorRecord> result = VerifySignedMutation(context, envelope, json => json["payload"]!["namedRecovery"]!["maximumDurationSeconds"] = duration);
         if (accepted)

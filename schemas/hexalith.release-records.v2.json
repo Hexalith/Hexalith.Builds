@@ -1,0 +1,665 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.hexalith.com/platform/release-records.v2.json",
+  "title": "Hexalith Platform staging-evidence signed operational records v2",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/attempt"
+    },
+    {
+      "$ref": "#/$defs/promotion-decision"
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+    },
+    "epoch": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "required": [
+        "recordId",
+        "digest"
+      ],
+      "additionalProperties": false
+    },
+    "environmentCurrent": {
+      "type": "object",
+      "properties": {
+        "secretReferences": {
+          "type": "object",
+          "minProperties": 0,
+          "maxProperties": 128,
+          "propertyNames": {
+            "$ref": "#/$defs/identifier"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "secretScopes": {
+          "type": "object",
+          "minProperties": 0,
+          "maxProperties": 128,
+          "propertyNames": {
+            "$ref": "#/$defs/identifier"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "keyGeneration": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "catalogGeneration": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "catalogRootDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "secretContractDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "realmContractVersion": {
+          "$ref": "#/$defs/identifier"
+        },
+        "operationsDefinitionsDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "activeProfileDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "hostnames": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "credentialReferences": {
+          "type": "object",
+          "minProperties": 0,
+          "maxProperties": 128,
+          "propertyNames": {
+            "$ref": "#/$defs/identifier"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/identifier"
+          }
+        }
+      },
+      "required": [
+        "secretReferences",
+        "secretScopes",
+        "keyGeneration",
+        "catalogGeneration",
+        "catalogRootDigest",
+        "secretContractDigest",
+        "realmContractVersion",
+        "operationsDefinitionsDigest",
+        "activeProfileDigest",
+        "hostnames",
+        "credentialReferences"
+      ],
+      "additionalProperties": false
+    },
+    "stagingEvidenceBinding": {
+      "type": "object",
+      "properties": {
+        "policyId": {
+          "const": "hexalith.platform.staging-evidence-policy.v2"
+        },
+        "decisionId": {
+          "$ref": "#/$defs/identifier"
+        }
+      },
+      "required": [
+        "policyId",
+        "decisionId"
+      ],
+      "additionalProperties": false
+    },
+    "attempt": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/attempt.v2"
+        },
+        "kind": {
+          "const": "attempt"
+        },
+        "recordId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "writerId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "keyId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "subject": {
+          "$ref": "#/$defs/identifier"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])",
+          "enum": [
+            "staging",
+            "production"
+          ]
+        },
+        "createdUtc": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "recordedUtc": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "release": {
+              "$ref": "#/$defs/reference"
+            },
+            "attemptKind": {
+              "enum": [
+                "release",
+                "rollback",
+                "configuration",
+                "rotation",
+                "catalog-activation",
+                "realm-contract",
+                "operator-artifact",
+                "baseline-redeploy",
+                "environment-layer",
+                "profile",
+                "shared-infrastructure",
+                "in-place-restore",
+                "disaster-recovery"
+              ]
+            },
+            "environmentCurrent": {
+              "$ref": "#/$defs/environmentCurrent"
+            },
+            "renderMode": {
+              "enum": [
+                "normal",
+                "recovery",
+                "remove-workloads"
+              ]
+            },
+            "lockEpoch": {
+              "$ref": "#/$defs/epoch"
+            },
+            "entryUtc": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "firstMutationUtc": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "outageUtc": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "preMutationDeadlineUtc": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "rolloutDeadlineUtc": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "verificationDeadlineUtc": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maximumLifetimeUtc": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "checkTimeoutSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 86400
+            },
+            "graceSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 86430
+            },
+            "recoveryAllowance": {
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "recoveriesConsumed": {
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "observedStop": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "preIncidentIngress": {
+              "enum": [
+                "open",
+                "restricted"
+              ]
+            },
+            "outcome": {
+              "enum": [
+                "in-progress",
+                "working",
+                "non-working",
+                "superseded"
+              ]
+            },
+            "supersedes": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "supersededBy": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "stagingEvidence": {
+              "$ref": "#/$defs/stagingEvidenceBinding"
+            }
+          },
+          "required": [
+            "release",
+            "attemptKind",
+            "environmentCurrent",
+            "renderMode",
+            "lockEpoch",
+            "entryUtc",
+            "firstMutationUtc",
+            "outageUtc",
+            "preMutationDeadlineUtc",
+            "rolloutDeadlineUtc",
+            "verificationDeadlineUtc",
+            "maximumLifetimeUtc",
+            "checkTimeoutSeconds",
+            "graceSeconds",
+            "recoveryAllowance",
+            "recoveriesConsumed",
+            "observedStop",
+            "preIncidentIngress",
+            "outcome",
+            "supersedes",
+            "supersededBy",
+            "stagingEvidence"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "attempt-v2"
+    },
+    "promotion-decision": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/promotion-decision.v2"
+        },
+        "kind": {
+          "const": "promotion-decision"
+        },
+        "recordId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "writerId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "keyId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "subject": {
+          "$ref": "#/$defs/identifier"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])",
+          "enum": [
+            "staging",
+            "production"
+          ]
+        },
+        "createdUtc": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "recordedUtc": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "enum": [
+                "reserve-admission",
+                "reserve-administrator",
+                "supersede",
+                "complete",
+                "release-reservation"
+              ]
+            },
+            "stagingEvidence": {
+              "$ref": "#/$defs/stagingEvidenceBinding"
+            },
+            "release": {
+              "$ref": "#/$defs/reference"
+            },
+            "attempt": {
+              "$ref": "#/$defs/reference"
+            },
+            "lockEpoch": {
+              "$ref": "#/$defs/epoch"
+            },
+            "reservation": {
+              "$ref": "#/$defs/reference"
+            },
+            "workingPointer": {
+              "$ref": "#/$defs/reference"
+            }
+          },
+          "required": [
+            "action",
+            "stagingEvidence",
+            "release"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "promotion-decision-v2",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "const": "supersede"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "environment": {
+                "const": "staging"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "environment": {
+                "const": "production"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "const": "reserve-administrator"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "attempt"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "lockEpoch"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "reservation"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "workingPointer"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "reserve-admission",
+                      "supersede"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "required": [
+                  "attempt",
+                  "lockEpoch"
+                ],
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "reservation"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "workingPointer"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "const": "complete"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "required": [
+                  "attempt",
+                  "lockEpoch",
+                  "reservation",
+                  "workingPointer"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "const": "release-reservation"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "required": [
+                  "attempt",
+                  "lockEpoch",
+                  "reservation"
+                ],
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "workingPointer"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

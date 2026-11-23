@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.ReleaseRecords;
 
+using System.Diagnostics.CodeAnalysis;
+
 /// <summary>
 /// Checks transitions against immutable verified context; callers must run these checks inside store CAS.
 /// </summary>
@@ -27,7 +29,8 @@ public static class RecordTransitionValidator
         ArgumentNullException.ThrowIfNull(proposed);
         ArgumentNullException.ThrowIfNull(release);
         AttemptRecord next = proposed.Record.Payload;
-        Require(References(next.Release, release) && proposed.Record.Subject == release.Record.Payload.ReleaseId);
+        Require(References(next.Release, release) && proposed.Record.Subject == release.Record.Payload.ReleaseId &&
+            (previous is null || proposed.Record.Schema == previous.Record.Schema));
         if (previous is not null && ReleaseRecordCodec.SameContent(previous.Record, proposed.Record))
         {
             Require(next.Outcome != "in-progress" || next.LockEpoch == currentEpoch);
@@ -48,6 +51,7 @@ public static class RecordTransitionValidator
         {
             VerifiedRecord<AttemptRecord> successor = takeover ?? throw new RecordValidationException("invalid-transition");
             Require(successor.Record.RecordId != previous.Record.RecordId &&
+                (prior.StagingEvidence is null || successor.Record.Schema == previous.Record.Schema) &&
                 SameEnvironment(proposed, successor) &&
                 successor.Record.Payload.LockEpoch == currentEpoch && currentEpoch > prior.LockEpoch &&
                 References(successor.Record.Payload.Supersedes, previous) &&
@@ -61,17 +65,7 @@ public static class RecordTransitionValidator
 
         Require(takeover is null && proposed.Record.WriterId == previous.Record.WriterId && next.LockEpoch >= prior.LockEpoch &&
             next.RecoveriesConsumed >= prior.RecoveriesConsumed);
-        AttemptRecord fixedFields = next with
-        {
-            LockEpoch = prior.LockEpoch,
-            FirstMutationUtc = prior.FirstMutationUtc,
-            RolloutDeadlineUtc = prior.RolloutDeadlineUtc,
-            VerificationDeadlineUtc = prior.VerificationDeadlineUtc,
-            MaximumLifetimeUtc = prior.MaximumLifetimeUtc,
-            RecoveriesConsumed = prior.RecoveriesConsumed,
-            Outcome = prior.Outcome,
-        };
-        Require(ReleaseRecordCodec.SameContent(fixedFields, prior));
+        Require(HasSameFixedAttemptFields(next, prior));
         Require(prior.FirstMutationUtc is null || next.FirstMutationUtc == prior.FirstMutationUtc);
         bool recoveryStarted = prior.RecoveriesConsumed == 0 && next.RecoveriesConsumed == 1;
         Require(recoveryStarted || prior.RolloutDeadlineUtc is null || next.RolloutDeadlineUtc == prior.RolloutDeadlineUtc);
@@ -92,6 +86,76 @@ public static class RecordTransitionValidator
         if (next.LockEpoch > prior.LockEpoch && !recoveryStarted)
         {
             Require(next.RolloutDeadlineUtc == prior.RolloutDeadlineUtc && next.VerificationDeadlineUtc == prior.VerificationDeadlineUtc);
+        }
+    }
+
+    /// <summary>Checks a v2 promotion decision action against the authoritative context supplied by the caller.</summary>
+    /// <param name="action">The independently verified signed action.</param>
+    /// <param name="decision">The policy and identity of the authoritative pending decision.</param>
+    /// <param name="release">The verified retained release of that decision.</param>
+    /// <param name="attempt">The authoritative attempt revision named by the action, when applicable.</param>
+    /// <param name="currentEpoch">The action environment's current epoch, when applicable.</param>
+    /// <param name="reservation">The current verified admission reservation for completion or release.</param>
+    /// <param name="admittedAttempt">The exact production attempt revision named by the reservation.</param>
+    /// <param name="workingPointer">The verified working pointer required for completion.</param>
+    /// <exception cref="RecordValidationException">The action and supplied context do not establish the requested transition.</exception>
+    public static void ValidatePromotionDecision(
+        VerifiedRecord<PromotionDecisionRecord> action,
+        StagingEvidenceBinding decision,
+        VerifiedRecord<ReleaseRecord> release,
+        VerifiedRecord<AttemptRecord>? attempt = null,
+        long? currentEpoch = null,
+        VerifiedRecord<PromotionDecisionRecord>? reservation = null,
+        VerifiedRecord<AttemptRecord>? admittedAttempt = null,
+        VerifiedRecord<LatestWorkingPointerRecord>? workingPointer = null)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(decision);
+        ArgumentNullException.ThrowIfNull(release);
+        PromotionDecisionRecord payload = action.Record.Payload;
+        Require(MatchesDecision(action, decision, release));
+        if (payload.Action == "reserve-administrator")
+        {
+            Require(attempt is null && currentEpoch is null && reservation is null && admittedAttempt is null && workingPointer is null);
+            return;
+        }
+
+        Require(attempt is not null && currentEpoch is not null && MatchesDecisionAttempt(action, attempt, currentEpoch.Value));
+        AttemptRecord attemptPayload = attempt.Record.Payload;
+        if (payload.Action is "reserve-admission" or "supersede")
+        {
+            Require(reservation is null && admittedAttempt is null && workingPointer is null);
+            if (payload.Action == "reserve-admission")
+            {
+                Require(IsAdmissionAttempt(attempt, decision, release));
+            }
+            else
+            {
+                Require(attemptPayload is { Outcome: "in-progress", FirstMutationUtc: null, AttemptKind: "release" or "in-place-restore" } &&
+                    action.Record.WriterId == attempt.Record.WriterId &&
+                    (attempt.Record.Subject == release.Record.Payload.ReleaseId
+                        ? attemptPayload.AttemptKind == "in-place-restore" && References(attemptPayload.Release, release) && attemptPayload.StagingEvidence == decision
+                        : attemptPayload.Release.RecordId != release.Record.RecordId && attemptPayload.StagingEvidence?.DecisionId != decision.DecisionId));
+            }
+
+            return;
+        }
+
+        Require(reservation is not null && admittedAttempt is not null && reservation.Record.Payload is { Action: "reserve-admission", LockEpoch: not null } prior &&
+            MatchesDecision(reservation, decision, release) && MatchesDecisionAttempt(reservation, admittedAttempt, prior.LockEpoch.Value) &&
+            IsAdmissionAttempt(admittedAttempt, decision, release) && References(payload.Reservation, reservation));
+        Require(SameIdentity(attempt, admittedAttempt) && attempt.Record.RecordedUtc >= admittedAttempt.Record.RecordedUtc &&
+            attempt.Record.WriterId == admittedAttempt.Record.WriterId &&
+            attempt.Record.WriterId == action.Record.WriterId && attemptPayload.LockEpoch >= admittedAttempt.Record.Payload.LockEpoch &&
+            HasSameFixedAttemptFields(attemptPayload, admittedAttempt.Record.Payload));
+        if (payload.Action == "complete")
+        {
+            Require(workingPointer is not null && References(payload.WorkingPointer, workingPointer));
+            ValidateLatestWorking(workingPointer, release, attempt, currentEpoch.Value);
+        }
+        else
+        {
+            Require(payload.Action == "release-reservation" && attemptPayload.Outcome == "non-working" && workingPointer is null);
         }
     }
 
@@ -137,7 +201,8 @@ public static class RecordTransitionValidator
         Require(References(payload.Release, release) && References(payload.StagingAttempt, stagingAttempt) &&
             available.Record.Subject == release.Record.Payload.ReleaseId && stagingAttempt.Record.Environment == "staging" &&
             References(stagingAttempt.Record.Payload.Release, release) && stagingAttempt.Record.Subject == release.Record.Payload.ReleaseId &&
-            stagingAttempt.Record.Payload.Outcome == "working" && payload.ComposedImageDigest == release.Record.Payload.ComposedHostDigest);
+            stagingAttempt.Record.Payload is { AttemptKind: "release", Outcome: "working" } &&
+            payload.ComposedImageDigest == release.Record.Payload.ComposedHostDigest);
     }
 
     /// <summary>Checks a latest-working move under the current CAS epoch.</summary>
@@ -209,13 +274,14 @@ public static class RecordTransitionValidator
 
         if (payload.Action == "clear-promotion-stop")
         {
-            Require(currentStop is not null && SameEnvironment(action, currentStop) && payload.Target == action.Record.Environment &&
+            Require(attempt?.Record.Payload.Outcome == "working" &&
+                currentStop is not null && SameEnvironment(action, currentStop) && payload.Target == action.Record.Environment &&
                 References(payload.ObservedStop, currentStop) && payload.ExpectedStopRevision == currentStop.Record.Payload.Revision &&
                 payload.CauseDispositions.TryGetValue(currentStop.Record.Payload.Cause, out string? disposition) && disposition is "resolved" or "accepted");
         }
         else if (payload.ObservedStop is null)
         {
-            Require(currentStop is null);
+            Require(currentStop is null && payload.ExpectedStopRevision is null);
         }
         else
         {
@@ -231,10 +297,39 @@ public static class RecordTransitionValidator
         _ => action,
     };
 
+    private static bool HasSameFixedAttemptFields(AttemptRecord next, AttemptRecord prior)
+    {
+        AttemptRecord fixedFields = next with
+        {
+            LockEpoch = prior.LockEpoch,
+            FirstMutationUtc = prior.FirstMutationUtc,
+            RolloutDeadlineUtc = prior.RolloutDeadlineUtc,
+            VerificationDeadlineUtc = prior.VerificationDeadlineUtc,
+            MaximumLifetimeUtc = prior.MaximumLifetimeUtc,
+            RecoveriesConsumed = prior.RecoveriesConsumed,
+            Outcome = prior.Outcome,
+        };
+
+        return ReleaseRecordCodec.SameContent(fixedFields, prior);
+    }
+
+    private static bool IsAdmissionAttempt(VerifiedRecord<AttemptRecord> attempt, StagingEvidenceBinding decision, VerifiedRecord<ReleaseRecord> release) =>
+        attempt.Record is { Environment: "production", Payload: { AttemptKind: "release", Outcome: "in-progress", FirstMutationUtc: null } payload } &&
+        attempt.Record.Subject == release.Record.Payload.ReleaseId && payload.StagingEvidence == decision && References(payload.Release, release);
+
+    private static bool MatchesDecision(VerifiedRecord<PromotionDecisionRecord> action, StagingEvidenceBinding decision, VerifiedRecord<ReleaseRecord> release) =>
+        action.Record.Payload.StagingEvidence == decision && References(action.Record.Payload.Release, release) &&
+        action.Record.Subject == release.Record.Payload.ReleaseId;
+
+    private static bool MatchesDecisionAttempt(VerifiedRecord<PromotionDecisionRecord> action, VerifiedRecord<AttemptRecord> attempt, long epoch) =>
+        attempt.Record.Payload.StagingEvidence?.PolicyId == action.Record.Payload.StagingEvidence.PolicyId &&
+        References(action.Record.Payload.Attempt, attempt) && SameEnvironment(action, attempt) &&
+        action.Record.Payload.LockEpoch == epoch && attempt.Record.Payload.LockEpoch == epoch;
+
     private static bool References<T>(RecordReference? reference, VerifiedRecord<T> record)
         where T : class => reference == record.Reference;
 
-    private static void Require(bool valid)
+    private static void Require([DoesNotReturnIf(false)] bool valid)
     {
         if (!valid)
         {

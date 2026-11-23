@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.ReleaseRecords;
 
+using System.Text.Json.Serialization;
+
 /// <summary>
 /// Binds one attempt to its release, environment-current values, timing and epoch.
 /// </summary>
@@ -50,4 +52,9 @@ public sealed record AttemptRecord(
     string PreIncidentIngress,
     string Outcome,
     RecordReference? Supersedes,
-    RecordReference? SupersededBy);
+    RecordReference? SupersededBy)
+{
+    /// <summary>Gets the policy and decision required in a v2 attempt.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public StagingEvidenceBinding? StagingEvidence { get; init; }
+}
