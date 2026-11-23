@@ -8,6 +8,7 @@
     "mode": "incremental",
     "auditedAtUtc": "2026-11-22T18:32:10.8683918+00:00",
     "refreshedFamilies": [
+      "hexalith-parties",
       "hexalith-tenants"
     ],
     "preservedFamilies": [
@@ -30,7 +31,6 @@
       "hexalith-mcpcli",
       "hexalith-memories",
       "hexalith-netaspire",
-      "hexalith-parties",
       "hexalith-polymorphicserializations",
       "hexalith-projects",
       "hexalith-security",
