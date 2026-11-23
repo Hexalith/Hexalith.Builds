@@ -10,6 +10,7 @@
     "refreshedFamilies": [
       "hexalith-parties",
       "hexalith-polymorphicserializations",
+      "hexalith-projects",
       "hexalith-tenants"
     ],
     "preservedFamilies": [
@@ -32,7 +33,6 @@
       "hexalith-mcpcli",
       "hexalith-memories",
       "hexalith-netaspire",
-      "hexalith-projects",
       "hexalith-security",
       "hexalith-works",
       "identity-model",
