@@ -20,6 +20,7 @@ using Xunit;
 public sealed class PromotionDecisionTests
 {
     private const ReleaseRecordVersion _version = ReleaseRecordVersion.V2;
+    private const string _otherDigest = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     private static readonly StagingEvidenceBinding _decision = new(StagingEvidenceBinding.PolicyV2, "decision-1");
     private static readonly StagingEvidenceBinding _otherDecision = _decision with { DecisionId = "decision-2" };
 
@@ -124,11 +125,32 @@ public sealed class PromotionDecisionTests
         RecordReference unexpectedAttempt = new("attempt", RecordTestContext.Digest);
         Should.Throw<RecordValidationException>(() => context.Sign(envelope with { Payload = envelope.Payload with { Attempt = unexpectedAttempt } }, version: _version)).Code.ShouldBe("schema-rejected");
         Should.Throw<RecordValidationException>(() => context.Sign(envelope with { Payload = envelope.Payload with { LockEpoch = 1 } }, version: _version)).Code.ShouldBe("schema-rejected");
+        Should.Throw<RecordValidationException>(() => context.Sign(envelope with { Environment = "staging" }, version: _version)).Code.ShouldBe("schema-rejected");
 
         SignedRecord<PromotionDecisionRecord> signed = context.Sign(envelope, version: _version);
         JsonObject invalid = JsonNode.Parse(ReleaseRecordCodec.Encode(signed, _version)).ShouldBeOfType<JsonObject>();
         invalid["payload"]!["attempt"] = null;
         ReleaseRecordCodec.Verify<PromotionDecisionRecord>(Encoding.UTF8.GetBytes(invalid.ToJsonString()), context.Policy, _version).FailureCode.ShouldBe("schema-rejected");
+    }
+
+    /// <summary>The action's own signed release, subject and epoch must each match the supplied context.</summary>
+    [Fact]
+    public void ActionBindsItsOwnReleaseSubjectAndEpoch()
+    {
+        using RecordTestContext context = new();
+        VerifiedRecord<ReleaseRecord> release = Release(context);
+        SignedRecord<PromotionDecisionRecord> administrator = Envelope(new PromotionDecisionRecord("reserve-administrator", _decision, release.Reference), "admin", "production");
+        RecordTransitionValidator.ValidatePromotionDecision(context.Verify(administrator, _version), _decision, release);
+        VerifiedRecord<PromotionDecisionRecord> otherRelease = context.Verify(administrator with { Payload = administrator.Payload with { Release = release.Reference with { Digest = _otherDigest } } }, _version);
+        Refuses(() => RecordTransitionValidator.ValidatePromotionDecision(otherRelease, _decision, release));
+        VerifiedRecord<PromotionDecisionRecord> otherSubject = context.Verify(administrator with { Subject = "release-2" }, _version);
+        Refuses(() => RecordTransitionValidator.ValidatePromotionDecision(otherSubject, _decision, release));
+
+        VerifiedRecord<AttemptRecord> current = context.Verify(Attempt(release, epoch: 2), _version);
+        RecordTransitionValidator.ValidatePromotionDecision(Admission(context, release, current), _decision, release, current, 2);
+        PromotionDecisionRecord stale = new("reserve-admission", _decision, release.Reference, current.Reference, 1);
+        VerifiedRecord<PromotionDecisionRecord> staleAction = context.Verify(Envelope(stale, "evaluator", "production", "reservation"), _version);
+        Refuses(() => RecordTransitionValidator.ValidatePromotionDecision(staleAction, _decision, release, current, 2));
     }
 
     /// <summary>Staging binds the actual writer, its current staging epoch and the separate target decision.</summary>
@@ -190,6 +212,41 @@ public sealed class PromotionDecisionTests
         VerifiedRecord<AttemptRecord> reset = context.Verify(start with { Payload = start.Payload with { AttemptKind = "in-place-restore", RecoveryAllowance = 0 } }, _version);
         VerifiedRecord<PromotionDecisionRecord> resetSupersession = context.Verify(Envelope(payload with { Attempt = reset.Reference }, "staging", "staging"), _version);
         RecordTransitionValidator.ValidatePromotionDecision(resetSupersession, _decision, release, reset, 1);
+    }
+
+    /// <summary>Only an in-progress, pre-mutation staging start or prerequisite reset with the right binding can supersede.</summary>
+    /// <param name="change">The ineligible initiating attempt.</param>
+    [Theory]
+    [InlineData("working")]
+    [InlineData("first-mutation")]
+    [InlineData("rollback")]
+    [InlineData("reset-other-decision")]
+    [InlineData("reset-other-release-digest")]
+    [InlineData("v1-attempt")]
+    [InlineData("production-attempt")]
+    public void SupersessionRefusesIneligibleTrigger(string change)
+    {
+        using RecordTestContext context = new();
+        VerifiedRecord<ReleaseRecord> release = Release(context);
+        VerifiedRecord<ReleaseRecord> later = Release(context, "release-2");
+        SignedRecord<AttemptRecord> start = Attempt(later, _otherDecision, writer: "staging", environment: "staging");
+        SignedRecord<AttemptRecord> reset = Attempt(release, writer: "staging", environment: "staging");
+        reset = reset with { Payload = reset.Payload with { AttemptKind = "in-place-restore", RecoveryAllowance = 0 } };
+        SignedRecord<AttemptRecord> envelope = change switch
+        {
+            "working" => start with { Payload = start.Payload with { Outcome = "working" } },
+            "first-mutation" => start with { Payload = start.Payload with { FirstMutationUtc = RecordTestContext.Now } },
+            "rollback" => start with { Payload = start.Payload with { AttemptKind = "rollback" } },
+            "reset-other-decision" => reset with { Payload = reset.Payload with { StagingEvidence = _otherDecision } },
+            "reset-other-release-digest" => reset with { Payload = reset.Payload with { Release = release.Reference with { Digest = _otherDigest } } },
+            "v1-attempt" => RecordTestContext.Envelope(RecordTestContext.Attempt(later.Reference), "staging", "staging", "attempt", "release-2"),
+            _ => Attempt(later, _otherDecision, writer: "dual", environment: "production"),
+        };
+        VerifiedRecord<AttemptRecord> initiating = context.Verify(envelope, change == "v1-attempt" ? ReleaseRecordVersion.V1 : _version);
+        string writer = change == "production-attempt" ? "dual" : "staging";
+        PromotionDecisionRecord payload = new("supersede", _decision, release.Reference, initiating.Reference, 1);
+        VerifiedRecord<PromotionDecisionRecord> supersession = context.Verify(Envelope(payload, writer, "staging"), _version);
+        Refuses(() => RecordTransitionValidator.ValidatePromotionDecision(supersession, _decision, release, initiating, 1));
     }
 
     /// <summary>Closure binds separate admitted and terminal revisions and completes with the exact pointer.</summary>
@@ -296,6 +353,49 @@ public sealed class PromotionDecisionTests
         RecordVerificationResult<PromotionDecisionRecord> allowed = ReleaseRecordCodec.Verify<PromotionDecisionRecord>(bytes, new([.. context.Anchors, executor]), _version);
         allowed.FailureCode.ShouldBeNull();
         RecordTransitionValidator.ValidatePromotionDecision(allowed.Verified.ShouldNotBeNull(), _decision, release, terminal, 1, reservation, admitted, pointer);
+    }
+
+    /// <summary>Closure refuses a terminal revision by another writer or recorded earlier, and a reservation for another decision or action.</summary>
+    /// <param name="change">The mismatched closure context, or none for the accepted baseline.</param>
+    [Theory]
+    [InlineData("none")]
+    [InlineData("other-writer")]
+    [InlineData("recorded-earlier")]
+    [InlineData("other-decision")]
+    [InlineData("not-admission")]
+    public void ClosureRefusesForeignTerminalOrReservation(string change)
+    {
+        using RecordTestContext context = new();
+        VerifiedRecord<ReleaseRecord> release = Release(context);
+        SignedRecord<AttemptRecord> attempt = Attempt(release);
+        DateTimeOffset admittedAt = change == "recorded-earlier" ? RecordTestContext.Now.AddSeconds(2) : RecordTestContext.Now;
+        VerifiedRecord<AttemptRecord> admitted = context.Verify(attempt with { RecordedUtc = admittedAt }, _version);
+        string writer = change == "other-writer" ? "other" : "production";
+        SignedRecord<AttemptRecord> terminal = attempt with
+        {
+            WriterId = writer,
+            KeyId = writer + "-key",
+            RecordedUtc = RecordTestContext.Now.AddSeconds(1),
+            Payload = attempt.Payload with { Outcome = "non-working" },
+        };
+        VerifiedRecord<AttemptRecord> verifiedTerminal = context.Verify(terminal, _version);
+        PromotionDecisionRecord reservationPayload = change switch
+        {
+            "other-decision" => new("reserve-admission", _otherDecision, release.Reference, admitted.Reference, 1),
+            "not-admission" => new("release-reservation", _decision, release.Reference, admitted.Reference, 1, new RecordReference("reservation", RecordTestContext.Digest)),
+            _ => new("reserve-admission", _decision, release.Reference, admitted.Reference, 1),
+        };
+        VerifiedRecord<PromotionDecisionRecord> reservation = context.Verify(Envelope(reservationPayload, change == "not-admission" ? "production" : "evaluator", "production", "reservation"), _version);
+        PromotionDecisionRecord closurePayload = new("release-reservation", _decision, release.Reference, verifiedTerminal.Reference, 1, reservation.Reference);
+        VerifiedRecord<PromotionDecisionRecord> closure = context.Verify(Envelope(closurePayload, writer, "production"), _version);
+        if (change == "none")
+        {
+            RecordTransitionValidator.ValidatePromotionDecision(closure, _decision, release, verifiedTerminal, 1, reservation, admitted);
+        }
+        else
+        {
+            Refuses(() => RecordTransitionValidator.ValidatePromotionDecision(closure, _decision, release, verifiedTerminal, 1, reservation, admitted));
+        }
     }
 
     /// <summary>An in-progress or superseded attempt is insufficient to release a reservation.</summary>
@@ -424,6 +524,15 @@ public sealed class PromotionDecisionTests
         RecordTransitionValidator.ValidateAttempt(terminal, release, 1, previous);
     }
 
+    /// <summary>Schema selection refuses a payload type that has no contract at the requested version.</summary>
+    [Fact]
+    public void SchemaSelectionRefusesUnsupportedVersions()
+    {
+        Should.Throw<RecordValidationException>(ReleaseRecordCodec.SchemaFor<PromotionDecisionRecord>).Code.ShouldBe("unsupported-record");
+        Should.Throw<RecordValidationException>(() => ReleaseRecordCodec.SchemaFor<ReleaseRecord>(_version)).Code.ShouldBe("unsupported-record");
+        ReleaseRecordCodec.SchemaFor<PromotionDecisionRecord>(_version).ShouldEndWith("/promotion-decision.v2");
+    }
+
     /// <summary>V2 takeover retains the predecessor's wire version and immutable decision binding.</summary>
     /// <param name="predecessorIsV2">Whether the predecessor uses the v2 attempt schema.</param>
     [Theory]
@@ -485,23 +594,41 @@ public sealed class PromotionDecisionTests
     [Theory]
     [InlineData("reserve-admission", "attempt", false)]
     [InlineData("reserve-admission", "lockEpoch", false)]
+    [InlineData("reserve-admission", "reservation", true)]
+    [InlineData("reserve-admission", "workingPointer", true)]
+    [InlineData("reserve-administrator", "reservation", true)]
+    [InlineData("reserve-administrator", "workingPointer", true)]
+    [InlineData("supersede", "attempt", false)]
+    [InlineData("supersede", "lockEpoch", false)]
+    [InlineData("supersede", "reservation", true)]
+    [InlineData("supersede", "workingPointer", true)]
+    [InlineData("complete", "attempt", false)]
+    [InlineData("complete", "lockEpoch", false)]
     [InlineData("complete", "reservation", false)]
     [InlineData("complete", "workingPointer", false)]
+    [InlineData("release-reservation", "attempt", false)]
+    [InlineData("release-reservation", "lockEpoch", false)]
+    [InlineData("release-reservation", "reservation", false)]
     [InlineData("release-reservation", "workingPointer", true)]
     public void V2ActionRequiresOnlyItsSchemaFields(string action, string field, bool addField)
     {
         using RecordTestContext context = new();
         RecordReference reference = new("record", RecordTestContext.Digest);
-        PromotionDecisionRecord payload = new(
-            action,
-            _decision,
-            reference,
-            reference,
-            1,
-            action == "reserve-admission" ? null : reference,
-            action == "complete" ? reference : null);
-        string writer = action == "reserve-admission" ? "evaluator" : "production";
-        SignedRecord<PromotionDecisionRecord> signed = context.Verify(Envelope(payload, writer, "production"), _version).Record;
+        PromotionDecisionRecord payload = action switch
+        {
+            "reserve-administrator" => new(action, _decision, reference),
+            "reserve-admission" or "supersede" => new(action, _decision, reference, reference, 1),
+            "complete" => new(action, _decision, reference, reference, 1, reference, reference),
+            _ => new(action, _decision, reference, reference, 1, reference),
+        };
+        string writer = action switch
+        {
+            "reserve-admission" => "evaluator",
+            "reserve-administrator" => "admin",
+            "supersede" => "staging",
+            _ => "production",
+        };
+        SignedRecord<PromotionDecisionRecord> signed = context.Verify(Envelope(payload, writer, action == "supersede" ? "staging" : "production"), _version).Record;
         JsonObject json = JsonNode.Parse(ReleaseRecordCodec.Encode(signed, _version)).ShouldBeOfType<JsonObject>();
         JsonObject fields = json["payload"]!.AsObject();
         if (addField)
