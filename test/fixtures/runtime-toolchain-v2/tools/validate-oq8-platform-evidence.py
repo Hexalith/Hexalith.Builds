@@ -125,10 +125,10 @@ FOCUSED_LABELS = {
     "Category": "LiveSidecar",
     "Profile": PROFILE,
 }
-FOCUSED_LEGACY_COMMAND = f"dotnet tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Release/net11.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll -method {FOCUSED_METHOD} -noColor -ctrf raw-runner-temp"
-FOCUSED_CURRENT_COMMAND = f"dotnet tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Release/net11.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll -method {FOCUSED_METHOD} -noColor -result-ctrf raw-runner-temp"
-SUPPORT_LEGACY_COMMAND = "dotnet tests/Hexalith.EventStore.Server.Tests/bin/Release/net11.0/Hexalith.EventStore.Server.Tests.dll -method (21 validator-pinned selectors) -noColor -ctrf raw-runner-temp"
-SUPPORT_CURRENT_COMMAND = "dotnet tests/Hexalith.EventStore.Server.Tests/bin/Release/net11.0/Hexalith.EventStore.Server.Tests.dll -method (21 validator-pinned selectors) -noColor -result-ctrf raw-runner-temp"
+FOCUSED_LEGACY_COMMAND = f"dotnet tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Release/net10.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll -method {FOCUSED_METHOD} -noColor -ctrf raw-runner-temp"
+FOCUSED_CURRENT_COMMAND = f"dotnet tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Release/net10.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll -method {FOCUSED_METHOD} -noColor -result-ctrf raw-runner-temp"
+SUPPORT_LEGACY_COMMAND = "dotnet tests/Hexalith.EventStore.Server.Tests/bin/Release/net10.0/Hexalith.EventStore.Server.Tests.dll -method (21 validator-pinned selectors) -noColor -ctrf raw-runner-temp"
+SUPPORT_CURRENT_COMMAND = "dotnet tests/Hexalith.EventStore.Server.Tests/bin/Release/net10.0/Hexalith.EventStore.Server.Tests.dll -method (21 validator-pinned selectors) -noColor -result-ctrf raw-runner-temp"
 EXPECTED_SOURCE_INPUTS = {
     "deploy/dapr/resiliency.yaml",
     "deploy/dapr/statestore-postgresql.yaml",
@@ -251,8 +251,8 @@ V2_LIMITATIONS = [
     "The successor validates repository source identity only and does not grant runtime deployment or consumer acceptance of any external system.",
     "The v2 successor grants no release approval, package authority, registry authority, deployment authority, runtime-pin authority, consumer-migration authority, external-repository authority, Folders final closure, or final-consumer authority.",
 ]
-V2_GOVERNANCE_COMMAND = "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net11.0/Hexalith.EventStore.Contracts.Tests.dll -class Hexalith.EventStore.Contracts.Tests.Packaging.PostgreSqlImageGovernanceTests -noColor"
-V2_CLOSURE_COMMAND = "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net11.0/Hexalith.EventStore.Contracts.Tests.dll -class Hexalith.EventStore.Contracts.Tests.Packaging.Oq8PlatformClosureTests -noColor"
+V2_GOVERNANCE_COMMAND = "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net10.0/Hexalith.EventStore.Contracts.Tests.dll -class Hexalith.EventStore.Contracts.Tests.Packaging.PostgreSqlImageGovernanceTests -noColor"
+V2_CLOSURE_COMMAND = "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net10.0/Hexalith.EventStore.Contracts.Tests.dll -class Hexalith.EventStore.Contracts.Tests.Packaging.Oq8PlatformClosureTests -noColor"
 V2_LIVE_SIDECAR_COMMAND = "dotnet test tests/Hexalith.EventStore.Server.LiveSidecar.Tests/ --configuration Release -p:UseHexalithProjectReferences=false"
 V2_PRE_REVIEW_COMMANDS = [
     ("validator-syntax", "python3 -m py_compile tools/validate-oq8-platform-evidence.py", 0),
@@ -314,10 +314,10 @@ V3_LIMITATIONS = [
 ]
 V3_CONTRACTS_RESTORE_COMMAND = "dotnet restore tests/Hexalith.EventStore.Contracts.Tests/Hexalith.EventStore.Contracts.Tests.csproj -m:1 -p:Configuration=Release -p:UseHexalithProjectReferences=false"
 V3_CONTRACTS_BUILD_COMMAND = "dotnet build tests/Hexalith.EventStore.Contracts.Tests/Hexalith.EventStore.Contracts.Tests.csproj --no-restore --configuration Release -warnaserror -m:1 -p:UseHexalithProjectReferences=false"
-V3_CONTRACTS_TEST_COMMAND = "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net11.0/Hexalith.EventStore.Contracts.Tests.dll -noColor"
+V3_CONTRACTS_TEST_COMMAND = "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net10.0/Hexalith.EventStore.Contracts.Tests.dll -noColor"
 V3_ACTIONLINT_COMMAND = "actionlint .github/workflows/ci.yml .github/workflows/integration.yml"
 V3_LIVE_SIDECAR_BUILD_COMMAND = "dotnet build tests/Hexalith.EventStore.Server.LiveSidecar.Tests/Hexalith.EventStore.Server.LiveSidecar.Tests.csproj --configuration Release -warnaserror -m:1 -p:UseHexalithProjectReferences=false"
-V3_LIVE_SIDECAR_TEST_COMMAND = "dotnet tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Release/net11.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll -method Hexalith.EventStore.Server.LiveSidecar.Tests.Actors.IdempotencyAdmissionOq8PostgresqlTests.ProductionMatrix_IndependentProcessesPreserveAuthorityReplayExpiryAndLeakageInvariants -noColor"
+V3_LIVE_SIDECAR_TEST_COMMAND = "dotnet tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Release/net10.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll -method Hexalith.EventStore.Server.LiveSidecar.Tests.Actors.IdempotencyAdmissionOq8PostgresqlTests.ProductionMatrix_IndependentProcessesPreserveAuthorityReplayExpiryAndLeakageInvariants -noColor"
 V3_PRE_REVIEW_COMMANDS = [
     ("validator-syntax", "python3 -m py_compile tools/validate-oq8-platform-evidence.py", 0),
     ("historical-v1-validation", "python3 tools/validate-oq8-platform-evidence.py --historical-v1-only", 0),
@@ -421,13 +421,13 @@ V4_CONSUMER_CURRENT_RULE = (
 )
 V4_CONSUMER_INSTALL_COMMAND = V3_CONSUMER_INSTALL_COMMAND
 V4_LIFECYCLE_MUTATION_COMMAND = (
-    "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net11.0/"
+    "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net10.0/"
     "Hexalith.EventStore.Contracts.Tests.dll -method "
     "Hexalith.EventStore.Contracts.Tests.Packaging.Oq8PlatformClosureTests."
     "LifecycleRecordMutationsFailClosed -noColor"
 )
 V4_LIFECYCLE_SNAPSHOT_COMMAND = (
-    "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net11.0/"
+    "dotnet tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net10.0/"
     "Hexalith.EventStore.Contracts.Tests.dll -method "
     "Hexalith.EventStore.Contracts.Tests.Packaging.Oq8PlatformClosureTests."
     "LifecycleValidationUsesProvidedValidatedSelectorSnapshot -noColor"
@@ -534,7 +534,7 @@ EXPECTED_LIMITATIONS = [
     "This is a source-only EventStore platform handoff. It grants no release, package, registry, deployment, runtime pin, external-repository, consumer-migration, or final-consumer authority.",
     "Folders retains its own final cross-repository decision and must independently verify the referenced design and EventStore source before consumption.",
 ]
-PRE_REVIEW_TEST_DLL = "tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net11.0/Hexalith.EventStore.Contracts.Tests.dll"
+PRE_REVIEW_TEST_DLL = "tests/Hexalith.EventStore.Contracts.Tests/bin/Release/net10.0/Hexalith.EventStore.Contracts.Tests.dll"
 PRE_REVIEW_TEST_CLASS = "Hexalith.EventStore.Contracts.Tests.Packaging.Oq8PlatformClosureTests"
 PRE_REVIEW_COMMAND_RESULTS = [
     {

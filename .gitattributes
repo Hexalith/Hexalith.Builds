@@ -2,6 +2,7 @@ Props/Directory.Packages.props text eol=crlf
 *.cs text eol=crlf whitespace=cr-at-eol
 test/fixtures/**/*.json text eol=lf
 test/fixtures/**/*.yaml text eol=lf
+test/fixtures/runtime-toolchain-v2/tools/*.py text eol=lf
 # Acceptance-validator artifacts are SHA-256 bound by the corpus records; their bytes must never be converted.
 test/fixtures/evidence/acceptance/bound/** -text
 # Candidate qualification outputs are byte-bound observations; preserve their exact bytes.
