@@ -22,7 +22,7 @@ public sealed class CompositionCatalogPackageViewTests
     /// <param name="expected">The selected pinned version.</param>
     [Theory]
     [InlineData(null, "1.0.0")]
-    [InlineData("hexalith.platform.eventstorehost", "2.0.0")]
+    [InlineData("Hexalith.Platform.EventStoreHost", "2.0.0")]
     public void RecordedPackageViewIsSelected(string? project, string expected)
     {
         string root = Directory.CreateTempSubdirectory("catalog-package-view-").FullName;
@@ -95,7 +95,8 @@ public sealed class CompositionCatalogPackageViewTests
         CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
         const string package = "CommunityToolkit.Aspire.Hosting.Dapr";
         options.CatalogPackageVersion(package, "probe").ShouldBe("13.6.0-preview.1");
-        options.CatalogPackageVersion(package, "probe", "hexalith.folders.aspire").ShouldBe("13.0.0");
+        Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion(package, "probe", "hexalith.folders.aspire"))
+            .Message.ShouldContain("hexalith.folders.aspire");
 
         string liveCatalog = Path.Combine(fixture.Checkout, "references", "Hexalith.Builds", "Props", "Directory.Packages.props");
         await File.WriteAllTextAsync(liveCatalog, "<Project />", TestContext.Current.CancellationToken).ConfigureAwait(true);

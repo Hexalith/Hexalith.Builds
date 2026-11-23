@@ -256,8 +256,9 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
         IReadOnlyDictionary<string, string> selected = snapshot.Versions;
         if (!string.IsNullOrWhiteSpace(projectName))
         {
-            selected = snapshot.ProjectVersions.FirstOrDefault(pair => string.Equals(pair.Key, projectName, StringComparison.OrdinalIgnoreCase)).Value
-                ?? throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot has no recorded view for consumer '{projectName}'.");
+            selected = snapshot.ProjectVersions.TryGetValue(projectName, out IReadOnlyDictionary<string, string>? projectVersions)
+                ? projectVersions
+                : throw new InvalidDataException($"{source}: {packageId}: {snapshotPath}: catalog snapshot has no recorded view for consumer '{projectName}'.");
         }
 
         return selected.FirstOrDefault(pair => string.Equals(pair.Key, packageId, StringComparison.OrdinalIgnoreCase)).Value;

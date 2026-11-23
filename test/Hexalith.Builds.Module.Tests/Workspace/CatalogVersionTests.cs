@@ -230,6 +230,57 @@ public sealed class CatalogVersionTests
         engine.Error.ShouldNotBeNull().Code.ShouldBe("HXW012");
     }
 
+    /// <summary>Verifies exact consumer names through materialization, composition lookup and on-demand validation.</summary>
+    /// <returns>A task for the assertions.</returns>
+    [Fact]
+    public async Task CaseVariedCatalogViewsKeepTheirOwnVersionsAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateWithCatalogAsync("""
+            <Project>
+              <PropertyGroup>
+                <ProbeVersion>1.0.0</ProbeVersion>
+                <ProbeVersion Condition="$(MSBuildProjectName.Equals('Case.Consumer'))">2.0.0</ProbeVersion>
+                <ProbeVersion Condition="$(MSBuildProjectName.Equals('case.Consumer'))">3.0.0</ProbeVersion>
+              </PropertyGroup>
+              <ItemGroup><PackageVersion Include="Hexalith.Dep" Version="$(ProbeVersion)" /></ItemGroup>
+            </Project>
+            """).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "run");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string directory = Path.Combine(workspace, "source-mapping");
+        CompositionDeclarationOptions options = new(mapping, []) { Workspace = workspace };
+        options.CatalogPackageVersion("hexalith.dep", "probe", "Case.Consumer").ShouldBe("2.0.0");
+        options.CatalogPackageVersion("Hexalith.Dep", "probe", "case.Consumer").ShouldBe("3.0.0");
+        _ = Should.Throw<InvalidDataException>(() => options.CatalogPackageVersion("Hexalith.Dep", "probe", "CASE.Consumer"));
+
+        TaskItem package = new("Hexalith.Dep");
+        package.SetMetadata("Version", "2.0.0");
+        CatalogTestBuildEngine engine = new();
+        CatalogVersionValidationTask task = new()
+        {
+            BuildEngine = engine,
+            MappingFile = Path.Combine(directory, "mapping.json"),
+            MappingHash = mapping.ContentHash,
+            CatalogFile = Path.Combine(directory, "catalog-versions.json"),
+            ProjectName = "Case.Consumer",
+            Packages = [package],
+        };
+
+        task.Execute().ShouldBeTrue();
+        task.ProjectName = "case.Consumer";
+        task.Execute().ShouldBeFalse();
+        engine.Error.ShouldNotBeNull().Message.ShouldNotBeNull().ShouldContain("3.0.0");
+        task.ProjectName = "CASE.Consumer";
+        task.Execute().ShouldBeFalse();
+        engine.Error.ShouldNotBeNull().Message.ShouldNotBeNull().ShouldContain("1.0.0");
+        package.SetMetadata("Version", "1.0.0");
+        task.Execute().ShouldBeTrue();
+        options.CatalogPackageVersion("Hexalith.Dep", "probe", "CASE.Consumer").ShouldBe("1.0.0");
+        options.CatalogPackageVersion("Hexalith.Dep", "probe", "Case.Consumer").ShouldBe("2.0.0");
+        options.CatalogPackageVersion("Hexalith.Dep", "probe", "case.Consumer").ShouldBe("3.0.0");
+    }
+
     /// <summary>Verifies an equivalent exact NuGet range reaches restore.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]

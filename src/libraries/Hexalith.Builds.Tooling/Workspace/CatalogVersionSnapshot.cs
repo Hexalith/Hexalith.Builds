@@ -48,6 +48,7 @@ public sealed record CatalogVersionSnapshot(
             PinnedFiles = pinnedFiles.OrderBy(pair => pair.Key, StringComparer.Ordinal),
             Versions = versions.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase),
             ProjectVersions = projectVersions.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(pair => pair.Key, StringComparer.Ordinal)
                 .Select(pair => new { pair.Key, Versions = pair.Value.OrderBy(version => version.Key, StringComparer.OrdinalIgnoreCase) }),
         })));
 }

@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.Tooling.Workspace;
 
+using System.Globalization;
 using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -273,7 +274,7 @@ internal static partial class CatalogVersionMaterializer
 
     private static IReadOnlyList<string> ConditionalProjectNames(IEnumerable<(string Path, string Text)> files)
     {
-        HashSet<string> names = [with(StringComparer.OrdinalIgnoreCase)];
+        HashSet<string> names = [with(StringComparer.Ordinal)];
         foreach ((string path, string catalog) in files)
         {
             try
@@ -303,7 +304,7 @@ internal static partial class CatalogVersionMaterializer
 
                     foreach (string name in matches.Select(match => match.Groups["name"].Value))
                     {
-                        if (name == "__HXW_DefaultCatalog__")
+                        if (name.Equals("__HXW_DefaultCatalog__", StringComparison.OrdinalIgnoreCase))
                         {
                             throw new InvalidDataException($"Reserved MSBuildProjectName in condition '{condition}'.");
                         }
@@ -331,10 +332,15 @@ internal static partial class CatalogVersionMaterializer
         try
         {
             XElement projects = new("ItemGroup");
+            Dictionary<string, string> wrappers = [with(StringComparer.Ordinal)];
             foreach (string name in names)
             {
-                string wrapper = Path.Combine(batch, name + ".proj");
+                // Preserve the MSBuild project name on case-insensitive filesystems.
+                string projectDirectory = Path.Combine(batch, wrappers.Count.ToString(CultureInfo.InvariantCulture));
+                EnsureDirectory(projectDirectory);
+                string wrapper = Path.Combine(projectDirectory, name + ".proj");
                 await WritePinnedTextAsync(wrapper, new XElement("Project", new XElement("Import", new XAttribute("Project", catalogPath))).ToString(), cancellationToken).ConfigureAwait(false);
+                wrappers.Add(name, wrapper);
                 projects.Add(new XElement("CatalogProject", new XAttribute("Include", wrapper)));
             }
 
@@ -359,10 +365,10 @@ internal static partial class CatalogVersionMaterializer
                 throw Failure($"Pinned Builds catalog {pin} could not be evaluated: {result.ErrorOutput} {result.Output}", catalogPath);
             }
 
-            Dictionary<string, IReadOnlyDictionary<string, string>> views = [with(StringComparer.OrdinalIgnoreCase)];
-            foreach (string name in names)
+            Dictionary<string, IReadOnlyDictionary<string, string>> views = [with(StringComparer.Ordinal)];
+            foreach ((string name, string wrapper) in wrappers)
             {
-                string path = Path.Combine(batch, name + ".proj.json");
+                string path = wrapper + ".json";
                 if (new FileInfo(path).Length > 1_048_576)
                 {
                     throw Failure($"Evaluated catalog for '{name}' exceeds the size limit.", catalogPath);

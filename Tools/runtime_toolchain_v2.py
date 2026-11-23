@@ -187,7 +187,7 @@ def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
     catalog = workspace / "references/Hexalith.Builds/Props/Directory.Packages.props"
     try:
         properties, evaluated_versions = _catalog_module.evaluate_catalog(catalog)
-        conditioned_names = _catalog_module.conditioned_catalog_project_names(catalog)
+        conditioned_names = {name.casefold() for name in _catalog_module.conditioned_catalog_project_names(catalog)}
     except (ValueError, OSError, ET.ParseError) as error:
         raise api.ValidationError(str(error)) from error
     versions = {package: version for package, version in evaluated_versions.items() if controlled_field(package)}
@@ -199,7 +199,8 @@ def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
         if any(part in {"_bmad", "_bmad-output", ".agents", ".claude", ".codex", "docs"} for part in path.parts) or "/test/fixtures/" in "/" + relative:
             continue
         consumer_properties, consumer_versions = properties, versions
-        if path.suffix in {".csproj", ".props", ".targets"} and path.stem in conditioned_names:
+        # Let MSBuild apply both case-insensitive comparisons and exact Equals selectors.
+        if path.suffix in {".csproj", ".props", ".targets"} and path.stem.casefold() in conditioned_names:
             if path.stem not in catalog_by_consumer:
                 try:
                     selected_properties, selected_versions = _catalog_module.evaluate_catalog(

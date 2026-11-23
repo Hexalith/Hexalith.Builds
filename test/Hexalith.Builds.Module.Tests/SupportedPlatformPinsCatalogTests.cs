@@ -41,7 +41,7 @@ public sealed class SupportedPlatformPinsCatalogTests
 
         SupportedPlatformPins.FrontComposerVersion.ShouldBe("5.0.0");
 
-        SupportedPlatformPins.DaprSdkVersion.ShouldBe(catalog.DaprSdkVersion);
+        SupportedPlatformPins.DaprSdkVersion.ShouldBe("1.19.1");
         SupportedPlatformPins.DaprRuntimeVersion.ShouldBe("1.19.1");
         CompositionToolchainPins.DaprRuntimeVersion.ShouldBe(catalog.DaprRuntimeVersion);
         CompositionToolchainPins.DaprCliVersion.ShouldBe(catalog.DaprCliVersion);

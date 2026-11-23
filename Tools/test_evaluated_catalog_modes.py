@@ -1,17 +1,67 @@
 """Keep packaged catalog snapshots independent from actual source-project inspection."""
 from pathlib import Path
 import os
+import runpy
+import subprocess
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from evaluated_catalog import evaluate_catalog, project_sdk_selections
+from runtime_toolchain_v2 import inventory
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "Props/Directory.Packages.props"
 
 
 class EvaluatedCatalogModeTests(unittest.TestCase):
+    def test_inventory_applies_imported_equals_selector_to_exact_consumer(self):
+        api = SimpleNamespace(**runpy.run_path(str(ROOT / "Tools/validate-runtime-toolchain-evidence.py")))
+        package = "Hexalith.EventStore.Client"
+        with tempfile.TemporaryDirectory(prefix="catalog-inventory-") as directory:
+            root = Path(directory)
+            catalog_dir = root / "references/Hexalith.Builds/Props"
+            catalog_dir.mkdir(parents=True)
+            (catalog_dir / "Directory.Packages.props").write_text(f"""<Project>
+  <PropertyGroup><HexalithEventStoreVersion>5.0.0</HexalithEventStoreVersion></PropertyGroup>
+  <Import Project="Retained.props" Condition="'$(UseHexalithProjectReferences)' == 'false'" />
+  <ItemGroup><PackageVersion Include="{package}" Version="$(HexalithEventStoreVersion)" /></ItemGroup>
+</Project>""")
+            (catalog_dir / "Retained.props").write_text("""<Project>
+  <PropertyGroup Condition="$(MSBuildProjectName.Equals('_Legacy Consumer'))">
+    <HexalithEventStoreVersion>4.2.0</HexalithEventStoreVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Quoted.Consumer'">
+    <HexalithEventStoreVersion>4.2.1</HexalithEventStoreVersion>
+  </PropertyGroup>
+</Project>""")
+            consumers = root / "Consumers"
+            retained = "Consumers/retained/_Legacy Consumer.csproj"
+            current = "Consumers/current/_legacy Consumer.csproj"
+            quoted = "Consumers/quoted/quoted.Consumer.csproj"
+            for relative in (retained, current, quoted):
+                project = root / relative
+                project.parent.mkdir(parents=True)
+                project.write_text(f'<Project><ItemGroup><PackageReference Include="{package}" /></ItemGroup></Project>')
+            subprocess.run(["git", "init", "--quiet", str(consumers)], check=True)
+            baseline = {
+                "consumerInventory": {
+                    "roots": ["Consumers"],
+                    "unqualifiedExclusions": [
+                        {"path": retained, "package": package, "version": "4.2.0"},
+                        {"path": quoted, "package": package, "version": "4.2.1"},
+                    ],
+                    "fileBasedAppHosts": [],
+                },
+                "qualification": {"eventStorePackageVersion": "5.0.0"},
+            }
+            self.assertEqual([
+                {"path": current, "pins": [{"package": package, "version": "5.0.0", "qualified": True}]},
+                {"path": quoted, "pins": [{"package": package, "version": "4.2.1", "qualified": False}]},
+                {"path": retained, "pins": [{"package": package, "version": "4.2.0", "qualified": False}]},
+            ], inventory(api, root, baseline))
+
     def test_named_consumers_use_the_current_package_families(self):
         _, baseline = evaluate_catalog(CATALOG)
         for name in ("Hexalith.Timesheets", "Hexalith.Parties", "Hexalith.Platform.EventStoreHost",

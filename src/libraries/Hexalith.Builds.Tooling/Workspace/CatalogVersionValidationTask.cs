@@ -70,8 +70,7 @@ public sealed class CatalogVersionValidationTask : ITask
 
             CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, MappingHash, CatalogFile);
 
-            IReadOnlyDictionary<string, string> selected = snapshot.ProjectVersions
-                .FirstOrDefault(pair => string.Equals(pair.Key, ProjectName, StringComparison.OrdinalIgnoreCase)).Value
+            IReadOnlyDictionary<string, string> selected = snapshot.ProjectVersions.GetValueOrDefault(ProjectName ?? string.Empty)
                 ?? SelectUnseededProject(mapping, snapshot);
             Dictionary<string, string> pinnedVersions = selected.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
@@ -275,9 +274,7 @@ public sealed class CatalogVersionValidationTask : ITask
             throw new InvalidDataException("Pinned catalog snapshot changed during project evaluation.");
         }
 
-        IReadOnlyDictionary<string, string>? present = latest.ProjectVersions
-            .FirstOrDefault(pair => string.Equals(pair.Key, ProjectName, StringComparison.OrdinalIgnoreCase)).Value;
-        if (present is not null)
+        if (latest.ProjectVersions.TryGetValue(ProjectName, out IReadOnlyDictionary<string, string>? present))
         {
             return present.Count != evaluated.Count || present.Any(pair => !evaluated.TryGetValue(pair.Key, out string? version) || version != pair.Value)
                 ? throw new InvalidDataException($"Pinned catalog evaluation changed for consumer '{ProjectName}'.")
@@ -285,7 +282,7 @@ public sealed class CatalogVersionValidationTask : ITask
         }
 
         Dictionary<string, IReadOnlyDictionary<string, string>> projectVersions = latest.ProjectVersions
-            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         projectVersions.Add(ProjectName, evaluated);
         CatalogVersionSnapshot updated = latest with
         {

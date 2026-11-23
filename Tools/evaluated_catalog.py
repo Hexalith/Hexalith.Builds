@@ -48,7 +48,7 @@ def evaluate_catalog(path: Path, configuration: str = "Debug",
     with tempfile.TemporaryDirectory(prefix="hexalith-evaluated-catalog-") as temporary:
         evaluation_path = path
         if consumer_project_name is not None:
-            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", consumer_project_name):
+            if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._ -]*", consumer_project_name):
                 raise ValueError(f"Invalid catalog consumer project name: {consumer_project_name}")
             evaluation_path = Path(temporary) / f"{consumer_project_name}.proj"
             project = ET.Element("Project")
@@ -99,13 +99,15 @@ def conditioned_catalog_project_names(path: Path) -> set[str]:
     path = path.resolve()
     with tempfile.TemporaryDirectory(prefix="hexalith-catalog-conditions-") as temporary:
         preprocessed = Path(temporary) / "catalog.xml"
-        _run(path, ["-preprocess:" + str(preprocessed)], neutral=True)
+        _run(path, ["-p:UseHexalithProjectReferences=false", "-preprocess:" + str(preprocessed)], neutral=True)
         document = ET.parse(preprocessed).getroot()
     pattern = re.compile(
         r"['\"]\$\(\s*MSBuildProjectName\s*\)['\"]\s*==\s*['\"]([^'\"]+)['\"]"
-        r"|['\"]([^'\"]+)['\"]\s*==\s*['\"]\$\(\s*MSBuildProjectName\s*\)['\"]")
+        r"|['\"]([^'\"]+)['\"]\s*==\s*['\"]\$\(\s*MSBuildProjectName\s*\)['\"]"
+        r"|\$\(\s*MSBuildProjectName\.Equals\(\s*['\"]([^'\"]+)['\"]\s*\)\s*\)",
+        re.IGNORECASE)
     return {name for item in document.iter() for match in pattern.finditer(item.get("Condition", ""))
-            if (name := match.group(1) or match.group(2))}
+            for name in match.groups() if name is not None}
 
 
 def has_apphost_sdk(document: ET.Element) -> bool:
