@@ -133,12 +133,18 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
             if not isinstance(value, str) or re.fullmatch(r"[1-9][0-9]*", value) is None:
                 return failed("release publisher handoff has an invalid " + name)
         digest = draft_outputs.get("artifact-digest")
-        last_tag = draft_outputs.get("last-tag")
+        # GitHub omits empty job outputs from toJSON(needs) on a first release.
+        omitted_tag = "" if version == "1.0.0" else None
+        last_tag = draft_outputs.get("last-tag", omitted_tag)
         if (not isinstance(digest, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is None
                 or not isinstance(last_tag, str)
                 or (last_tag != "" and (not last_tag.startswith("v")
                     or VERSION.fullmatch(last_tag[1:]) is None))):
             return failed("release publisher handoff has an invalid artifact digest or last tag")
+        if mode == "complete" and "last-tag" not in draft_outputs:
+            resolve_outputs = needs["resolve"].get("outputs", {})
+            if not isinstance(resolve_outputs, dict) or resolve_outputs.get("last-tag", "") != "":
+                return failed("release publisher handoff differs from the resolved last tag")
         if mode == "create":
             build_outputs = needs["build"].get("outputs", {})
             version_outputs = needs["version"].get("outputs", {})
@@ -146,7 +152,7 @@ def reduce_results(*, dispatch_sha: str, sha: str = "", version: str = "", enabl
                     or any(build_outputs.get(name) != draft_outputs[name]
                            for name in ("artifact-id", "artifact-digest"))
                     or version_outputs.get("version") != version
-                    or version_outputs.get("last-tag") != last_tag
+                    or version_outputs.get("last-tag", omitted_tag) != last_tag
                     or version_outputs.get("no-version") != "false"):
                 return failed("release publisher handoff differs from the version or build identity")
         return {"document": None, "upload": "false", "publish": "true", "error": ""}

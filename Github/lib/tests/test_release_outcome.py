@@ -234,6 +234,21 @@ class OutcomeReductionTests(unittest.TestCase):
         complete["version"]["result"] = complete["build"]["result"] = "skipped"
         self.assertEqual("true", self.decide(**(choices | {"mode": "complete", "needs": complete}))["publish"])
 
+    def test_first_release_handoff_with_empty_job_outputs_omitted(self):
+        needs = handoff("1.0.0")
+        del needs["version"]["outputs"]["last-tag"]
+        del needs["draft"]["outputs"]["last-tag"]
+        choices = dict(enabled="true", publish="true", version="1.0.0", needs=needs)
+        self.assertEqual("true", self.decide(**choices)["publish"])
+        needs["version"]["outputs"]["last-tag"] = "v0.9.0"
+        self.assert_failed(self.decide(**choices), "differs from the version or build")
+        needs["version"] = needs["build"] = {"result": "skipped", "outputs": {}}
+        self.assertEqual("true", self.decide(mode="complete", **choices)["publish"])
+        needs["resolve"]["outputs"] = {"last-tag": "v0.9.0"}
+        self.assert_failed(self.decide(mode="complete", **choices), "resolved last tag")
+        needs["draft"]["outputs"]["version"] = "2.0.0"
+        self.assert_failed(self.decide(mode="complete", **(choices | {"version": "2.0.0"})), "last tag")
+
     def test_incomplete_or_mismatched_artifact_handoffs_retain_reporter_ownership(self):
         for name, value in (("artifact-id", ""), ("artifact-run", "01"), ("draft-id", "-1"),
                             ("artifact-digest", "c" * 64), ("last-tag", "v1.9.0\n")):
