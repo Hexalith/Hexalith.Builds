@@ -61,11 +61,42 @@ public sealed class CompositionResourceClaimStoreTests
             using System.Net.Sockets.TcpListener occupied = new(System.Net.IPAddress.Loopback, 0);
             occupied.Start();
             int port = ((System.Net.IPEndPoint)occupied.LocalEndpoint).Port;
+            CompositionResourceClaimStore claims = new(root);
+            string peer = CompositionRunPlanFactory.NewRunId();
+            CompositionRunPorts peerPorts = CompositionPortAllocator.AllocateOwned(1, peer, root);
             string run = CompositionRunPlanFactory.NewRunId();
-            _ = Should.Throw<System.Net.Sockets.SocketException>(() => CompositionPortAllocator.AllocateOwned(1, run, root, false, port));
-            new CompositionResourceClaimStore(root).FindOwned(run).ShouldBeEmpty();
-            occupied.Stop();
-            CompositionPortAllocator.AllocateOwned(1, run, root, false, port).EventStoreHttp.ShouldBe(port);
+            CompositionExplicitEndpointBindException failure = Should.Throw<CompositionExplicitEndpointBindException>(() => CompositionPortAllocator.AllocateOwned(1, run, root, false, port));
+            _ = failure.InnerException.ShouldBeOfType<System.Net.Sockets.SocketException>();
+            claims.FindOwned(run).ShouldBeEmpty();
+            claims.ClaimedPorts().SetEquals(peerPorts.ToList()).ShouldBeTrue();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>The explicit endpoint is excluded when independently choosing the remaining ports.</summary>
+    [Fact]
+    public void ExplicitEndpointReachesTheIndependentAllocatorAsAnExclusion()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            int requested = CompositionPortAllocator.Allocate(1).EventStoreHttp;
+            CompositionRunPorts ports = CompositionPortAllocator.AllocateOwned(
+                1,
+                CompositionRunPlanFactory.NewRunId(),
+                root,
+                false,
+                requested,
+                (moduleCount, includeSecondEventStore, excluded) =>
+                {
+                    excluded.ShouldContain(requested);
+                    return CompositionPortAllocator.Allocate(moduleCount, includeSecondEventStore, excluded);
+                });
+            ports.EventStoreHttp.ShouldBe(requested);
+            ports.ToList().Count(port => port == requested).ShouldBe(1);
         }
         finally
         {

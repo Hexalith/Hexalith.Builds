@@ -833,9 +833,12 @@ existing ownership-limited cleanup verifies that the owning resources are gone.
 Fresh `run`, `debug` and `test` owners accept `--eventstore-port 18080`.
 The integer must be 1–65535. The runner claims that actual EventStore HTTP
 endpoint before binding it. Platform v2 binds this run-plan port through the
-compatible Platform composition model release. A managed conflict fails as `HXR031`,
-naming the blocking owner; it never chooses another requested port. Other endpoints retain
-independent allocation. Attachments cannot request owner ports.
+compatible Platform composition model release. A managed conflict fails as `HXR031`
+and names the blocking owner. If the runner cannot bind the requested loopback endpoint
+during its pre-launch probe, `HXR020` identifies that endpoint. Other endpoints retain
+independent allocation. Combining
+`--attach-to` with `--eventstore-port` produces a usage error before startup because
+an attached suite uses the live owner's endpoints.
 
 A declared attached suite may consume validated immutable public routing
 snapshots from its exact owner and environment. It receives its own descriptor,

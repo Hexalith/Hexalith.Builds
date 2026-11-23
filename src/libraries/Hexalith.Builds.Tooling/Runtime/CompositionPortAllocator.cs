@@ -155,10 +155,18 @@ public static class CompositionPortAllocator
     /// <param name="stateDirectory">The runner claim store.</param>
     /// <param name="includeSecondEventStore">Whether the legacy graph needs a second EventStore allocation.</param>
     /// <param name="eventStorePort">An explicit EventStore endpoint, claimed without retrying its conflicts.</param>
+    /// <param name="allocateIndependent">An optional independent allocator that receives the port exclusions.</param>
     /// <returns>The claimed proposed ports; allocation probes themselves are not reservations.</returns>
     /// <exception cref="InvalidOperationException">No independent finite allocation is available.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The explicit port is outside 1-65535.</exception>
-    internal static CompositionRunPorts AllocateOwned(int moduleCount, string runId, string stateDirectory, bool includeSecondEventStore, int? eventStorePort = null)
+    /// <exception cref="CompositionExplicitEndpointBindException">The explicit loopback endpoint could not be bound.</exception>
+    internal static CompositionRunPorts AllocateOwned(
+        int moduleCount,
+        string runId,
+        string stateDirectory,
+        bool includeSecondEventStore,
+        int? eventStorePort = null,
+        Func<int, bool, IReadOnlySet<int>, CompositionRunPorts>? allocateIndependent = null)
     {
         if (eventStorePort is < 1 or > 65535)
         {
@@ -174,7 +182,7 @@ public static class CompositionPortAllocator
                 _ = excluded.Add(requested);
             }
 
-            CompositionRunPorts ports = Allocate(moduleCount, includeSecondEventStore, excluded);
+            CompositionRunPorts ports = (allocateIndependent ?? Allocate)(moduleCount, includeSecondEventStore, excluded);
             if (eventStorePort is { } explicitPort)
             {
                 ports = ports with { EventStoreHttp = explicitPort };
@@ -193,10 +201,19 @@ public static class CompositionPortAllocator
 
                 return ports;
             }
-            catch (SocketException)
+            catch (SocketException exception) when (eventStorePort is { } port)
             {
-                claims.ReleaseOwned(runId);
-                throw;
+                try
+                {
+                    claims.ReleaseOwned(runId);
+                }
+                catch (Exception rollback) when (rollback is IOException or UnauthorizedAccessException)
+                {
+                    // Preserve the endpoint while the caller's bounded teardown retries claim release.
+                    throw new CompositionExplicitEndpointBindException(port, new AggregateException(exception, rollback));
+                }
+
+                throw new CompositionExplicitEndpointBindException(port, exception);
             }
             catch (CompositionResourceClaimConflictException conflict) when (attempt < 63 && (eventStorePort is null || conflict.ResourceId != "tcp:127.0.0.1:" + eventStorePort.Value.ToString(CultureInfo.InvariantCulture)))
             {

@@ -721,6 +721,13 @@ public sealed class AttachedSuiteExecutionTests
         (int exit, JsonElement output) = await owner.AttachAsync(extra, TestContext.Current.CancellationToken, manifest, scenario == "gate" ? "gated" : "attached").ConfigureAwait(true);
         exit.ShouldBe((int)(rule is "HXC001" or "HXC002" ? ToolExitCode.UsageOrManifest : ToolExitCode.TopologyOrLifecycle), output.GetRawText());
         AssertRefusal(output, rule, reason);
+        if (scenario == "eventstore-port")
+        {
+            output.GetProperty("diagnostics").EnumerateArray().ShouldContain(item =>
+                item.GetProperty("ruleId").GetString() == "HXC001" &&
+                item.GetProperty("message").GetString() == "--eventstore-port requires a fresh owner and cannot be combined with --attach-to.");
+        }
+
         (await owner.AttachmentsAsync().ConfigureAwait(true)).Count.ShouldBe(before);
         Directory.GetFiles(workspace.Root, "started-*").ShouldBeEmpty();
         if (hold is not null)

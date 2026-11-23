@@ -528,12 +528,15 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             // Once a run identity exists, resources may exist: every other failure (I/O, port allocation,
             // an inner timeout) is a lifecycle failure that must run bounded teardown instead of leaking the run.
+            ToolDiagnostic diagnostic = exception is CompositionExplicitEndpointBindException
+                ? Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, exception.Message, "eventStorePort", "Release the requested port or select another with --eventstore-port.")
+                : Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run failed before every resource was healthy; bounded teardown ran.", "apphost", "Inspect the run prerequisites and retry.");
             return await FailAndTearDownAsync(
                 runId,
                 appHost,
                 manifestHash,
                 CompositionRunStatus.Failed,
-                Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run failed before every resource was healthy; bounded teardown ran.", "apphost", "Inspect the run prerequisites and retry."),
+                diagnostic,
                 ToolExitCode.TopologyOrLifecycle,
                 requestedAt,
                 deadline).ConfigureAwait(false);

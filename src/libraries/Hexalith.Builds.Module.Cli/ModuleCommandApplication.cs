@@ -480,8 +480,16 @@ internal static class ModuleCommandApplication
             CompositionEngineOptions? executionOptions = compositionOptions;
             if (command != ModuleInvocationCommand.Down && parseResult.GetResult(eventStorePortOption) is not null)
             {
+                if (attachTo is not null)
+                {
+                    return ToolCommandHost.WriteParseFailureAsync(
+                        standardOutput,
+                        ParseOutputFormat(parseResult.GetValue(outputOption)),
+                        "--eventstore-port requires a fresh owner and cannot be combined with --attach-to.");
+                }
+
                 string? requestedPort = parseResult.GetValue(eventStorePortOption);
-                if (attachTo is not null || !int.TryParse(requestedPort, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int port) || port is < 1 or > 65535)
+                if (!int.TryParse(requestedPort, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int port) || port is < 1 or > 65535)
                 {
                     return ToolCommandHost.WriteParseFailureAsync(standardOutput, ParseOutputFormat(parseResult.GetValue(outputOption)));
                 }

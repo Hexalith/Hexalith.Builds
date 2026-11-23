@@ -6,6 +6,9 @@
 namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Diagnostics;
+using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 
 using Hexalith.Builds.ModuleTool.Cli;
@@ -38,14 +41,24 @@ public sealed class StartupReadinessTests
     [InlineData("")]
     public async Task ExplicitPortParsingRefusesInvalidRequestsAsync(string port)
     {
+        using PlatformManifestTestWorkspace workspace = new();
+        _ = LocalRunLifecycleFixture.Create(workspace);
+        string manifest = Path.Combine(workspace.Root, "manifest.json");
+        string assembly = typeof(ModuleCommandApplication).Assembly.Location;
+        CompositionEngineOptions options = new(Path.Combine(workspace.Root, "unused-apphost"), assembly)
+        {
+            StateDirectory = Path.Combine(workspace.Root, "state"),
+            WorkspaceRoot = Path.Combine(workspace.Root, "workspaces"),
+            ExecutingToolCaptureOverride = () => throw new InvalidOperationException("The refused command must not start an owner."),
+        };
         StringWriter output = new();
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
-        StringWriter error = new();
-        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable errorLifetime = error.ConfigureAwait(true);
-        int exit = await ModuleCommandApplication.InvokeAsync(["test", "--manifest", "unused", "--profile", "verify", "--eventstore-port", port, "--output", "json"], output, error, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
+        int exit = await ModuleCommandApplication.InvokeAsync(["test", "--manifest", manifest, "--profile", "verify", "--eventstore-port", port, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, assembly, options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest, output.ToString());
         using JsonDocument refusal = JsonDocument.Parse(output.ToString());
         refusal.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(value => value.GetProperty("ruleId").GetString() == "HXC001");
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
     }
 
     /// <summary>The service refuses explicit ports with down, existing runs and invalid port values before loading a manifest.</summary>
@@ -65,11 +78,13 @@ public sealed class StartupReadinessTests
             CompositionEngineOptions options = Options(root, Path.Combine(root, "unused")) with { EventStorePort = port };
             StringWriter output = new();
             await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
-            int exit = await ModuleCommandExecutionService.ExecuteAsync(scenario == "down" ? ModuleInvocationCommand.Down : ModuleInvocationCommand.Test, "unused", null, null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, runId: scenario == "existing" ? CompositionRunPlanFactory.NewRunId() : null, compositionOptions: options).ConfigureAwait(true);
+            string manifest = CompositionTestFiles.CopyExecutableManifest(ExecutableManifest(), root);
+            int exit = await ModuleCommandExecutionService.ExecuteAsync(scenario == "down" ? ModuleInvocationCommand.Down : ModuleInvocationCommand.Test, manifest, "full", null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, runId: scenario == "existing" ? CompositionRunPlanFactory.NewRunId() : null, compositionOptions: options).ConfigureAwait(true);
             exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
             using JsonDocument refusal = JsonDocument.Parse(output.ToString());
-            refusal.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(value => value.GetProperty("ruleId").GetString() == "HXC002");
-            Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics")).ShouldBeFalse();
+            refusal.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(value => value.GetProperty("ruleId").GetString() == "HXC002" && value.GetProperty("message").GetString() == "An explicit EventStore port must be 1-65535 and requires a fresh owner.");
+            Directory.Exists(options.StateDirectory).ShouldBeFalse();
+            Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
         }
         finally
         {
@@ -96,11 +111,8 @@ public sealed class StartupReadinessTests
             string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
             CompositionEngineOptions options = Options(root, appHost);
             engine = new CompositionEngine(options);
-            using System.Net.Sockets.TcpListener available = new(System.Net.IPAddress.Loopback, 0);
-            available.Start();
-            int port = ((System.Net.IPEndPoint)available.LocalEndpoint).Port;
-            available.Stop();
-            string request = port.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            int port = CompositionPortAllocator.Allocate(1).EventStoreHttp;
+            string request = port.ToString(CultureInfo.InvariantCulture);
             StringWriter output = new();
             await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
             int exit = await ModuleCommandApplication.InvokeAsync(["debug", "--manifest", manifest, "--eventstore-port", request, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
@@ -126,6 +138,46 @@ public sealed class StartupReadinessTests
                 _ = await engine!.DownAsync(ownerRunId, CancellationToken.None).ConfigureAwait(true);
             }
 
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>An unmanaged listener is reported with the exact requested endpoint and leaves no claims.</summary>
+    /// <returns>The lifecycle refusal and cleanup assertions.</returns>
+    [Fact]
+    public async Task ExplicitPortCommandNamesUnmanagedEndpointAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost toolchain uses POSIX scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string manifest = CompositionTestFiles.CopyExecutableManifest(ExecutableManifest(), root);
+            string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionEngineOptions options = Options(root, appHost);
+            using TcpListener occupied = new(IPAddress.Loopback, 0);
+            occupied.Start();
+            string request = ((IPEndPoint)occupied.LocalEndpoint).Port.ToString(CultureInfo.InvariantCulture);
+            StringWriter output = new();
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
+            int exit = await ModuleCommandApplication.InvokeAsync(["debug", "--manifest", manifest, "--eventstore-port", request, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+            exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.ToString());
+            using JsonDocument refusal = JsonDocument.Parse(output.ToString());
+            JsonElement diagnostics = refusal.RootElement.GetProperty("diagnostics");
+            diagnostics.EnumerateArray().ShouldContain(value =>
+                value.GetProperty("ruleId").GetString() == "HXR020" &&
+                value.GetProperty("field").GetString() == "eventStorePort" &&
+                value.GetProperty("message").GetString()!.StartsWith($"The requested EventStore endpoint 127.0.0.1:{request} could not be bound.", StringComparison.Ordinal));
+            diagnostics.EnumerateArray().ShouldNotContain(value => value.GetProperty("ruleId").GetString() == "HXR023");
+            string runId = refusal.RootElement.GetProperty("runId").GetString().ShouldNotBeNull();
+            Directory.Exists(Path.Combine(options.WorkspaceRoot, runId)).ShouldBeFalse();
+            new CompositionResourceClaimStore(options.StateDirectory).ClaimedPorts().ShouldBeEmpty();
+        }
+        finally
+        {
             CompositionTestFiles.Delete(root);
         }
     }

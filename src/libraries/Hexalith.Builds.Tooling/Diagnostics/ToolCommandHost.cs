@@ -86,7 +86,15 @@ public static class ToolCommandHost
     /// <param name="writer">The destination writer.</param>
     /// <param name="format">The requested output format.</param>
     /// <returns>The stable usage exit code.</returns>
-    public static async Task<int> WriteParseFailureAsync(TextWriter writer, ToolOutputFormat format)
+    public static Task<int> WriteParseFailureAsync(TextWriter writer, ToolOutputFormat format) =>
+        WriteParseFailureAsync(writer, format, "The command line is invalid.");
+
+    /// <summary>Writes a parse failure with a diagnostic that contains only trusted option names.</summary>
+    /// <param name="writer">The destination writer.</param>
+    /// <param name="format">The requested output format.</param>
+    /// <param name="message">The fixed diagnostic message.</param>
+    /// <returns>The stable usage exit code.</returns>
+    internal static async Task<int> WriteParseFailureAsync(TextWriter writer, ToolOutputFormat format, string message)
     {
         ArgumentNullException.ThrowIfNull(writer);
 
@@ -94,7 +102,7 @@ public static class ToolCommandHost
             "HXC001",
             ToolPhase.Usage,
             ToolFailureCategory.Usage,
-            "The command line is invalid.",
+            message,
             "arguments",
             "Use --help to supply a supported command and required options.");
         ToolCommandResult result = new(
