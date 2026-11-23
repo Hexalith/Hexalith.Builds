@@ -236,6 +236,8 @@ class PublisherTests(History):
                 values = self.authenticate(control)
                 outcome = publish.finalize_release(self.git, control, values, refresh=self.refresh)
                 self.assertEqual(outcome["outcome"], "published")
+                self.assertEqual(outcome["draftId"], control.release["id"])
+                self.assertEqual(outcome["lastTag"], values["last-tag"])
                 self.assertEqual(control.writes, [{"tag_name": "v" + VERSION, "target_commitish": self.sha, "draft": False}])
                 self.assertEqual(git_command(self.root, "rev-parse", "v" + VERSION + "^{commit}"), self.sha)
                 self.assertGreater(control.events.index("PATCH"), control.events.index("download"))
@@ -814,6 +816,9 @@ raise SystemExit({0})
                 published = scenario in {"success", "empty", "tag-correct-lightweight", "tag-correct-annotated"}
                 expected = "ready" if scenario == "ready" else "published" if published else "failed"
                 self.assertEqual(uploads[0]["outcome"], expected)
+                if published:
+                    self.assertEqual(uploads[0]["draftId"], int(inputs["draft-id"]))
+                    self.assertEqual(uploads[0]["lastTag"], inputs["last-tag"])
                 self.assertEqual(result is None, expected == "failed")
                 if scenario in state_faults:
                     self.assertEqual(uploads[0], {"schema": "hexalith.release-outcome.v1",

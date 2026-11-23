@@ -411,7 +411,9 @@ def finalize_release(git, api, values, *, refresh=workflows_match):
         "tag_name": "v" + values["version"], "target_commitish": values["sha"], "draft": False})
     validate_release(response, values, draft=False, body=values["body"])
     version_tag(api, values, required=True)
-    return outcome_document(values["sha"], "published", values["version"])
+    document = outcome_document(values["sha"], "published", values["version"])
+    document.update(draftId=positive(values["draft-id"]), lastTag=values["last-tag"])
+    return validate_outcome(document)
 
 
 def private_directory():
