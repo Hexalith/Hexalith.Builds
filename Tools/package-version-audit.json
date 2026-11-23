@@ -9,6 +9,7 @@
     "auditedAtUtc": "2026-11-22T18:32:10.8683918+00:00",
     "refreshedFamilies": [
       "hexalith-parties",
+      "hexalith-polymorphicserializations",
       "hexalith-tenants"
     ],
     "preservedFamilies": [
@@ -31,7 +32,6 @@
       "hexalith-mcpcli",
       "hexalith-memories",
       "hexalith-netaspire",
-      "hexalith-polymorphicserializations",
       "hexalith-projects",
       "hexalith-security",
       "hexalith-works",
