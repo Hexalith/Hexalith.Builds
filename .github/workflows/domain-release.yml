@@ -210,9 +210,24 @@ on:
         default: ''
       release-mode:
         description: >-
-          Opt into split-publication-v1. Leave this empty to keep the caller's current
-          legacy or governed-release contract. This package-only mode is default-off
-          and cannot be combined with governed-release or publish-containers.
+          Select split-publication-v1 or attest-published-oci-v1. Leave empty for
+          the standard or governed release. The two modes cannot be combined
+          with governed-release or publish-containers.
+        required: false
+        type: string
+        default: ''
+      published-oci-version:
+        description: 'Version emitted by the protected caller publication job in attest-published-oci-v1 mode.'
+        required: false
+        type: string
+        default: ''
+      published-oci-subjects:
+        description: 'Checksum rows emitted by the approved caller OCI publisher in attest-published-oci-v1 mode.'
+        required: false
+        type: string
+        default: ''
+      published-oci-evidence-id:
+        description: 'Artifact ID emitted by the caller upload in the same run and attempt in attest-published-oci-v1 mode.'
         required: false
         type: string
         default: ''
@@ -1344,8 +1359,11 @@ jobs:
     needs: [release, governed-release]
     # Sign completed image publication even if a later release step failed.
     if: >-
-      ${{ !cancelled() && inputs.publish-containers &&
-        (needs.release.outputs.oci-release-version != '' || needs.governed-release.outputs.oci-release-version != '') }}
+      ${{ !cancelled() &&
+        ((inputs.release-mode == '' && inputs.publish-containers &&
+          (needs.release.outputs.oci-release-version != '' || needs.governed-release.outputs.oci-release-version != '')) ||
+         (inputs.release-mode == 'attest-published-oci-v1' && !inputs.publish-containers && !inputs.governed-release &&
+          !inputs.nuget-trusted-publishing && inputs.source-proof-script == '')) }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:
@@ -1357,8 +1375,10 @@ jobs:
       RELEASE_SOURCE_SHA: ${{ inputs.governed-release && inputs.release-commit || github.sha }}
       CONTAINER_PROJECTS: ${{ inputs.container-projects }}
       REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
-      OCI_RELEASE_VERSION: ${{ needs.release.outputs.oci-release-version || needs.governed-release.outputs.oci-release-version }}
-      OCI_EVIDENCE_ID: ${{ needs.release.outputs.oci-evidence-id || needs.governed-release.outputs.oci-evidence-id }}
+      OCI_CALLER_PUBLICATION: ${{ inputs.release-mode == 'attest-published-oci-v1' }}
+      RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}
+      OCI_RELEASE_VERSION: ${{ needs.release.outputs.oci-release-version || needs.governed-release.outputs.oci-release-version || (inputs.release-mode == 'attest-published-oci-v1' && inputs.published-oci-version) }}
+      OCI_EVIDENCE_ID: ${{ needs.release.outputs.oci-evidence-id || needs.governed-release.outputs.oci-evidence-id || (inputs.release-mode == 'attest-published-oci-v1' && inputs.published-oci-evidence-id) }}
       OCI_EVIDENCE: .hexalith/oci-provenance
     steps:
       - name: Checkout approved Builds attestation verifier
@@ -1376,6 +1396,7 @@ jobs:
             exit 1
           fi
       - name: Download exact OCI publication evidence
+        # With no repository, run-id, or token override, the download is scoped to this workflow run.
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           artifact-ids: ${{ env.OCI_EVIDENCE_ID }}
@@ -1385,7 +1406,7 @@ jobs:
         shell: bash
         env:
           BUILDS_WORKFLOW_REF: ${{ job.workflow_ref }}
-          OCI_SUBJECTS: ${{ needs.release.outputs.oci-subjects || needs.governed-release.outputs.oci-subjects }}
+          OCI_SUBJECTS: ${{ needs.release.outputs.oci-subjects || needs.governed-release.outputs.oci-subjects || (inputs.release-mode == 'attest-published-oci-v1' && inputs.published-oci-subjects) }}
         run: |
           checksums="$(mktemp "$RUNNER_TEMP/oci-subjects.XXXXXX")"
           python3 -B Github/publish-containers/oci_attestation.py prepare "$checksums" "$OCI_EVIDENCE" "$OCI_RELEASE_VERSION"
@@ -1406,7 +1427,7 @@ jobs:
 
   reject-release-mode:
     if: >-
-      ${{ (inputs.release-mode != '' && (inputs.release-mode != 'split-publication-v1' || inputs.governed-release || inputs.publish-containers)) ||
+      ${{ (inputs.release-mode != '' && ((inputs.release-mode != 'split-publication-v1' && inputs.release-mode != 'attest-published-oci-v1') || inputs.governed-release || inputs.publish-containers)) ||
         ((inputs.release-mode != '' || inputs.governed-release) && (inputs.nuget-trusted-publishing || inputs.source-proof-script != '')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1416,7 +1437,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Invalid release configuration. Trusted Publishing and source-proof-script require the standard release job. Split publication supports packages only and cannot be combined with governed-release." >&2
+          echo 'Invalid release configuration. Split publication and OCI attestation are separate from the standard and governed publishers.' >&2
           exit 1
 
   build-publication-candidate:

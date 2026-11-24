@@ -75,12 +75,27 @@ publication job references the protected environment named by
 passed credentials until environment protection passes. The environment does
 not need duplicate credential values.
 
-For NuGet Trusted Publishing, set `nuget-trusted-publishing: true`, grant the
-calling job `id-token: write`, and set `NUGET_TRUSTED_PUBLISHING_USER` to the
-NuGet.org user who created the policy for the caller repository, workflow, and
-protected environment. The standard job runs `NuGet/login` after source and
-publication checks and passes the temporary key only to Semantic Release as
-`NUGET_TRUSTED_PUBLISHING_KEY`. The caller's publishing hook reads that variable.
+NuGet Trusted Publishing binds `job_workflow_ref` to the repository and workflow
+in the policy. A cross-repository call must exchange the credential and publish
+in the caller's protected job. Use `attest-published-oci-v1` to retain the
+Builds signer for the caller's OCI indexes.
+
+## Attest caller-published OCI indexes
+
+Set `release-mode: attest-published-oci-v1` in a job that depends on the
+successful caller publication job. On protected `main`, the caller publishes
+with `Github/publish-containers` from the same full Builds SHA. Pass
+`container-projects` and the publisher's version, checksum rows, and upload
+artifact ID as `published-oci-version`, `published-oci-subjects`, and
+`published-oci-evidence-id`. Grant the calling job `id-token: write` and
+`attestations: write`. Omit the NuGet and registry secrets from this call.
+
+Builds downloads the artifact from the same workflow run. It checks the
+frozen publication identity and container preflight against the source,
+workflow, run attempt, environment, image inventory, and Builds pin. It then
+signs the exact validated OCI index digests and verifies the resulting
+certificate. This mode leaves package and image publication in the caller's
+approved publishing job.
 
 The workflow also uses the caller repository `GITHUB_TOKEN` for semantic-release
 GitHub operations. Container publishing uses the organization variable

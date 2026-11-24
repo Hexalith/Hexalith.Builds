@@ -13,6 +13,7 @@ import sys
 from oci_registry_validator import (
     OCI_INDEX_MEDIA_TYPE, REGISTRY_PATTERN, TAG_PATTERN, workspace_input_file, workspace_read_bytes,
 )
+from publication_preflight import PREFLIGHT_SCHEMA
 
 
 ISSUER = "https://token.actions.githubusercontent.com"
@@ -93,6 +94,47 @@ def release_subjects(checksums, projects, registry):
     return subjects
 
 
+def verify_caller_publication(directory, version, subjects, env):
+    """Require the protected caller's frozen publication and final preflight from this run."""
+    preflight = directory / version / "preflight"
+    frozen_bytes = workspace_read_bytes(workspace_input_file(str(preflight / "publication-identity.json")))
+    identity = json.loads(frozen_bytes)
+    receipt = json.loads(workspace_read_bytes(workspace_input_file(str(preflight / "publication-preflight.container.json"))))
+    expected = {
+        "schema": PREFLIGHT_SCHEMA,
+        "repository": env["GITHUB_REPOSITORY"],
+        "version": version,
+        "source_sha": env["GITHUB_SHA"],
+        "environment": env.get("RELEASE_ENVIRONMENT"),
+        "container_repositories": sorted(subjects),
+    }
+    if not expected["environment"] or not isinstance(identity, dict) or any(
+        identity.get(key) != value for key, value in expected.items()
+    ):
+        raise ValueError("OCI publication identity does not match the caller release.")
+    run = identity.get("run")
+    expected_run = {
+        "id": env.get("GITHUB_RUN_ID"),
+        "attempt": env.get("GITHUB_RUN_ATTEMPT"),
+        "event": env.get("GITHUB_EVENT_NAME"),
+        "workflow_ref": env["GITHUB_WORKFLOW_REF"],
+        "workflow_sha": env["GITHUB_SHA"],
+    }
+    if not isinstance(run, dict) or any(not value or run.get(key) != value for key, value in expected_run.items()):
+        raise ValueError("OCI publication evidence must come from this caller run and attempt.")
+    builds = identity.get("builds")
+    if not isinstance(builds, dict) or any(builds.get(key) != env["BUILDS_SHA"] for key in ("action_sha", "workflow_sha")):
+        raise ValueError("OCI publication used a different Builds pin.")
+    if not isinstance(receipt, dict) or any(receipt.get(key) != value for key, value in {
+        "schema": PREFLIGHT_SCHEMA,
+        "result": "pass",
+        "phase": "container",
+        "identity": identity,
+        "identity_sha256": hashlib.sha256(frozen_bytes).hexdigest(),
+    }.items()):
+        raise ValueError("OCI container preflight does not bind the frozen publication identity.")
+
+
 def verify_subject(name, digest, repository, certificate, bundle, index, run=subprocess.run):
     """Check the certificate and the named digest in the same verified statement."""
     reference = f"{name}@sha256:{digest}"
@@ -150,6 +192,8 @@ def main():
         subjects = release_subjects(checksums, os.environ["CONTAINER_PROJECTS"], os.environ["REGISTRY"])
         if not TAG_PATTERN.fullmatch(args.version):
             raise ValueError("Invalid OCI provenance release version.")
+        if args.mode == "prepare" and os.environ.get("OCI_CALLER_PUBLICATION") == "true":
+            verify_caller_publication(args.evidence, args.version, subjects, os.environ)
         if args.mode == "verify" and (
             not re.fullmatch(r"[1-9][0-9]*", args.attestation_id)
             or not args.bundle.is_file()

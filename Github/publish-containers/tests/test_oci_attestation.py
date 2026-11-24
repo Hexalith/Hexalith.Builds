@@ -12,8 +12,8 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from oci_attestation import (  # noqa: E402
-    BUILDS_WORKFLOW, OCI_INDEX_MEDIA_TYPE, expected_certificate, main, release_subjects,
-    subject_row, verify_subject,
+    BUILDS_WORKFLOW, OCI_INDEX_MEDIA_TYPE, PREFLIGHT_SCHEMA, expected_certificate, main, release_subjects,
+    subject_row, verify_caller_publication, verify_subject,
 )
 
 
@@ -139,6 +139,43 @@ class OciAttestationTests(unittest.TestCase):
         }.items():
             with self.subTest(key=key), self.assertRaises(ValueError):
                 expected_certificate({**SOURCE_ENV, key: value})
+
+    def test_caller_publication_requires_the_same_run_and_frozen_identity(self):
+        version = "1.2.3"
+        env = {**SOURCE_ENV, "RELEASE_ENVIRONMENT": "production", "GITHUB_RUN_ID": "42",
+               "GITHUB_RUN_ATTEMPT": "2", "GITHUB_EVENT_NAME": "workflow_dispatch"}
+        run = {"id": "42", "attempt": "2", "event": "workflow_dispatch",
+               "workflow_ref": env["GITHUB_WORKFLOW_REF"], "workflow_sha": SOURCE_SHA}
+        builds = {"action_sha": BUILDS_SHA, "workflow_sha": BUILDS_SHA}
+        identity = {"schema": PREFLIGHT_SCHEMA, "repository": REPOSITORY, "version": version,
+                    "source_sha": SOURCE_SHA, "environment": "production", "container_repositories": [IMAGE],
+                    "run": run, "builds": builds}
+        with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
+            path = Path(directory)
+            preflight = path / version / "preflight"
+            preflight.mkdir(parents=True)
+            frozen = preflight / "publication-identity.json"
+            receipt = preflight / "publication-preflight.container.json"
+            candidates = (
+                (identity, "", None),
+                ({**identity, "run": {**run, "attempt": "1"}}, "run and attempt", None),
+                ({**identity, "source_sha": "c" * 40}, "match the caller release", None),
+                ({**identity, "environment": "staging"}, "match the caller release", None),
+                ({**identity, "container_repositories": [OTHER_IMAGE]}, "match the caller release", None),
+                ({**identity, "builds": {**builds, "action_sha": "c" * 40}}, "different Builds pin", None),
+                (identity, "bind the frozen publication identity", "d" * 64),
+            )
+            for observed, error, sha in candidates:
+                with self.subTest(error=error, identity=observed):
+                    frozen.write_text(json.dumps(observed))
+                    receipt.write_text(json.dumps({"schema": PREFLIGHT_SCHEMA, "result": "pass", "phase": "container",
+                                                   "identity": observed,
+                                                   "identity_sha256": sha or hashlib.sha256(frozen.read_bytes()).hexdigest()}))
+                    if error:
+                        with self.assertRaisesRegex(ValueError, error):
+                            verify_caller_publication(path, version, {IMAGE: DIGEST}, env)
+                    else:
+                        verify_caller_publication(path, version, {IMAGE: DIGEST}, env)
 
     def verify(self, *entries, status=0):
         run = Mock(return_value=subprocess.CompletedProcess([], status, json.dumps(entries).encode(), b""))
