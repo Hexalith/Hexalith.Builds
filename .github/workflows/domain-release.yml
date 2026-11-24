@@ -201,8 +201,8 @@ on:
       release-mode:
         description: >-
           Opt into split-publication-v1. Leave this empty to keep the caller's current
-          legacy or governed-release contract. The mode is default-off and cannot be
-          combined with governed-release.
+          legacy or governed-release contract. This package-only mode is default-off
+          and cannot be combined with governed-release or publish-containers.
         required: false
         type: string
         default: ''
@@ -328,8 +328,9 @@ jobs:
       issues: write
       pull-requests: write
     outputs:
-      oci-published: ${{ steps.semantic-release.outputs.oci-published }}
+      oci-release-version: ${{ steps.semantic-release.outputs.oci-release-version }}
       oci-subjects: ${{ steps.semantic-release.outputs.oci-subjects }}
+      oci-evidence-id: ${{ steps.release-evidence.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -560,14 +561,15 @@ jobs:
           HEXALITH_RELEASE_AUTHORITY_ISSUE_URL: ${{ inputs.release-authority-issue-url }}
           HEXALITH_RELEASE_AUTHORITY_OWNER: ${{ inputs.release-authority-owner }}
           HEXALITH_RELEASE_REQUIRE_AUTHORITY: ${{ inputs.require-publication-authority }}
-        run: npm exec --no -- semantic-release
+        run: bash .hexalith/builds-execution/Github/publish-containers/run-semantic-release.sh
       - name: Upload complete release evidence
+        id: release-evidence
         if: ${{ always() && inputs.publish-containers }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: .hexalith/release-evidence/**
-          if-no-files-found: warn
+          if-no-files-found: ${{ steps.semantic-release.outputs.oci-release-version != '' && 'error' || 'warn' }}
           include-hidden-files: true
           retention-days: 30
 
@@ -596,8 +598,9 @@ jobs:
       release-version: ${{ steps.governed-candidate.outputs.version }}
       verification-data-path: ${{ steps.governed-verification-data.outputs.path }}
       publish-enabled: ${{ steps.publish-gate.outputs.publish-enabled }}
-      oci-published: ${{ steps.semantic-release.outputs.oci-published }}
+      oci-release-version: ${{ steps.semantic-release.outputs.oci-release-version }}
       oci-subjects: ${{ steps.semantic-release.outputs.oci-subjects }}
+      oci-evidence-id: ${{ steps.release-evidence.outputs.artifact-id }}
     steps:
       # The freeze gate is the first thing the governed job does. A frozen module must not
       # be told its signing secrets are missing, and must not pay for a build whose only
@@ -1139,7 +1142,7 @@ jobs:
           HEXALITH_RELEASE_POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
           HEXALITH_RELEASE_POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
           HEXALITH_RELEASE_EVALUATOR_DIGEST: ${{ inputs.expected-release-evaluator-digest }}
-        run: npm exec --no -- semantic-release
+        run: bash .hexalith/builds-execution/Github/publish-containers/run-semantic-release.sh
       - name: Collect governed release verification data
         id: governed-verification-data
         if: ${{ always() }}
@@ -1280,22 +1283,22 @@ jobs:
           include-hidden-files: true
           retention-days: 30
       - name: Upload complete release evidence
+        id: release-evidence
         if: ${{ always() && inputs.publish-containers }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: .hexalith/release-evidence/**
-          if-no-files-found: warn
+          if-no-files-found: ${{ steps.semantic-release.outputs.oci-release-version != '' && 'error' || 'warn' }}
           include-hidden-files: true
           retention-days: 30
 
   attest-container-release:
     needs: [release, governed-release]
-    # Only one publisher can run. Its skipped sibling must not suppress provenance.
+    # Sign completed image publication even if a later release step failed.
     if: >-
       ${{ !cancelled() && inputs.publish-containers &&
-        ((needs.release.result == 'success' && needs.release.outputs.oci-published == 'true') ||
-         (needs.governed-release.result == 'success' && needs.governed-release.outputs.oci-published == 'true')) }}
+        (needs.release.outputs.oci-release-version != '' || needs.governed-release.outputs.oci-release-version != '') }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:
@@ -1307,6 +1310,9 @@ jobs:
       RELEASE_SOURCE_SHA: ${{ inputs.governed-release && inputs.release-commit || github.sha }}
       CONTAINER_PROJECTS: ${{ inputs.container-projects }}
       REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
+      OCI_RELEASE_VERSION: ${{ needs.release.outputs.oci-release-version || needs.governed-release.outputs.oci-release-version }}
+      OCI_EVIDENCE_ID: ${{ needs.release.outputs.oci-evidence-id || needs.governed-release.outputs.oci-evidence-id }}
+      OCI_EVIDENCE: .hexalith/oci-provenance
     steps:
       - name: Checkout approved Builds attestation verifier
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1315,6 +1321,18 @@ jobs:
           ref: ${{ inputs.builds-execution-sha }}
           persist-credentials: false
           submodules: false
+      - name: Require OCI publication evidence
+        shell: bash
+        run: |
+          if [[ ! "$OCI_EVIDENCE_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo 'The OCI publisher did not upload its validation evidence.' >&2
+            exit 1
+          fi
+      - name: Download exact OCI publication evidence
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ env.OCI_EVIDENCE_ID }}
+          path: ${{ env.OCI_EVIDENCE }}
       - name: Prepare exact OCI index subjects
         id: subjects
         shell: bash
@@ -1323,7 +1341,7 @@ jobs:
           OCI_SUBJECTS: ${{ needs.release.outputs.oci-subjects || needs.governed-release.outputs.oci-subjects }}
         run: |
           checksums="$(mktemp "$RUNNER_TEMP/oci-subjects.XXXXXX")"
-          python3 -B Github/publish-containers/oci_attestation.py prepare "$checksums"
+          python3 -B Github/publish-containers/oci_attestation.py prepare "$checksums" "$OCI_EVIDENCE" "$OCI_RELEASE_VERSION"
           printf 'checksums=%s\n' "$checksums" >> "$GITHUB_OUTPUT"
       - name: Attest released OCI indexes
         id: attest
@@ -1337,10 +1355,10 @@ jobs:
           CHECKSUMS: ${{ steps.subjects.outputs.checksums }}
           BUNDLE: ${{ steps.attest.outputs.bundle-path }}
           ATTESTATION_ID: ${{ steps.attest.outputs.attestation-id }}
-        run: python3 -B Github/publish-containers/oci_attestation.py verify "$CHECKSUMS" "$BUNDLE" "$ATTESTATION_ID"
+        run: python3 -B Github/publish-containers/oci_attestation.py verify "$CHECKSUMS" "$OCI_EVIDENCE" "$OCI_RELEASE_VERSION" "$BUNDLE" "$ATTESTATION_ID"
 
   reject-release-mode:
-    if: ${{ inputs.release-mode != '' && (inputs.release-mode != 'split-publication-v1' || inputs.governed-release) }}
+    if: ${{ inputs.release-mode != '' && (inputs.release-mode != 'split-publication-v1' || inputs.governed-release || inputs.publish-containers) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
@@ -1349,11 +1367,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "release-mode must be empty or split-publication-v1, and split-publication-v1 cannot be combined with governed-release." >&2
+          echo "release-mode must be empty or split-publication-v1. Split publication supports packages only and cannot be combined with governed-release." >&2
           exit 1
 
   build-publication-candidate:
-    if: ${{ inputs.release-mode == 'split-publication-v1' && !inputs.governed-release }}
+    if: ${{ inputs.release-mode == 'split-publication-v1' && !inputs.governed-release && !inputs.publish-containers }}
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:
@@ -1965,7 +1983,7 @@ jobs:
     needs:
       - build-publication-candidate
       - publish-publication-candidate
-    if: ${{ always() && inputs.release-mode == 'split-publication-v1' && !inputs.governed-release }}
+    if: ${{ always() && inputs.release-mode == 'split-publication-v1' && !inputs.governed-release && !inputs.publish-containers }}
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:

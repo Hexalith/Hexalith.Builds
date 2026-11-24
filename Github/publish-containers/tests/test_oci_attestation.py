@@ -102,6 +102,30 @@ class OciAttestationTests(unittest.TestCase):
             with self.subTest(rows=rows), self.assertRaises(ValueError):
                 release_subjects(rows, PROJECTS, REGISTRY)
 
+    def test_prepare_requires_subjects_to_match_the_retained_release_evidence(self):
+        version = "1.2.3"
+        with tempfile.TemporaryDirectory() as directory, contextlib.chdir(directory):
+            root = Path(directory)
+            evidence = root / "evidence" / version / "module"
+            evidence.mkdir(parents=True)
+            (evidence / "index.raw").write_bytes(INDEX)
+            (evidence / "oci-validation.json").write_text(json.dumps({
+                "result": "pass", "image": f"{IMAGE}:{version}", "media_type": OCI_INDEX_MEDIA_TYPE,
+                "index_digest": f"sha256:{DIGEST}", "raw_index_sha256": DIGEST, "index_size": len(INDEX),
+            }))
+            checksums = root / "checksums.txt"
+            args = ["oci_attestation", "prepare", str(checksums), str(root / "evidence"), version]
+            env = {**SOURCE_ENV, "CONTAINER_PROJECTS": "src/Module.csproj|module", "REGISTRY": REGISTRY}
+            with patch.object(sys, "argv", args), patch.dict(os.environ, env):
+                err = io.StringIO()
+                with patch.dict(os.environ, {"OCI_SUBJECTS": f"{'a' * 64} *{IMAGE}"}), contextlib.redirect_stderr(err):
+                    self.assertEqual(main(), 1)
+                self.assertIn("does not match the attested OCI subject", err.getvalue())
+                self.assertFalse(checksums.exists())
+                with patch.dict(os.environ, {"OCI_SUBJECTS": f"{DIGEST} *{IMAGE}"}):
+                    self.assertEqual(main(), 0)
+            self.assertEqual(checksums.read_text(), f"{DIGEST} *{IMAGE}\n")
+
     def test_only_protected_exact_source_and_full_signer_pin_are_accepted(self):
         self.assertEqual(expected_certificate(SOURCE_ENV), CERTIFICATE)
         for key, value in {
@@ -118,9 +142,9 @@ class OciAttestationTests(unittest.TestCase):
 
     def verify(self, *entries, status=0):
         run = Mock(return_value=subprocess.CompletedProcess([], status, json.dumps(entries).encode(), b""))
-        verify_subject(IMAGE, DIGEST, REPOSITORY, CERTIFICATE, Path("bundle.json"), run)
+        verify_subject(IMAGE, DIGEST, REPOSITORY, CERTIFICATE, Path("bundle.json"), Path("index.raw"), run)
         command = run.call_args.args[0]
-        self.assertEqual(command[:4], ["gh", "attestation", "verify", f"oci://{IMAGE}@sha256:{DIGEST}"])
+        self.assertEqual(command[:4], ["gh", "attestation", "verify", "index.raw"])
         self.assertEqual(command[command.index("--bundle") + 1], "bundle.json")
         self.assertEqual(command[command.index("--repo") + 1], REPOSITORY)
 
@@ -153,7 +177,8 @@ class OciAttestationTests(unittest.TestCase):
                     patch("oci_attestation.verify_subject") as verify:
                 for argument, attestation_id in fixtures:
                     err = io.StringIO()
-                    with patch.object(sys, "argv", ["oci_attestation", "verify", str(checksums), str(argument), attestation_id]), \
+                    argv = ["oci_attestation", "verify", str(checksums), str(path), "1.2.3", str(argument), attestation_id]
+                    with patch.object(sys, "argv", argv), \
                             contextlib.redirect_stderr(err):
                         self.assertEqual(main(), 1)
                     self.assertIn("did not return an uploaded OCI attestation", err.getvalue())

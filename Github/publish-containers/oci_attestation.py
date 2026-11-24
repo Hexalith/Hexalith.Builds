@@ -10,7 +10,9 @@ import re
 import subprocess  # nosec B404 -- invokes the GitHub CLI with fixed options.
 import sys
 
-from oci_registry_validator import OCI_INDEX_MEDIA_TYPE, REGISTRY_PATTERN, workspace_read_bytes
+from oci_registry_validator import (
+    OCI_INDEX_MEDIA_TYPE, REGISTRY_PATTERN, TAG_PATTERN, workspace_input_file, workspace_read_bytes,
+)
 
 
 ISSUER = "https://token.actions.githubusercontent.com"
@@ -23,8 +25,10 @@ COMMIT = r"[0-9a-f]{40}"
 
 def subject_row(evidence_directory, image):
     """Bind a checksum row to the validated index bytes and release image name."""
-    evidence = json.loads(workspace_read_bytes(evidence_directory / "oci-validation.json"))
-    index = workspace_read_bytes(evidence_directory / "index.raw")
+    record = workspace_input_file(str(evidence_directory / "oci-validation.json"))
+    raw = workspace_input_file(str(evidence_directory / "index.raw"))
+    evidence = json.loads(workspace_read_bytes(record))
+    index = workspace_read_bytes(raw)
     digest = hashlib.sha256(index).hexdigest()
     if not isinstance(evidence, dict) or any(evidence.get(key) != value for key, value in {
         "image": image,
@@ -72,9 +76,11 @@ def release_subjects(checksums, projects, registry):
     """Require one tag-free, exact SHA-256 subject for every declared image."""
     if REGISTRY_PATTERN.fullmatch(registry) is None:
         raise ValueError("Invalid OCI release registry.")
-    mappings = [line.strip().split("|") for line in projects.splitlines() if line.strip()]
-    names = {f"{registry}/{mapping[-1].strip()}" for mapping in mappings}
-    if not names or len(mappings) != len(names) or any(len(mapping) != 2 for mapping in mappings):
+    mappings = [line.strip().split("|", 2) for line in projects.splitlines() if line.strip()]
+    if any(len(mapping) < 2 or any(part.strip() for part in mapping[2:]) for mapping in mappings):
+        raise ValueError("Invalid OCI release image mappings.")
+    names = {f"{registry}/{mapping[1].strip()}" for mapping in mappings}
+    if not names or len(mappings) != len(names):
         raise ValueError("Invalid OCI release image mappings.")
     subjects = {}
     for row in checksums.splitlines():
@@ -87,11 +93,11 @@ def release_subjects(checksums, projects, registry):
     return subjects
 
 
-def verify_subject(name, digest, repository, certificate, bundle, run=subprocess.run):
+def verify_subject(name, digest, repository, certificate, bundle, index, run=subprocess.run):
     """Check the certificate and the named digest in the same verified statement."""
     reference = f"{name}@sha256:{digest}"
     command = [
-        "gh", "attestation", "verify", f"oci://{reference}", "--hostname", "github.com",
+        "gh", "attestation", "verify", str(index), "--hostname", "github.com",
         "--repo", repository, "--bundle", str(bundle), "--predicate-type", PROVENANCE,
         "--cert-oidc-issuer", ISSUER, "--cert-identity-regex", r"^https://github[.]com/",
         "--format", "json",
@@ -125,9 +131,11 @@ def main():
     subject.add_argument("image")
     modes.add_parser("check-source")
     prepare = modes.add_parser("prepare")
-    prepare.add_argument("checksums", type=Path)
     verify = modes.add_parser("verify")
-    verify.add_argument("checksums", type=Path)
+    for mode in (prepare, verify):
+        mode.add_argument("checksums", type=Path)
+        mode.add_argument("evidence", type=Path)
+        mode.add_argument("version")
     verify.add_argument("bundle", type=Path)
     verify.add_argument("attestation_id")
     args = parser.parse_args()
@@ -138,17 +146,26 @@ def main():
         certificate = expected_certificate(os.environ)
         if args.mode == "check-source":
             return 0
-        checksums = os.environ["OCI_SUBJECTS"] if args.mode == "prepare" else args.checksums.read_text()
+        checksums = os.environ["OCI_SUBJECTS"] if args.mode == "prepare" else args.checksums.read_text(encoding="utf-8")
         subjects = release_subjects(checksums, os.environ["CONTAINER_PROJECTS"], os.environ["REGISTRY"])
-        if args.mode == "prepare":
-            args.checksums.write_text("".join(f"{digest} *{name}\n" for name, digest in subjects.items()))
-            return 0
-        if not re.fullmatch(r"[1-9][0-9]*", args.attestation_id) or not args.bundle.is_file() or not args.bundle.stat().st_size:
+        if not TAG_PATTERN.fullmatch(args.version):
+            raise ValueError("Invalid OCI provenance release version.")
+        if args.mode == "verify" and (
+            not re.fullmatch(r"[1-9][0-9]*", args.attestation_id)
+            or not args.bundle.is_file()
+            or not args.bundle.stat().st_size
+        ):
             raise ValueError("GitHub did not return an uploaded OCI attestation and a nonempty bundle.")
         for name, digest in subjects.items():
-            verify_subject(name, digest, os.environ["GITHUB_REPOSITORY"], certificate, args.bundle)
-            print(f"Verified OCI build provenance for {name}@sha256:{digest}.")
-    except (KeyError, OSError, ValueError, subprocess.TimeoutExpired) as error:
+            directory = args.evidence / args.version / name.split("/", 1)[1]
+            if subject_row(directory, f"{name}:{args.version}") != f"{digest} *{name}":
+                raise ValueError(f"Publication evidence does not match the attested OCI subject {name}.")
+            if args.mode == "verify":
+                verify_subject(name, digest, os.environ["GITHUB_REPOSITORY"], certificate, args.bundle, directory / "index.raw")
+                print(f"Verified OCI build provenance for {name}@sha256:{digest}.")
+        if args.mode == "prepare":
+            args.checksums.write_text("".join(f"{digest} *{name}\n" for name, digest in subjects.items()), encoding="utf-8")
+    except (argparse.ArgumentTypeError, KeyError, OSError, ValueError, subprocess.TimeoutExpired) as error:
         print(f"OCI build provenance failed: {error}", file=sys.stderr)
         return 1
     return 0

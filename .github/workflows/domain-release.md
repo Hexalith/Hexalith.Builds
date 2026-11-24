@@ -258,19 +258,19 @@ full Builds commit. The source must be the calling repository's protected
 `refs/heads/main` at the release commit. The governed publisher also checks
 that its explicit candidate commit equals the workflow run's source SHA.
 
-After Semantic Release publishes and validates the release, the GitHub-hosted
-attestation job signs each declared image repository and SHA-256 of the exact
-validated OCI index bytes. It verifies the uploaded action's bundle against each
-digest-addressed image and requires the caller repository, caller workflow,
-protected ref, source commit and SHA-pinned Builds signer in the same verified
-statement. The runner needs read access to the digest in the configured registry.
+After the publisher validates the release, the GitHub-hosted attestation job
+rechecks the retained raw OCI indexes and signs each declared image repository
+with its exact SHA-256 digest. It verifies the bundle against those same bytes
+and requires the caller repository, caller workflow, protected ref, source
+commit and SHA-pinned Builds signer in the same verified statement.
 GitHub stores the provenance in the calling module repository, where Platform's
 intake verifier looks it up. The pinned Platform contract documents the fields
 to record and the `admit` command.
 [Module intake v1](https://github.com/Hexalith/Hexalith.Platform/blob/21e3718a7d4a6436d9293f10e9c74b2cc6baa5eb/docs/contracts/module-intake-v1.md)
 
 A frozen release or a Semantic Release run with no new version produces no OCI
-provenance. If attestation creation or verification fails, the workflow fails.
+provenance. A new release without a validated OCI publication receipt fails the
+workflow, as do attestation creation and verification errors.
 NuGet packages and images already pushed remain published, and Platform requires
 a valid attestation before admission.
 
@@ -418,10 +418,10 @@ was granted.
 
 ## Split publication mode (`split-publication-v1`)
 
-`release-mode: split-publication-v1` selects the AD-19 successor. Leave
-`release-mode` empty to keep the legacy `release` job or the existing
-`governed-release` job exactly. The mode is default-off, and combining it with
-`governed-release: true` fails the run.
+`release-mode: split-publication-v1` selects the package-only AD-19 successor.
+Leave `release-mode` empty to select the legacy `release` or `governed-release`
+job. Combining split publication with `governed-release: true` or
+`publish-containers: true` fails the run.
 
 The reusable defines both roles directly:
 

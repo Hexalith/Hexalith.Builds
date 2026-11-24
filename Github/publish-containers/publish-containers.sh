@@ -238,6 +238,6 @@ if [[ "$attest_containers" = "true" ]]; then
     printf 'oci-subjects<<EOF\n'
     printf '%s\n' "${subjects[@]}"
     printf 'EOF\n'
-    printf 'oci-published=true\n'
+    printf 'oci-release-version=%s\n' "$version"
   } >> "$GITHUB_OUTPUT"
 fi

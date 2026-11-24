@@ -35,6 +35,7 @@ AUTHORITY_CONSUMPTION_SCHEMA = "hexalith.release-publication-authority-consumpti
 REQUIRED_PLATFORMS = ["linux/amd64", "linux/arm64"]
 REQUIRED_CONTRACT_FILES = (
     "publish-containers.sh",
+    "oci_attestation.py",
     "oci_registry_validator.py",
     "publication_preflight.py",
     "smoke-container-platforms.sh",

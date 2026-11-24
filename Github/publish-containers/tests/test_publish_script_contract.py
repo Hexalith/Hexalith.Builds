@@ -11,6 +11,7 @@ from pathlib import Path
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
 PUBLISHER = SCRIPT_DIRECTORY / "publish-containers.sh"
+RELEASE = SCRIPT_DIRECTORY / "run-semantic-release.sh"
 ACTION = SCRIPT_DIRECTORY / "action.yml"
 DOMAIN_RELEASE = SCRIPT_DIRECTORY.parents[1] / ".github" / "workflows" / "domain-release.yml"
 RUNTIME_IDENTIFIERS = "linux-musl-x64;linux-musl-arm64"
@@ -221,6 +222,32 @@ digest = hashlib.sha256(index).hexdigest()
 
 
 class PublishScriptContractTests(unittest.TestCase):
+    def test_semantic_release_requires_matching_oci_receipt_only_for_a_new_release(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            dependency = root / "node_modules" / "semantic-release"
+            dependency.mkdir(parents=True)
+            (dependency / "package.json").write_text('{"type":"module","main":"index.js"}')
+            (dependency / "index.js").write_text('''export default async function () {
+  return JSON.parse(process.env.FIXTURE_RELEASE);
+}
+''')
+            output = root / "output"
+            for release, receipt, expected in (
+                (False, "", 0),
+                ({"nextRelease": {"version": "1.2.3"}}, "oci-release-version=1.2.3\n", 0),
+                ({"nextRelease": {"version": "1.2.3"}}, "oci-release-version=1.2.2\n", 1),
+                ({"nextRelease": {"version": "1.2.3"}}, "", 1),
+            ):
+                with self.subTest(release=release, receipt=receipt):
+                    output.write_text(receipt)
+                    result = subprocess.run(  # nosec B603 -- executes the repository-owned release wrapper.
+                        ["bash", str(RELEASE)], cwd=root, capture_output=True, text=True, check=False,
+                        env={**os.environ, "GITHUB_OUTPUT": str(output), "HEXALITH_ATTEST_CONTAINERS": "true",
+                             "FIXTURE_RELEASE": json.dumps(release)},
+                    )
+                    self.assertEqual(result.returncode, expected, result.stderr)
+
     def test_publisher_exports_only_the_validated_index_after_smoke_passes(self):
         for status in (0, 1):
             with self.subTest(smoke_status=status):
@@ -237,7 +264,7 @@ class PublishScriptContractTests(unittest.TestCase):
                         digest = hashlib.sha256(raw.read_bytes()).hexdigest()
                         self.assertEqual(output.read_text(), (
                             f"oci-subjects<<EOF\n{digest} *registry.example.test/eventstore\nEOF\n"
-                            "oci-published=true\n"
+                            "oci-release-version=3.76.1\n"
                         ))
                 finally:
                     shutil.rmtree(root)
