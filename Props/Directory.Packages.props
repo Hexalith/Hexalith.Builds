@@ -28,10 +28,10 @@
     <HexalithCatalogEventStoreVersion Condition="'$(_HexalithSelectCatalogEventStore)' == 'true'">$(HexalithEventStoreVersion)</HexalithCatalogEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.0.1</HexalithFrontComposerVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.1.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.0.1</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">3.0.0</HexalithMcpCliVersion>
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.0</HexalithMemoriesVersion>
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.1</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.0.4</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">4.0.1</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">4.0.1</HexalithPartiesAspireVersion>
@@ -271,7 +271,7 @@
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.6" />
     <!-- FrontComposer bunit transitive floor pulls the vulnerable 1.4.0; pin the GHSA-pgww-w46g-26qg fix. -->
     <!-- bunit 2.15.2 implements AngleSharp 1.10 BeforeToggle; keep the latest 1.10 patch with that release. -->
-    <PackageVersion Include="AngleSharp" Version="1.10.4" />
+    <PackageVersion Include="AngleSharp" Version="1.10.5" />
     <!-- OAuth and ASP.NET Core packages align with the .NET 11 host. -->
     <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="11.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="11.0.0" />
@@ -320,13 +320,13 @@
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
     <PackageVersion Include="Azure.ResourceManager" Version="1.14.0" />
-    <PackageVersion Include="Azure.ResourceManager.CognitiveServices" Version="1.6.0" />
+    <PackageVersion Include="Azure.ResourceManager.CognitiveServices" Version="1.7.0" />
     <PackageVersion Include="Azure.ResourceManager.ContainerRegistry" Version="1.4.0" />
     <PackageVersion Include="Azure.ResourceManager.KeyVault" Version="1.5.0" />
     <PackageVersion Include="Azure.ResourceManager.Logic" Version="1.2.0" />
     <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.10.2" />
     <PackageVersion Include="Azure.Security.KeyVault.Secrets" Version="4.12.0" />
-    <PackageVersion Include="Azure.Storage.Blobs" Version="12.30.1" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.30.2" />
     <!-- FrontComposer Story 3-7 T2: benchmark harness for palette scoring. -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="ByteAether.Ulid" Version="1.4.2" />
@@ -360,7 +360,7 @@
     <PackageVersion Include="Grpc" Version="2.46.6" />
     <PackageVersion Include="Grpc.HealthCheck" Version="2.85.0" />
     <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.85.0" />
-    <PackageVersion Include="HotChocolate" Version="16.7.6" />
+    <PackageVersion Include="HotChocolate" Version="16.7.7" />
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
     <PackageVersion Include="JsonSchema.Net" Version="9.7.0" />
@@ -420,7 +420,7 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Identity.Stores" Version="11.0.0" />
     <!-- FrontComposer quickstart localization registration. -->
     <PackageVersion Include="Microsoft.Extensions.Localization" Version="11.0.0" />
@@ -429,14 +429,14 @@
     <PackageVersion Include="Microsoft.Extensions.Options" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Options.DataAnnotations" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="11.0.1" />
     <!-- Prefer the stable validation implementation over preview transitive dependencies. -->
     <PackageVersion Include="Microsoft.Extensions.Validation" Version="11.0.0" />
     <!-- FrontComposer Story 2-4: deterministic TimeProvider-based threshold tests. -->
-    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="11.0.1" />
     <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components" Version="5.1.0" />
     <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="5.1.0" />
-    <PackageVersion Include="Microsoft.Graph" Version="6.10.0" />
+    <PackageVersion Include="Microsoft.Graph" Version="6.11.1" />
     <PackageVersion Include="Microsoft.Identity.Client" Version="4.92.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Abstractions" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.23.0" />
@@ -448,7 +448,7 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <!-- ASP.NET Core OpenApi 11 and Swashbuckle 11 use OpenApi 3.x. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="$(HexalithOpenApiVersion)" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.65.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.65.1" />
     <!-- Existing Timesheets Works prerequisite; retain the published version. -->
     <PackageVersion Include="Hexalith.Works.Contracts" Version="1.0.2" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.82.0" />
@@ -490,7 +490,7 @@
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.1" />
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
-    <PackageVersion Include="Radzen.Blazor" Version="13.1.1" />
+    <PackageVersion Include="Radzen.Blazor" Version="13.2.1" />
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Scriban" Version="7.6.1" />
@@ -527,8 +527,8 @@
     <PackageVersion Include="Testcontainers" Version="4.17.0" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
     <!-- FrontComposer snapshot testing uses the xUnit v3 adapter, not Verify.Xunit. -->
-    <PackageVersion Include="Verify" Version="33.6.0" />
-    <PackageVersion Include="Verify.XunitV3" Version="33.6.0" />
+    <PackageVersion Include="Verify" Version="33.7.2" />
+    <PackageVersion Include="Verify.XunitV3" Version="33.7.2" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="bunit" Version="2.15.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
