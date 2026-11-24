@@ -39,6 +39,7 @@ runs:
         for file in \
           action.yml \
           publish-containers.sh \
+          oci_attestation.py \
           oci_registry_validator.py \
           publication_preflight.py \
           smoke-container-platforms.sh \
@@ -52,6 +53,7 @@ runs:
         done
         mkdir -p .hexalith/release
         cp "${GITHUB_ACTION_PATH}/publish-containers.sh" .hexalith/release/publish-containers.sh
+        cp "${GITHUB_ACTION_PATH}/oci_attestation.py" .hexalith/release/oci_attestation.py
         cp "${GITHUB_ACTION_PATH}/oci_registry_validator.py" .hexalith/release/oci_registry_validator.py
         cp "${GITHUB_ACTION_PATH}/publication_preflight.py" .hexalith/release/publication_preflight.py
         cp "${GITHUB_ACTION_PATH}/smoke-container-platforms.sh" .hexalith/release/smoke-container-platforms.sh

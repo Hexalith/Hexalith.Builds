@@ -19,7 +19,7 @@ Dapr-backed tests, and then runs semantic-release.
 | `node-version` | No | `24` | Node.js major line passed to `actions/setup-node`. Pinned to the Active LTS major that satisfies semantic-release 25 (`>=24.10.0`) and ships the npm major `package-lock.json` was built with; override to move ahead deliberately. |
 | `timeout-minutes` | No | `20` | Timeout for the release job. |
 | `environment-name` | No | `production` | Protected caller-repository environment that supplies human release approval. |
-| `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |
+| `publish-containers` | No | `false` | Whether to publish .NET SDK container images and attest their validated OCI indexes. |
 | `container-projects` | No | `''` | Newline-separated container mappings in `path/to/project.csproj|repository-name` format. Required when `publish-containers` is `true`. |
 | `builds-execution-sha` | Yes | - | Exact maintainer-approved Builds commit. It must equal the reusable workflow's full-SHA `uses` revision and is checked against nested action/helper bytes. |
 | `source-branch` | No | `main` | Compatibility input; only `main` is supported and revalidated at every publication boundary. |
@@ -135,9 +135,9 @@ fields rather than omitted.
 Setting `governed-release: true` selects a second job, `governed-release`, and
 disables the legacy `release` job. The two jobs are mutually exclusive by
 design: GitHub resolves job permissions statically, so `id-token: write` and
-`attestations: write` cannot be granted conditionally inside a single job
-without demanding them from every legacy caller. Only the governed job carries
-them.
+`attestations: write` cannot be granted conditionally inside a single job.
+The governed job uses them for its NuGet candidate attestation. A separate
+job uses them for OCI build provenance after either publisher.
 
 The governed job mirrors the legacy step sequence and adds:
 
@@ -250,6 +250,30 @@ governed execution context; callers still own their evidence logic.
     caller's publication preflight; always
     upload the complete hidden release-evidence directory afterward.
 
+## OCI build provenance
+
+For container releases, grant the reusable workflow call `id-token: write`
+and `attestations: write`. Pin `uses` and `builds-execution-sha` to the same
+full Builds commit. The source must be the calling repository's protected
+`refs/heads/main` at the release commit. The governed publisher also checks
+that its explicit candidate commit equals the workflow run's source SHA.
+
+After Semantic Release publishes and validates the release, the GitHub-hosted
+attestation job signs each declared image repository and SHA-256 of the exact
+validated OCI index bytes. It verifies the uploaded action's bundle against each
+digest-addressed image and requires the caller repository, caller workflow,
+protected ref, source commit and SHA-pinned Builds signer in the same verified
+statement. The runner needs read access to the digest in the configured registry.
+GitHub stores the provenance in the calling module repository, where Platform's
+intake verifier looks it up. The pinned Platform contract documents the fields
+to record and the `admit` command.
+[Module intake v1](https://github.com/Hexalith/Hexalith.Platform/blob/21e3718a7d4a6436d9293f10e9c74b2cc6baa5eb/docs/contracts/module-intake-v1.md)
+
+A frozen release or a Semantic Release run with no new version produces no OCI
+provenance. If attestation creation or verification fails, the workflow fails.
+NuGet packages and images already pushed remain published, and Platform requires
+a valid attestation before admission.
+
 The generated publish helper accepts the semantic-release version as its first
 argument. After environment approval, the caller's `verifyReleaseCmd` must
 re-prove exact current `main` and successful exact-SHA push CI, freeze exact
@@ -309,7 +333,9 @@ jobs:
     needs: verify-source
     permissions:
       actions: read
+      attestations: write
       contents: write
+      id-token: write
       issues: write
       pull-requests: write
     uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@0123456789abcdef0123456789abcdef01234567

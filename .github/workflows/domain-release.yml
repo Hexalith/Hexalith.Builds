@@ -59,7 +59,7 @@ on:
         type: string
         default: 'production'
       publish-containers:
-        description: 'Publish .NET SDK container images during semantic-release.'
+        description: 'Publish .NET SDK container images during semantic-release and attest their validated OCI indexes.'
         required: false
         type: boolean
         default: false
@@ -327,6 +327,9 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+    outputs:
+      oci-published: ${{ steps.semantic-release.outputs.oci-published }}
+      oci-subjects: ${{ steps.semantic-release.outputs.oci-subjects }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -529,12 +532,21 @@ jobs:
             echo "The release source became stale during setup. Redispatch Release from the new ${SOURCE_BRANCH} tip after exact-source CI succeeds." >&2
             exit 1
           fi
+      - name: Check OCI provenance source identity
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.publish-containers }}
+        env:
+          BUILDS_SHA: ${{ inputs.builds-execution-sha }}
+          BUILDS_WORKFLOW_REF: ${{ job.workflow_ref }}
+          RELEASE_SOURCE_SHA: ${{ github.sha }}
+        run: python3 -B .hexalith/builds-execution/Github/publish-containers/oci_attestation.py check-source
       - name: Semantic Release
+        id: semantic-release
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
+          HEXALITH_ATTEST_CONTAINERS: ${{ inputs.publish-containers }}
           HEXALITH_ZOT_REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
           HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}
           HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
@@ -560,7 +572,7 @@ jobs:
           retention-days: 30
 
   governed-release:
-    # BUILD-REL-1 governed contract. Only this job carries id-token/attestations, and it
+    # BUILD-REL-1 governed contract. Only this Semantic Release job carries id-token/attestations, and it
     # never starts for a caller that leaves governed-release unset.
     if: ${{ inputs.release-mode == '' && inputs.governed-release }}
     runs-on: ubuntu-latest
@@ -584,6 +596,8 @@ jobs:
       release-version: ${{ steps.governed-candidate.outputs.version }}
       verification-data-path: ${{ steps.governed-verification-data.outputs.path }}
       publish-enabled: ${{ steps.publish-gate.outputs.publish-enabled }}
+      oci-published: ${{ steps.semantic-release.outputs.oci-published }}
+      oci-subjects: ${{ steps.semantic-release.outputs.oci-subjects }}
     steps:
       # The freeze gate is the first thing the governed job does. A frozen module must not
       # be told its signing secrets are missing, and must not pay for a build whose only
@@ -913,6 +927,13 @@ jobs:
             echo "The governed release candidate became stale during setup. Redispatch Release from the new ${SOURCE_BRANCH} tip after exact-candidate CI succeeds." >&2
             exit 1
           fi
+      - name: Check OCI provenance source identity
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.publish-containers }}
+        env:
+          BUILDS_SHA: ${{ inputs.builds-execution-sha }}
+          BUILDS_WORKFLOW_REF: ${{ job.workflow_ref }}
+          RELEASE_SOURCE_SHA: ${{ inputs.release-commit }}
+        run: python3 -B .hexalith/builds-execution/Github/publish-containers/oci_attestation.py check-source
       - name: Prepare governed release candidate
         id: governed-candidate
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
@@ -1080,6 +1101,7 @@ jobs:
           fi
           cp "$ATTESTATION_BUNDLE" .hexalith/release/governed/candidate-attestation.jsonl
       - name: Semantic Release
+        id: semantic-release
         # Both conditions are load-bearing. publish-enabled alone would let a run whose
         # candidate phase resolved no version -- or failed before producing one -- reach
         # semantic-release and publish bytes that were never packed, signed, or attested.
@@ -1089,6 +1111,7 @@ jobs:
           GITHUB_SHA: ${{ inputs.release-commit }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
+          HEXALITH_ATTEST_CONTAINERS: ${{ inputs.publish-containers }}
           HEXALITH_ZOT_REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
           HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}
           HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
@@ -1265,6 +1288,56 @@ jobs:
           if-no-files-found: warn
           include-hidden-files: true
           retention-days: 30
+
+  attest-container-release:
+    needs: [release, governed-release]
+    # Only one publisher can run. Its skipped sibling must not suppress provenance.
+    if: >-
+      ${{ !cancelled() && inputs.publish-containers &&
+        ((needs.release.result == 'success' && needs.release.outputs.oci-published == 'true') ||
+         (needs.governed-release.result == 'success' && needs.governed-release.outputs.oci-published == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      BUILDS_SHA: ${{ inputs.builds-execution-sha }}
+      RELEASE_SOURCE_SHA: ${{ inputs.governed-release && inputs.release-commit || github.sha }}
+      CONTAINER_PROJECTS: ${{ inputs.container-projects }}
+      REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
+    steps:
+      - name: Checkout approved Builds attestation verifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Prepare exact OCI index subjects
+        id: subjects
+        shell: bash
+        env:
+          BUILDS_WORKFLOW_REF: ${{ job.workflow_ref }}
+          OCI_SUBJECTS: ${{ needs.release.outputs.oci-subjects || needs.governed-release.outputs.oci-subjects }}
+        run: |
+          checksums="$(mktemp "$RUNNER_TEMP/oci-subjects.XXXXXX")"
+          python3 -B Github/publish-containers/oci_attestation.py prepare "$checksums"
+          printf 'checksums=%s\n' "$checksums" >> "$GITHUB_OUTPUT"
+      - name: Attest released OCI indexes
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: ${{ steps.subjects.outputs.checksums }}
+      - name: Verify OCI build provenance certificate and subjects
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILDS_WORKFLOW_REF: ${{ job.workflow_ref }}
+          CHECKSUMS: ${{ steps.subjects.outputs.checksums }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+          ATTESTATION_ID: ${{ steps.attest.outputs.attestation-id }}
+        run: python3 -B Github/publish-containers/oci_attestation.py verify "$CHECKSUMS" "$BUNDLE" "$ATTESTATION_ID"
 
   reject-release-mode:
     if: ${{ inputs.release-mode != '' && (inputs.release-mode != 'split-publication-v1' || inputs.governed-release) }}

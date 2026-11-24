@@ -10,6 +10,8 @@ runtime_identifiers="linux-musl-x64;linux-musl-arm64"
 validator="${HEXALITH_OCI_VALIDATOR:-$(dirname "$0")/oci_registry_validator.py}"
 smoke="${HEXALITH_CONTAINER_SMOKE:-$(dirname "$0")/smoke-container-platforms.sh}"
 publication_preflight="${HEXALITH_PUBLICATION_PREFLIGHT:-$(dirname "$0")/publication_preflight.py}"
+attestation="$(dirname "$0")/oci_attestation.py"
+attest_containers="${HEXALITH_ATTEST_CONTAINERS:-false}"
 builds_execution_sha="${HEXALITH_BUILDS_EXECUTION_SHA:-}"
 source_sha="${GITHUB_SHA:-}"
 release_repository="${GITHUB_REPOSITORY:-}"
@@ -157,6 +159,9 @@ while IFS= read -r raw_line; do
 done <<< "$projects"
 
 [ "${#container_projects[@]}" -gt 0 ] || fail "HEXALITH_CONTAINER_PROJECTS is empty."
+if [[ "$attest_containers" = "true" && -z "${GITHUB_OUTPUT:-}" ]]; then
+  fail "A GitHub Actions step output is required to bind the OCI provenance subjects."
+fi
 
 preflight_arguments=(
   --repository "$release_repository"
@@ -188,6 +193,7 @@ fi
 
 echo "$api_key" | docker login "$registry" --username "$username" --password-stdin
 
+declare -a subjects=()
 for index in "${!container_projects[@]}"; do
   resolved_project="${container_projects[$index]}"
   repository="${container_names[$index]}"
@@ -221,4 +227,17 @@ for index in "${!container_projects[@]}"; do
   "$smoke" \
     --image "${registry}/${repository}:${version}" \
     --evidence-directory "$mapping_evidence"
+  if [[ "$attest_containers" = "true" ]]; then
+    subject="$(python3 -B "$attestation" subject "$mapping_evidence" "${registry}/${repository}:${version}")"
+    subjects+=("$subject")
+  fi
 done
+
+if [[ "$attest_containers" = "true" ]]; then
+  {
+    printf 'oci-subjects<<EOF\n'
+    printf '%s\n' "${subjects[@]}"
+    printf 'EOF\n'
+    printf 'oci-published=true\n'
+  } >> "$GITHUB_OUTPUT"
+fi

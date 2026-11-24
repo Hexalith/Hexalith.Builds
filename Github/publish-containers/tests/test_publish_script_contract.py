@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -56,6 +57,7 @@ def create_action_mismatch_fixture(root):
     files = (
         "action.yml",
         "publish-containers.sh",
+        "oci_attestation.py",
         "oci_registry_validator.py",
         "publication_preflight.py",
         "smoke-container-platforms.sh",
@@ -136,7 +138,7 @@ printf '%s\n' "$FAKE_CHECKED_OUT_SHA"
         )
 
 
-def run_publisher_with(overrides, version="3.76.1"):
+def run_publisher_with(overrides, version="3.76.1", *, attest=False, smoke_status=0):
     """Run the real publisher against fake tools and return (result, preflight argv, root)."""
     temporary_directory = tempfile.mkdtemp()
     root = Path(temporary_directory)
@@ -150,7 +152,7 @@ def run_publisher_with(overrides, version="3.76.1"):
     write_executable(fake_bin / "docker", "#!/usr/bin/env bash\nset -euo pipefail\ncat >/dev/null\nexit 0\n")
     write_executable(fake_bin / "dotnet", "#!/usr/bin/env bash\nset -euo pipefail\nexit 0\n")
     write_executable(root / "validate", "#!/usr/bin/env bash\nset -euo pipefail\nexit 0\n")
-    write_executable(root / "smoke", "#!/usr/bin/env bash\nset -euo pipefail\nexit 0\n")
+    write_executable(root / "smoke", f"#!/usr/bin/env bash\nset -euo pipefail\nexit {smoke_status}\n")
     write_executable(
         root / "preflight",
         "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$@\" > \"$FAKE_PREFLIGHT_ARGUMENTS\"\n",
@@ -177,6 +179,25 @@ def run_publisher_with(overrides, version="3.76.1"):
             "FAKE_PREFLIGHT_ARGUMENTS": str(preflight_arguments),
         }
     )
+    if attest:
+        write_executable(root / "validate", '''#!/usr/bin/env python3
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+image = sys.argv[sys.argv.index("--image") + 1]
+directory = Path(sys.argv[sys.argv.index("--evidence-directory") + 1])
+media_type = "application/vnd.oci.image.index.v1+json"
+index = json.dumps({"schemaVersion": 2, "mediaType": media_type, "manifests": []}).encode()
+digest = hashlib.sha256(index).hexdigest()
+(directory / "index.raw").write_bytes(index)
+(directory / "oci-validation.json").write_text(json.dumps({
+    "image": image, "result": "pass", "media_type": media_type, "index_size": len(index),
+    "index_digest": f"sha256:{digest}", "raw_index_sha256": digest,
+}))
+''')
+        environment.update({"HEXALITH_ATTEST_CONTAINERS": "true", "GITHUB_OUTPUT": str(root / "output")})
     for key, value in overrides.items():
         if value is None:
             environment.pop(key, None)
@@ -200,6 +221,27 @@ def run_publisher_with(overrides, version="3.76.1"):
 
 
 class PublishScriptContractTests(unittest.TestCase):
+    def test_publisher_exports_only_the_validated_index_after_smoke_passes(self):
+        for status in (0, 1):
+            with self.subTest(smoke_status=status):
+                result, _, root = run_publisher_with(
+                    {"HEXALITH_RELEASE_REQUIRE_AUTHORITY": "false"}, attest=True, smoke_status=status,
+                )
+                try:
+                    self.assertEqual(result.returncode, status, result.stdout + result.stderr)
+                    output = root / "output"
+                    if status:
+                        self.assertFalse(output.exists())
+                    else:
+                        raw = root / "evidence" / "eventstore" / "index.raw"
+                        digest = hashlib.sha256(raw.read_bytes()).hexdigest()
+                        self.assertEqual(output.read_text(), (
+                            f"oci-subjects<<EOF\n{digest} *registry.example.test/eventstore\nEOF\n"
+                            "oci-published=true\n"
+                        ))
+                finally:
+                    shutil.rmtree(root)
+
     def test_real_shell_publishes_exact_eventstore_maintenance_source(self):
         branch = "release/parties-sdk-3.130.2"
         result, preflight, root = run_publisher_with(
