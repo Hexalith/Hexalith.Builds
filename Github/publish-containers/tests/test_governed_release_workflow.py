@@ -111,6 +111,7 @@ def governed_contract_environment(**overrides):
         "EXPECTED_PACKAGE_COUNT": "5",
         "SIGNING_TIMESTAMPER": "http://timestamp.example.test",
         "PUBLISH_ENABLED": "true",
+        "NUGET_API_KEY_CONFIGURED": "true",
         "SIGNING_CERTIFICATE_PRESENT": "true",
         "SIGNING_PASSWORD_PRESENT": "true",
     }
@@ -291,6 +292,27 @@ class ReleaseFreezeGateTests(unittest.TestCase):
 
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn("dispatched release source", result.stderr)
+
+
+class NuGetPublicationConfigurationTests(unittest.TestCase):
+    def test_only_the_selected_credential_mode_can_publish(self):
+        script = extract_run_block(DOMAIN_RELEASE, "Validate NuGet publication configuration")
+        cases = (
+            ("true", "policy-creator", "false", True),
+            ("true", "", "false", False),
+            ("true", " \t", "false", False),
+            ("true", "policy-creator", "true", False),
+            ("false", "", "true", True),
+            ("false", "policy-creator", "false", False),
+        )
+        for trusted, user, key, accepted in cases:
+            with self.subTest(trusted=trusted, user=user, key=key):
+                result = run_block(script, {
+                    "NUGET_TRUSTED_PUBLISHING": trusted,
+                    "NUGET_TRUSTED_PUBLISHING_USER": user,
+                    "NUGET_API_KEY_CONFIGURED": key,
+                })
+                self.assertEqual(result.returncode == 0, accepted, result.stderr)
 
 
 class GovernedReleaseContractTests(unittest.TestCase):

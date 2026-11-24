@@ -24,6 +24,8 @@ Dapr-backed tests, and then runs semantic-release.
 | `builds-execution-sha` | Yes | - | Exact maintainer-approved Builds commit. It must equal the reusable workflow's full-SHA `uses` revision and is checked against nested action/helper bytes. |
 | `source-branch` | No | `main` | Compatibility input; only `main` is supported and revalidated at every publication boundary. |
 | `source-ci-workflow` | No | `ci.yml` | Workflow filename whose successful exact-source `push` run authorizes the source. |
+| `source-proof-script` | No | `''` | Caller script run from the checked-out source before credentials are exchanged in the standard release job. Use it to enforce additional exact-source proofs. |
+| `nuget-trusted-publishing` | No | `false` | Exchange the protected standard release job's GitHub OIDC token for a temporary NuGet key. |
 | `package-manifest` | No | `tools/release-packages.json` | Caller package manifest frozen into publication identity. |
 | `expected-package-count` | No\* | `0` | Number of NuGet package IDs the caller publishes. \*Effectively required when `publish-containers` is `true`: a dedicated workflow step rejects the default `0` and any non-positive-integer value immediately after checkout, before `npm ci` or any publication step. Declared by the caller rather than derived from the manifest, so an accidental inventory change fails closed. |
 
@@ -52,7 +54,7 @@ are read only when `governed-release` is `true`; see
 
 | Caller secret | Required | Description |
 |--------|----------|-------------|
-| `NUGET_API_KEY` | Yes | API key used by semantic-release package publishing. |
+| `NUGET_API_KEY` | Key-based publication | Key used by semantic-release package publishing. Omit this mapping with Trusted Publishing. |
 | `HEXALITH_ZOT_USERNAME` | No | Hexalith Zot username used when `publish-containers` is `true`. |
 | `HEXALITH_ZOT_API_KEY` | No | Hexalith Zot API key used when `publish-containers` is `true`. |
 | `NUGET_SIGNING_CERTIFICATE_BASE64` | Governed | Base64 PKCS#12 signing certificate. Read only by the governed candidate phase. |
@@ -72,6 +74,13 @@ publication job references the protected environment named by
 `environment-name`, so GitHub does not start the job or expose its explicitly
 passed credentials until environment protection passes. The environment does
 not need duplicate credential values.
+
+For NuGet Trusted Publishing, set `nuget-trusted-publishing: true`, grant the
+calling job `id-token: write`, and set `NUGET_TRUSTED_PUBLISHING_USER` to the
+NuGet.org user who created the policy for the caller repository, workflow, and
+protected environment. The standard job runs `NuGet/login` after source and
+publication checks and passes the temporary key only to Semantic Release as
+`NUGET_TRUSTED_PUBLISHING_KEY`. The caller's publishing hook reads that variable.
 
 The workflow also uses the caller repository `GITHUB_TOKEN` for semantic-release
 GitHub operations. Container publishing uses the organization variable
@@ -134,10 +143,9 @@ fields rather than omitted.
 
 Setting `governed-release: true` selects a second job, `governed-release`, and
 disables the legacy `release` job. The two jobs are mutually exclusive by
-design: GitHub resolves job permissions statically, so `id-token: write` and
-`attestations: write` cannot be granted conditionally inside a single job.
-The governed job uses them for its NuGet candidate attestation. A separate
-job uses them for OCI build provenance after either publisher.
+design. The governed job uses `id-token: write` and `attestations: write` for its
+NuGet candidate attestation. A separate job uses them for OCI build provenance
+after either publisher.
 
 The governed job mirrors the legacy step sequence and adds:
 

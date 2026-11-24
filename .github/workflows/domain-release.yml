@@ -82,6 +82,16 @@ on:
         required: false
         type: string
         default: 'ci.yml'
+      source-proof-script:
+        description: 'Caller script path for additional exact-source checks before publication in the standard release job.'
+        required: false
+        type: string
+        default: ''
+      nuget-trusted-publishing:
+        description: 'Use NuGet Trusted Publishing in the standard release job with the caller variable NUGET_TRUSTED_PUBLISHING_USER.'
+        required: false
+        type: boolean
+        default: false
       package-manifest:
         description: 'Caller package manifest frozen into the publication identity.'
         required: false
@@ -245,8 +255,8 @@ on:
         default: ''
     secrets:
       NUGET_API_KEY:
-        description: 'NuGet.org API key supplied explicitly by the caller.'
-        required: true
+        description: 'Caller-supplied NuGet.org key for publishing modes that do not use Trusted Publishing.'
+        required: false
       HEXALITH_ZOT_USERNAME:
         description: 'Zot username supplied explicitly by the caller when publishing containers.'
         required: false
@@ -315,9 +325,7 @@ permissions: {}
 
 jobs:
   release:
-    # Legacy contract. Governed callers run the governed-release job instead, because
-    # GitHub resolves job permissions statically: id-token/attestations cannot be granted
-    # conditionally inside one job without also demanding them from every legacy caller.
+    # The protected standard job exchanges OIDC when Trusted Publishing is selected.
     if: ${{ inputs.release-mode == '' && !inputs.governed-release }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
@@ -325,6 +333,7 @@ jobs:
     permissions:
       actions: read
       contents: write
+      id-token: write
       issues: write
       pull-requests: write
     outputs:
@@ -533,6 +542,16 @@ jobs:
             echo "The release source became stale during setup. Redispatch Release from the new ${SOURCE_BRANCH} tip after exact-source CI succeeds." >&2
             exit 1
           fi
+      - name: Run additional exact-source checks
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.source-proof-script != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
+          SOURCE_PROOF_SCRIPT: ${{ inputs.source-proof-script }}
+        run: bash -- "$SOURCE_PROOF_SCRIPT"
       - name: Check OCI provenance source identity
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.publish-containers }}
         env:
@@ -540,12 +559,37 @@ jobs:
           BUILDS_WORKFLOW_REF: ${{ job.workflow_ref }}
           RELEASE_SOURCE_SHA: ${{ github.sha }}
         run: python3 -B .hexalith/builds-execution/Github/publish-containers/oci_attestation.py check-source
+      - name: Validate NuGet publication configuration
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        shell: bash
+        env:
+          NUGET_TRUSTED_PUBLISHING: ${{ inputs.nuget-trusted-publishing }}
+          NUGET_TRUSTED_PUBLISHING_USER: ${{ vars.NUGET_TRUSTED_PUBLISHING_USER }}
+          NUGET_API_KEY_CONFIGURED: ${{ secrets.NUGET_API_KEY != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$NUGET_TRUSTED_PUBLISHING" = 'true' ]; then
+            if [ -z "${NUGET_TRUSTED_PUBLISHING_USER//[[:space:]]/}" ] || [ "$NUGET_API_KEY_CONFIGURED" = 'true' ]; then
+              echo 'Trusted Publishing requires NUGET_TRUSTED_PUBLISHING_USER and no NUGET_API_KEY mapping.' >&2
+              exit 1
+            fi
+          elif [ "$NUGET_API_KEY_CONFIGURED" != 'true' ]; then
+            echo 'NuGet publication requires a NUGET_API_KEY mapping or Trusted Publishing.' >&2
+            exit 1
+          fi
+      - name: Exchange GitHub OIDC for a temporary NuGet key
+        id: nuget-login
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.nuget-trusted-publishing }}
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ vars.NUGET_TRUSTED_PUBLISHING_USER }}
       - name: Semantic Release
         id: semantic-release
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ !inputs.nuget-trusted-publishing && secrets.NUGET_API_KEY || '' }}
+          NUGET_TRUSTED_PUBLISHING_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
           HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
           HEXALITH_ATTEST_CONTAINERS: ${{ inputs.publish-containers }}
           HEXALITH_ZOT_REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
@@ -574,9 +618,8 @@ jobs:
           retention-days: 30
 
   governed-release:
-    # BUILD-REL-1 governed contract. Only this Semantic Release job carries id-token/attestations, and it
-    # never starts for a caller that leaves governed-release unset.
-    if: ${{ inputs.release-mode == '' && inputs.governed-release }}
+    # BUILD-REL-1 uses OIDC to attest its signed package candidate before publication.
+    if: ${{ inputs.release-mode == '' && inputs.governed-release && !inputs.nuget-trusted-publishing && inputs.source-proof-script == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     environment: ${{ inputs.environment-name }}
@@ -639,6 +682,7 @@ jobs:
           SIGNING_TIMESTAMPER: ${{ inputs.nuget-signing-timestamper }}
           PUBLISH_ENABLED: ${{ steps.publish-gate.outputs.publish-enabled }}
           # Presence probes only: the expression compares the secret without exposing it.
+          NUGET_API_KEY_CONFIGURED: ${{ secrets.NUGET_API_KEY != '' }}
           SIGNING_CERTIFICATE_PRESENT: ${{ secrets.NUGET_SIGNING_CERTIFICATE_BASE64 != '' }}
           SIGNING_PASSWORD_PRESENT: ${{ secrets.NUGET_SIGNING_CERTIFICATE_PASSWORD != '' }}
         run: |
@@ -715,6 +759,9 @@ jobs:
           # reaches the candidate phase, so demanding its secrets would turn a deliberate
           # freeze into a red run.
           if [ "${PUBLISH_ENABLED-}" = "true" ]; then
+            if [ "$NUGET_API_KEY_CONFIGURED" != 'true' ]; then
+              reject "governed mode requires the NUGET_API_KEY secret."
+            fi
             if [ "$SIGNING_CERTIFICATE_PRESENT" != "true" ]; then
               reject "governed mode requires the NUGET_SIGNING_CERTIFICATE_BASE64 secret; refusing to publish unsigned packages."
             fi
@@ -1358,7 +1405,9 @@ jobs:
         run: python3 -B Github/publish-containers/oci_attestation.py verify "$CHECKSUMS" "$OCI_EVIDENCE" "$OCI_RELEASE_VERSION" "$BUNDLE" "$ATTESTATION_ID"
 
   reject-release-mode:
-    if: ${{ inputs.release-mode != '' && (inputs.release-mode != 'split-publication-v1' || inputs.governed-release || inputs.publish-containers) }}
+    if: >-
+      ${{ (inputs.release-mode != '' && (inputs.release-mode != 'split-publication-v1' || inputs.governed-release || inputs.publish-containers)) ||
+        ((inputs.release-mode != '' || inputs.governed-release) && (inputs.nuget-trusted-publishing || inputs.source-proof-script != '')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
@@ -1367,11 +1416,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "release-mode must be empty or split-publication-v1. Split publication supports packages only and cannot be combined with governed-release." >&2
+          echo "Invalid release configuration. Trusted Publishing and source-proof-script require the standard release job. Split publication supports packages only and cannot be combined with governed-release." >&2
           exit 1
 
   build-publication-candidate:
-    if: ${{ inputs.release-mode == 'split-publication-v1' && !inputs.governed-release && !inputs.publish-containers }}
+    if: >-
+      ${{ inputs.release-mode == 'split-publication-v1' && !inputs.governed-release && !inputs.publish-containers &&
+        !inputs.nuget-trusted-publishing && inputs.source-proof-script == '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:
@@ -1983,7 +2034,9 @@ jobs:
     needs:
       - build-publication-candidate
       - publish-publication-candidate
-    if: ${{ always() && inputs.release-mode == 'split-publication-v1' && !inputs.governed-release && !inputs.publish-containers }}
+    if: >-
+      ${{ always() && inputs.release-mode == 'split-publication-v1' && !inputs.governed-release && !inputs.publish-containers &&
+        !inputs.nuget-trusted-publishing && inputs.source-proof-script == '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:
