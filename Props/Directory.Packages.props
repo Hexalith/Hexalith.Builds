@@ -15,7 +15,7 @@
     <_HexalithNearestPackageOwner Condition="'$(_HexalithNearestPackageProps)' != ''">$([System.IO.Path]::GetDirectoryName('$(_HexalithNearestPackageProps)'))</_HexalithNearestPackageOwner>
     <_HexalithSelectedPackageProps Condition="'$(DirectoryPackagesPropsPath)' != ''">$([MSBuild]::NormalizePath('$(DirectoryPackagesPropsPath)'))</_HexalithSelectedPackageProps>
     <_HexalithWorksOwnsMSBuildPackageVersions Condition="'$(DirectoryPackagesPropsPath)' != '' and '$(_HexalithSelectedPackageProps)' == '$(_HexalithNearestPackageProps)' and Exists('$(_HexalithNearestPackageOwner)/Hexalith.Works.slnx')">true</_HexalithWorksOwnsMSBuildPackageVersions>
-    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">3.0.3</HexalithCommonsVersion>
+    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">3.0.4</HexalithCommonsVersion>
     <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.1.0</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.2</HexalithPolymorphicSerializationsVersion>
     <HexalithImmutableVersion>11.0.0</HexalithImmutableVersion>
