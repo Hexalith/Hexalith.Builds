@@ -75,5 +75,12 @@
     "commit": "465f0b36afeeb880c4b66144547a127e5bc57208",
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "1588f3428ec29296c452fdd35bf95146142315aad3ad8ceb934e7a791f1fb522"
+  },
+  "tenants/8.1.0": {
+    "repository": "Hexalith.Tenants",
+    "version": "8.1.0",
+    "commit": "e4e28904dfb41ed19dd2885cc36b881aef167af2",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "16eb566f21800e1be434afaac6dd48fd70ce6052b43f8a0b276bb6ea69d66746"
   }
 }
