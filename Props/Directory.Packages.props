@@ -24,7 +24,7 @@
     <HexalithAspNetCoreTestHostVersion>11.0.0</HexalithAspNetCoreTestHostVersion>
     <HexalithAspNetCoreOpenIdConnectVersion>11.0.0</HexalithAspNetCoreOpenIdConnectVersion>
     <_HexalithSelectCatalogEventStore Condition="'$(HexalithEventStoreVersion)' == ''">true</_HexalithSelectCatalogEventStore>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.5.2</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.6.0</HexalithEventStoreVersion>
     <HexalithCatalogEventStoreVersion Condition="'$(_HexalithSelectCatalogEventStore)' == 'true'">$(HexalithEventStoreVersion)</HexalithCatalogEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
