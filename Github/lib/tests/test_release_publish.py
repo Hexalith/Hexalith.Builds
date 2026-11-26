@@ -190,7 +190,7 @@ class PublisherTests(History):
         work = self.root / "payload"
         work.mkdir(exist_ok=True)
         values = publish.authenticate(self.git, control, copy.deepcopy(control.values), work,
-                                      REPOSITORY + "/.github/workflows/release.yml@refs/heads/main", **kwargs)
+                                      control.repository + "/.github/workflows/release.yml@refs/heads/main", **kwargs)
         packages = [data for name, data in draft_files(control.payload) if name.startswith("packages/")]
         def feed(url, **_kwargs):
             identity = next(name for name in values["inventory"]["packages"] if "/" + name.lower() + "/" in url)
@@ -242,6 +242,33 @@ class PublisherTests(History):
                 self.assertEqual(git_command(self.root, "rev-parse", "v" + VERSION + "^{commit}"), self.sha)
                 self.assertGreater(control.events.index("PATCH"), control.events.index("download"))
                 git_command(self.root, "tag", "-d", "v" + VERSION)
+
+    def test_mcpcli_release_body_ends_with_migration_status_from_published_tag(self):
+        path = "docs/release/migration-status.md"
+        status = self.root / path
+        status.parent.mkdir(parents=True)
+        committed = "## MCP and CLI migration status\n\nRetirement is blocked by G01–G06.\n".encode()
+        status.write_bytes(committed)
+        self.sha = self.commit("fix: record frozen migration status")
+        status.write_text("Migration status from newer main\n", encoding="utf-8")
+        self.commit("docs: update migration status on main")
+        status.write_text("Migration status from working tree\n", encoding="utf-8")
+
+        self.payload = artifact(self.sha, packages=False)
+        control = self.control()
+        original_body = control.release["body"]
+        control.repository = "Hexalith/Hexalith.McpCli"
+        self.invoke(control, notes="Original notes")
+        control.release = control.drafts[0]
+        values = self.authenticate(control)
+        outcome = publish.finalize_release(self.git, control, values, refresh=self.refresh)
+
+        self.assertEqual("published", outcome["outcome"])
+        tag = control.release["tag_name"]
+        tagged_sha = git_command(self.root, "rev-parse", tag + "^{commit}")
+        self.assertEqual(self.sha, tagged_sha)
+        self.assertEqual(committed, self.git.blob(tagged_sha, path))
+        self.assertEqual(original_body.encode() + b"\n" + committed, control.release["body"].encode())
 
     def test_source_uses_captured_base_without_recomputing_newer_reachable_tag(self):
         git_command(self.root, "tag", "v2.3.99", self.sha)

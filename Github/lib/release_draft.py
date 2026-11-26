@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from release_state import (BUILDS_REPOSITORY, Api, Git, NoRedirect, ReleaseError, SHA, STABLE,
                            highest_reachable_stable_tag, outputs, select_release)
 
+MCPCLI_REPOSITORY = "Hexalith/Hexalith.McpCli"
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
 PACKAGE_ID = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}\Z")
 CONTAINER_NAME = re.compile(r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*)*\Z")
@@ -379,11 +380,12 @@ def artifact_inventory(payload, *, sha, version, digest, repository, files=None,
         raise ReleaseError("invalid release artifact archive") from error
 
 
-def release_body(notes, *, sha, run_id, artifact_id, digest, inventory, disclose_live_status=False):
+def release_body(notes, *, sha, run_id, artifact_id, digest, inventory, disclose_live_status=False,
+                 migration_status=""):
     if not isinstance(notes, str):
         raise ReleaseError("release notes must be text")
     notes = notes.replace("\r\n", "\n").replace("\r", "\n")
-    if RESERVED.search(notes):
+    if RESERVED.search(notes) or RESERVED.search(migration_status.replace("\r", "\n")):
         raise ReleaseError("release notes contain a reserved release trailer")
     if disclose_live_status:
         source = f"https://github.com/{BUILDS_REPOSITORY}/blob/{sha}"
@@ -399,6 +401,8 @@ def release_body(notes, *, sha, run_id, artifact_id, digest, inventory, disclose
               ",".join(inventory["containers"]))
     body = notes.rstrip() + ("\n\n" if notes.strip() else "") + "\n".join(
         name + ": " + value for name, value in zip(MARKERS, values)) + "\n"
+    if migration_status:
+        body += "\n" + migration_status
     if len(body) > 120000:
         raise ReleaseError("release notes and trailers exceed the draft body limit")
     return body
@@ -456,8 +460,19 @@ def create_draft(git, api, *, sha, version, artifact_id, digest, run_id, notes,
                                    digest=digest, repository=api.repository)
     drafts = list(api.pages(f"/repos/{api.repository}/releases?per_page=100", deadline=api.clock() + 120))
     selected = select_release(git, drafts, sha)
+    creating = selected["mode"] == "create"
+    migration_status = ""
+    if creating and api.repository == MCPCLI_REPOSITORY:
+        path = "docs/release/migration-status.md"
+        try:
+            migration_status = git.blob(sha, path).decode("utf-8")
+        except (ReleaseError, UnicodeError) as error:
+            raise ReleaseError(f"cannot read {path} at the frozen McpCli source") from error
+        if not migration_status.strip():
+            raise ReleaseError(f"{path} is empty at the frozen McpCli source")
     body = release_body(notes, sha=sha, run_id=run_id, artifact_id=artifact_id, digest=digest, inventory=inventory,
-                        disclose_live_status=api.repository == BUILDS_REPOSITORY and selected["mode"] == "create")
+                        disclose_live_status=api.repository == BUILDS_REPOSITORY and creating,
+                        migration_status=migration_status)
     if selected["mode"] == "complete":
         draft = next(item for item in drafts if str(item.get("id")) == selected["draft-id"])
         validate_draft(git, draft, sha=sha, version=version, body=body)

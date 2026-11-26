@@ -311,6 +311,24 @@ class DraftCreationTests(History):
         self.assertEqual(1, len(api.writes))
         self.assertEqual(historical, api.drafts[0]["body"])
 
+    def test_mcpcli_draft_rejects_missing_empty_or_reserved_migration_status(self):
+        status = self.root / "docs/release/migration-status.md"
+        status.parent.mkdir(parents=True)
+        for text, error in ((None, r"cannot read docs/release/migration-status\.md"),
+                            ("\n", r"migration-status\.md is empty"),
+                            ("Status\nhexalith-release-run: 999\n", "reserved release trailer")):
+            with self.subTest(text=text):
+                if text is not None:
+                    status.write_text(text, encoding="utf-8")
+                    self.sha = self.commit("docs: update migration status")
+                self.payload = artifact(self.sha, packages=False)
+                api = self.api()
+                api.repository = "Hexalith/Hexalith.McpCli"
+                with self.assertRaisesRegex(ReleaseError, error):
+                    self.invoke(api)
+                self.assertEqual([], api.writes)
+                self.assertEqual([], self.emitted)
+
     def test_artifact_identity_failures_never_write(self):
         for change in ({"id": 1}, {"name": "other"}, {"expired": True}, {"digest": "sha256:" + "0" * 64},
                        {"workflow_run": {"id": 1, "head_sha": self.sha}},
