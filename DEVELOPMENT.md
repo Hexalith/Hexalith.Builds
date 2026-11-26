@@ -202,6 +202,12 @@ fix(orders): correct tax calculation for international orders
 BREAKING CHANGE: tax calculation now requires country code parameter
 ```
 
+GitHub's default merge-commit subject (`Merge pull request #N from ...`) is not a
+conventional header. The sample-module commitlint guard sets `defaultIgnores: false`,
+so those subjects fail `type-empty` and `subject-empty` and block CI. Squash with a
+conventional subject, or merge with a conventional header such as
+`build: merge the mcpcli release-status verification`.
+
 ## Domain-Driven Design Architecture
 
 Hexalith modules use vertical-slice architecture. Each layer is a separate
