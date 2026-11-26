@@ -58,16 +58,17 @@ internal sealed class CompositionStartupRequest : IDisposable
             return;
         }
 
+        string? activeModule = PlatformManifestCommand.ActiveModule(supplied.Declarations);
         try
         {
             // Discover the complete available owner set under the original finite default bound.
             // A partial active-module override could cancel the linked token before a dependency's
             // larger override is known. Expensive source mapping receives only the selected bound.
-            mapping ??= await (mappingProbe?.Invoke(manifestPath, mode, Token) ?? ProbeMappingAsync(manifestPath, mode, Token)).ConfigureAwait(false);
+            mapping ??= await (mappingProbe?.Invoke(manifestPath, mode, Token) ?? ProbeMappingAsync(manifestPath, mode, activeModule == PlatformManifestCommand.CompleteEnvironmentModule, Token)).ConfigureAwait(false);
             IReadOnlyList<PlatformModuleDeclaration> declarations = await CompositionDeclarationClosure.LoadForConsumerAsync(
                 new CompositionDeclarationOptions(mapping, [Path.GetFullPath(manifestPath)])
                 {
-                    ActiveModule = PlatformManifestCommand.ActiveModule(supplied.Declarations),
+                    ActiveModule = activeModule,
                     ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName,
                 },
                 Token).ConfigureAwait(false);
@@ -81,7 +82,7 @@ internal sealed class CompositionStartupRequest : IDisposable
         }
     }
 
-    private static async Task<SourceMapping> ProbeMappingAsync(string manifestPath, WorkspaceMode mode, CancellationToken cancellationToken)
+    private static async Task<SourceMapping> ProbeMappingAsync(string manifestPath, WorkspaceMode mode, bool verifyPlatform, CancellationToken cancellationToken)
     {
         string active = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
         string root = active;
@@ -119,7 +120,7 @@ internal sealed class CompositionStartupRequest : IDisposable
         }
 
         SourceMapping mapping = new(mode, root, Path.GetFileName(active), entries, probe.ExitCode == 0);
-        if (mode == WorkspaceMode.Package && probe.ExitCode == 0)
+        if ((mode == WorkspaceMode.Package || verifyPlatform) && probe.ExitCode == 0)
         {
             // Inspect local objects only. The normal resolver owns any later reference initialization.
             IReadOnlyDictionary<string, string> recorded = await SubmoduleInitializer.ValidateRecordedGitlinksAsync(root, references, cancellationToken, collectMissingBuilds: true).ConfigureAwait(false);

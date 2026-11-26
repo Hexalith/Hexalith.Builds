@@ -41,7 +41,7 @@ public sealed class WorkspaceAppHostTests
             File.WriteAllText(declaration, "{\"schema\":\"hexalith.module-manifest.v2\"}");
             string hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(declaration)));
             CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { PlatformDeclarationPaths = [declaration], PlatformDeclarationHash = hash };
-            RunTopology.VerifyPlatformDeclaration(plan);
+            _ = RunTopology.VerifyPlatformDeclaration(plan);
             File.AppendAllText(declaration, " ");
             Should.Throw<InvalidDataException>(() => RunTopology.VerifyPlatformDeclaration(plan)).Message.ShouldContain(declaration);
         }

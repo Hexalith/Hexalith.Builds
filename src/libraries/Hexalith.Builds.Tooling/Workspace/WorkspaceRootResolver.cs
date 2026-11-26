@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Workspace;
 
+using System.Formats.Tar;
+
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Filesystem;
 using Hexalith.Builds.Tooling.Manifest;
@@ -282,6 +284,18 @@ public static class WorkspaceRootResolver
             }
 #pragma warning restore IDE0046
 
+            if (mode == WorkspaceMode.Package
+                && platformIdentity?.IsPlatformRepository == true
+                && string.Equals(relativeManifest, PlatformManifestCommand.OwnerManifestPath, pathComparison)
+                && recordedGitlinks.SingleOrDefault(pair => string.Equals(pair.Key, "references/Hexalith.McpCli", StringComparison.OrdinalIgnoreCase)).Value is { } toolGitlink)
+            {
+                int tool = entries.FindIndex(entry => string.Equals(entry.Identity, "Hexalith.McpCli", StringComparison.OrdinalIgnoreCase));
+                if (tool >= 0)
+                {
+                    entries[tool] = entries[tool] with { ToolGitlink = toolGitlink };
+                }
+            }
+
             return new SourceMapping(mode, root, activeIdentity, Array.AsReadOnly(entries.OrderBy(entry => entry.Identity, StringComparer.Ordinal).ToArray()), true)
             {
                 PlatformIdentity = platformIdentity,
@@ -293,6 +307,91 @@ public static class WorkspaceRootResolver
         {
             throw new WorkspaceMappingException([.. exception.Diagnostics, .. PlatformIdentityResolver.Diagnostics(findings, warning: true)]);
         }
+    }
+
+    /// <summary>Prepares the package run's tool project from its exact root-declared gitlink.</summary>
+    /// <param name="mapping">The verified Platform mapping.</param>
+    /// <param name="repository">The tool owner repository identity.</param>
+    /// <param name="projectPath">The project path relative to that repository.</param>
+    /// <param name="snapshot">The private run directory for the selected commit's files.</param>
+    /// <param name="cancellationToken">The startup cancellation token.</param>
+    /// <returns>The private source snapshot root.</returns>
+    /// <exception cref="WorkspaceMappingException">The exact direct checkout or project is unavailable.</exception>
+    internal static async Task<string> PreparePackageToolCheckoutAsync(
+        SourceMapping mapping,
+        string repository,
+        string projectPath,
+        string snapshot,
+        CancellationToken cancellationToken)
+    {
+        SourceMappingEntry? tool = mapping.Entries.SingleOrDefault(entry => string.Equals(entry.Identity, repository, StringComparison.OrdinalIgnoreCase) && entry.Origin == "package");
+        string declaredReference = "references/" + (tool?.Identity ?? repository);
+        string checkout = Path.GetFullPath(declaredReference, mapping.Root);
+        string project = Path.Combine(checkout, projectPath);
+        string? selectedGitlink = tool?.ToolGitlink;
+        string? reference = (await ReadDirectReferencesAsync(mapping.Root, cancellationToken).ConfigureAwait(false))
+            .SingleOrDefault(path => string.Equals(path, declaredReference, StringComparison.OrdinalIgnoreCase));
+        if (mapping is not { Mode: WorkspaceMode.Package, HasGit: true, PlatformIdentity.IsPlatformRepository: true }
+            || selectedGitlink is null
+            || reference is null)
+        {
+            throw PlatformManifestCommand.MissingMcpCliProject(project, "the verified package mapping has no direct McpCli gitlink");
+        }
+
+        try
+        {
+            IReadOnlyDictionary<string, string> recorded = await SubmoduleInitializer.ValidateRecordedGitlinksAsync(mapping.Root, [reference], cancellationToken).ConfigureAwait(false);
+            if (!string.Equals(recorded[reference], selectedGitlink, StringComparison.OrdinalIgnoreCase))
+            {
+                throw PlatformManifestCommand.MissingMcpCliProject(project, "the staged McpCli gitlink changed after workspace selection");
+            }
+
+            await SubmoduleInitializer.InitializeDirectAsync(mapping.Root, [reference], cancellationToken).ConfigureAwait(false);
+        }
+        catch (WorkspaceMappingException exception)
+        {
+            throw new WorkspaceMappingException([.. PlatformManifestCommand.MissingMcpCliProject(project, "the direct gitlink checkout is unavailable").Diagnostics, .. exception.Diagnostics]);
+        }
+
+        CompositionProcessResult head = await GitWorkspaceProcess.RunAsync(checkout, cancellationToken, "rev-parse", "HEAD").ConfigureAwait(false);
+        CompositionProcessResult tracked = await GitWorkspaceProcess.RunAsync(checkout, cancellationToken, "ls-tree", "-z", "HEAD", "--", projectPath.Replace('\\', '/')).ConfigureAwait(false);
+        CompositionProcessResult status = await GitWorkspaceProcess.RunAsync(checkout, cancellationToken, "status", "--porcelain", "-z", "--ignore-submodules=all", "--untracked-files=all").ConfigureAwait(false);
+        bool verified = head.Started && !head.TimedOut && !head.OutputTruncated && head.ExitCode == 0
+            && string.Equals(head.Output.Trim(), selectedGitlink, StringComparison.OrdinalIgnoreCase)
+            && tracked.Started && !tracked.TimedOut && !tracked.OutputTruncated && tracked.ExitCode == 0
+            && PlatformIdentityResolver.IsRegularBlob(tracked.Output, projectPath.Replace('\\', '/'))
+            && status.Started && !status.TimedOut && !status.OutputTruncated && status.ExitCode == 0 && status.Output.Length == 0
+            && RepositoryPathResolver.TryResolveExistingFile(checkout, projectPath, out _);
+        if (!verified)
+        {
+            throw PlatformManifestCommand.MissingMcpCliProject(project, "the project requires a clean checkout and a tracked project at the direct gitlink");
+        }
+
+        CompositionWorkspace.CreatePrivateDirectory(snapshot);
+        string archive = Path.Combine(Path.GetDirectoryName(snapshot)!, "mcpcli-source.tar");
+        try
+        {
+            CompositionProcessResult archived = await GitWorkspaceProcess.RunAsync(
+                checkout, cancellationToken, "archive", "--format=tar", "--output=" + archive, selectedGitlink).ConfigureAwait(false);
+            if (!archived.Started || archived.TimedOut || archived.ExitCode != 0 || !File.Exists(archive))
+            {
+                throw PlatformManifestCommand.MissingMcpCliProject(project, "the selected commit could not be materialized");
+            }
+
+            await TarFile.ExtractToDirectoryAsync(archive, snapshot, overwriteFiles: false, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw PlatformManifestCommand.MissingMcpCliProject(project, "the selected commit could not be extracted into the private run workspace");
+        }
+        finally
+        {
+            File.Delete(archive);
+        }
+
+        return RepositoryPathResolver.TryResolveExistingFile(snapshot, projectPath, out _)
+            ? snapshot
+            : throw PlatformManifestCommand.MissingMcpCliProject(project, "the selected commit does not supply the tracked tool project");
     }
 
     /// <summary>Reads direct <c>references/*</c> paths from a .gitmodules file.</summary>

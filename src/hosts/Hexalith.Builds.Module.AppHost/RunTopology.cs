@@ -12,6 +12,7 @@ using Aspire.Hosting.Lifecycle;
 
 using CommunityToolkit.Aspire.Hosting.Dapr;
 
+using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
 using Hexalith.EventStore.Aspire;
@@ -249,8 +250,9 @@ internal static class RunTopology
 
     /// <summary>Refuses an edited declaration before the Platform model can add resources.</summary>
     /// <param name="plan">The signed run plan.</param>
+    /// <returns>The verified complete closure when the plan uses the complete selector.</returns>
     /// <exception cref="InvalidDataException">The selected declaration changed or is unavailable.</exception>
-    internal static void VerifyPlatformDeclaration(CompositionRunPlan plan)
+    internal static IReadOnlyList<PlatformModuleDeclaration>? VerifyPlatformDeclaration(CompositionRunPlan plan)
     {
         if (plan.PlatformDeclarationPaths.Count != 1 || string.IsNullOrWhiteSpace(plan.PlatformDeclarationHash))
         {
@@ -258,10 +260,16 @@ internal static class RunTopology
         }
 
         string path = plan.PlatformDeclarationPaths[0];
-        if (!File.Exists(path) || !string.Equals(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))), plan.PlatformDeclarationHash, StringComparison.OrdinalIgnoreCase))
+        bool matches = File.Exists(path) && string.Equals(
+            Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))),
+            plan.PlatformDeclarationHash,
+            StringComparison.OrdinalIgnoreCase);
+        return plan.PlatformActiveModule switch
         {
-            throw new InvalidDataException($"Platform v2 declaration '{path}' changed after the signed run plan was created.");
-        }
+            _ when !matches => throw new InvalidDataException($"Platform v2 declaration '{path}' changed after the signed run plan was created."),
+            PlatformManifestCommand.CompleteEnvironmentModule => CompositionDeclarationClosure.VerifyCompleteEnvironmentPlan(plan),
+            _ => null,
+        };
     }
 
     /// <summary>
@@ -290,7 +298,7 @@ internal static class RunTopology
 
     private static void ComposePlatform(IDistributedApplicationBuilder builder, CompositionRunPlan plan, string signingKey)
     {
-        VerifyPlatformDeclaration(plan);
+        IReadOnlyList<PlatformModuleDeclaration>? closure = VerifyPlatformDeclaration(plan);
         string modelPath = plan.PlatformModelAssemblyPath
             ?? throw new InvalidOperationException("Platform v2 plan has no model assembly path.");
         if (!File.Exists(modelPath))
@@ -320,7 +328,7 @@ internal static class RunTopology
             .GetMethod("ComposeRun", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
         try
         {
-            _ = compose.Invoke(null, [builder, plan, signingKey, seed]);
+            CompositionDeclarationClosure.ComposeVerifiedModel(plan, closure, () => _ = compose.Invoke(null, [builder, plan, signingKey, seed]));
         }
         catch (System.Reflection.TargetInvocationException exception) when (exception.InnerException is not null)
         {

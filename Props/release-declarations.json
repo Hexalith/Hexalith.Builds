@@ -1,4 +1,11 @@
 {
+  "conversations/2.2.0": {
+    "repository": "Hexalith.Conversations",
+    "version": "2.2.0",
+    "commit": "88aa4f62edf4a6965b4a9503debfa5b51b42d607",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "e9c7fe584232f623b08729492f8f0ca9ea6722283e097abdcb81b3bec39d3496"
+  },
   "eventstore/5.4.0": {
     "repository": "Hexalith.EventStore",
     "version": "5.4.0",
@@ -26,6 +33,20 @@
     "commit": "295b5a6ba584167f21cfef40787477b8814e32da",
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "8bff132b15500a47a8d655ca8df668efac6d80ed1e9136ec7bb8710effaf828d"
+  },
+  "folders/2.1.0": {
+    "repository": "Hexalith.Folders",
+    "version": "2.1.0",
+    "commit": "20f5cf01cdc5f27a46f3d4984d066d6ace5000ea",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "580cdc51342f5bf3665386962f9e1bfee0e9f047e30b9c9996b7acdd36db742f"
+  },
+  "mcpcli/3.0.0": {
+    "repository": "Hexalith.McpCli",
+    "version": "3.0.0",
+    "commit": "63df6d2b1e96bda795d2a21fff7813b35b9da947",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "79556a3d886e450cf8e7c8fedbf09e51300e8f9aa56e1cb7baedbd82a0037219"
   },
   "memories/4.1.0": {
     "repository": "Hexalith.Memories",

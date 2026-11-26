@@ -9,3 +9,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Hexalith.Builds.Evidence.Tests")]
 [assembly: InternalsVisibleTo("Hexalith.Builds.Module.Tests")]
 [assembly: InternalsVisibleTo("Hexalith.Builds.Module.Cli")]
+[assembly: InternalsVisibleTo("Hexalith.Builds.Module.AppHost")]

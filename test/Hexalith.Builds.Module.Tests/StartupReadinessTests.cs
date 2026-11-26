@@ -12,6 +12,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 
 using Hexalith.Builds.ModuleTool.Cli;
+using Hexalith.Builds.ModuleTool.Tests.Workspace;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
@@ -29,6 +30,39 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class StartupReadinessTests
 {
+    /// <summary>Reports a required unready resource and preserves startup diagnostics for the complete selector.</summary>
+    /// <returns>The unready resource and retained diagnostics assertions.</returns>
+    [Fact]
+    public async Task CompleteSelectorReportsUnreadyResourceAndKeepsDiagnosticsAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost toolchain uses POSIX scripts.");
+        }
+
+        CancellationToken token = TestContext.Current.CancellationToken;
+        using WorkspaceGitFixture fixture = await CompleteEnvironmentFixture.CreateGitAsync().ConfigureAwait(true);
+        (string manifest, _, _) = await CompleteEnvironmentFixture.PopulateGitAsync(fixture, package: false).ConfigureAwait(true);
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(fixture.Directory, "status-unready", token).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Source, token).ConfigureAwait(true);
+        CompositionEngine engine = new(Options(fixture.Directory, appHost) with
+        {
+            SourceMapping = mapping,
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+            McpCliBuildOverride = (_, run, _) => Task.FromResult(PlatformManifestCommand.McpCliToolPath(run)),
+        });
+
+        CompositionStartResult failed = await engine.StartAsync(manifest, token).ConfigureAwait(true);
+
+        failed.Session.ShouldBeNull();
+        failed.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "eventstore" && diagnostic.Message.Contains("HTTP 503", StringComparison.Ordinal));
+        string runId = failed.RunId.ShouldNotBeNull();
+        CompositionRunState state = (await engine.StateStore.TryReadAsync(runId, token).ConfigureAwait(true)).ShouldNotBeNull();
+        File.Exists(Path.Combine(state.DiagnosticsPath.ShouldNotBeNull(), "summary.json")).ShouldBeTrue();
+        state.EffectiveDeadlineModuleId.ShouldBe("conversations");
+        state.StartupDurationSeconds.ShouldNotBeNull().ShouldBeGreaterThan(0);
+    }
+
     /// <summary>Malformed explicit endpoint requests refuse before starting or resolving a manifest.</summary>
     /// <param name="port">The unsupported request spelling.</param>
     /// <returns>The usage refusal.</returns>

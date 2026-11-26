@@ -14,6 +14,9 @@ using System.Text.Json;
 /// <param name="Declaration">The complete module declaration.</param>
 public sealed record PlatformModuleDeclaration(string Source, JsonElement Declaration)
 {
+    /// <summary>Gets the canonical path of the file the validator read.</summary>
+    internal string? FullPath { get; init; }
+
     /// <summary>Gets the fingerprint of the exact bytes parsed and validated for this declaration.</summary>
     internal string? SourceHash { get; init; }
 }
