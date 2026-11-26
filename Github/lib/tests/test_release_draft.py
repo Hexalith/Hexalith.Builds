@@ -329,6 +329,27 @@ class DraftCreationTests(History):
                 self.assertEqual([], api.writes)
                 self.assertEqual([], self.emitted)
 
+    def test_mcpcli_draft_requires_the_frozen_suffix_on_create_and_retry(self):
+        status = self.root / "docs/release/migration-status.md"
+        status.parent.mkdir(parents=True)
+        status.write_text("## Migration status\n\nRetirement gates remain open.\n", encoding="utf-8")
+        self.sha = self.commit("fix: record migration status")
+        self.payload = artifact(self.sha, packages=False)
+        api = self.api()
+        api.repository = "hexalith/hexalith.mcpcli"
+
+        def omit_status(document):
+            document["body"] = document["body"].split("\n\n## Migration status", 1)[0]
+            return document
+
+        api.response_change = omit_status
+        for attempt in ("create", "retry"):
+            with self.subTest(attempt=attempt):
+                with self.assertRaisesRegex(ReleaseError, "draft body differs from the frozen migration status"):
+                    self.invoke(api)
+                self.assertEqual(1, len(api.writes))
+                self.assertEqual([], self.emitted)
+
     def test_artifact_identity_failures_never_write(self):
         for change in ({"id": 1}, {"name": "other"}, {"expired": True}, {"digest": "sha256:" + "0" * 64},
                        {"workflow_run": {"id": 1, "head_sha": self.sha}},

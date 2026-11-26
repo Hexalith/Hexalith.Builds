@@ -462,7 +462,7 @@ def create_draft(git, api, *, sha, version, artifact_id, digest, run_id, notes,
     selected = select_release(git, drafts, sha)
     creating = selected["mode"] == "create"
     migration_status = ""
-    if creating and api.repository == MCPCLI_REPOSITORY:
+    if api.repository.casefold() == MCPCLI_REPOSITORY.casefold():
         path = "docs/release/migration-status.md"
         try:
             migration_status = git.blob(sha, path).decode("utf-8")
@@ -481,6 +481,8 @@ def create_draft(git, api, *, sha, version, artifact_id, digest, run_id, notes,
         draft = api.post_draft({"tag_name": "v" + version, "target_commitish": sha,
                                 "name": "v" + version, "body": body, "draft": True, "prerelease": False})
         validate_draft(git, draft, sha=sha, version=version, body=body)
+    if migration_status and not draft["body"].endswith("\n\n" + migration_status):
+        raise ReleaseError("McpCli draft body differs from the frozen migration status")
     handoff = {"publish": "true", "version": version, "sha": sha, "last-tag": last_tag,
                "draft-id": str(draft["id"]), "artifact-id": str(artifact_id),
                "artifact-digest": digest, "artifact-run": str(run_id)}

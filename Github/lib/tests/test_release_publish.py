@@ -247,7 +247,8 @@ class PublisherTests(History):
         path = "docs/release/migration-status.md"
         status = self.root / path
         status.parent.mkdir(parents=True)
-        committed = "## MCP and CLI migration status\n\nRetirement is blocked by G01–G06.\n".encode()
+        git_command(self.root, "config", "core.autocrlf", "false")
+        committed = "## MCP and CLI migration status\r\n\r\nRetirement is blocked by G01–G06.\r\n".encode()
         status.write_bytes(committed)
         self.sha = self.commit("fix: record frozen migration status")
         status.write_text("Migration status from newer main\n", encoding="utf-8")
@@ -258,7 +259,9 @@ class PublisherTests(History):
         control = self.control()
         original_body = control.release["body"]
         control.repository = "Hexalith/Hexalith.McpCli"
-        self.invoke(control, notes="Original notes")
+        handoff = self.invoke(control, notes="Original notes")
+        self.assertEqual(handoff, self.invoke(control, notes="Original notes"))
+        self.assertEqual(1, len(control.writes))
         control.release = control.drafts[0]
         values = self.authenticate(control)
         outcome = publish.finalize_release(self.git, control, values, refresh=self.refresh)
@@ -268,6 +271,7 @@ class PublisherTests(History):
         tagged_sha = git_command(self.root, "rev-parse", tag + "^{commit}")
         self.assertEqual(self.sha, tagged_sha)
         self.assertEqual(committed, self.git.blob(tagged_sha, path))
+        self.assertTrue(control.release["body"].startswith("Original notes\n\n"))
         self.assertEqual(original_body.encode() + b"\n" + committed, control.release["body"].encode())
 
     def test_source_uses_captured_base_without_recomputing_newer_reachable_tag(self):
