@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "a44c4ca52f15d803aa47158680dbe2be9c006dcc",
+  "generatedFromRevision": "41a0585219b0973f4a8e347fa4389c1842b459c9",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "29754334779d39839593156811ad98e698f06c5d42fe80b9926b12c85e58603e",
-  "catalogRawSha256": "21e205dd4725217d04b9ec2ba929336036d1cad909525fc17fd8e64aa033dbf3",
+  "catalogSha256": "6e118fd22c3129ec7de975cb3fa63d34d6fa515b96fa11039925c2768cab0278",
+  "catalogRawSha256": "77d8a4433beb9e986308a7aa1b15511028ef39dc0056580d3b7399ca61374d0b",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-25T15:46:52.8625529+00:00",
+    "auditedAtUtc": "2026-11-26T07:58:31.5219700+00:00",
     "refreshedFamilies": [
-      "hexalith-memories"
+      "hexalith-frontcomposer"
     ],
     "preservedFamilies": [
       "aspire",
@@ -24,10 +24,10 @@
       "hexalith-domains",
       "hexalith-eventstore",
       "hexalith-folders",
-      "hexalith-frontcomposer",
       "hexalith-identitystores",
       "hexalith-keyvaluestorages",
       "hexalith-mcpcli",
+      "hexalith-memories",
       "hexalith-netaspire",
       "hexalith-parties",
       "hexalith-polymorphicserializations",
@@ -182,7 +182,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "a44c4ca52f15d803aa47158680dbe2be9c006dcc",
+    "repositoryRevision": "41a0585219b0973f4a8e347fa4389c1842b459c9",
     "sha256": "aa20b3c0cf299a6fde6627055d41e313a71f89c4776e517b36be4ec5010bbffd",
     "entries": [
       {
@@ -13443,11 +13443,11 @@
         "test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
-        "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
-        "familySelectionSha256": "dd7e6478851dd6d4e66f9b8378d72d312dfdd463297b833fbbd891c70e7a269a",
+        "auditedAtUtc": "2026-11-26T07:58:31.5219700+00:00",
+        "generatedFromRevision": "41a0585219b0973f4a8e347fa4389c1842b459c9",
+        "familySelectionSha256": "61eacd571e907d3ec49d4a947d56b0bceba56a187883105bbe64c9d8064b0046",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "b2a1f9155551c14470fd7b7e3f389ab20f8f6fb426911f5d3b708db4a9447d4e",
+        "packageMetadataSha256": "3901114cd6c56fef8a19df537d74da235b6ba66e0611b1e2530e38eac6299d3a",
         "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
       },
       "historicalContext": [
@@ -14464,6 +14464,39 @@
             "familySelectionSha256": "73e581a9a81540d65f296db63630bdcecd541e8f613843bc82eb70747c21a2fd",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "c9cc11d6090fc15a6c64cccf2e23245ddbe6a535e836e575e1997a101c8480ae",
+            "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+          "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+          "family": "hexalith-frontcomposer",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-frontcomposer",
+          "packageIds": [
+            "Hexalith.FrontComposer.Contracts",
+            "Hexalith.FrontComposer.Contracts.UI",
+            "Hexalith.FrontComposer.Mcp",
+            "Hexalith.FrontComposer.Shell",
+            "Hexalith.FrontComposer.SourceTools",
+            "Hexalith.FrontComposer.Testing"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [
+            "src/hosts/Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj",
+            "test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj"
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+            "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+            "familySelectionSha256": "dd7e6478851dd6d4e66f9b8378d72d312dfdd463297b833fbbd891c70e7a269a",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b2a1f9155551c14470fd7b7e3f389ab20f8f6fb426911f5d3b708db4a9447d4e",
             "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -178345,22 +178378,22 @@
     },
     {
       "id": "Hexalith.FrontComposer.Contracts",
-      "auditedVersion": "6.1.0",
-      "selectedVersion": "6.1.0",
-      "latestStable": "6.1.0",
+      "auditedVersion": "6.2.0",
+      "selectedVersion": "6.2.0",
+      "latestStable": "6.2.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
       "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.2.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.1.0",
+          "latestStable": "6.2.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -179446,6 +179479,42 @@
             "familySelectionSha256": "73e581a9a81540d65f296db63630bdcecd541e8f613843bc82eb70747c21a2fd",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "c9cc11d6090fc15a6c64cccf2e23245ddbe6a535e836e575e1997a101c8480ae",
+            "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+          "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+          "id": "Hexalith.FrontComposer.Contracts",
+          "auditedVersion": "6.1.0",
+          "selectedVersion": "6.1.0",
+          "latestStable": "6.1.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-frontcomposer",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-frontcomposer",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "6.1.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+            "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+            "familySelectionSha256": "dd7e6478851dd6d4e66f9b8378d72d312dfdd463297b833fbbd891c70e7a269a",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b2a1f9155551c14470fd7b7e3f389ab20f8f6fb426911f5d3b708db4a9447d4e",
             "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -179454,22 +179523,22 @@
     },
     {
       "id": "Hexalith.FrontComposer.Contracts.UI",
-      "auditedVersion": "6.1.0",
-      "selectedVersion": "6.1.0",
-      "latestStable": "6.1.0",
+      "auditedVersion": "6.2.0",
+      "selectedVersion": "6.2.0",
+      "latestStable": "6.2.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
       "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.2.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.1.0",
+          "latestStable": "6.2.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -179795,6 +179864,42 @@
             "familySelectionSha256": "73e581a9a81540d65f296db63630bdcecd541e8f613843bc82eb70747c21a2fd",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "c9cc11d6090fc15a6c64cccf2e23245ddbe6a535e836e575e1997a101c8480ae",
+            "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+          "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+          "id": "Hexalith.FrontComposer.Contracts.UI",
+          "auditedVersion": "6.1.0",
+          "selectedVersion": "6.1.0",
+          "latestStable": "6.1.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-frontcomposer",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-frontcomposer",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "6.1.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+            "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+            "familySelectionSha256": "dd7e6478851dd6d4e66f9b8378d72d312dfdd463297b833fbbd891c70e7a269a",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b2a1f9155551c14470fd7b7e3f389ab20f8f6fb426911f5d3b708db4a9447d4e",
             "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -179803,22 +179908,22 @@
     },
     {
       "id": "Hexalith.FrontComposer.Mcp",
-      "auditedVersion": "6.1.0",
-      "selectedVersion": "6.1.0",
-      "latestStable": "6.1.0",
+      "auditedVersion": "6.2.0",
+      "selectedVersion": "6.2.0",
+      "latestStable": "6.2.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
       "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.2.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.1.0",
+          "latestStable": "6.2.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -180904,6 +181009,42 @@
             "familySelectionSha256": "73e581a9a81540d65f296db63630bdcecd541e8f613843bc82eb70747c21a2fd",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "c9cc11d6090fc15a6c64cccf2e23245ddbe6a535e836e575e1997a101c8480ae",
+            "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+          "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+          "id": "Hexalith.FrontComposer.Mcp",
+          "auditedVersion": "6.1.0",
+          "selectedVersion": "6.1.0",
+          "latestStable": "6.1.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-frontcomposer",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-frontcomposer",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "6.1.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+            "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+            "familySelectionSha256": "dd7e6478851dd6d4e66f9b8378d72d312dfdd463297b833fbbd891c70e7a269a",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b2a1f9155551c14470fd7b7e3f389ab20f8f6fb426911f5d3b708db4a9447d4e",
             "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -180912,22 +181053,22 @@
     },
     {
       "id": "Hexalith.FrontComposer.Shell",
-      "auditedVersion": "6.1.0",
-      "selectedVersion": "6.1.0",
-      "latestStable": "6.1.0",
+      "auditedVersion": "6.2.0",
+      "selectedVersion": "6.2.0",
+      "latestStable": "6.2.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
       "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.2.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.1.0",
+          "latestStable": "6.2.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -182013,6 +182154,42 @@
             "familySelectionSha256": "73e581a9a81540d65f296db63630bdcecd541e8f613843bc82eb70747c21a2fd",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "c9cc11d6090fc15a6c64cccf2e23245ddbe6a535e836e575e1997a101c8480ae",
+            "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+          "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+          "id": "Hexalith.FrontComposer.Shell",
+          "auditedVersion": "6.1.0",
+          "selectedVersion": "6.1.0",
+          "latestStable": "6.1.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-frontcomposer",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-frontcomposer",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "6.1.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+            "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+            "familySelectionSha256": "dd7e6478851dd6d4e66f9b8378d72d312dfdd463297b833fbbd891c70e7a269a",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b2a1f9155551c14470fd7b7e3f389ab20f8f6fb426911f5d3b708db4a9447d4e",
             "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -182021,22 +182198,22 @@
     },
     {
       "id": "Hexalith.FrontComposer.SourceTools",
-      "auditedVersion": "6.1.0",
-      "selectedVersion": "6.1.0",
-      "latestStable": "6.1.0",
+      "auditedVersion": "6.2.0",
+      "selectedVersion": "6.2.0",
+      "latestStable": "6.2.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
       "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.2.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.1.0",
+          "latestStable": "6.2.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -183122,6 +183299,42 @@
             "familySelectionSha256": "73e581a9a81540d65f296db63630bdcecd541e8f613843bc82eb70747c21a2fd",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "c9cc11d6090fc15a6c64cccf2e23245ddbe6a535e836e575e1997a101c8480ae",
+            "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+          "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+          "id": "Hexalith.FrontComposer.SourceTools",
+          "auditedVersion": "6.1.0",
+          "selectedVersion": "6.1.0",
+          "latestStable": "6.1.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-frontcomposer",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-frontcomposer",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "6.1.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+            "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+            "familySelectionSha256": "dd7e6478851dd6d4e66f9b8378d72d312dfdd463297b833fbbd891c70e7a269a",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b2a1f9155551c14470fd7b7e3f389ab20f8f6fb426911f5d3b708db4a9447d4e",
             "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -183130,22 +183343,22 @@
     },
     {
       "id": "Hexalith.FrontComposer.Testing",
-      "auditedVersion": "6.1.0",
-      "selectedVersion": "6.1.0",
-      "latestStable": "6.1.0",
+      "auditedVersion": "6.2.0",
+      "selectedVersion": "6.2.0",
+      "latestStable": "6.2.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
       "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.2.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.1.0",
+          "latestStable": "6.2.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -184231,6 +184444,42 @@
             "familySelectionSha256": "73e581a9a81540d65f296db63630bdcecd541e8f613843bc82eb70747c21a2fd",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "c9cc11d6090fc15a6c64cccf2e23245ddbe6a535e836e575e1997a101c8480ae",
+            "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+          "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+          "id": "Hexalith.FrontComposer.Testing",
+          "auditedVersion": "6.1.0",
+          "selectedVersion": "6.1.0",
+          "latestStable": "6.1.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-frontcomposer",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-frontcomposer",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.1.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "6.1.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-11-24T07:27:32.9842025+00:00",
+            "generatedFromRevision": "95f34fcf4d088a052d1a005ab4db4ebc0731b8a0",
+            "familySelectionSha256": "dd7e6478851dd6d4e66f9b8378d72d312dfdd463297b833fbbd891c70e7a269a",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b2a1f9155551c14470fd7b7e3f389ab20f8f6fb426911f5d3b708db4a9447d4e",
             "consumerEvidenceSha256": "0052ad9140f874ebf1a9bf70933c87c648bfa81fa3b01b23777df3bcaa2baf9d"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
