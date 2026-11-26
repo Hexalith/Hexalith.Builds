@@ -116,17 +116,20 @@ class Plugins:
         self.run(["npm", "ci", "--ignore-scripts", "--legacy-peer-deps"])
         self.run(["npm", "audit", "signatures"])
 
-    def run(self, arguments, payload=None):
+    def run(self, arguments, *, stdin=None):
         result = subprocess.run(arguments, cwd=self.directory, env=self.environment,
-                                input=payload, text=True, capture_output=True, check=False)
+                                stdin=stdin, text=True, capture_output=True, check=False)
         if result.returncode:
             # Do not repeat commit bodies or third-party/config-controlled output.
             raise ReleaseError(f"trusted release tool failed: {arguments[0]} {arguments[1]}")
         return result.stdout
 
     def __call__(self, operation, config, context):
-        output = self.run(["node", str(self.directory / "invoke_plugins.mjs")],
-                          json.dumps({"operation": operation, "config": config, "context": context}))
+        # A synchronous Node read can return EAGAIN when a large request is still arriving via a pipe.
+        with tempfile.TemporaryFile(mode="w+t", encoding="utf-8", dir=self.directory) as request:
+            json.dump({"operation": operation, "config": config, "context": context}, request)
+            request.seek(0)
+            output = self.run(["node", str(self.directory / "invoke_plugins.mjs")], stdin=request)
         try:
             return json.loads(output)
         except ValueError as error:

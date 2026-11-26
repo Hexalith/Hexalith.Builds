@@ -166,6 +166,22 @@ class ReleaseVersionTests(unittest.TestCase):
         self.assertIn("older correction", result["notes"])
         self.assertIn("initial public capability", result["notes"])
 
+    def test_large_release_history_generates_version_and_notes(self):
+        self.git("tag", "v2.3.4")
+        message = self.root / "large-commit-message"
+        subject = "repair résumé export"
+        breaking_change = "export consumers must use UTF-8"
+        message.write_text(f"fix: {subject}\n\n" + "Long release history entry.\n" * 20_000
+                           + f"\nBREAKING CHANGE: {breaking_change}\n",
+                           encoding="utf-8")
+        self.git("commit", "--allow-empty", "-F", str(message))
+
+        result = self.compute()
+        self.assertEqual("3.0.0", result["version"])
+        self.assertEqual("v2.3.4", result["last-tag"])
+        self.assertIn(subject, result["notes"])
+        self.assertIn(breaking_change, result["notes"])
+
     def test_no_version_tagless_or_at_base_has_explicit_noop(self):
         for tagged in (False, True):
             if tagged:
