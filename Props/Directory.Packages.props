@@ -216,6 +216,7 @@
     <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.Conversations.Client" Version="$(HexalithConversationsVersion)" />
     <PackageVersion Include="Hexalith.Conversations.Contracts" Version="$(HexalithConversationsVersion)" />
+    <PackageVersion Include="Hexalith.Conversations.EventStoreExtensions" Version="$(HexalithConversationsVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Contracts.UI" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="$(HexalithFrontComposerVersion)" />
@@ -227,6 +228,7 @@
     <PackageVersion Include="Hexalith.Folders.Client" Version="$(HexalithFoldersVersion)" />
     <PackageVersion Include="Hexalith.Folders.Contracts" Version="$(HexalithFoldersVersion)" />
     <PackageVersion Include="Hexalith.Folders.Testing" Version="$(HexalithFoldersVersion)" />
+    <PackageVersion Include="Hexalith.Folders.EventStoreExtensions" Version="$(HexalithFoldersVersion)" />
     <PackageVersion Include="Hexalith.KeyValueStorages" Version="2.1.2" />
     <PackageVersion Include="Hexalith.KeyValueStorages.Abstractions" Version="2.1.2" />
     <PackageVersion Include="Hexalith.KeyValueStorages.Files" Version="2.1.2" />
@@ -449,8 +451,8 @@
     <!-- ASP.NET Core OpenApi 11 and Swashbuckle 11 use OpenApi 3.x. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="$(HexalithOpenApiVersion)" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.65.1" />
-    <!-- Existing Timesheets Works prerequisite; retain the published version. -->
-    <PackageVersion Include="Hexalith.Works.Contracts" Version="1.0.2" />
+    <!-- Timesheets Works prerequisite; pin the published family. -->
+    <PackageVersion Include="Hexalith.Works.Contracts" Version="2.0.0" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.82.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="11.0.100" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
@@ -490,7 +492,7 @@
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.1" />
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
-    <PackageVersion Include="Radzen.Blazor" Version="13.2.1" />
+    <PackageVersion Include="Radzen.Blazor" Version="13.3.0" />
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Scriban" Version="7.6.1" />
@@ -527,8 +529,8 @@
     <PackageVersion Include="Testcontainers" Version="4.17.0" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
     <!-- FrontComposer snapshot testing uses the xUnit v3 adapter, not Verify.Xunit. -->
-    <PackageVersion Include="Verify" Version="33.7.2" />
-    <PackageVersion Include="Verify.XunitV3" Version="33.7.2" />
+    <PackageVersion Include="Verify" Version="33.7.3" />
+    <PackageVersion Include="Verify.XunitV3" Version="33.7.3" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="bunit" Version="2.15.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
