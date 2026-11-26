@@ -41,6 +41,13 @@
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840"
   },
+  "memories/4.1.2": {
+    "repository": "Hexalith.Memories",
+    "version": "4.1.2",
+    "commit": "1f68406be7a61064044963139941c9ba2c117947",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "56f6dc8134d3f7cea06910e923a4736a450e00241e8e4a565ac9226897881840"
+  },
   "parties/3.1.1": {
     "repository": "Hexalith.Parties",
     "version": "3.1.1",
