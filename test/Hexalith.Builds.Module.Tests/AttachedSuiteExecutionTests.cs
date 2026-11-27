@@ -37,7 +37,7 @@ public sealed class AttachedSuiteExecutionTests
         bound = json.loads(pathlib.Path(credentials).read_text())['runId'] if credentials else None
         shutil.copy(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], root / ('descriptor-' + run + '.json'))
         report = os.environ['HEXALITH_G4_TEST_REPORT_PATH']
-        (root / ('observed-' + run + '.json')).write_text(json.dumps({'exp': claims['exp'], 'sub': claims['sub'], 'descriptor': os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], 'report': report, 'credentials': credentials, 'credentialsRunId': bound, 'credentialExpiry': os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']}))
+        (root / ('observed-' + run + '.json')).write_text(json.dumps({'exp': claims['exp'], 'sub': claims['sub'], 'jti': claims.get('jti'), 'descriptor': os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], 'report': report, 'credentials': credentials, 'credentialsRunId': bound, 'credentialExpiry': os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']}))
         (root / ('started-' + run)).write_text(str(os.getpid()))
         passing = '<TestRun><ResultSummary outcome="Completed"><Counters total="1" passed="1" failed="0" /></ResultSummary></TestRun>'
         if (root / 'report-first').exists():
@@ -1008,7 +1008,8 @@ public sealed class AttachedSuiteExecutionTests
         string attachmentWorkspace = Path.Combine(owner.Session!.Plan.Workspace, "attachments", attachedRunId);
         root.GetProperty("descriptor").GetString().ShouldBe(Path.Combine(attachmentWorkspace, "test-environment.json"));
         root.GetProperty("report").GetString().ShouldBe(Path.Combine(attachmentWorkspace, "native-tests", "native.trx"));
-        root.GetProperty("sub").GetString().ShouldBe("g4-attached-tests:" + attachedRunId);
+        root.GetProperty("sub").GetString().ShouldBe("g4-native-tests");
+        root.GetProperty("jti").GetString().ShouldBe("g4-attached-tests:" + attachedRunId);
         root.GetProperty("exp").GetInt64().ShouldBeLessThanOrEqualTo(recorded.ExpiresAtUtc.ToUnixTimeSeconds());
         DateTimeOffset.Parse(root.GetProperty("credentialExpiry").GetString()!, CultureInfo.InvariantCulture).ToUnixTimeSeconds().ShouldBe(root.GetProperty("exp").GetInt64());
         File.Exists(root.GetProperty("descriptor").GetString()).ShouldBeFalse("The attachment descriptor is deleted when access ends.");

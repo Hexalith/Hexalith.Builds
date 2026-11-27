@@ -33,6 +33,11 @@ public static class CompositionTokenFactory
             throw new ArgumentException("The authenticated surface must use the closed owner vocabulary.", nameof(request));
         }
 
+        if (request.TokenId is not null && string.IsNullOrWhiteSpace(request.TokenId))
+        {
+            throw new ArgumentException("The token identifier must not be empty or whitespace when specified.", nameof(request));
+        }
+
         Dictionary<string, object> claims = new(StringComparer.Ordinal)
         {
             ["iss"] = CompositionEnvironment.TokenIssuer,
@@ -71,6 +76,11 @@ public static class CompositionTokenFactory
         if (request.Surface is not null)
         {
             claims["eventstore:surface"] = request.Surface;
+        }
+
+        if (request.TokenId is not null)
+        {
+            claims["jti"] = request.TokenId;
         }
 
         string header = Encode(JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, string>(StringComparer.Ordinal) { ["alg"] = "HS256", ["typ"] = "JWT" }));

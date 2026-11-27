@@ -239,10 +239,35 @@ public sealed class CompositionRedactionTests
     {
         string token = CompositionTokenFactory.Create(CompositionSigningKey.Create(), new("native", [], [], [], false, TimeSpan.FromMinutes(1)), DateTimeOffset.UtcNow);
         using JsonDocument payload = JsonDocument.Parse(Decode(token.Split('.')[1]));
-        foreach (string claim in new[] { "tenants", "domains", "permissions", "eventstore:tenant", "eventstore:domain", "eventstore:permission", "role", "eventstore:surface" })
+        foreach (string claim in new[] { "tenants", "domains", "permissions", "eventstore:tenant", "eventstore:domain", "eventstore:permission", "role", "eventstore:surface", "jti" })
         {
             payload.RootElement.TryGetProperty(claim, out _).ShouldBeFalse();
         }
+    }
+
+    /// <summary>Verifies an optional token identifier emits <c>jti</c> without changing <c>sub</c>, and rejects blank values.</summary>
+    [Fact]
+    public void TokenIdEmitsJtiAndRejectsWhitespace()
+    {
+        string token = CompositionTokenFactory.Create(
+            CompositionSigningKey.Create(),
+            new CompositionTokenRequest("g4-native-tests", ["synthetic"], ["party"], ["query:read"], false, TimeSpan.FromMinutes(1))
+            {
+                Surface = "agent",
+                TokenId = "g4-attached-tests:run-123",
+            },
+            DateTimeOffset.UtcNow);
+        using JsonDocument payload = JsonDocument.Parse(Decode(token.Split('.')[1]));
+        payload.RootElement.GetProperty("sub").GetString().ShouldBe("g4-native-tests");
+        payload.RootElement.GetProperty("jti").GetString().ShouldBe("g4-attached-tests:run-123");
+
+        _ = Should.Throw<ArgumentException>(() => CompositionTokenFactory.Create(
+            CompositionSigningKey.Create(),
+            new CompositionTokenRequest("g4-native-tests", ["synthetic"], ["party"], ["query:read"], false, TimeSpan.FromMinutes(1))
+            {
+                TokenId = "   ",
+            },
+            DateTimeOffset.UtcNow));
     }
 
     /// <summary>Issuance preserves exact requested grants, including invalid entries that public consumers must refuse; it never normalizes or filters them into authority.</summary>

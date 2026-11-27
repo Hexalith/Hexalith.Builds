@@ -24,4 +24,7 @@ public sealed record CompositionTokenRequest(
 {
     /// <summary>Gets the explicit authenticated owner surface, or null for legacy compositions without surface policy.</summary>
     public string? Surface { get; init; }
+
+    /// <summary>Gets the optional JWT token identifier (<c>jti</c>) for run-level traceability without changing <see cref="Subject"/>.</summary>
+    public string? TokenId { get; init; }
 }

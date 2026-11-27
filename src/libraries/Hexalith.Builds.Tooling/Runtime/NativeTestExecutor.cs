@@ -477,9 +477,12 @@ internal static class NativeTestExecutor
             return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest, "The attached hold or execution deadline leaves no positive access lifetime.");
         }
 
-        CompositionTokenRequest nativeIdentity = new(attached is null ? "g4-native-tests" : "g4-attached-tests:" + attached.RunId, nativeScope?.Tenants ?? [session.Plan.TenantNamespace], nativeScope?.Domains ?? [selection.ModuleId], ["command:submit", "query:read"], false, credentialLifetime)
+        // Attached runs authenticate as the synthetic tenant's enrolled native reader so Tenants membership checks succeed
+        // while exp and jti still narrow and identify the bearer for the attached run and its hold.
+        CompositionTokenRequest nativeIdentity = new("g4-native-tests", nativeScope?.Tenants ?? [session.Plan.TenantNamespace], nativeScope?.Domains ?? [selection.ModuleId], ["command:submit", "query:read"], false, credentialLifetime)
         {
             Surface = nativeScope is null ? null : "agent",
+            TokenId = attached is null ? null : "g4-attached-tests:" + attached.RunId,
         };
         string token = CompositionTokenFactory.Create(session.SigningKey, nativeIdentity, issued);
         DateTimeOffset credentialExpiry = DateTimeOffset.FromUnixTimeSeconds(issued.Add(credentialLifetime).ToUnixTimeSeconds());
