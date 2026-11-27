@@ -112,6 +112,8 @@ public sealed class AttachedSuiteExecutionTests
             string terminationDetail = await File.ReadAllTextAsync(Path.Combine(owner.Options.StateDirectory, "diagnostics", attachedRunId, Reference(result, "termination")), TestContext.Current.CancellationToken).ConfigureAwait(true);
             terminationDetail.ShouldContain("bearer valid until ");
             terminationDetail.ShouldContain("; no holder");
+            terminationDetail.ShouldContain("JWT ID (jti)");
+            terminationDetail.ShouldContain("enrolled native reader subject");
             owner.Running.IsCompleted.ShouldBeFalse("The owner keeps running while its own suite is blocked.");
             Release(workspace, "owner");
             (await owner.Running.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(0, owner.Output.ToString());

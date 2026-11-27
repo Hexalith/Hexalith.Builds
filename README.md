@@ -651,15 +651,18 @@ and the owner command picks it up under the attachment lock. The owner re-select
 from its manifest, refuses incompatible or gate-requiring suites, creates
 `<owner-workspace>/attachments/<attachedRunId>/` and writes there a private descriptor with
 `role: attached`, a private endpoint credential channel bound to the attached run, its report
-paths and its plan/readiness snapshots. The owner mints the bearer from its in-memory key,
-narrowed to subject `g4-attached-tests:<attachedRunId>` with
-`exp = min(execution deadline, expiresAt)`, hands it only to the child, and tags the child with
-the attached run identity. No AppHost change is involved and the key is never persisted.
-Attached runs are always `baseline-only` diagnostics and never inherit an owner's candidate
-decision, gate or paths. Only the run binding (`runId`, token subject) and the expiry are
-narrowed: the copied endpoint secrets (the environment-wide Dapr API token) and the bearer's
-tenant, domain and permission scopes are the environment's own, and the access termination
-detail says so. Attached `dotnet test` children run with MSBuild node reuse, the MSBuild server
+paths and its plan/readiness snapshots. The owner mints the bearer from its in-memory key.
+The bearer uses the subject `g4-native-tests`, which Platform enrolls as a reader of the
+synthetic tenant. Its JWT ID (`jti`) is `g4-attached-tests:<attachedRunId>` and its expiry is
+`min(execution deadline, expiresAt)`. The owner hands the bearer only to the child, tags the
+child with the attached run identity, and keeps the signing key in memory.
+Attached runs are always `baseline-only` diagnostics. They use their own paths and run
+independently of the owner's candidate decision and gate. The bearer shares the owner
+environment's tenant, domain and permission scopes. When the owner supplies an endpoint
+credential such as the environment-wide Dapr API token, the supervisor copies it into the
+attachment's private credential channel. The access termination detail records the scope of
+the attached run's access.
+Attached `dotnet test` children run with MSBuild node reuse, the MSBuild server
 and shared compilation disabled, so the run-tag kill never reaches build servers shared with the
 owner or peers.
 

@@ -15,7 +15,7 @@ using Hexalith.Builds.Tooling.Diagnostics;
 /// <summary>Records first outcomes, stops leftover attached work, ends access and publishes attached results.</summary>
 internal static class AttachedSuiteTermination
 {
-    private const string _accessScope = "Only the run binding (runId, subject) and expiry are narrowed; the copied endpoint secrets and the bearer's tenant, domain and permission scopes are the environment's own.";
+    private const string _accessScope = "Each attachment has its own run ID. An issued bearer uses the enrolled native reader subject, carries an attachment-specific JWT ID (jti), and has an expiry at or before the hold deadline. Its tenant, domain and permission scopes and any copied endpoint secrets are shared with the owner environment.";
 
     /// <summary>Records an attached run's first outcome; an earlier outcome is never replaced and expiry wins at its deadline.</summary>
     /// <param name="ownerDirectory">The owner's durable diagnostics directory.</param>
