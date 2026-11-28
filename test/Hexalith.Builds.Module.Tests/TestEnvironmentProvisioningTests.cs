@@ -411,14 +411,14 @@ public sealed partial class TestEnvironmentProvisioningTests
         ContinuousIntegrationOverride = false,
     };
 
-    private static void Declare(PlatformManifestTestWorkspace workspace)
+    private static void Declare(PlatformManifestTestWorkspace workspace, int executionTimeoutSeconds = 1)
     {
         workspace.Change("modules.0.lifecycle.tasks", "[]");
-        workspace.Change("modules.0.tests", """
-            [{"name":"first","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":1,"stopTimeoutSeconds":1,"mode":"source"},
-             {"name":"second","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":1,"stopTimeoutSeconds":4,"mode":"source"}]
+        workspace.Change("modules.0.tests", $$"""
+            [{"name":"first","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":{{executionTimeoutSeconds}},"stopTimeoutSeconds":1,"mode":"source"},
+             {"name":"second","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":{{executionTimeoutSeconds}},"stopTimeoutSeconds":4,"mode":"source"}]
             """);
-        File.WriteAllText(Path.Combine(workspace.Root, "runner.py"), """
+        File.WriteAllText(Path.Combine(workspace.Root, "runner.py"), $$"""
             import os, json, pathlib, time, base64, datetime
             path = pathlib.Path(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'])
             assert path.is_absolute()
@@ -429,9 +429,9 @@ public sealed partial class TestEnvironmentProvisioningTests
             bindings = descriptor['bindings']
             assert bindings['environment']['readiness']['status'] == 'ready'
             assert all(t['status'] == 'passed' for t in bindings['environment']['startupTasks']['tasks'])
-            assert bindings['deadlines']['execution']['effectiveSeconds'] == 1
+            assert bindings['deadlines']['execution']['effectiveSeconds'] == {{executionTimeoutSeconds}}
             timing = json.loads((path.parent / 'execution-timing.json').read_text())
-            assert timing['actualDurationSeconds'] is None and timing['effectiveSeconds'] == 1
+            assert timing['actualDurationSeconds'] is None and timing['effectiveSeconds'] == {{executionTimeoutSeconds}}
             assert timing['configurationContentIdentity'] == bindings['deadlines']['execution']['configurationContentIdentity']
             assert datetime.datetime.fromisoformat(timing['startedAtUtc']) == datetime.datetime.fromisoformat(bindings['deadlines']['execution']['originAt'].replace('Z', '+00:00'))
             assert datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_EXECUTION_DEADLINE_UTC']) == datetime.datetime.fromisoformat(bindings['deadlines']['execution']['expiresAt'].replace('Z', '+00:00'))
