@@ -43,7 +43,7 @@
     <HexalithRedisImage>docker.io/library/redis</HexalithRedisImage>
     <HexalithRedisImageTag>7.4-alpine</HexalithRedisImageTag>
     <HexalithRedisImageDigest>sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf</HexalithRedisImageDigest>
-    <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.83.0</HexalithChatbotVersion>
+    <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.84.0</HexalithChatbotVersion>
   </PropertyGroup>
   <!-- Named consumers whose verified catalog snapshot is available to composition callers. -->
   <ItemGroup>
