@@ -34,6 +34,13 @@
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "8bff132b15500a47a8d655ca8df668efac6d80ed1e9136ec7bb8710effaf828d"
   },
+  "eventstore/5.7.0": {
+    "repository": "Hexalith.EventStore",
+    "version": "5.7.0",
+    "commit": "cf79e5cc2bb695649fbd96f0bfc7bf0ff7ea801e",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "8bff132b15500a47a8d655ca8df668efac6d80ed1e9136ec7bb8710effaf828d"
+  },
   "folders/2.1.0": {
     "repository": "Hexalith.Folders",
     "version": "2.1.0",
