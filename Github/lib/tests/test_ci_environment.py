@@ -57,7 +57,7 @@ with ledger.open("a") as stream:
 if name=="npm":
     assert args in (["ci", "--ignore-scripts"], ["audit", "signatures"]), args
     package=json.loads((cwd / "package.json").read_text())
-    assert package["dependencies"]=={{"@commitlint/cli":"21.2.4","@commitlint/config-conventional":"21.2.4","js-yaml":"5.5.0"}}
+    assert package["dependencies"]=={{"@commitlint/cli":"21.3.0","@commitlint/config-conventional":"21.3.0","js-yaml":"5.5.0"}}
     if args==["audit", "signatures"] and (workspace / "fail-guard-signatures").exists():
         print("private-tool-error\\x1b[31m", file=sys.stderr)
         sys.exit(31)

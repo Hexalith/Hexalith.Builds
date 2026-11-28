@@ -79,7 +79,7 @@ class RealPinnedToolsTests(unittest.TestCase):
 
     def test_real_locked_versions_and_yaml_syntax(self):
         lock = json.loads((Path(self.temporary.name) / "package-lock.json").read_text())
-        for package, version in (("@commitlint/cli", "21.2.4"), ("@commitlint/config-conventional", "21.2.4"), ("js-yaml", "5.5.0")):
+        for package, version in (("@commitlint/cli", "21.3.0"), ("@commitlint/config-conventional", "21.3.0"), ("js-yaml", "5.5.0")):
             self.assertEqual(version, lock["packages"]["node_modules/" + package]["version"])
         for text in ('runs: {using: composite, steps: [{run: "echo yes", shell: bash}]}',
                      '{"runs":{"using":"composite","steps":[]}}',

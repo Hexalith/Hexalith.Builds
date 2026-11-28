@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@commitlint/cli": "21.2.4",
-    "@commitlint/config-conventional": "21.2.4",
+    "@commitlint/cli": "21.3.0",
+    "@commitlint/config-conventional": "21.3.0",
     "js-yaml": "5.5.0"
   }
 }

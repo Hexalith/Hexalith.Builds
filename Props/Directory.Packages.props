@@ -16,26 +16,26 @@
     <_HexalithSelectedPackageProps Condition="'$(DirectoryPackagesPropsPath)' != ''">$([MSBuild]::NormalizePath('$(DirectoryPackagesPropsPath)'))</_HexalithSelectedPackageProps>
     <_HexalithWorksOwnsMSBuildPackageVersions Condition="'$(DirectoryPackagesPropsPath)' != '' and '$(_HexalithSelectedPackageProps)' == '$(_HexalithNearestPackageProps)' and Exists('$(_HexalithNearestPackageOwner)/Hexalith.Works.slnx')">true</_HexalithWorksOwnsMSBuildPackageVersions>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">3.0.4</HexalithCommonsVersion>
-    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.2.0</HexalithConversationsVersion>
-    <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.2</HexalithPolymorphicSerializationsVersion>
+    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.2.1</HexalithConversationsVersion>
+    <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.3</HexalithPolymorphicSerializationsVersion>
     <HexalithImmutableVersion>11.0.0</HexalithImmutableVersion>
     <HexalithAspNetCoreJwtBearerVersion>11.0.0</HexalithAspNetCoreJwtBearerVersion>
     <HexalithAspNetCoreMvcTestingVersion>11.0.0</HexalithAspNetCoreMvcTestingVersion>
     <HexalithAspNetCoreTestHostVersion>11.0.0</HexalithAspNetCoreTestHostVersion>
     <HexalithAspNetCoreOpenIdConnectVersion>11.0.0</HexalithAspNetCoreOpenIdConnectVersion>
     <_HexalithSelectCatalogEventStore Condition="'$(HexalithEventStoreVersion)' == ''">true</_HexalithSelectCatalogEventStore>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.6.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">5.7.0</HexalithEventStoreVersion>
     <HexalithCatalogEventStoreVersion Condition="'$(_HexalithSelectCatalogEventStore)' == 'true'">$(HexalithEventStoreVersion)</HexalithCatalogEventStoreVersion>
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.2.0</HexalithFrontComposerVersion>
-    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.2.1</HexalithFoldersVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.3.0</HexalithFrontComposerVersion>
+    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.3.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">3.0.0</HexalithMcpCliVersion>
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.4</HexalithMemoriesVersion>
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.5</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.1.1</HexalithTenantsVersion>
-    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">4.0.2</HexalithPartiesVersion>
-    <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">4.0.2</HexalithPartiesAspireVersion>
-    <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">2.0.0</HexalithProjectsVersion>
+    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">4.0.3</HexalithPartiesVersion>
+    <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">4.0.3</HexalithPartiesAspireVersion>
+    <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">2.1.0</HexalithProjectsVersion>
     <HexalithAspireHostingDaprVersion>17.0.0-preview.1.261120-0454</HexalithAspireHostingDaprVersion>
     <HexalithAspireAppHostSdkVersion>17.0.0</HexalithAspireAppHostSdkVersion>
     <HexalithDaprRuntimeVersion>1.19.2</HexalithDaprRuntimeVersion>
@@ -43,7 +43,7 @@
     <HexalithRedisImage>docker.io/library/redis</HexalithRedisImage>
     <HexalithRedisImageTag>7.4-alpine</HexalithRedisImageTag>
     <HexalithRedisImageDigest>sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf</HexalithRedisImageDigest>
-    <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.83.0</HexalithChatbotVersion>
+    <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.84.0</HexalithChatbotVersion>
   </PropertyGroup>
   <!-- Named consumers whose verified catalog snapshot is available to composition callers. -->
   <ItemGroup>
@@ -452,7 +452,7 @@
     <PackageVersion Include="Microsoft.OpenApi" Version="$(HexalithOpenApiVersion)" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.65.1" />
     <!-- Timesheets Works prerequisite; pin the published family. -->
-    <PackageVersion Include="Hexalith.Works.Contracts" Version="2.0.0" />
+    <PackageVersion Include="Hexalith.Works.Contracts" Version="2.0.1" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.82.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="11.0.100" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />

@@ -54,7 +54,7 @@ their existing attestation handling.
 
 ### Verifier package
 
-`sigstore-verifier/dist.cjs` bundles `@sigstore/verify` 4.1.3 and its locked
+`sigstore-verifier/dist.cjs` bundles `@sigstore/verify` 4.1.4 and its locked
 runtime dependencies from [sigstore-js](https://github.com/sigstore/sigstore-js).
 The bundled code is copyright The Sigstore Authors and is distributed under
 the included Apache 2.0 license. `trusted-root.json` is the Sigstore Public
