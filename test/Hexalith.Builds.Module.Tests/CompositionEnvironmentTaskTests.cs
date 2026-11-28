@@ -80,8 +80,11 @@ public sealed class CompositionEnvironmentTaskTests
     {
         SkipWindows();
         string root = CompositionTestFiles.CreateDirectory();
+        string? inherited = Environment.GetEnvironmentVariable(CompositionEnvironment.TaskInvocationPath);
         try
         {
+            // A decoy inherited by the runner must never reach either task.
+            Environment.SetEnvironmentVariable(CompositionEnvironment.TaskInvocationPath, Path.Combine(root, "decoy.json"));
             string invocation = CompositionStartupTasks.InvocationPathFor(Path.Combine(root, "run"), "sample", "create");
             CompositionStartupTask create = new("sample", "create", "/bin/sh", ["-c", _readVariable + " > create.observed"])
             {
@@ -103,6 +106,7 @@ public sealed class CompositionEnvironmentTaskTests
         }
         finally
         {
+            Environment.SetEnvironmentVariable(CompositionEnvironment.TaskInvocationPath, inherited);
             CompositionTestFiles.Delete(root);
         }
     }
@@ -183,7 +187,18 @@ public sealed class CompositionEnvironmentTaskTests
             PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
         });
 
-        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string? inherited = Environment.GetEnvironmentVariable(CompositionEnvironment.TaskInvocationPath);
+        Environment.SetEnvironmentVariable(CompositionEnvironment.TaskInvocationPath, Path.Combine(workspace.Root, "decoy.json"));
+        CompositionStartResult result;
+        try
+        {
+            result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(CompositionEnvironment.TaskInvocationPath, inherited);
+        }
+
         try
         {
             result.IsReady.ShouldBeTrue(string.Join(';', result.Result.Diagnostics.Select(diagnostic => diagnostic.Message)));

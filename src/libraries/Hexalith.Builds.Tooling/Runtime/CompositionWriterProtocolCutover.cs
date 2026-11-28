@@ -100,8 +100,10 @@ public static class CompositionWriterProtocolCutover
                         else
                         {
                             // A refused or unreachable operator never falls back to the signing key.
+                            string healthStatus = lastStatus;
                             lastStatus = OperatorTokenStatus(tokenSource.OperatorName);
                             token = await OperatorTokenAsync(tokenSource, lastStatus, probe).ConfigureAwait(false);
+                            lastStatus = healthStatus;
                         }
 
                         await ActivateProtocolAsync(client, runId, token, probe.Token).ConfigureAwait(false);

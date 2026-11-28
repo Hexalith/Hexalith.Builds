@@ -15,6 +15,8 @@ using System.Text.Json;
 using Hexalith.Builds.ModuleHosts.AppHost;
 using Hexalith.Builds.Tooling.Runtime;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Shouldly;
 
 using Xunit;
@@ -33,19 +35,52 @@ public sealed class WriterProtocolCutoverTokenTests
 
         await CompositionWriterProtocolCutover.ActivateAsync(_ => Task.FromResult(gateway.Endpoint), "run-1", _signingKey, null, TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-        string bearer = gateway.Authorizations.ShouldHaveSingleItem().ShouldNotBeNull();
-        bearer.ShouldStartWith("Bearer ");
-        string[] parts = bearer["Bearer ".Length..].Split('.');
-        parts.Length.ShouldBe(3);
-        using JsonDocument header = JsonDocument.Parse(Decode(parts[0]));
-        header.RootElement.GetProperty("alg").GetString().ShouldBe("HS256");
-        using JsonDocument payload = JsonDocument.Parse(Decode(parts[1]));
-        payload.RootElement.GetProperty("role").GetString().ShouldBe("GlobalAdministrator");
-        payload.RootElement.GetProperty("sub").GetString().ShouldBe("g4-runner-operator");
-        string expected = Convert.ToBase64String(HMACSHA256.HashData(Encoding.UTF8.GetBytes(_signingKey), Encoding.ASCII.GetBytes(parts[0] + "." + parts[1])))
-            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        parts[2].ShouldBe(expected);
+        AssertSigningKeyBearer(gateway.Authorizations.ShouldHaveSingleItem());
         gateway.Bodies.ShouldHaveSingleItem().ShouldContain("hexalith-g4-run-run-1");
+    }
+
+    /// <summary>Verifies the default AppHost cutover uses the token source the model registered in the application services.</summary>
+    /// <returns>The registered-source assertions.</returns>
+    [Fact]
+    public async Task AppHostCutoverUsesTheRegisteredTokenSourceAsync()
+    {
+        await using FakeCutoverGateway gateway = FakeCutoverGateway.Start();
+        StubTokenSource source = new("platform-operator", _ => Task.FromResult("realm.operator.token"));
+        await using ServiceProvider services = new ServiceCollection().AddSingleton<ICompositionOperatorTokenSource>(source).BuildServiceProvider();
+
+        await WriterProtocolCutover.ActivateAsync(services, _ => Task.FromResult(gateway.Endpoint), "run-6", DateTimeOffset.UtcNow.AddSeconds(20), _signingKey, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        source.Calls.ShouldBe(1);
+        gateway.Authorizations.ShouldHaveSingleItem().ShouldBe("Bearer realm.operator.token");
+    }
+
+    /// <summary>Verifies the default AppHost cutover falls back to the signing key when the model registers no token source.</summary>
+    /// <returns>The fallback assertions.</returns>
+    [Fact]
+    public async Task AppHostCutoverWithoutTokenSourceUsesTheSigningKeyAsync()
+    {
+        await using FakeCutoverGateway gateway = FakeCutoverGateway.Start();
+        await using ServiceProvider services = new ServiceCollection().BuildServiceProvider();
+
+        await WriterProtocolCutover.ActivateAsync(services, _ => Task.FromResult(gateway.Endpoint), "run-7", DateTimeOffset.UtcNow.AddSeconds(20), _signingKey, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        AssertSigningKeyBearer(gateway.Authorizations.ShouldHaveSingleItem());
+    }
+
+    /// <summary>Verifies an issued operator token restores the health status, so a hung activation does not blame the operator.</summary>
+    /// <returns>The hung-activation assertions.</returns>
+    [Fact]
+    public async Task HungActivationAfterAnIssuedTokenReportsTheHealthStatusAsync()
+    {
+        await using FakeCutoverGateway gateway = FakeCutoverGateway.Start(hangActivation: true);
+        StubTokenSource source = new("platform-operator", _ => Task.FromResult("realm.operator.token"));
+
+        TimeoutException failure = await Should.ThrowAsync<TimeoutException>(() => CompositionWriterProtocolCutover.ActivateAsync(
+            _ => Task.FromResult(gateway.Endpoint), "run-8", _signingKey, source, TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        source.Calls.ShouldBe(1);
+        gateway.Authorizations.ShouldHaveSingleItem().ShouldBe("Bearer realm.operator.token");
+        failure.Message.ShouldBe("cutover-timeout;health-HTTP-503");
     }
 
     /// <summary>Verifies a registered model token source supplies the bearer and the signing key is not used.</summary>
@@ -116,6 +151,22 @@ public sealed class WriterProtocolCutoverTokenTests
             .ShouldBe("fault-InvalidOperationException;stage=writer-cutover");
     }
 
+    private static void AssertSigningKeyBearer(string? authorization)
+    {
+        string bearer = authorization.ShouldNotBeNull();
+        bearer.ShouldStartWith("Bearer ");
+        string[] parts = bearer["Bearer ".Length..].Split('.');
+        parts.Length.ShouldBe(3);
+        using JsonDocument header = JsonDocument.Parse(Decode(parts[0]));
+        header.RootElement.GetProperty("alg").GetString().ShouldBe("HS256");
+        using JsonDocument payload = JsonDocument.Parse(Decode(parts[1]));
+        payload.RootElement.GetProperty("role").GetString().ShouldBe("GlobalAdministrator");
+        payload.RootElement.GetProperty("sub").GetString().ShouldBe("g4-runner-operator");
+        string expected = Convert.ToBase64String(HMACSHA256.HashData(Encoding.UTF8.GetBytes(_signingKey), Encoding.ASCII.GetBytes(parts[0] + "." + parts[1])))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        parts[2].ShouldBe(expected);
+    }
+
     private static byte[] Decode(string value)
     {
         string padded = value.Replace('-', '+').Replace('_', '/');
@@ -128,12 +179,14 @@ public sealed class WriterProtocolCutoverTokenTests
         private readonly HttpListener _listener;
         private readonly CancellationTokenSource _stop = new();
         private readonly Task _loop;
+        private readonly bool _hangActivation;
         private volatile bool _activated;
 
-        private FakeCutoverGateway(HttpListener listener, Uri endpoint)
+        private FakeCutoverGateway(HttpListener listener, Uri endpoint, bool hangActivation)
         {
             _listener = listener;
             Endpoint = endpoint;
+            _hangActivation = hangActivation;
             _loop = Task.Run(ServeAsync, CancellationToken.None);
         }
 
@@ -143,7 +196,7 @@ public sealed class WriterProtocolCutoverTokenTests
 
         public ConcurrentQueue<string> Bodies { get; } = new();
 
-        public static FakeCutoverGateway Start()
+        public static FakeCutoverGateway Start(bool hangActivation = false)
         {
             using TcpListener probe = new(IPAddress.Loopback, 0);
             probe.Start();
@@ -153,7 +206,7 @@ public sealed class WriterProtocolCutoverTokenTests
             HttpListener listener = new();
             listener.Prefixes.Add(endpoint.AbsoluteUri);
             listener.Start();
-            return new FakeCutoverGateway(listener, endpoint);
+            return new FakeCutoverGateway(listener, endpoint, hangActivation);
         }
 
         public async ValueTask DisposeAsync()
@@ -211,6 +264,18 @@ public sealed class WriterProtocolCutoverTokenTests
                     Authorizations.Enqueue(context.Request.Headers["Authorization"]);
                     using StreamReader reader = new(context.Request.InputStream, Encoding.UTF8);
                     Bodies.Enqueue(await reader.ReadToEndAsync(_stop.Token).ConfigureAwait(false));
+                    if (_hangActivation)
+                    {
+                        try
+                        {
+                            await Task.Delay(Timeout.InfiniteTimeSpan, _stop.Token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            return;
+                        }
+                    }
+
                     _activated = true;
                     await RespondAsync(context, 200, "{\"status\":\"Activated\"}").ConfigureAwait(false);
                 }
