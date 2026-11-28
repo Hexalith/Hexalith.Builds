@@ -324,28 +324,103 @@ def classify_projects(projects: tuple[str, ...], document: dict[str, Any], *,
     return TestProjects(tuple(unit), tuple(integration), tuple(excluded))
 
 
-def restore_and_build(prepared: PreparedConfig) -> None:
+def restore_and_build(prepared: PreparedConfig, *, publish_native_build: bool = False) -> None:
     """Restore once, then build Release with analyzers and mandatory settings."""
     if prepared.solution == "none":
         return
+    native_reuse = prepared.document.get("nativeBuildReuse", False)
+    flags = build_flags()
+    restore_options = []
+    if native_reuse:
+        flags = [flag for flag in flags if flag != "-p:NuGetAudit=false"]
+        flags += ["-p:NuGetAudit=true", "-p:NuGetAuditMode=all", "-p:NuGetAuditLevel=low"]
+        restore_options = ["--force-evaluate"]
     from build_projects import preflight
     preflight(prepared)
     solution = prepared.document["solution"]
     sdk_solution = str(contained_path(prepared.root, solution, kind="solution"))
-    run_command(["dotnet", "restore", sdk_solution, *build_flags()], prepared.root)
-    run_command(["dotnet", "build", sdk_solution, "--no-restore", *build_flags()], prepared.root)
+    run_command(["dotnet", "restore", sdk_solution, *restore_options, *flags], prepared.root)
+    run_command(["dotnet", "build", sdk_solution, "--no-restore", *flags], prepared.root)
     from build_projects import build_declared
-    build_declared(prepared, build_flags(), run_command)
+    build_declared(prepared, flags, run_command)
     additional = tuple(prepared.document["tests"].get("additional", []))
     if additional:
         members = set(solution_projects(prepared.root, solution))
         for project in sorted(set(additional) - members):
             if not contained_path(prepared.root, project, kind="additional test project").is_file():
                 raise PipelineError(f"additional test project does not exist: {project}")
-            run_command(["dotnet", "restore", project, *build_flags()], prepared.root)
-            run_command(["dotnet", "build", project, "--no-restore", *build_flags()], prepared.root)
+            run_command(["dotnet", "restore", project, *restore_options, *flags], prepared.root)
+            run_command(["dotnet", "build", project, "--no-restore", *flags], prepared.root)
         # Reject product/library paths admitted as tests in the stage-2 contract.
         discover_test_projects(prepared.root, solution, additional)
+    if native_reuse and publish_native_build:
+        seal_native_build(prepared, set(solution_projects(prepared.root, solution)) | set(additional), flags)
+
+
+def seal_native_build(prepared: PreparedConfig, built_projects: set[str], flags: list[str]) -> None:
+    """Prepare the pinned composition and seal native entries from the completed CI build."""
+    from tempfile import mkdtemp
+
+    scratch = os.environ.get("RUNNER_TEMP") or os.environ.get("TMPDIR")
+    if not scratch:
+        raise PipelineError("prepared native builds require a job-owned temporary directory")
+    manifest = contained_path(prepared.root, prepared.document["moduleManifest"], kind="module manifest")
+    declaration = _read_json(manifest)
+    if not isinstance(declaration, dict) or declaration.get("schema") != "hexalith.module-manifest.v2":
+        raise PipelineError("prepared native builds require a v2 module declaration")
+    targets: dict[str, dict[str, str]] = {}
+    tests: list[dict[str, str]] = []
+    for module in declaration["modules"]:
+        for profile in module.get("tests", []):
+            if profile["mode"] != "package" or profile["executor"] not in ("mtp", "vstest"):
+                continue
+            project = profile["entry"]
+            if project not in built_projects:
+                raise PipelineError(f"{project}: selected native test was absent from the audited build")
+            if project not in targets:
+                properties = evaluated_properties(prepared.root, project, properties=(*PROPERTIES, "ProjectAssetsFile"), flags=flags)
+                frameworks = target_frameworks(properties)
+                if len(frameworks) == 1 and not properties["TargetFramework"]:
+                    properties = evaluated_properties(prepared.root, project, framework=frameworks[0],
+                        properties=(*PROPERTIES, "ProjectAssetsFile"), flags=flags)
+                if len(frameworks) > 1 or not all(properties[key] for key in ("TargetFramework", "TargetPath", "ProjectAssetsFile")):
+                    raise PipelineError(f"{project}: prepared native test requires a single evaluated runnable target")
+                targets[project] = properties
+            selected = targets[project]
+            tests.append({"role": "test." + profile["name"], "entry": selected["TargetPath"],
+                          "assets": selected["ProjectAssetsFile"], "project": str(contained_path(prepared.root, project, kind="native project"))})
+    if not tests:
+        raise PipelineError("the audited manifest declared no native package profiles")
+
+    import shutil
+    private = Path(mkdtemp(prefix="hexalith-native-build-", dir=scratch))
+    try:
+        inputs = private / "inputs.json"
+        inputs.write_text(json.dumps(tests), encoding="utf-8")
+        workspace = private / "prepared"
+        output = run_command(["dotnet", "tool", "run", "hexalith-module", "--", "prepare-native-build",
+                              "--manifest", str(manifest), "--build-inputs", str(inputs),
+                              "--workspace", str(workspace), "--output", "json"], prepared.root, capture=True)
+        try:
+            result = json.loads(output)
+            digest = result.get("nativeBuildReceiptSha256", "") if isinstance(result, dict) else ""
+        except ValueError as error:
+            raise PipelineError("native producer returned malformed receipt output") from error
+        if (not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                or result.get("status") != "prepared"):
+            raise PipelineError("native producer did not return an independently usable receipt digest")
+        receipt = workspace / "receipt.json"
+        if not receipt.is_file() or receipt.is_symlink() or any(character in str(receipt) for character in "\r\n"):
+            raise PipelineError("native producer did not create a regular receipt at its reserved path")
+        if os.environ.get("GITHUB_ENV"):
+            with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
+                stream.write(f"CI_PREPARED_NATIVE_BUILD={receipt}\nCI_PREPARED_NATIVE_BUILD_SHA256={digest}\n")
+        publish_outputs({"prepared-native-build": str(receipt), "prepared-native-build-sha256": digest})
+    except BaseException:
+        shutil.rmtree(private)
+        raise
+    finally:
+        (private / "inputs.json").unlink(missing_ok=True)
 
 
 def preparation_environment(value: str) -> bool:
@@ -644,7 +719,7 @@ def main() -> int:
             from module_preparation import ensure_for_job
             ensure_for_job(prepared, repository=args.repository)
         if args.phase in ("build", "all"):
-            restore_and_build(prepared)
+            restore_and_build(prepared, publish_native_build=True)
         if args.phase in ("unit", "all"):
             classified = run_unit_tests(prepared, repository=args.repository, module_root=args.module_root)
             if args.phase == "unit" and os.environ.get("CI_STAGE_STATE"):

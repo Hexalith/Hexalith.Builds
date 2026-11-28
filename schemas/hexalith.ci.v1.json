@@ -604,6 +604,11 @@
       "default": null,
       "description": "Centrally reviewed immutable archive trees excluded only from protected Windows checkout."
     },
+    "nativeBuildReuse": {
+      "type": "boolean",
+      "default": false,
+      "description": "Prepare audited Release outputs for declared package-mode native profiles before CI hooks."
+    },
     "additionalSdkVersion": {
       "type": "string",
       "pattern": "^11\\.0\\.(?:0|[1-9][0-9]*)(?![\\s\\S])",
@@ -679,6 +684,16 @@
     }
   },
   "allOf": [
+    {
+      "if": {
+        "required": ["nativeBuildReuse"],
+        "properties": { "nativeBuildReuse": { "const": true } }
+      },
+      "then": {
+        "required": ["moduleManifest"],
+        "properties": { "moduleManifest": { "type": "string" } }
+      }
+    },
     {
       "if": {
         "properties": {

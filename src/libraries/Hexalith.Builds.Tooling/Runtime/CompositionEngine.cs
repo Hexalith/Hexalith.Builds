@@ -270,8 +270,24 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
                 try
                 {
-                    platformModel = await (_options.PlatformModelBuildOverride?.Invoke(mapping, preparedWorkspace, startupBound.Token)
-                        ?? PlatformManifestCommand.BuildModelAsync(mapping, preparedWorkspace, deadlineUtc, startupBound.Token)).ConfigureAwait(false);
+                    if (_options.NativeBuildHandoff is { } handoff)
+                    {
+                        PreparedNativeBuild prepared = _options.PreparedNativeBuild
+                            ?? throw new InvalidDataException("Prepared native build selection was not verified.");
+                        NativeBuildPreparationService.Materialize(handoff, prepared, preparedWorkspace, startupBound.Token);
+                        platformModel = prepared.VerifyEntry(preparedWorkspace, PreparedNativeBuild.ModelRole);
+                    }
+                    else
+                    {
+                        platformModel = await (_options.PlatformModelBuildOverride?.Invoke(mapping, preparedWorkspace, startupBound.Token)
+                            ?? PlatformManifestCommand.BuildModelAsync(mapping, preparedWorkspace, deadlineUtc, startupBound.Token)).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception exception) when (_options.NativeBuildHandoff is not null && NativeBuildPreparationService.IsRefusal(exception))
+                {
+                    string message = NativeBuildPreparationService.RefusalMessage(exception);
+                    IReadOnlyList<ToolDiagnostic> refusal = [Diagnostic("HXW013", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, message, "preparedNativeBuild", null)];
+                    return await FailAndTearDownAsync(runId, null, manifestHash, CompositionRunStatus.Failed, refusal, ToolExitCode.PrerequisiteUnavailable, requestedAt, deadline, [], null).ConfigureAwait(false);
                 }
                 catch (InvalidOperationException exception)
                 {
@@ -393,11 +409,13 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 QualificationOwners = _options.QualificationOwners.Count == 0 ? null : _options.QualificationOwners,
                 CompositionContentIdentity = closure is null ? null : TestEnvironment.TestEnvironmentDescriptorWriter.CompositionIdentity(closure, _options.SelectedTest, _options.QualificationOwners),
                 McpCliToolPath = mcpCliTool,
+                PreparedNativeBuild = _options.PreparedNativeBuild,
             };
 
             string signingKey = CompositionSigningKey.Create();
             plan = CompositionQualificationOwners.Bind(plan, signingKey);
             plan = CompositionFixtureProducer.Bind(plan, signingKey);
+            plan = CompositionPreparedNativeBuild.Bind(plan, signingKey);
             await CompositionDaprComponentRenderer.WriteAsync(plan, startupBound.Token).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, startupBound.Token).ConfigureAwait(false);
@@ -420,6 +438,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 if (plan.FixtureProducerBinding is not null)
                 {
                     preflightEnvironment[CompositionEnvironment.FixtureProducerRequired] = "1";
+                }
+
+                if (plan.PreparedNativeBuild is not null)
+                {
+                    preflightEnvironment[CompositionEnvironment.PreparedNativeBuildRequired] = "1";
                 }
 
                 CompositionProcessResult preflight = await CompositionProcess.RunAsync(
@@ -2394,6 +2417,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         if (plan.FixtureProducerBinding is not null)
         {
             environment[CompositionEnvironment.FixtureProducerRequired] = "1";
+        }
+
+        if (plan.PreparedNativeBuild is not null)
+        {
+            environment[CompositionEnvironment.PreparedNativeBuildRequired] = "1";
         }
 
         if (plan.SourceMapping is not null)

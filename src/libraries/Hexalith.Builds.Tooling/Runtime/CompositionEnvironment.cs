@@ -47,6 +47,9 @@ public static class CompositionEnvironment
     /// <summary>The AppHost environment variable naming the run-private Aspire store root.</summary>
     public const string AspireStorePath = "HEXALITH_G4_ASPIRE_STORE_PATH";
 
+    /// <summary>Gets the environment marker requiring a prepared build at the AppHost boundary.</summary>
+    public static string PreparedNativeBuildRequired => "HEXALITH_G4_PREPARED_NATIVE_BUILD_REQUIRED";
+
     /// <summary>Gets the parent marker requiring verification of an expanded qualification owner request.</summary>
     public static string QualificationOwnersRequired => "HEXALITH_G4_QUALIFICATION_OWNERS_REQUIRED";
 

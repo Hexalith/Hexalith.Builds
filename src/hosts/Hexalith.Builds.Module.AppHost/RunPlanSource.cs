@@ -42,6 +42,10 @@ internal static class RunPlanSource
             plan,
             Environment.GetEnvironmentVariable(CompositionEnvironment.SigningKey),
             Environment.GetEnvironmentVariable(CompositionEnvironment.FixtureProducerRequired) is not null);
+        CompositionPreparedNativeBuild.Verify(
+            plan,
+            Environment.GetEnvironmentVariable(CompositionEnvironment.SigningKey),
+            Environment.GetEnvironmentVariable(CompositionEnvironment.PreparedNativeBuildRequired) is not null);
         return plan;
     }
 
@@ -57,6 +61,7 @@ internal static class RunPlanSource
         Environment.SetEnvironmentVariable(CompositionEnvironment.SigningKey, null);
         Environment.SetEnvironmentVariable(CompositionEnvironment.QualificationOwnersRequired, null);
         Environment.SetEnvironmentVariable(CompositionEnvironment.FixtureProducerRequired, null);
+        Environment.SetEnvironmentVariable(CompositionEnvironment.PreparedNativeBuildRequired, null);
         return string.IsNullOrWhiteSpace(key)
             ? throw new InvalidOperationException("The runner did not supply the per-run signing key.")
             : key;

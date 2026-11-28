@@ -162,6 +162,20 @@ internal static class NativeTestExecutor
         return [.. arguments, "--configuration", configuration];
     }
 
+    /// <summary>Creates a direct assembly invocation with private native TRX output.</summary>
+    /// <param name="platform">The declared executor.</param>
+    /// <param name="assembly">The checked private test assembly.</param>
+    /// <param name="resultsDirectory">The current execution's private result directory.</param>
+    /// <returns>The direct invocation without a project or build operation.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The declared native executor is unsupported.</exception>
+    internal static IReadOnlyList<string> CreatePreparedArguments(string platform, string assembly, string resultsDirectory)
+        => platform switch
+        {
+            PersistedProfileNativeTests.VsTest => ["vstest", assembly, "/TestAdapterPath:" + Path.GetDirectoryName(assembly), "/Logger:trx;LogFileName=" + _reportFileName, "/ResultsDirectory:" + resultsDirectory],
+            PersistedProfileNativeTests.MicrosoftTestingPlatform => [assembly, "--results-directory", resultsDirectory, "--report-xunit-trx", "--report-xunit-trx-filename", _reportFileName],
+            _ => throw new ArgumentOutOfRangeException(nameof(platform), platform, "Unsupported prepared native test platform."),
+        };
+
     /// <summary>
     /// Gets the repository-relative path of the report retained beside an evidence artifact.
     /// </summary>
@@ -393,6 +407,11 @@ internal static class NativeTestExecutor
         }
     }
 
+    private static IReadOnlyList<string> BuildArguments(string executor, string project, string results, string workspace, SourceMapping? mapping)
+        => executor == "python3"
+            ? ["-E", "-s", "-B", project]
+            : [.. CreateArguments(executor, project, results, mapping), "--artifacts-path", Path.Combine(workspace, "test-builds")];
+
     private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken ownerCancellationToken, CancellationToken cancellationToken, AttachedSuiteIdentity? attached = null, Action<int>? onStarted = null, Action<IReadOnlyList<int>>? onStopFailure = null, CompositionRunResourceScanner? nativeProcessScanner = null)
     {
         // An attached run writes only inside its own workspace; the owner's workspace stays the shared read-only source mapping.
@@ -410,6 +429,20 @@ internal static class NativeTestExecutor
             || (session.Plan.ExecutionTiming is { } existingTiming && DateTimeOffset.UtcNow >= existingTiming.DeadlineUtc))
         {
             return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
+        }
+
+        string? preparedEntry = null;
+        if (session.Plan.PreparedNativeBuild is { } prepared)
+        {
+            try
+            {
+                string privateOutput = Path.Combine(privateWorkspace, "prepared-test-" + CompositionRunPlanFactory.NewRunId());
+                preparedEntry = prepared.CopyTest(session.Plan.Workspace, privateOutput, selection, cancellationToken);
+            }
+            catch (Exception exception) when (NativeBuildPreparationService.IsRefusal(exception))
+            {
+                return Failed("HXW013", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, ToolExitCode.PrerequisiteUnavailable, NativeBuildPreparationService.RefusalMessage(exception));
+            }
         }
 
         ModuleTestExecutionTiming timing = session.Plan.ExecutionTiming ?? ModuleTestExecutionTiming.Start(selection, DateTimeOffset.UtcNow);
@@ -573,7 +606,11 @@ internal static class NativeTestExecutor
 
             gate.Start();
             cancellationToken.ThrowIfCancellationRequested();
-            System.Diagnostics.ProcessStartInfo childStart = CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : [.. CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), "--artifacts-path", Path.Combine(privateWorkspace, "test-builds")], Path.GetDirectoryName(project), environment);
+            IReadOnlyList<string> arguments = preparedEntry is null
+                ? BuildArguments(selection.Executor, project, results, privateWorkspace, session.Plan.SourceMapping)
+                : CreatePreparedArguments(selection.Executor, preparedEntry, results);
+
+            System.Diagnostics.ProcessStartInfo childStart = CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, arguments, Path.GetDirectoryName(preparedEntry ?? project), environment);
             TimeSpan remainingExecution = timing.DeadlineUtc - DateTimeOffset.UtcNow;
             process = remainingExecution <= TimeSpan.Zero
                 ? new CompositionProcessResult(true, -1, string.Empty, true)

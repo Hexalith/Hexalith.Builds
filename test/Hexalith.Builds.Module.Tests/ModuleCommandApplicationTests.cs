@@ -7,11 +7,13 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.Workspace;
 
 using Shouldly;
 
@@ -60,6 +62,75 @@ public sealed class ModuleCommandApplicationTests
           }
         }
         """;
+
+    /// <summary>Refuses a missing or unauthenticated producer receipt before any owner launch.</summary>
+    /// <param name="missing">Whether the receipt was omitted on disk.</param>
+    /// <returns>The asynchronous CLI assertions.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PreparedNativeReceiptRefusesBeforeStartupAsync(bool missing)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Document["modules"]![0]!["tests"] = JsonNode.Parse("""
+            [{"name":"verify","executor":"mtp","entry":"native.csproj","reportFormat":"trx","executionTimeoutSeconds":60,"stopTimeoutSeconds":30,"mode":"package"}]
+            """);
+        CancellationToken cancellation = TestContext.Current.CancellationToken;
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "Hexalith.Builds.slnx"), "<Solution />", cancellation).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "native.csproj"), "<Project />", cancellation).ConfigureAwait(true);
+        string manifest = workspace.Save();
+        string receipt = Path.Combine(workspace.Root, "receipt.json");
+        if (!missing)
+        {
+            await File.WriteAllTextAsync(receipt, "{\"credential\":\"untrusted-value-never-echoed\"}", cancellation).ConfigureAwait(true);
+        }
+
+        int starts = 0;
+        CompositionEngineOptions options = new("unused.dll", typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            StateDirectory = Path.Combine(workspace.Root, "state"),
+            WorkspaceRoot = Path.Combine(workspace.Root, "runs"),
+            RootManifestCheckOverride = (_, _) => Task.FromResult(false),
+            MappingResolverOverride = (_, mode, _) => Task.FromResult(new SourceMapping(mode, workspace.Root, "sample", [], false)),
+            SelectedPlatformStartOverride = (_, _, _) =>
+            {
+                starts++;
+                throw new InvalidOperationException("Prepared receipt refusal started an owner.");
+            },
+        };
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        string[] arguments =
+        [
+            "test", "--mode", "package", "--manifest", manifest, "--profile", "verify", "--output", "json",
+            "--prepared-native-build", receipt, "--prepared-native-build-sha256", new string('0', 64),
+        ];
+        int result = await ModuleCommandApplication.InvokeAsync(arguments, output, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+        result.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());
+        output.ToString().ShouldContain("HXW013");
+        output.ToString().ShouldNotContain("untrusted-value-never-echoed");
+        starts.ShouldBe(0);
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
+    /// <summary>Rejects an attachment override even before resolving its owner.</summary>
+    /// <returns>The asynchronous CLI assertions.</returns>
+    [Fact]
+    public async Task PreparedNativeAttachmentCannotOverrideOwnerInventoryAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        string[] arguments =
+        [
+            "test", "--mode", "package", "--manifest", workspace.Save(), "--profile", "verify",
+            "--prepared-native-build", "receipt.json", "--prepared-native-build-sha256", new string('0', 64),
+            "--attach-to", CompositionRunPlanFactory.NewRunId(), "--output", "json",
+        ];
+        int result = await ModuleCommandApplication.InvokeAsync(arguments, output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.ShouldBe((int)ToolExitCode.UsageOrManifest, output.ToString());
+        output.ToString().ShouldContain("fresh package-mode test");
+    }
 
     /// <summary>Invalid or reusable owner expansion refuses before source mapping, state allocation or startup.</summary>
     /// <param name="selection">The requested owner set.</param>

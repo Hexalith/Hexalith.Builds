@@ -121,6 +121,12 @@ public static class ModuleCommandExecutionService
                     throw new InvalidDataException("An explicit EventStore port must be 1-65535 and requires a fresh owner.");
                 }
 
+                if (compositionOptions?.NativeBuildHandoff is not null
+                    && (command != ModuleInvocationCommand.Test || mode != WorkspaceMode.Package || runId is not null || !PlatformManifestCommand.IsV2(manifestPath)))
+                {
+                    throw new InvalidDataException("A prepared native build requires a fresh declared package-mode test.");
+                }
+
                 IReadOnlyList<string> owners = CompositionQualificationOwners.Normalize(compositionOptions?.QualificationOwners);
                 if (owners.Count > 0)
                 {
@@ -1220,6 +1226,23 @@ public static class ModuleCommandExecutionService
                 SourceMapping mapping = preResolvedMapping ?? options.SourceMapping ?? await (options.MappingResolverOverride?.Invoke(manifestPath, mode, startupToken ?? cancellationToken) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, startupToken ?? cancellationToken)).ConfigureAwait(false);
                 (startupToken ?? cancellationToken).ThrowIfCancellationRequested();
                 options = options with { SourceMapping = mapping };
+                if (options.NativeBuildHandoff is { } handoff)
+                {
+                    try
+                    {
+                        options = options with
+                        {
+                            PreparedNativeBuild = await NativeBuildPreparationService.VerifyAsync(
+                                handoff, mapping, manifestPath, selections, startupToken ?? cancellationToken).ConfigureAwait(false),
+                        };
+                    }
+                    catch (Exception exception) when (NativeBuildPreparationService.IsRefusal(exception))
+                    {
+                        result = PlatformRefusal("HXW013", NativeBuildPreparationService.RefusalMessage(exception), ToolExitCode.PrerequisiteUnavailable);
+                        return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None).ConfigureAwait(false);
+                    }
+                }
+
                 if (candidateRequestPath is not null)
                 {
                     try

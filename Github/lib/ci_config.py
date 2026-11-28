@@ -126,7 +126,7 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         value = document["schema"]
         raise ConfigError(f"{source}: unsupported schema {value}. CI/CD is owned by Hexalith.CiCd.")
     closed(document, REQUIRED, frozenset(("buildsTag", "aspire", "job-timeout-minutes",
-                                         "moduleManifest", "windowsCheckout", "additionalSdkVersion",
+                                         "moduleManifest", "nativeBuildReuse", "windowsCheckout", "additionalSdkVersion",
                                          "releaseTimeoutMinutes", "nightlyTimeoutMinutes", "prerequisites",
                                          "publishedBuilds", "buildProjects", "docs")), "$")
     if "docs" in document and document["docs"] not in ("off", "warn", "fail"):
@@ -144,6 +144,10 @@ def validate_config(document: Any, *, repository: str, module_root: str = "",
         path(document["solution"], "$/solution", ".slnx")
     if document.get("moduleManifest") is not None:
         path(document["moduleManifest"], "$/moduleManifest", ".json")
+    if "nativeBuildReuse" in document and type(document["nativeBuildReuse"]) is not bool:
+        fail("$/nativeBuildReuse", "expected a boolean")
+    if document.get("nativeBuildReuse") and not document.get("moduleManifest"):
+        fail("$/nativeBuildReuse", "requires a v2 moduleManifest")
     if document.get("publishedBuilds") is not None:
         path(document["publishedBuilds"], "$/publishedBuilds", ".json")
         if document.get("moduleManifest"):

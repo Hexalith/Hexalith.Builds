@@ -79,6 +79,7 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateResultValidationCommand(standardOutput, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreatePrepareBuildCommand(standardOutput, operationStarted));
+        rootCommand.Subcommands.Add(CreatePrepareNativeBuildCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateManagedPrepareBuildCommand(standardOutput, operationStarted, qualification: false));
         rootCommand.Subcommands.Add(CreateManagedPrepareBuildCommand(standardOutput, operationStarted, qualification: true));
         rootCommand.Subcommands.Add(CreateListCommand(standardOutput, compositionOptions, operationStarted));
@@ -158,6 +159,36 @@ internal static class ModuleCommandApplication
                     parsed.GetValue(mode) == "package" ? WorkspaceMode.Package : WorkspaceMode.Source,
                     parsed.GetValue(workspace)!,
                     cancellation).ConfigureAwait(false);
+                await ToolDiagnosticFormatter.WriteAsync(output, result, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
+                return (int)result.Outcome.ExitCode;
+            }
+        });
+        return command;
+    }
+
+    private static Command CreatePrepareNativeBuildCommand(TextWriter output, Action<Task<int>> operationStarted)
+    {
+        Command command = new("prepare-native-build", "Seals the original audited Release native and composition outputs.");
+        Option<string> manifest = new("--manifest") { Required = true };
+        Option<string> inputs = new("--build-inputs") { Required = true };
+        Option<string> workspace = new("--workspace") { Required = true };
+        Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
+        _ = format.AcceptOnlyFromAmong("human", "json");
+        foreach (Option option in new Option[] { manifest, inputs, workspace, format })
+        {
+            command.Options.Add(option);
+        }
+
+        command.SetAction((parsed, token) =>
+        {
+            Task<int> execution = ExecuteAsync(token);
+            operationStarted(execution);
+            return execution;
+
+            async Task<int> ExecuteAsync(CancellationToken cancellation)
+            {
+                ToolCommandResult result = await NativeBuildPreparationService.PrepareAsync(
+                    parsed.GetValue(manifest)!, parsed.GetValue(inputs)!, parsed.GetValue(workspace)!, cancellation).ConfigureAwait(false);
                 await ToolDiagnosticFormatter.WriteAsync(output, result, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
                 return (int)result.Outcome.ExitCode;
             }
@@ -409,6 +440,8 @@ internal static class ModuleCommandApplication
         Option<string> evidenceOption = new("--evidence");
         Option<string> candidateOption = new("--candidate-request") { Description = "Signed GitHub gate issuance; requires independently enrolled host authority." };
         Option<string> runIdOption = new("--run-id");
+        Option<string> nativeReceipt = new("--prepared-native-build") { Description = "Reuses the exact audited Release output in this producer receipt." };
+        Option<string> nativeDigest = new("--prepared-native-build-sha256") { Description = "The independent SHA-256 digest of the native build producer receipt." };
         Option<string> ciReceiptOption = new("--ci-owner-receipt") { Description = "External durable ownership receipt for disposable Linux GitHub-hosted package integration." };
         Option<string> attachToOption = new("--attach-to") { Description = "Runs the declared suite as a runner-owned attached run hosted by this live owner run." };
         Option<string> holdOption = new("--hold-seconds") { Description = "Whole seconds from 1 to 14400; omit for 1800. Requires --attach-to." };
@@ -430,6 +463,8 @@ internal static class ModuleCommandApplication
             commandDefinition.Options.Add(ownersOption);
             commandDefinition.Options.Add(candidateOption);
             commandDefinition.Options.Add(ciReceiptOption);
+            commandDefinition.Options.Add(nativeReceipt);
+            commandDefinition.Options.Add(nativeDigest);
             commandDefinition.Options.Add(attachToOption);
             commandDefinition.Options.Add(holdOption);
             commandDefinition.Options.Add(attachmentRequestOption);
@@ -478,6 +513,24 @@ internal static class ModuleCommandApplication
                 ? null
                 : new AttachedSuiteRequest { HoldSeconds = holdSeconds, PresentedRequestId = presentedRequestId, AttacherContext = attacherContext };
             CompositionEngineOptions? executionOptions = compositionOptions;
+            string? receipt = Explicit(nativeReceipt);
+            string? digest = Explicit(nativeDigest);
+            if (receipt is not null || digest is not null)
+            {
+                if (mode != WorkspaceMode.Package || attachTo is not null || string.IsNullOrWhiteSpace(receipt) || string.IsNullOrWhiteSpace(digest))
+                {
+                    return ToolCommandHost.WriteParseFailureAsync(
+                        standardOutput,
+                        ParseOutputFormat(parseResult.GetValue(outputOption)),
+                        "A prepared native build requires both receipt and digest on a fresh package-mode test.");
+                }
+
+                executionOptions = (executionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath!)) with
+                {
+                    NativeBuildHandoff = new NativeBuildHandoff(receipt, digest),
+                };
+            }
+
             if (command != ModuleInvocationCommand.Down && parseResult.GetResult(eventStorePortOption) is not null)
             {
                 if (attachTo is not null)

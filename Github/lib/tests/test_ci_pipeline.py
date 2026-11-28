@@ -190,6 +190,62 @@ class SubprocessPipelineTests(unittest.TestCase):
         self.assertIn("--no-restore", commands[1])
         self.assertIn('"integration": ["test/Fixture.IntegrationTests.csproj"]', result.stdout)
 
+    def test_native_reuse_audits_stage_two_and_seals_original_declared_output(self):
+        manifest = self.root / "module.json"
+        project = "test/Fixture.IntegrationTests.csproj"
+        self.document.update(moduleManifest=manifest.name, nativeBuildReuse=True)
+        PIPE.validate_config(self.document, repository=BUILDS)
+        manifest.write_text(json.dumps({"schema": "hexalith.module-manifest.v2", "modules": [{"tests": [
+            {"name": "package", "mode": "package", "executor": "mtp", "entry": project},
+            {"name": "source", "mode": "source", "executor": "mtp", "entry": project},
+        ]}]}), encoding="utf-8")
+        prepared = PIPE.PreparedConfig(self.root, self.root, self.document, "Fixture.slnx", "global.json", ())
+        entry = self.root / "test/bin/Release/net11.0/Fixture.IntegrationTests.dll"
+        assets = self.root / "test/obj/project.assets.json"
+        git_environment = self.root / "github-env"
+        calls = []
+        digest = "a" * 64
+
+        def run(arguments, root, *, capture=False):
+            self.assertEqual(self.root, root)
+            calls.append(arguments[1])
+            if not capture:
+                self.assertIn("-p:NuGetAudit=true", arguments)
+                self.assertIn("-p:NuGetAuditMode=all", arguments)
+                self.assertIn("-p:NuGetAuditLevel=low", arguments)
+                self.assertNotIn("-p:NuGetAudit=false", arguments)
+                self.assertIn("--force-evaluate" if arguments[1] == "restore" else "--no-restore", arguments)
+                return ""
+            self.assertIn("prepare-native-build", arguments)
+            inputs = Path(arguments[arguments.index("--build-inputs") + 1])
+            self.assertEqual([{"role": "test.package", "entry": str(entry), "assets": str(assets),
+                               "project": str(self.root / project)}], json.loads(inputs.read_text()))
+            payload = Path(arguments[arguments.index("--workspace") + 1])
+            payload.mkdir()
+            (payload / "receipt.json").write_text("fixture receipt", encoding="utf-8")
+            return json.dumps({"status": "prepared", "nativeBuildReceiptSha256": digest})
+
+        properties = {"TargetFramework": "net11.0", "TargetFrameworks": "", "TargetPath": str(entry),
+                      "ProjectAssetsFile": str(assets)}
+        with (mock.patch.dict(os.environ, {"RUNNER_TEMP": str(self.root), "GITHUB_ENV": str(git_environment)}),
+              mock.patch.object(PIPE, "solution_projects", return_value=(project,)),
+              mock.patch.object(PIPE, "evaluated_properties", return_value=properties),
+              mock.patch.object(PIPE, "run_command", side_effect=run),
+              mock.patch.object(PIPE, "publish_outputs") as publish):
+            PIPE.restore_and_build(prepared, publish_native_build=True)
+            PIPE.restore_and_build(prepared)
+        self.assertEqual(["restore", "build", "tool", "restore", "build"], calls)
+        receipt = publish.call_args.args[0]["prepared-native-build"]
+        self.assertEqual([f"CI_PREPARED_NATIVE_BUILD={receipt}", f"CI_PREPARED_NATIVE_BUILD_SHA256={digest}"],
+                         git_environment.read_text().splitlines())
+        self.assertFalse((Path(receipt).parent.parent / "inputs.json").exists())
+
+    def test_native_reuse_requires_a_boolean_and_a_module_manifest(self):
+        for options, error in (({"nativeBuildReuse": "true"}, "expected a boolean"),
+                               ({"nativeBuildReuse": True}, "requires a v2 moduleManifest")):
+            with self.subTest(options=options), self.assertRaisesRegex(PIPE.ConfigError, error):
+                PIPE.validate_config({**self.document, **options}, repository=BUILDS)
+
     def test_leading_dash_solution_is_passed_as_an_absolute_path(self):
         self.document["solution"] = "-consumer solution.slnx"
         solution = self.root / self.document["solution"]
