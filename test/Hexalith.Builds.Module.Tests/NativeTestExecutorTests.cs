@@ -34,6 +34,133 @@ public sealed class NativeTestExecutorTests
 
     private static readonly byte[] _reportBytes = Encoding.UTF8.GetBytes("<TestRun><ResultSummary outcome=\"Completed\" /></TestRun>");
 
+    /// <summary>Launches the checked private assembly through the selected executor with the existing native handoff and TRX.</summary>
+    /// <param name="fault">An optional post-admission inventory mutation.</param>
+    /// <returns>The asynchronous native execution assertions.</returns>
+    [Theory]
+    [InlineData("none")]
+    [InlineData("missing")]
+    [InlineData("changed")]
+    [InlineData("extra")]
+    [InlineData("symlink")]
+    public async Task PreparedOutputUsesPrivateNativeLaunchAsync(string fault)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Assert.Skip("The fixture records a direct POSIX launch.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        CancellationToken cancellation = TestContext.Current.CancellationToken;
+        string project = Path.Combine(workspace.Root, "native.csproj");
+        await File.WriteAllTextAsync(project, "<Project />", cancellation).ConfigureAwait(true);
+        workspace.Document["modules"]![0]!["tests"] = JsonNode.Parse("""
+            [{"name":"verify","executor":"mtp","entry":"native.csproj","reportFormat":"trx","executionTimeoutSeconds":60,"stopTimeoutSeconds":30,"mode":"source"}]
+            """);
+        string manifest = workspace.Save();
+        ModuleTestSelection selection = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], cancellation).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selection, Modules = [], UiMarkers = [] };
+        plan = await TestEnvironmentProvisioningFixture.PrepareAsync(plan, manifest, workspace.Root).ConfigureAwait(true);
+        string role = PreparedNativeBuild.TestRole(selection.Name);
+        string inventory = PreparedNativeBuild.DirectoryFor(plan.Workspace, role);
+        CompositionWorkspace.CreatePrivateDirectory(inventory);
+        string entry = Path.Combine(inventory, "Fixture.dll");
+        string dependency = Path.Combine(inventory, "dependency.dll");
+        await File.WriteAllTextAsync(entry, "original", cancellation).ConfigureAwait(true);
+        await File.WriteAllTextAsync(dependency, "dependency", cancellation).ConfigureAwait(true);
+        IReadOnlyDictionary<string, string> files = NativeBuildInventory.VerifyDirectory(inventory, null, null, cancellation);
+        NativeBuildComponent component = new(role, "Fixture.dll", project, selection.EntryHash, "net11.0", string.Empty, new string('a', 64), new Dictionary<string, NativeBuildPackageIdentity>(), files);
+        Dictionary<string, NativeBuildComponent> components = new(StringComparer.Ordinal) { [role] = component };
+        Dictionary<string, string> profiles = new(StringComparer.Ordinal) { [selection.Name] = PreparedNativeBuild.ProfileIdentity(selection) };
+        plan = plan with { PreparedNativeBuild = new(new string('a', 64), components, profiles) };
+        switch (fault)
+        {
+            case "missing":
+                File.Delete(dependency);
+                break;
+            case "changed":
+                await File.WriteAllTextAsync(dependency, "modified", cancellation).ConfigureAwait(true);
+                break;
+            case "extra":
+                await File.WriteAllTextAsync(Path.Combine(inventory, "foreign.txt"), "foreign", cancellation).ConfigureAwait(true);
+                break;
+            case "symlink":
+                File.Delete(dependency);
+                _ = File.CreateSymbolicLink(dependency, entry);
+                break;
+            default:
+                fault.ShouldBe("none");
+                break;
+        }
+
+        string runner = Path.Combine(workspace.Root, "dotnet-double");
+        const string script = """
+            set -eu
+            printf '%s' 'launch' > ../prepared-child-stage
+            test "$#" -eq 6
+            case "$1" in
+              */prepared-test-*/Fixture.dll) ;;
+              *) exit 31 ;;
+            esac
+            IFS= read -r payload < "$1" || test -n "$payload"
+            test "$payload" = original
+            printf '%s' 'handoff' > ../prepared-child-stage
+            test -f "$HEXALITH_TEST_ENVIRONMENT_PATH"
+            test -n "$HEXALITH_G4_ACCESS_TOKEN"
+            printf '%s' '<TestRun><ResultSummary outcome="Completed"><Counters total="1" passed="1" failed="0" /></ResultSummary></TestRun>' > "$HEXALITH_G4_TEST_REPORT_PATH"
+            printf '%s' 'reported' > ../prepared-child-stage
+            """;
+        CompositionTestFiles.WriteScript(runner, script.ReplaceLineEndings("\n"));
+        using Process host = new();
+        CompositionRunSession session = new(plan, HealthyReadiness(plan), "private-prepared-signing-key", host);
+        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(session, new("native.csproj", "mtp"), manifest, cancellation, runner, selection: selection).ConfigureAwait(true);
+        if (fault == "none")
+        {
+            string stagePath = Path.Combine(plan.Workspace, "prepared-child-stage");
+            string stage = File.Exists(stagePath) ? await File.ReadAllTextAsync(stagePath, cancellation).ConfigureAwait(true) : "not-started";
+            result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, stage + ": " + string.Join(", ", result.Result.Diagnostics.Select(diagnostic => diagnostic.Message)));
+            result.Report.ShouldNotBeNull().Total.ShouldBe(1);
+            result.Launched.ShouldBeTrue();
+        }
+        else
+        {
+            AssertNotPassing(result, "HXW013", ToolExitCode.PrerequisiteUnavailable);
+            result.Launched.ShouldBeFalse();
+        }
+    }
+
+    /// <summary>Authenticates the inventory itself and prevents removal of the required reuse branch.</summary>
+    [Fact]
+    public void PreparedNativePlanRejectsInventoryTampering()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string key = CompositionSigningKey.Create();
+            PreparedNativeBuild inventory = new(new string('a', 64), new Dictionary<string, NativeBuildComponent>(), new Dictionary<string, string>());
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root, CompositionRunPlanFactory.NewRunId()) with { PreparedNativeBuild = inventory };
+            CompositionRunPlan bound = CompositionPreparedNativeBuild.Bind(plan, key);
+            CompositionRunPlan roundTrip = JsonSerializer.Deserialize<CompositionRunPlan>(JsonSerializer.Serialize(bound)).ShouldNotBeNull();
+            CompositionPreparedNativeBuild.Verify(roundTrip, key, required: true);
+            _ = Should.Throw<InvalidDataException>(() => CompositionPreparedNativeBuild.Verify(bound with { PreparedNativeBuild = null }, key, required: true));
+            _ = Should.Throw<InvalidDataException>(() => CompositionPreparedNativeBuild.Verify(bound with { PreparedNativeBuild = inventory with { ReceiptSha256 = new string('b', 64) } }, key, required: true));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>VSTest consumes the copied assembly and private TRX paths directly.</summary>
+    [Fact]
+    public void PreparedNativeVsTestArgumentsUseThePrivateAssembly()
+    {
+        string assembly = Path.Combine(Path.GetTempPath(), "private-fixture", "test.dll");
+        string results = Path.Combine(Path.GetTempPath(), "private-result");
+        IReadOnlyList<string> arguments = NativeTestExecutor.CreatePreparedArguments(PersistedProfileNativeTests.VsTest, assembly, results);
+        arguments.ShouldBe(["vstest", assembly, "/TestAdapterPath:" + Path.GetDirectoryName(assembly), "/Logger:trx;LogFileName=native.trx", "/ResultsDirectory:" + results]);
+    }
+
     /// <summary>Native descendant stopping verifies detached work without stopping owner services or peer executions.</summary>
     /// <param name="discoveryVerified">Whether process ownership can be completely observed.</param>
     /// <returns>The real detached-child stopping, uncertainty and peer-isolation assertions.</returns>

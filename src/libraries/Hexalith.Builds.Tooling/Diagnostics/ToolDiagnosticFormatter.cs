@@ -142,6 +142,11 @@ public static class ToolDiagnosticFormatter
             }
         }
 
+        if (result.NativeBuildReceiptSha256 is { } nativeDigest)
+        {
+            AppendField(builder, "native-build-receipt-sha256", nativeDigest);
+        }
+
         if (result.BuildPreparation is { } preparation)
         {
             AppendField(builder, "workspace", preparation.Workspace);

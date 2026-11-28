@@ -30,6 +30,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets the original command request time, including source mapping and other setup.</summary>
     public DateTimeOffset? StartupRequestedAtUtc { get; init; }
 
+    /// <summary>Gets the caller's explicit original Release producer identity.</summary>
+    public NativeBuildHandoff? NativeBuildHandoff { get; init; }
+
     /// <summary>Gets the already-resolved workspace source mapping.</summary>
     public SourceMapping? SourceMapping { get; init; }
 
@@ -106,6 +109,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
 
     /// <summary>Gets a value indicating whether local selected-test failures retain surviving resources until explicit down.</summary>
     public bool RetainOnFailure { get; init; }
+
+    /// <summary>Gets the verified producer inventory retained for this owner.</summary>
+    internal PreparedNativeBuild? PreparedNativeBuild { get; init; }
 
     /// <summary>Gets the executor captured before setup and retained through issuance.</summary>
     internal TestEnvironment.ExecutingToolIdentity? ExecutingTool { get; init; }

@@ -547,7 +547,8 @@ internal sealed class AttachedSuiteSupervisor : IAsyncDisposable
                 && string.Equals(selection.EntryHash, request.EntryHash, StringComparison.OrdinalIgnoreCase)
                 && selection.Mode == request.Mode
                 && ModuleTestSelection.Compatible(_ownerSelection, selection)
-                && !selection.RequiresOwnerGate();
+                && !selection.RequiresOwnerGate()
+                && (_session.Plan.PreparedNativeBuild?.Admits(selection) ?? true);
             return matches ? selection : null;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException or JsonException)

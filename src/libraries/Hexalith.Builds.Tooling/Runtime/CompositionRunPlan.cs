@@ -91,6 +91,14 @@ public sealed record CompositionRunPlan(
     /// <summary>Gets the built model from the pinned Platform checkout.</summary>
     public string? PlatformModelAssemblyPath { get; init; }
 
+    /// <summary>Gets the exact owner-verified build inventory available within this run only.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public PreparedNativeBuild? PreparedNativeBuild { get; init; }
+
+    /// <summary>Gets the owner's authentication tag for the prepared inventory and plan.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PreparedNativeBuildBinding { get; init; }
+
     /// <summary>Gets the run-scoped Debug McpCli tool built from the mapped checkout for an McpCli source run.</summary>
     public string? McpCliToolPath { get; init; }
 

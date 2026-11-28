@@ -22,6 +22,10 @@ public sealed record ToolCommandResult(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Workspace.BuildPreparation? BuildPreparation { get; init; }
 
+    /// <summary>Gets the exact sealed native producer receipt digest.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? NativeBuildReceiptSha256 { get; init; }
+
     /// <summary>Gets the optional bounded static enrollment report.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformAdoptionRow>? Adoption { get; init; }

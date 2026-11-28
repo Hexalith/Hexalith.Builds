@@ -355,6 +355,32 @@ This candidate command is absent from accepted CLI 4.35.2: consumer pins and
 root Builds revisions require separate producer qualification/publication before
 CI can succeed; this change does not select a new accepted tool version.
 
+Set `nativeBuildReuse: true` in the CiCd setup for a module with a v2
+`moduleManifest` and a compatible pinned Platform model. The build stage audits
+the package-mode Release restore, compiles the solution once, prepares the
+composition dependencies, and seals the original MTP and VSTest outputs before
+the hooks run. The job exports `CI_PREPARED_NATIVE_BUILD` and
+`CI_PREPARED_NATIVE_BUILD_SHA256`.
+
+```bash
+dotnet tool run hexalith-module test --manifest module/hexalith.module-manifest.v2.json \
+  --mode package --profile <declared-profile> \
+  --prepared-native-build "$CI_PREPARED_NATIVE_BUILD" \
+  --prepared-native-build-sha256 "$CI_PREPARED_NATIVE_BUILD_SHA256"
+```
+
+For local preparation, `prepare-native-build --manifest <manifest>
+--build-inputs <inputs.json> --workspace <fresh-directory> --output json` seals
+the already audited Release test outputs. Each input uses `role`, `entry`,
+`assets` and `project`. For a test use `test.<profile>` and give the absolute
+paths to its original DLL, restore assets and project. The command builds the
+pinned Platform model and prepares missing composition components. If you supply
+the already built model, supply its audited composition components as well.
+Keep the returned `nativeBuildReceiptSha256` in the producing job's control channel
+and pass it separately from the private `receipt.json`. An attaching suite
+supplies the owner run ID and the declared profile. It uses the original
+owner's verified test inventory.
+
 `run` and `test` accept `--mode source|package` and default to `source`. CI jobs
 that invoke this tool should pass `--mode package` explicitly. The tool resolves
 the outermost Git superproject containing

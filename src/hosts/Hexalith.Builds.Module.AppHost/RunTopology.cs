@@ -308,6 +308,12 @@ internal static class RunTopology
             seed = ResolveSourceEventStoreSeed(plan);
         }
 
+        if (plan.PreparedNativeBuild is { } prepared
+            && prepared.VerifyEntry(plan.Workspace, PreparedNativeBuild.ModelRole) != modelPath)
+        {
+            throw new InvalidDataException("Prepared native build model does not match the verified private inventory.");
+        }
+
         string modelDirectory = Path.GetDirectoryName(modelPath)!;
         System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += (context, name) =>
         {
@@ -316,8 +322,10 @@ internal static class RunTopology
         };
 
         System.Reflection.Assembly model = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(modelPath);
+        string entrypoint = plan.PreparedNativeBuild is null ? "ComposeRun" : "ComposePreparedRun";
         System.Reflection.MethodInfo compose = model.GetType("Hexalith.Platform.Composition.PlatformAppModel", throwOnError: true)!
-            .GetMethod("ComposeRun", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+            .GetMethod(entrypoint, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            ?? throw new InvalidDataException("Platform model does not support the selected runner entry point.");
         try
         {
             _ = compose.Invoke(null, [builder, plan, signingKey, seed]);

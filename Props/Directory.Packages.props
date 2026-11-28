@@ -471,6 +471,7 @@
     <PackageVersion Include="NetArchTest.eNhancedEdition" Version="1.4.5" />
     <PackageVersion Include="NFalkorDB" Version="1.2.0" />
     <PackageVersion Include="NRedisStack" Version="1.8.0" />
+    <PackageVersion Include="NuGet.Packaging" Version="8.0.0" />
     <PackageVersion Include="NuGet.Versioning" Version="8.0.0" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="NSwag.MSBuild" Version="14.8.0" />
