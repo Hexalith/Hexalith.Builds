@@ -130,7 +130,7 @@ npm audit signatures
 python3 Tools/ci/lint_workflows.py --install-only
 ```
 
-`tools.json` pins actionlint 1.7.12, zizmor 1.32.0 and uv 0.13.7 to official
+`tools.json` pins actionlint 1.7.12, zizmor 1.33.1 and uv 0.13.10 to official
 release archives and committed SHA256 digests. The installer checks archive
 integrity on every invocation, including cached downloads, and extracts fresh
 executables without executing archive paths. Archive and executable replacements
