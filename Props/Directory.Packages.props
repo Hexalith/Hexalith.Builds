@@ -35,7 +35,7 @@
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.1.1</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">4.0.2</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">4.0.2</HexalithPartiesAspireVersion>
-    <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">2.0.0</HexalithProjectsVersion>
+    <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">2.1.0</HexalithProjectsVersion>
     <HexalithAspireHostingDaprVersion>17.0.0-preview.1.261120-0454</HexalithAspireHostingDaprVersion>
     <HexalithAspireAppHostSdkVersion>17.0.0</HexalithAspireAppHostSdkVersion>
     <HexalithDaprRuntimeVersion>1.19.2</HexalithDaprRuntimeVersion>

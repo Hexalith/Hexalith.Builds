@@ -97,6 +97,13 @@
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "a02a5e6c2213841ef1f0a573f3b69c5077c39bc9fcdb754b262c74f4bfb9d625"
   },
+  "projects/2.1.0": {
+    "repository": "Hexalith.Projects",
+    "version": "2.1.0",
+    "commit": "e2490842fffba312e1d6caf13cc883ce4e828bde",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "e3685bd53b4a46d4985893a6d3240670a53e722b0b6ad6391318fed05b78a32a"
+  },
   "tenants/8.0.2": {
     "repository": "Hexalith.Tenants",
     "version": "8.0.2",
