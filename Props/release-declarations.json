@@ -6,6 +6,13 @@
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "e9c7fe584232f623b08729492f8f0ca9ea6722283e097abdcb81b3bec39d3496"
   },
+  "conversations/2.2.1": {
+    "repository": "Hexalith.Conversations",
+    "version": "2.2.1",
+    "commit": "b59bd9f9ebc00e622e6d329acf8555c64a355aae",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "e9c7fe584232f623b08729492f8f0ca9ea6722283e097abdcb81b3bec39d3496"
+  },
   "eventstore/5.4.0": {
     "repository": "Hexalith.EventStore",
     "version": "5.4.0",

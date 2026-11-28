@@ -16,7 +16,7 @@
     <_HexalithSelectedPackageProps Condition="'$(DirectoryPackagesPropsPath)' != ''">$([MSBuild]::NormalizePath('$(DirectoryPackagesPropsPath)'))</_HexalithSelectedPackageProps>
     <_HexalithWorksOwnsMSBuildPackageVersions Condition="'$(DirectoryPackagesPropsPath)' != '' and '$(_HexalithSelectedPackageProps)' == '$(_HexalithNearestPackageProps)' and Exists('$(_HexalithNearestPackageOwner)/Hexalith.Works.slnx')">true</_HexalithWorksOwnsMSBuildPackageVersions>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">3.0.4</HexalithCommonsVersion>
-    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.2.0</HexalithConversationsVersion>
+    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">2.2.1</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">2.0.2</HexalithPolymorphicSerializationsVersion>
     <HexalithImmutableVersion>11.0.0</HexalithImmutableVersion>
     <HexalithAspNetCoreJwtBearerVersion>11.0.0</HexalithAspNetCoreJwtBearerVersion>
