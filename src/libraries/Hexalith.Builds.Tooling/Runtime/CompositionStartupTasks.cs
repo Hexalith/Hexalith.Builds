@@ -6,6 +6,8 @@
 namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -13,18 +15,43 @@ using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
-/// Selects and runs declared per-start verification tasks inside the startup deadline.
+/// Selects and runs declared environment-creation and per-start verification tasks inside the startup deadline.
 /// </summary>
 public static class CompositionStartupTasks
 {
+    /// <summary>The scope of a task that verifies every started environment.</summary>
+    public const string PerStartVerifyScope = "per-start-verify";
+
+    /// <summary>The scope of a task that runs once when the runner creates an environment.</summary>
+    public const string EnvironmentCreationScope = "once-per-environment-creation";
+
+    /// <summary>The private run-workspace directory holding model-written task invocation documents.</summary>
+    public const string InvocationDirectoryName = "task-invocations";
+
     /// <summary>
-    /// Selects tasks whose scope is <c>per-start-verify</c>. Other scopes are not part of startup.
+    /// Selects tasks whose scope is <c>once-per-environment-creation</c> or <c>per-start-verify</c>. Other scopes are not part of startup.
     /// </summary>
     /// <param name="manifestPath">The declaration file used to resolve repository-relative executables.</param>
     /// <param name="declarations">The validated modules.</param>
-    /// <returns>The tasks in declaration order.</returns>
+    /// <returns>The tasks in declaration order. Without a run workspace, environment-creation tasks carry no invocation path.</returns>
     public static IReadOnlyList<CompositionStartupTask> Select(string manifestPath, IReadOnlyList<PlatformModuleDeclaration>? declarations) =>
         Select(manifestPath, declarations, null);
+
+    /// <summary>Gets the private invocation path the runner records for one environment-creation task.</summary>
+    /// <param name="workspace">The runner-owned run workspace.</param>
+    /// <param name="moduleId">The declaring module.</param>
+    /// <param name="name">The task name.</param>
+    /// <returns>The absolute invocation document path inside the run workspace.</returns>
+    public static string InvocationPathFor(string workspace, string moduleId, string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspace);
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        string fileName = IsPathSegment(moduleId) && IsPathSegment(name)
+            ? moduleId + "." + name
+            : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(moduleId + "/" + name)))[..32];
+        return Path.Combine(Path.GetFullPath(workspace), InvocationDirectoryName, fileName + ".json");
+    }
 
     /// <summary>
     /// Runs tasks until one fails or the deadline passes.
@@ -40,8 +67,9 @@ public static class CompositionStartupTasks
     /// <param name="manifestPath">The supplied manifest, used by the compatibility fallback.</param>
     /// <param name="declarations">The complete authoritative dependency closure.</param>
     /// <param name="mapping">The command-selected source/package mapping.</param>
-    /// <returns>The per-start verification tasks.</returns>
-    internal static IReadOnlyList<CompositionStartupTask> Select(string manifestPath, IReadOnlyList<PlatformModuleDeclaration>? declarations, SourceMapping? mapping)
+    /// <param name="workspace">The run workspace that receives environment-creation invocation documents, when known.</param>
+    /// <returns>The environment-creation and per-start verification tasks in declaration order.</returns>
+    internal static IReadOnlyList<CompositionStartupTask> Select(string manifestPath, IReadOnlyList<PlatformModuleDeclaration>? declarations, SourceMapping? mapping, string? workspace = null)
     {
         if (declarations is null || declarations.Count == 0)
         {
@@ -76,7 +104,7 @@ public static class CompositionStartupTasks
             foreach (JsonElement task in taskList.EnumerateArray())
             {
                 if (!TryPropertyString(task, "scope", out string scope)
-                    || !string.Equals(scope, "per-start-verify", StringComparison.Ordinal)
+                    || scope is not (PerStartVerifyScope or EnvironmentCreationScope)
                     || !TryPropertyString(task, "name", out string name))
                 {
                     continue;
@@ -99,8 +127,10 @@ public static class CompositionStartupTasks
 
                 tasks.Add(new CompositionStartupTask(moduleId, name, resolved, arguments)
                 {
+                    Scope = scope,
                     WorkingDirectory = declaringRoot,
                     ExecutableError = pathDiagnostics.Count == 0 ? null : pathDiagnostics[0].RuleId + ": " + pathDiagnostics[0].Message,
+                    InvocationPath = scope == EnvironmentCreationScope && workspace is not null ? InvocationPathFor(workspace, moduleId, name) : null,
                 });
             }
         }
@@ -190,6 +220,13 @@ public static class CompositionStartupTasks
             process.StartInfo.Environment[CompositionEnvironment.RunId] = runId;
         }
 
+        // Only the private path crosses the process boundary; the model-written document stays in the run workspace.
+        _ = process.StartInfo.Environment.Remove(CompositionEnvironment.TaskInvocationPath);
+        if (task.InvocationPath is not null)
+        {
+            process.StartInfo.Environment[CompositionEnvironment.TaskInvocationPath] = task.InvocationPath;
+        }
+
         foreach (string argument in task.Arguments)
         {
             process.StartInfo.ArgumentList.Add(argument);
@@ -237,6 +274,11 @@ public static class CompositionStartupTasks
             // Discarded output cannot change the verifier's exit result.
         }
     }
+
+    private static bool IsPathSegment(string value) =>
+        value.Length is > 0 and <= 64
+        && char.IsAsciiLetterOrDigit(value[0])
+        && value.All(character => char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-');
 
     private static bool TryString(JsonElement element, string objectName, string propertyName, out string value)
     {

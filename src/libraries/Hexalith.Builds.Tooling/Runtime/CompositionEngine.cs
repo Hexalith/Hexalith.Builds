@@ -404,7 +404,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 EffectiveDeadline = deadline,
                 StartupDeadlineUtc = deadlineUtc,
                 DebugAttach = _options.DebugAttach,
-                StartupTasks = platformComposition ? CompositionStartupTasks.Select(manifestPath, closure, _options.SourceMapping) : [],
+                StartupTasks = platformComposition ? CompositionStartupTasks.Select(manifestPath, closure, _options.SourceMapping, workspace) : [],
                 PlatformDeclarationHash = platformComposition ? manifestHash : plan.PlatformDeclarationHash,
                 QualificationOwners = _options.QualificationOwners.Count == 0 ? null : _options.QualificationOwners,
                 CompositionContentIdentity = closure is null ? null : TestEnvironment.TestEnvironmentDescriptorWriter.CompositionIdentity(closure, _options.SelectedTest, _options.QualificationOwners),
@@ -417,6 +417,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             plan = CompositionFixtureProducer.Bind(plan, signingKey);
             plan = CompositionPreparedNativeBuild.Bind(plan, signingKey);
             await CompositionDaprComponentRenderer.WriteAsync(plan, startupBound.Token).ConfigureAwait(false);
+            if (plan.StartupTasks.Any(task => task.InvocationPath is not null))
+            {
+                // The model writes each invocation document here before readiness; only the owner can read it.
+                CompositionWorkspace.CreatePrivateDirectory(Path.Combine(workspace, CompositionStartupTasks.InvocationDirectoryName));
+            }
+
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, startupBound.Token).ConfigureAwait(false);
             IReadOnlyDictionary<string, string> aspireHostEnvironment = aspireHost!.CreateEnvironment(workspace);

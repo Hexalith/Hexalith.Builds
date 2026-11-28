@@ -22,6 +22,8 @@ public static class CompositionWriterProtocolCutover
 {
     private const string _writerProtocolCheck = "projection-delivery-writer-protocol";
 
+    private const string _operatorTokenStatus = "operator-token-unavailable;operator=";
+
     private static readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(1);
 
     /// <summary>
@@ -44,7 +46,26 @@ public static class CompositionWriterProtocolCutover
     /// <param name="cancellationToken">The owning startup cancellation.</param>
     /// <returns>A task that completes once the protocol is active.</returns>
     /// <exception cref="TimeoutException">The declared startup bound expired before activation.</exception>
-    public static async Task ActivateAsync(Func<CancellationToken, Task<Uri>> endpointResolver, string runId, string signingKey, TimeSpan activationTimeout, CancellationToken cancellationToken)
+    public static Task ActivateAsync(Func<CancellationToken, Task<Uri>> endpointResolver, string runId, string signingKey, TimeSpan activationTimeout, CancellationToken cancellationToken)
+        => ActivateAsync(endpointResolver, runId, signingKey, null, activationTimeout, cancellationToken);
+
+    /// <summary>Activates the writer protocol with the model's operator token source, or the per-run signing key without one.</summary>
+    /// <param name="endpointResolver">Resolves the allocated gateway endpoint.</param>
+    /// <param name="runId">The isolated fresh-store run identity.</param>
+    /// <param name="signingKey">The in-memory operator signing key, used only when no token source is registered.</param>
+    /// <param name="tokenSource">The model-registered operator token source, or null for the signing-key token.</param>
+    /// <param name="activationTimeout">The remaining owning startup bound.</param>
+    /// <param name="cancellationToken">The owning startup cancellation.</param>
+    /// <returns>A task that completes once the protocol is active.</returns>
+    /// <exception cref="TimeoutException">The declared startup bound expired before activation.</exception>
+    /// <exception cref="InvalidOperationException">The token source refused the operator, or the gateway refused activation.</exception>
+    public static async Task ActivateAsync(
+        Func<CancellationToken, Task<Uri>> endpointResolver,
+        string runId,
+        string signingKey,
+        ICompositionOperatorTokenSource? tokenSource,
+        TimeSpan activationTimeout,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(endpointResolver);
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
@@ -71,7 +92,21 @@ public static class CompositionWriterProtocolCutover
                     string body = await health.Content.ReadAsStringAsync(probe.Token).ConfigureAwait(false);
                     if (OnlyWriterProtocolIsUnhealthy(body))
                     {
-                        await ActivateProtocolAsync(client, runId, signingKey, probe.Token).ConfigureAwait(false);
+                        string token;
+                        if (tokenSource is null)
+                        {
+                            token = SigningKeyToken(signingKey);
+                        }
+                        else
+                        {
+                            // A refused or unreachable operator never falls back to the signing key.
+                            string healthStatus = lastStatus;
+                            lastStatus = OperatorTokenStatus(tokenSource.OperatorName);
+                            token = await OperatorTokenAsync(tokenSource, lastStatus, probe).ConfigureAwait(false);
+                            lastStatus = healthStatus;
+                        }
+
+                        await ActivateProtocolAsync(client, runId, token, probe.Token).ConfigureAwait(false);
                         return;
                     }
                 }
@@ -97,6 +132,49 @@ public static class CompositionWriterProtocolCutover
         }
     }
 
+    /// <summary>Formats the support-safe status naming an operator whose token is unavailable.</summary>
+    /// <param name="operatorName">The token source's operator principal name.</param>
+    /// <returns>The bounded status, naming the operator only when it is a plain identifier.</returns>
+    internal static string OperatorTokenStatus(string? operatorName) =>
+        _operatorTokenStatus + (IsOperatorName(operatorName) ? operatorName : "unnamed");
+
+    /// <summary>Tests whether a cutover failure status names an unavailable operator token.</summary>
+    /// <param name="value">The failure status.</param>
+    /// <returns>True for a refusal or deadline status with a plain operator identifier.</returns>
+    internal static bool IsOperatorTokenFailure(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        string? prefix = new[] { "cutover-" + _operatorTokenStatus, "cutover-timeout;" + _operatorTokenStatus }
+            .FirstOrDefault(candidate => value.StartsWith(candidate, StringComparison.Ordinal));
+        return prefix is not null && IsOperatorName(value[prefix.Length..]);
+    }
+
+    private static bool IsOperatorName(string? value) =>
+        value is { Length: > 0 and <= 64 }
+        && char.IsAsciiLetterOrDigit(value[0])
+        && value.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '.');
+
+    private static async Task<string> OperatorTokenAsync(ICompositionOperatorTokenSource tokenSource, string status, CancellationTokenSource probe)
+    {
+        string? token;
+        try
+        {
+            token = await tokenSource.CreateGlobalAdministratorTokenAsync(probe.Token).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (!probe.IsCancellationRequested && exception is not OutOfMemoryException)
+        {
+            throw new InvalidOperationException("cutover-" + status, exception);
+        }
+
+        return string.IsNullOrWhiteSpace(token) ? throw new InvalidOperationException("cutover-" + status) : token;
+    }
+
+    private static string SigningKeyToken(string signingKey) =>
+        CompositionTokenFactory.Create(
+            signingKey,
+            new CompositionTokenRequest("g4-runner-operator", [], [], [], GlobalAdministrator: true, TimeSpan.FromMinutes(5)),
+            DateTimeOffset.UtcNow);
+
     private static bool OnlyWriterProtocolIsUnhealthy(string healthBody)
     {
         using JsonDocument document = JsonDocument.Parse(healthBody);
@@ -115,12 +193,8 @@ public static class CompositionWriterProtocolCutover
         return unhealthy.Length == 1 && string.Equals(unhealthy[0], _writerProtocolCheck, StringComparison.Ordinal);
     }
 
-    private static async Task ActivateProtocolAsync(HttpClient client, string runId, string signingKey, CancellationToken cancellationToken)
+    private static async Task ActivateProtocolAsync(HttpClient client, string runId, string token, CancellationToken cancellationToken)
     {
-        string token = CompositionTokenFactory.Create(
-            signingKey,
-            new CompositionTokenRequest("g4-runner-operator", [], [], [], GlobalAdministrator: true, TimeSpan.FromMinutes(5)),
-            DateTimeOffset.UtcNow);
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/v1/admin/projections/delivery-writer-protocol/activate", UriKind.Relative))
         {
             Content = JsonContent.Create(new

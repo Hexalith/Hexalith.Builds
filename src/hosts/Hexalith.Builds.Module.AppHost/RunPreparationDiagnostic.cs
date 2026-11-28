@@ -8,6 +8,8 @@ namespace Hexalith.Builds.ModuleHosts.AppHost;
 using System.Globalization;
 using System.Reflection;
 
+using Hexalith.Builds.Tooling.Runtime;
+
 /// <summary>Preserves the failed startup stage while exporting only bounded diagnostic identity metadata.</summary>
 internal static class RunPreparationDiagnostic
 {
@@ -46,7 +48,8 @@ internal static class RunPreparationDiagnostic
     private static bool IsKnownCutoverStatus(string value)
     {
         if (value is "cutover-timeout;endpoint-unallocated" or "cutover-timeout;endpoint-unavailable"
-            or "cutover-timeout;health-body-incomplete" or "cutover-timeout;health-request-timeout")
+            or "cutover-timeout;health-body-incomplete" or "cutover-timeout;health-request-timeout"
+            || CompositionWriterProtocolCutover.IsOperatorTokenFailure(value))
         {
             return true;
         }
