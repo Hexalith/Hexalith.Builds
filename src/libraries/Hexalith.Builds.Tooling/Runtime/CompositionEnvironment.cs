@@ -19,6 +19,9 @@ public static class CompositionEnvironment
     /// <summary>The environment variable that tags every run process with its run identity.</summary>
     public const string RunId = "HEXALITH_G4_RUN_ID";
 
+    /// <summary>The startup-task environment variable naming the task's private invocation document.</summary>
+    public const string TaskInvocationPath = "HEXALITH_TASK_INVOCATION_PATH";
+
     /// <summary>The Dapr CLI environment variable selecting the verified runtime directory.</summary>
     public const string DaprRuntimePath = "DAPR_RUNTIME_PATH";
 

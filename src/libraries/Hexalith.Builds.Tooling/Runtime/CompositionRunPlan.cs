@@ -125,7 +125,8 @@ public sealed record CompositionRunPlan(
     /// <summary>Gets a value indicating whether projects launch in Debug and report process ids.</summary>
     public bool DebugAttach { get; init; }
 
-    /// <summary>Gets the per-start verification tasks that must succeed before the run is ready.</summary>
+    /// <summary>Gets the environment-creation and per-start verification tasks that must succeed before the run is ready.</summary>
+    /// <remarks>Each environment-creation task records the private path at which the model writes its invocation document.</remarks>
     public IReadOnlyList<CompositionStartupTask> StartupTasks { get; init; } = [];
 
     /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
