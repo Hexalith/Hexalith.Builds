@@ -13,8 +13,16 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[2]
 INDEX = ROOT / "Props/release-declarations.json"
 MANIFEST = "module/hexalith.module-manifest.v2.json"
-OWNERS = {"eventstore": ("EventStore", "Aspire"), "tenants": ("Tenants", "Server"),
-          "memories": ("Memories", "Aspire"), "parties": ("Parties", "Contracts")}
+OWNERS = {
+    "eventstore": ("EventStore", "Aspire"),
+    "tenants": ("Tenants", "Server"),
+    "memories": ("Memories", "Aspire"),
+    "parties": ("Parties", "Contracts"),
+    "folders": ("Folders", "Contracts"),
+    "projects": ("Projects", "EventStoreExtensions"),
+    "mcpcli": ("McpCli", "Abstractions"),
+    "conversations": ("Conversations", "Contracts"),
+}
 VERSION = re.compile(r"(?:0|[1-9][0-9]*)(?:\.(?:0|[1-9][0-9]*)){2,3}")
 
 

@@ -122,7 +122,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
             if (projectName is not null)
             {
                 ArgumentException.ThrowIfNullOrWhiteSpace(projectName);
-                string package = module switch { "tenants" => "Hexalith.Tenants.Server", "memories" => "Hexalith.Memories.Aspire", _ => CompositionDeclarationClosure.Repository(module) + ".Aspire" };
+                string package = OwnerCatalogPackage(module);
                 return ReadCatalogPackageVersion(package, source, projectName)
                     ?? throw new InvalidDataException($"{source}: {module}: {package}: image version is missing from the selected consumer catalog view.");
             }
@@ -166,6 +166,17 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
             throw new InvalidDataException($"{source}: {packageId}: Builds catalog metadata is malformed: {exception.Message}", exception);
         }
     }
+
+    private static string OwnerCatalogPackage(string module) => module switch
+    {
+        "tenants" => "Hexalith.Tenants.Server",
+        "parties" => "Hexalith.Parties.Contracts",
+        "folders" => "Hexalith.Folders.Contracts",
+        "projects" => "Hexalith.Projects.EventStoreExtensions",
+        "mcpcli" => "Hexalith.McpCli.Abstractions",
+        "conversations" => "Hexalith.Conversations.Contracts",
+        _ => CompositionDeclarationClosure.Repository(module) + ".Aspire",
+    };
 
     private static FrozenDictionary<string, string> ReadReleaseAuthority(string field, Dictionary<string, string> historical)
     {
@@ -277,7 +288,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
 
     private string ReadCatalogVersion(string module, string source)
     {
-        string package = module switch { "tenants" => "Hexalith.Tenants.Server", "memories" => "Hexalith.Memories.Aspire", _ => CompositionDeclarationClosure.Repository(module) + ".Aspire" };
+        string package = OwnerCatalogPackage(module);
         string? snapshotPath = Workspace is null ? null : Path.Combine(Workspace, "source-mapping", "catalog-versions.json");
         if (snapshotPath is not null && File.Exists(snapshotPath))
         {

@@ -369,8 +369,9 @@ owners and identity collisions refuse before reference initialization. The resol
 identity determines generated mapping property names and the source/package
 duplicate identity prefix.
 Both modes require each declared direct reference to have exactly one staged
-Git gitlink. Package mode checks out the active module if its manifest is in a
-direct reference, while other package-origin references stay uninitialized.
+Git gitlink. For an individual module, package mode checks out the active module
+when its manifest is in a direct reference. Its package-origin dependencies stay
+uninitialized.
 A missing or mismatched declaration fails before any build or launch.
 Native tests and module projects launched by the AppHost receive the same
 mapping hash and generated MSBuild imports. Builds verify the persisted mapping
@@ -422,7 +423,29 @@ workspace and the mapped project it was built from, and `down` deletes it with
 that workspace. A checkout that is unmapped, uninitialized or has no tool
 project physically inside it fails with `HXW004`, and a failed build
 with `HXR020`. Both name McpCli and the expected project path. A sibling or
-nested copy is never used. Package mode does not build McpCli.
+nested copy is never used.
+
+From the verified Platform root, use its serverless `platform` declaration to
+select EventStore, Tenants, Parties, Folders, Projects, McpCli and Memories.
+Projects brings in Conversations through its declaration. The runner checks the
+owner graph before starting resources and uses the largest justified startup
+deadline in that graph.
+
+```bash
+hexalith-module run --manifest module/hexalith.module-manifest.v2.json
+hexalith-module debug --manifest module/hexalith.module-manifest.v2.json
+hexalith-module run --manifest module/hexalith.module-manifest.v2.json --mode package
+```
+
+The complete source run requires root-mapped owner checkouts and McpCli support
+for enrolling source Contracts. It builds McpCli in Debug before the AppHost
+starts. The complete package run requires authenticated owner snapshots at the
+catalog pins, including the released Projects extension, and the root-declared
+McpCli gitlink. It initializes that direct checkout when needed and builds
+McpCli in Release from a private copy of the recorded commit with catalog-pinned
+Contracts. Both builds stay in the run workspace and support CLI and MCP stdio
+use. After declared readiness succeeds, `HXI010` reports the effective deadline,
+elapsed time and tool path. `hexalith-module down` removes the private build.
 
 The Platform identity is the committed `references/Hexalith.Platform` gitlink
 in a module workspace, or HEAD when `hexalith-platform.json` is tracked at
@@ -432,7 +455,8 @@ optional NuGet `toolVersionRange`. Platform pins Builds through its own
 identity, composition checkout, release tag, catalog pin, and tool range;
 the identity also contributes to the mapping hash. Resolution uses local Git
 objects and refs only. Package mode initializes direct Platform and Builds
-references at their recorded gitlinks, leaving other package-origin references
+references at their recorded gitlinks. The complete Platform run also initializes
+its root-declared McpCli tool checkout. Other package-origin references stay
 uninitialized. Existing checkouts are never moved.
 
 Package mode requires an aligned, clean Builds checkout, an aligned Platform

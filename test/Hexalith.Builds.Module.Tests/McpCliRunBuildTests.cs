@@ -5,11 +5,15 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests;
 
+using System.Globalization;
+using System.Text.Json;
+
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.ModuleTool.Tests.Workspace;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.TestEnvironment;
 using Hexalith.Builds.Tooling.Workspace;
 
 using Shouldly;
@@ -29,6 +33,204 @@ public sealed class McpCliRunBuildTests
         "lifecycle":{"readiness":[],"tasks":[],"recoveryHooks":[],"fenceHooks":[],"replay":{"reopenBeforeReplay":false},"startup":{},
         "criticalFlows":[],"smokeSurfaces":[],"classification":{"changeClass":"additive","reason":"Declare the McpCli minimum environment."},"recoveryInventory":[]}}
         """;
+
+    /// <summary>Exercises the public run, debug and down commands with a real run-private tool build.</summary>
+    /// <param name="command">The public lifecycle command.</param>
+    /// <param name="package">Whether Contracts are restored from the pinned package feed.</param>
+    /// <param name="ignoredInput">Whether the initialized package checkout contains an ignored build input.</param>
+    /// <returns>The run and teardown assertions.</returns>
+    [Theory]
+    [InlineData("run", false, false)]
+    [InlineData("debug", false, false)]
+    [InlineData("run", true, false)]
+    [InlineData("run", true, true)]
+    public async Task CompletePlatformCommandsBuildMappedMcpCliAndDownRemovesItAsync(string command, bool package, bool ignoredInput)
+    {
+        SkipWindows();
+        CancellationToken token = TestContext.Current.CancellationToken;
+        using WorkspaceGitFixture fixture = await CompleteEnvironmentFixture.CreateGitAsync().ConfigureAwait(true);
+        string mcpCliReference = ignoredInput ? "Hexalith.MCPCLI" : "Hexalith.McpCli";
+        (string manifest, Dictionary<string, string> commits, Dictionary<string, string> hashes) =
+            await CompleteEnvironmentFixture.PopulateGitAsync(fixture, package, mcpCliReference: mcpCliReference).ConfigureAwait(true);
+        string platform = Path.Combine(fixture.Directory, "platform");
+        string checkout = Path.Combine(platform, "references", mcpCliReference);
+        string ignoredTarget = Path.Combine(checkout, "Directory.Build.targets");
+        if (ignoredInput)
+        {
+            await File.WriteAllTextAsync(
+                ignoredTarget,
+                """
+                <Project><Target Name="RefuseLiveCheckout" BeforeTargets="CoreCompile"><Error Text="Ignored checkout input was executed." /></Target></Project>
+                """,
+                token).ConfigureAwait(true);
+        }
+        else if (package)
+        {
+            _ = await WorkspaceGitFixture.RunGitAsync(platform, "submodule", "deinit", "--", "references/" + mcpCliReference).ConfigureAwait(true);
+            File.Exists(Path.Combine(checkout, ".git")).ShouldBeFalse();
+        }
+
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(fixture.Directory, "ready", token).ConfigureAwait(true);
+        CompositionEngineOptions options = Options(fixture.Directory, appHost) with
+        {
+            ReadinessTimeout = TimeSpan.FromSeconds(60),
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+            DeclarationOptionsOverride = declaration => declaration with { ReleaseCommits = commits, ReleaseSnapshotHashes = hashes },
+        };
+        string mode = package ? "package" : "source";
+        string configuration = package ? "Release" : "Debug";
+        await using StringWriter output = new();
+        int exit = await ModuleCommandApplication.InvokeAsync(
+            [command, "--manifest", manifest, "--mode", mode, "--output", "json"], output, TextWriter.Null, token, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.Success, output.ToString());
+        using JsonDocument result = JsonDocument.Parse(output.ToString());
+        string runId = result.RootElement.GetProperty("runId").GetString()!;
+        string runWorkspace = Path.Combine(fixture.Directory, "workspaces", runId);
+        string artifactRoot = Path.Combine(runWorkspace, "tools", "mcpcli");
+        string privateSource = Path.Combine(runWorkspace, "tools", "source", "Hexalith.McpCli");
+        string tool = Path.Combine(artifactRoot, "bin", "Hexalith.McpCli", configuration.ToLowerInvariant(), "Hexalith.McpCli.dll");
+        try
+        {
+            File.Exists(tool).ShouldBeTrue();
+            if (package)
+            {
+                string head = (await WorkspaceGitFixture.RunGitAsync(checkout, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
+                head.ShouldBe(commits["mcpcli/9.3.6"]);
+                File.Exists(Path.Combine(privateSource, "src", "Hexalith.McpCli", "Hexalith.McpCli.csproj")).ShouldBeTrue();
+                File.Exists(Path.Combine(privateSource, "Directory.Build.targets")).ShouldBeFalse();
+            }
+
+            Directory.EnumerateFiles(artifactRoot, "*.nupkg", SearchOption.AllDirectories).ShouldBeEmpty();
+            using JsonDocument assets = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(artifactRoot, "obj", "Hexalith.McpCli", "project.assets.json"), token).ConfigureAwait(true));
+            JsonElement libraries = assets.RootElement.GetProperty("libraries");
+            libraries.GetProperty(CompleteEnvironmentFixture.ContractLibrary).GetProperty("type").GetString().ShouldBe(package ? "package" : "project");
+            libraries.EnumerateObject().ShouldContain(library => library.Name.StartsWith("Hexalith.McpCli.Core/", StringComparison.Ordinal) && library.Value.GetProperty("type").GetString() == "project");
+
+            using JsonDocument plan = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(Path.GetDirectoryName(appHost)!, "captured-plan.json"), token).ConfigureAwait(true));
+            plan.RootElement.GetProperty("platformActiveModule").GetString().ShouldBe("platform");
+            plan.RootElement.GetProperty("mcpCliToolPath").GetString().ShouldBe(tool);
+            SourceMapping mapping = SourceMapping.LoadVerified(
+                Path.Combine(runWorkspace, "source-mapping", "mapping.json"),
+                plan.RootElement.GetProperty("sourceMapping").GetProperty("contentHash").GetString()!);
+            IReadOnlyList<PlatformModuleDeclaration> closure = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, [manifest])
+            {
+                Workspace = runWorkspace,
+                ActiveModule = "platform",
+                ReleaseCommits = commits,
+                ReleaseSnapshotHashes = hashes,
+            });
+            closure.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).Order(StringComparer.Ordinal)
+                .ShouldBe(CompleteEnvironmentFixture.SelectedOwners);
+            plan.RootElement.GetProperty("compositionContentIdentity").GetString().ShouldBe(TestEnvironmentDescriptorWriter.CompositionIdentity(closure, null));
+
+            string diagnostics = output.ToString();
+            diagnostics.ShouldContain("HXI010");
+            diagnostics.ShouldContain(PlatformManifestCommand.McpCliProjectPath(mapping));
+            diagnostics.ShouldContain("Conversations fixture startup");
+            diagnostics.ShouldContain(configuration + " build");
+            diagnostics.ShouldContain(tool);
+
+            using JsonDocument readiness = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(runWorkspace, "readiness.json"), token).ConfigureAwait(true));
+            double duration = readiness.RootElement.GetProperty("startupDurationSeconds").GetDouble();
+            duration.ShouldBeGreaterThan(0);
+            JsonElement readinessDiagnostic = result.RootElement.GetProperty("diagnostics").EnumerateArray()
+                .Single(diagnostic => diagnostic.GetProperty("ruleId").GetString() == "HXI010" && diagnostic.GetProperty("field").GetString() == "readiness");
+            readinessDiagnostic.GetProperty("message").GetString().ShouldStartWith(
+                string.Create(CultureInfo.InvariantCulture, $"Every run resource reported healthy in {duration:0.###} seconds."));
+            readiness.RootElement.GetProperty("effectiveDeadlineSeconds").GetDouble().ShouldBe(120);
+            readiness.RootElement.GetProperty("effectiveDeadlineModuleId").GetString().ShouldBe("conversations");
+        }
+        finally
+        {
+            await using StringWriter down = new();
+            int downExit = await ModuleCommandApplication.InvokeAsync(
+                ["down", "--manifest", manifest, "--run-id", runId, "--output", "json"], down, TextWriter.Null, CancellationToken.None, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+            downExit.ShouldBe((int)ToolExitCode.Success, down.ToString());
+        }
+
+        File.Exists(tool).ShouldBeFalse();
+        Directory.Exists(runWorkspace).ShouldBeFalse();
+        File.Exists(Path.Combine(checkout, ".git")).ShouldBeTrue();
+        File.Exists(ignoredTarget).ShouldBe(ignoredInput);
+    }
+
+    /// <summary>Refuses an unpinned transitive Contracts assembly before building or starting the AppHost.</summary>
+    /// <returns>The startup refusal assertions.</returns>
+    [Fact]
+    public async Task CompletePackageRunRefusesUnpinnedTransitiveContractsAsync()
+    {
+        SkipWindows();
+        using WorkspaceGitFixture fixture = await CompleteEnvironmentFixture.CreateGitAsync().ConfigureAwait(true);
+        (string manifest, Dictionary<string, string> commits, Dictionary<string, string> hashes) =
+            await CompleteEnvironmentFixture.PopulateGitAsync(fixture, package: true, unpinnedTransitively: true).ConfigureAwait(true);
+        CancellationToken token = TestContext.Current.CancellationToken;
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(fixture.Directory, "ready", token).ConfigureAwait(true);
+        int modelBuilds = 0;
+        CompositionEngineOptions options = Options(fixture.Directory, appHost) with
+        {
+            ReadinessTimeout = TimeSpan.FromSeconds(60),
+            PlatformModelBuildOverride = (_, _, _) =>
+            {
+                _ = Interlocked.Increment(ref modelBuilds);
+                return Task.FromResult(appHost);
+            },
+            DeclarationOptionsOverride = declaration => declaration with { ReleaseCommits = commits, ReleaseSnapshotHashes = hashes },
+        };
+
+        await using StringWriter output = new();
+        int exit = await ModuleCommandApplication.InvokeAsync(
+            ["run", "--manifest", manifest, "--mode", "package", "--output", "json"],
+            output,
+            TextWriter.Null,
+            token,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.ToString());
+        string diagnostics = output.ToString();
+        diagnostics.ShouldContain("HXR020");
+        diagnostics.ShouldContain("Hexalith.Unpinned.Contracts/9.3.6", customMessage: diagnostics);
+        diagnostics.ShouldContain("without the catalog-pinned Contracts version");
+        modelBuilds.ShouldBe(0);
+        File.Exists(Path.Combine(Path.GetDirectoryName(appHost)!, "captured-plan.json")).ShouldBeFalse();
+    }
+
+    /// <summary>Refuses a missing direct package project or drift from the initially selected gitlink.</summary>
+    /// <param name="changeGitlink">Whether to change the staged gitlink after mapping.</param>
+    /// <returns>The exact direct-path refusal assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CompletePackageToolRefusesMissingProjectOrGitlinkDriftAsync(bool changeGitlink)
+    {
+        using WorkspaceGitFixture fixture = await CompleteEnvironmentFixture.CreateGitAsync().ConfigureAwait(true);
+        (string manifest, _, _) = await CompleteEnvironmentFixture.PopulateGitAsync(fixture, package: false).ConfigureAwait(true);
+        CancellationToken token = TestContext.Current.CancellationToken;
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, token).ConfigureAwait(true);
+        string required = PlatformManifestCommand.McpCliProjectPath(mapping);
+        string nearby = Path.Combine(fixture.Directory, "mcpcli");
+        WriteFakeMcpCli(nearby, siblingGuard: true);
+        if (changeGitlink)
+        {
+            string checkout = Path.Combine(mapping.Root, "references", "Hexalith.McpCli");
+            _ = await WorkspaceGitFixture.RunGitAsync(checkout, "config", "user.name", "Workspace Test").ConfigureAwait(true);
+            _ = await WorkspaceGitFixture.RunGitAsync(checkout, "config", "user.email", "workspace@example.invalid").ConfigureAwait(true);
+            _ = await WorkspaceGitFixture.RunGitAsync(checkout, "commit", "--allow-empty", "-m", "move fixture tool").ConfigureAwait(true);
+            _ = await WorkspaceGitFixture.RunGitAsync(mapping.Root, "add", "references/Hexalith.McpCli").ConfigureAwait(true);
+        }
+        else
+        {
+            File.Delete(required);
+        }
+
+        string workspace = Path.Combine(fixture.Directory, "missing-mcpcli-run");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, token).ConfigureAwait(true);
+
+        WorkspaceMappingException refusal = await Should.ThrowAsync<WorkspaceMappingException>(() =>
+            PlatformManifestCommand.BuildMcpCliAsync(mapping, workspace, null, completeEnvironment: true, token)).ConfigureAwait(true);
+        refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW004" && diagnostic.Message.Contains(required, StringComparison.Ordinal));
+        Directory.Exists(Path.Combine(workspace, "tools")).ShouldBeFalse();
+    }
 
     /// <summary>Verifies the build is Debug, writes only below the run workspace, uses the pinned catalog and never packs.</summary>
     [Fact]
@@ -154,9 +356,12 @@ public sealed class McpCliRunBuildTests
     }
 
     /// <summary>Builds an actual project: Debug, the pinned catalog, artifacts in the run workspace, no package, no checkout or sibling output.</summary>
+    /// <param name="mode">The input mapping mode before the individual build chooses Debug.</param>
     /// <returns>The real-build assertions.</returns>
-    [Fact]
-    public async Task BuildWritesOnlyTheRunWorkspaceAndIgnoresTheSiblingAsync()
+    [Theory]
+    [InlineData(WorkspaceMode.Source)]
+    [InlineData(WorkspaceMode.Package)]
+    public async Task BuildWritesOnlyTheRunWorkspaceAndIgnoresTheSiblingAsync(WorkspaceMode mode)
     {
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         SourceMapping resolved = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -166,7 +371,7 @@ public sealed class McpCliRunBuildTests
         WriteFakeMcpCli(sibling, siblingGuard: true);
         string[] checkoutFiles = Files(checkout);
         string[] siblingFiles = Files(sibling);
-        SourceMapping mapping = resolved with { Entries = [.. resolved.Entries, new SourceMappingEntry("Hexalith.McpCli", "source", checkout)] };
+        SourceMapping mapping = resolved with { Mode = mode, Entries = [.. resolved.Entries, new SourceMappingEntry("Hexalith.McpCli", "source", checkout)] };
         string workspace = Path.Combine(fixture.Directory, "mcpcli-run");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -180,6 +385,8 @@ public sealed class McpCliRunBuildTests
         Files(checkout).ShouldBe(checkoutFiles);
         Files(sibling).ShouldBe(siblingFiles);
         Directory.GetFiles(fixture.Directory, "*.nupkg", SearchOption.AllDirectories).ShouldBeEmpty();
+        _ = await Should.ThrowAsync<TimeoutException>(() =>
+            PlatformManifestCommand.BuildMcpCliAsync(mapping, workspace, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken)).ConfigureAwait(true);
     }
 
     /// <summary>Verifies a real failed build names McpCli, its project and the build's error.</summary>
@@ -391,9 +598,12 @@ public sealed class McpCliRunBuildTests
     }
 
     /// <summary>Verifies the McpCli build stage is bounded by the startup deadline and stops before the model build.</summary>
+    /// <param name="childTimeout">Whether the process deadline is observed before runner cancellation.</param>
     /// <returns>The deadline assertions.</returns>
-    [Fact]
-    public async Task McpCliBuildIsBoundedByTheStartupDeadlineAsync()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task McpCliBuildIsBoundedByTheStartupDeadlineAsync(bool childTimeout)
     {
         SkipWindows();
         using PlatformManifestTestWorkspace workspace = new();
@@ -410,6 +620,11 @@ public sealed class McpCliRunBuildTests
             },
             McpCliBuildOverride = async (_, run, token) =>
             {
+                if (childTimeout)
+                {
+                    throw new TimeoutException("The fixture build child exhausted its deadline.");
+                }
+
                 await Task.Delay(TimeSpan.FromSeconds(30), token).ConfigureAwait(false);
                 return PlatformManifestCommand.McpCliToolPath(run);
             },

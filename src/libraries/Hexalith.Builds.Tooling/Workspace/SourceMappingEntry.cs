@@ -5,8 +5,15 @@
 
 namespace Hexalith.Builds.Tooling.Workspace;
 
+using System.Text.Json.Serialization;
+
 /// <summary>One module identity and its selected origin.</summary>
 /// <param name="Identity">The module identity.</param>
 /// <param name="Origin">The source or package origin.</param>
 /// <param name="Path">The absolute source path, or null for a package.</param>
-public sealed record SourceMappingEntry(string Identity, string Origin, string? Path);
+public sealed record SourceMappingEntry(string Identity, string Origin, string? Path)
+{
+    /// <summary>Gets the direct source gitlink recorded for a package-mode tool build.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ToolGitlink { get; init; }
+}

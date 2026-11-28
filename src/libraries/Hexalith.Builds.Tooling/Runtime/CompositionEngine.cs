@@ -57,7 +57,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         DateTimeOffset requestedAt = _options.SelectedTest?.RequestedAtUtc ?? _options.StartupRequestedAtUtc ?? DateTimeOffset.UtcNow;
-        CompositionEffectiveDeadline deadline = CompositionStartupDeadlineResolver.Resolve(null, _options.ReadinessTimeout);
+        CompositionEffectiveDeadline deadline = _options.StartupDiscoveryDeadline ?? CompositionStartupDeadlineResolver.Resolve(null, _options.ReadinessTimeout);
         bool deadlineResolved = false;
         using CancellationTokenSource startupBound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -109,6 +109,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
             ModuleManifest manifest = manifestResult.Manifest!;
             string? activeModule = PlatformManifestCommand.ActiveModule(platformDeclarations?.Declarations);
+            bool completeEnvironment = activeModule == PlatformManifestCommand.CompleteEnvironmentModule;
             CompositionDeclarationOptions? declarationOptions = platformComposition
                 ? new CompositionDeclarationOptions(_options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."), [Path.GetFullPath(manifestPath)]) { ActiveModule = activeModule, QualificationOwners = _options.QualificationOwners, ConsumerProjectName = CompositionDeclarationOptions.PlatformCompositionProjectName }
                 : null;
@@ -230,20 +231,30 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 await MarkEnvironmentIssuedAsync(runId, startupBound.Token).ConfigureAwait(false);
                 preparedWorkspace ??= WorkspaceFor(runId);
                 CompositionWorkspace.CreatePrivateDirectory(preparedWorkspace);
-                await SourceMappingMaterializer.WriteAsync(mapping, preparedWorkspace, startupBound.Token).ConfigureAwait(false);
+                if (mapping.Mode == WorkspaceMode.Source)
+                {
+                    await SourceMappingMaterializer.WriteAsync(mapping, preparedWorkspace, startupBound.Token).ConfigureAwait(false);
+                }
+
                 if (CompositionFixtureProducer.RequiresProof(mapping, activeModule, _options.SelectedTest))
                 {
                     await CompositionFixtureProducer.RetrievePackageAsync(mapping, preparedWorkspace, startupBound.Token).ConfigureAwait(false);
                 }
 
-                if (PlatformManifestCommand.BuildsMcpCli(activeModule, mapping))
+                if (completeEnvironment
+                    ? closure!.Any(declaration => CompositionDeclarationClosure.Id(declaration.Declaration) == PlatformManifestCommand.McpCliModule)
+                    : PlatformManifestCommand.BuildsMcpCli(activeModule, mapping))
                 {
                     // McpCli is a run-scoped tool, not a server. A missing checkout or project raises
                     // WorkspaceMappingException (HXW004), which refuses the run before any resource starts.
                     try
                     {
                         mcpCliTool = await (_options.McpCliBuildOverride?.Invoke(mapping, preparedWorkspace, startupBound.Token)
-                            ?? PlatformManifestCommand.BuildMcpCliAsync(mapping, preparedWorkspace, deadlineUtc, startupBound.Token)).ConfigureAwait(false);
+                            ?? PlatformManifestCommand.BuildMcpCliAsync(mapping, preparedWorkspace, deadlineUtc, completeEnvironment, startupBound.Token)).ConfigureAwait(false);
+                    }
+                    catch (TimeoutException)
+                    {
+                        return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
                     }
                     catch (InvalidOperationException exception)
                     {
@@ -1919,7 +1930,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     record: new CompositionRunRecord(duration, readiness.Resources, deadline, diagnosticsPath, ProjectProcessIds(readiness.Resources))).ConfigureAwait(false);
                 List<ToolDiagnostic> readyDiagnostics =
                 [
-                    Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, "Every run resource reported healthy. " + CompositionStartupDeadlineResolver.Describe(deadline) + ".", "readiness", null),
+                    Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, string.Create(CultureInfo.InvariantCulture, $"Every run resource reported healthy in {duration:0.###} seconds. {CompositionStartupDeadlineResolver.Describe(deadline)}."), "readiness", null),
                 ];
                 if (plan.DebugAttach)
                 {
@@ -1935,7 +1946,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 if (plan.McpCliToolPath is { } mcpCliTool)
                 {
                     string mcpCliProject = plan.SourceMapping is { } mcpCliMapping ? PlatformManifestCommand.McpCliProjectPath(mcpCliMapping) : "unavailable";
-                    readyDiagnostics.Add(Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, $"Run-scoped McpCli Debug build '{mcpCliTool}' of '{mcpCliProject}'; launch it under a debugger, and down deletes it.", PlatformManifestCommand.McpCliModule, null));
+                    string configuration = plan.SourceMapping?.Mode == WorkspaceMode.Package ? "Release" : "Debug";
+                    readyDiagnostics.Add(Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, $"Run-scoped McpCli {configuration} build '{mcpCliTool}' of '{mcpCliProject}'. Use it from the CLI or over MCP stdio. Down deletes it.", PlatformManifestCommand.McpCliModule, null));
                 }
 
                 return new CompositionStartResult(

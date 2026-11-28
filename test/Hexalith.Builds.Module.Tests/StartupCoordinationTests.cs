@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Hexalith.Builds.ModuleTool.Cli;
+using Hexalith.Builds.ModuleTool.Tests.Workspace;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.TestEnvironment;
@@ -24,6 +25,25 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class StartupCoordinationTests
 {
+    /// <summary>Discovers the largest complete-graph override while probing the verified root before mapping.</summary>
+    /// <returns>The requested-at and deadline assertions.</returns>
+    [Fact]
+    public async Task CompleteSelectorDiscoversTransitiveDeadlineInRootProbeAsync()
+    {
+        using WorkspaceGitFixture fixture = await CompleteEnvironmentFixture.CreateGitAsync().ConfigureAwait(true);
+        (string manifest, _, _) = await CompleteEnvironmentFixture.PopulateGitAsync(fixture, package: false).ConfigureAwait(true);
+        DateTimeOffset requestedAt = DateTimeOffset.UtcNow;
+        using CompositionStartupRequest request = new(requestedAt, TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
+
+        await request.ConfigureAsync(manifest, WorkspaceMode.Source, null).ConfigureAwait(true);
+
+        request.RequestedAt.ShouldBe(requestedAt);
+        request.Deadline.TimeoutSeconds.ShouldBe(120);
+        request.Deadline.ModuleId.ShouldBe("conversations");
+        request.Deadline.Justification.ShouldBe("Conversations fixture startup");
+        request.Deadline.IsOverride.ShouldBeTrue();
+    }
+
     /// <summary>Cancellation before recorded-reference restoration never issues a working-tree suite.</summary>
     /// <returns>The stale-binding nonissuance assertions.</returns>
     [Fact]

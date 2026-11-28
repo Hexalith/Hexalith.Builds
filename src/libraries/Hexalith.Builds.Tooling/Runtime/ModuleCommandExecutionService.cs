@@ -1117,7 +1117,7 @@ public static class ModuleCommandExecutionService
     {
         if (command != ModuleInvocationCommand.Test)
         {
-            return await ExecutePlatformLifecycleAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, startupToken ?? cancellationToken, cancellationToken).ConfigureAwait(false);
+            return await ExecutePlatformLifecycleAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, startupDeadline, startupToken ?? cancellationToken, cancellationToken).ConfigureAwait(false);
         }
 
         PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
@@ -1843,6 +1843,7 @@ public static class ModuleCommandExecutionService
         CompositionEngineOptions? compositionOptions,
         WorkspaceMode mode,
         SourceMapping? preResolvedMapping,
+        CompositionEffectiveDeadline? startupDeadline,
         CancellationToken startupToken,
         CancellationToken cancellationToken)
     {
@@ -1890,6 +1891,7 @@ public static class ModuleCommandExecutionService
                 engine = new CompositionEngine(options with
                 {
                     SourceMapping = mapping,
+                    StartupDiscoveryDeadline = startupDeadline,
                     PersistAfterParentExit = PersistsAfterExit(command),
                     DebugAttach = command == ModuleInvocationCommand.Debug,
                 });

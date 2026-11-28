@@ -8,8 +8,13 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 
+using Aspire.Hosting;
+
+using Hexalith.Builds.ModuleHosts.AppHost;
+using Hexalith.Builds.ModuleTool.Tests.Workspace;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.TestEnvironment;
 using Hexalith.Builds.Tooling.Workspace;
 
 using Shouldly;
@@ -19,6 +24,144 @@ using Xunit;
 /// <summary>Proves source dependency selection and the shared release provenance refusals.</summary>
 public sealed class DeclarationClosureTests
 {
+    /// <summary>Selects each owner once and finds Conversations through Projects using the canonical Platform declaration.</summary>
+    [Fact]
+    public void VerifiedSelectorSelectsEveryOwnerOnce()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionDeclarationOptions options = CompleteEnvironmentFixture.CreateSourceOptions(workspace.Root);
+        IReadOnlyList<PlatformModuleDeclaration> closure = CompositionDeclarationClosure.Load(options);
+
+        closure.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).Order(StringComparer.Ordinal)
+            .ShouldBe(CompleteEnvironmentFixture.SelectedOwners);
+        Path.GetFullPath(closure.Single(declaration => CompositionDeclarationClosure.Id(declaration.Declaration) == "platform").Source).ShouldBe(options.DeclarationPaths.Single());
+        closure.Single(declaration => CompositionDeclarationClosure.Id(declaration.Declaration) == "mcpcli")
+            .Declaration.GetProperty("identity").GetProperty("servers").GetArrayLength().ShouldBe(0);
+    }
+
+    /// <summary>Refuses a changed transitive declaration at the real AppHost plan-validation boundary.</summary>
+    [Fact]
+    public void CompleteAppHostRequiresTheCoordinatedDeclarationClosure()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionDeclarationOptions options = CompleteEnvironmentFixture.CreateSourceOptions(workspace.Root);
+        string selector = options.DeclarationPaths.Single();
+        IReadOnlyList<PlatformModuleDeclaration> closure = CompositionDeclarationClosure.Load(options);
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with
+        {
+            PlatformDeclarationPaths = [selector],
+            PlatformActiveModule = "platform",
+            PlatformModelAssemblyPath = Path.Combine(workspace.Root, "missing-model.dll"),
+            PlatformDeclarationHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(selector))),
+            SourceMapping = options.Mapping,
+            CompositionContentIdentity = TestEnvironmentDescriptorWriter.CompositionIdentity(closure, null),
+        };
+
+        IReadOnlyList<PlatformModuleDeclaration> verified = RunTopology.VerifyPlatformDeclaration(plan).ShouldNotBeNull();
+        string transitiveOwner = closure.Single(declaration => CompositionDeclarationClosure.Id(declaration.Declaration) == "conversations").Source;
+        File.AppendAllText(transitiveOwner, " ");
+        CompositionDeclarationOptions modelOptions = options with { DeclarationPaths = plan.PlatformDeclarationPaths, Workspace = plan.Workspace };
+        CompositionDeclarationClosure.ComposeVerifiedModel(plan, verified, () =>
+            CompositionDeclarationClosure.Load(modelOptions).ShouldBeSameAs(verified));
+        CompositionDeclarationClosure.Load(modelOptions).ShouldNotBeSameAs(verified);
+
+        IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder();
+        Should.Throw<InvalidDataException>(() => RunTopology.Compose(builder, plan, "fixture-signing-key")).Message.ShouldContain("closure changed");
+    }
+
+    /// <summary>Refuses a missing owner, substituted owner identity, dependency cycle or selector outside the verified root.</summary>
+    /// <param name="fault">The authority or dependency fault to inject.</param>
+    /// <param name="diagnostic">The expected owner or root diagnostic.</param>
+    [Theory]
+    [InlineData("missing", "Hexalith.Conversations")]
+    [InlineData("projects-dependency", "Hexalith.Projects")]
+    [InlineData("wrong-owner", "Hexalith.Projects")]
+    [InlineData("cycle", "dependency cycle")]
+    [InlineData("wrong-path", "verified Platform root")]
+    [InlineData("foreign-root", "verified Platform root")]
+    [InlineData("unverified", "verified Platform root")]
+    public void CompleteSelectorRefusesInvalidOwnerGraph(string fault, string diagnostic)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionDeclarationOptions options = CompleteEnvironmentFixture.CreateSourceOptions(workspace.Root);
+        string projects = Path.Combine(workspace.Root, "references", "Hexalith.Projects");
+        string conversations = Path.Combine(workspace.Root, "references", "Hexalith.Conversations");
+
+        switch (fault)
+        {
+            case "missing":
+                Directory.Delete(conversations, recursive: true);
+                break;
+            case "projects-dependency":
+                _ = CompleteEnvironmentFixture.WriteManifest(projects, "projects", ["folders"]);
+                break;
+            case "wrong-owner":
+                _ = CompleteEnvironmentFixture.WriteManifest(projects, "mcpcli", ["conversations"]);
+                break;
+            case "cycle":
+                _ = CompleteEnvironmentFixture.WriteManifest(conversations, "conversations", ["projects"]);
+                break;
+            case "wrong-path":
+                string foreign = Path.Combine(workspace.Root, "fake.json");
+                File.Copy(options.DeclarationPaths.Single(), foreign);
+                options = options with { DeclarationPaths = [foreign] };
+                break;
+            case "foreign-root":
+                options = options with { Mapping = options.Mapping with { PlatformIdentity = options.Mapping.PlatformIdentity! with { IsPlatformRepository = false } } };
+                break;
+            default:
+                options = options with { Mapping = options.Mapping with { IdentityFindings = [new PlatformIdentityFinding("HXW008", "Fixture identity drift.", workspace.Root)] } };
+                break;
+        }
+
+        Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(options)).Message.ShouldContain(diagnostic);
+    }
+
+    /// <summary>Refuses a matching owner identity whose Projects release metadata differs from the pinned catalog.</summary>
+    /// <returns>The package refusal assertions.</returns>
+    [Fact]
+    public async Task CompletePackageSelectorRejectsMismatchedProjectsSnapshotAsync()
+    {
+        using WorkspaceGitFixture fixture = await CompleteEnvironmentFixture.CreateGitAsync().ConfigureAwait(true);
+        (string manifest, Dictionary<string, string> commits, Dictionary<string, string> hashes) = await CompleteEnvironmentFixture.PopulateGitAsync(fixture, package: false).ConfigureAwait(true);
+        CancellationToken token = TestContext.Current.CancellationToken;
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, token).ConfigureAwait(true);
+        CompositionDeclarationOptions options = new(mapping, [manifest])
+        {
+            ReleaseCommits = commits,
+            ReleaseSnapshotHashes = hashes,
+        };
+        IReadOnlyList<PlatformModuleDeclaration> closure = await CompositionDeclarationClosure.LoadForConsumerAsync(options, token).ConfigureAwait(true);
+        closure.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).Order(StringComparer.Ordinal)
+            .ShouldBe(CompleteEnvironmentFixture.SelectedOwners);
+
+        string provenance = Path.Combine(mapping.Root, "src", "Hexalith.Platform.Composition", "Declarations", "provenance.json");
+        JsonNode document = JsonNode.Parse(await File.ReadAllTextAsync(provenance, token).ConfigureAwait(true))!;
+        document["projects"]!["version"] = "9.3.5";
+        await File.WriteAllTextAsync(provenance, document.ToJsonString(), token).ConfigureAwait(true);
+
+        InvalidDataException failure = await Should.ThrowAsync<InvalidDataException>(() =>
+            CompositionDeclarationClosure.LoadForConsumerAsync(options, token)).ConfigureAwait(true);
+        failure.Message.ShouldContain("Hexalith.Projects", customMessage: failure.Message);
+        failure.Message.ShouldContain("Builds catalog version '9.3.6'");
+    }
+
+    /// <summary>Accepts a supplied snapshot with the same effective declaration defaults as the authenticated release.</summary>
+    [Fact]
+    public void PackageClosureAcceptsEqualSnapshotWithImplicitDefaults()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionDeclarationOptions options = PackageOptions(workspace.Root);
+        string snapshot = Path.Combine(workspace.Root, "src", "Hexalith.Platform.Composition", "Declarations", "memories.json");
+        string supplied = Path.Combine(workspace.Root, "supplied-memories.json");
+        File.Copy(snapshot, supplied);
+        IReadOnlyList<PlatformModuleDeclaration> closure = CompositionDeclarationClosure.Load(options with { DeclarationPaths = [supplied] });
+
+        PlatformModuleDeclaration owner = closure.ShouldHaveSingleItem();
+        CompositionDeclarationClosure.Id(owner.Declaration).ShouldBe("memories");
+        Path.GetFullPath(owner.Source).ShouldBe(snapshot);
+    }
+
     /// <summary>Verifies only the authoritative dependency closure contributes lifecycle metadata.</summary>
     [Fact]
     public void SourceClosureSelectsOnlyDeclaredTechnicalDependencies()

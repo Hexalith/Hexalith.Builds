@@ -250,6 +250,7 @@ public static partial class PlatformManifestValidator
                 {
                     declarations.Add(new PlatformModuleDeclaration(source, ApplyDefaults(module))
                     {
+                        FullPath = fullPath,
                         SourceHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(buffer.AsSpan(0, count))),
                     });
                 }

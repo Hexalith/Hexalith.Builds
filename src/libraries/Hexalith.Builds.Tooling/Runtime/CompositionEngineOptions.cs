@@ -107,6 +107,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets a value indicating whether local selected-test failures retain surviving resources until explicit down.</summary>
     public bool RetainOnFailure { get; init; }
 
+    /// <summary>Gets the effective deadline already discovered from the authoritative closure before mapping.</summary>
+    internal CompositionEffectiveDeadline? StartupDiscoveryDeadline { get; init; }
+
     /// <summary>Gets the executor captured before setup and retained through issuance.</summary>
     internal TestEnvironment.ExecutingToolIdentity? ExecutingTool { get; init; }
 
