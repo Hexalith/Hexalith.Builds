@@ -33,8 +33,8 @@
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">3.0.0</HexalithMcpCliVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.4</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.1.1</HexalithTenantsVersion>
-    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">4.0.2</HexalithPartiesVersion>
-    <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">4.0.2</HexalithPartiesAspireVersion>
+    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">4.0.3</HexalithPartiesVersion>
+    <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">4.0.3</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">2.0.0</HexalithProjectsVersion>
     <HexalithAspireHostingDaprVersion>17.0.0-preview.1.261120-0454</HexalithAspireHostingDaprVersion>
     <HexalithAspireAppHostSdkVersion>17.0.0</HexalithAspireAppHostSdkVersion>
