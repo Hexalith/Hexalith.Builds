@@ -29,7 +29,7 @@
     <HexalithAspNetCoreOpenApiVersion>11.0.0</HexalithAspNetCoreOpenApiVersion>
     <HexalithOpenApiVersion>3.11.1</HexalithOpenApiVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">6.2.0</HexalithFrontComposerVersion>
-    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.2.1</HexalithFoldersVersion>
+    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">2.3.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">3.0.0</HexalithMcpCliVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">4.1.4</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">8.1.1</HexalithTenantsVersion>

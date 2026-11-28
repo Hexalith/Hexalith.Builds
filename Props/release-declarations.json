@@ -41,6 +41,13 @@
     "source": "module/hexalith.module-manifest.v2.json",
     "sha256": "580cdc51342f5bf3665386962f9e1bfee0e9f047e30b9c9996b7acdd36db742f"
   },
+  "folders/2.3.0": {
+    "repository": "Hexalith.Folders",
+    "version": "2.3.0",
+    "commit": "057f7c1c868ff0b26662b7a1fe0527572fbbaa9e",
+    "source": "module/hexalith.module-manifest.v2.json",
+    "sha256": "bd3c5a501e95813c8fef795c6fd1e6d3bc12f9326b50012a0b2e22ce2008efbe"
+  },
   "mcpcli/3.0.0": {
     "repository": "Hexalith.McpCli",
     "version": "3.0.0",
