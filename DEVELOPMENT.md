@@ -89,8 +89,7 @@ catalog packages 18.12.2 with runtime assets excluded; the executing SDK supplie
 its own MSBuild assemblies. Unit tests include those packages' runtime assets.
 Roslyn catalog packages use 5.12.0, matching the compiler shipped in SDK
 11.0.100. Conversations 2.0.0 and McpCli 3.0.0 are the current net11 defaults
-and require EventStore 5.3.0 with Commons 3.0.1. AngleSharp stays on the 1.10
-line at 1.10.4 for bunit 2.15.2.
+and require EventStore 5.3.0 with Commons 3.0.1. bunit 2.15.2 uses AngleSharp 1.11.0.
 
 ASP.NET Core, OAuth, Identity Stores and Immutable now use version 11.0.0.
 The exact 25 current FrontComposer source/test and Counter/IdeParity compiler

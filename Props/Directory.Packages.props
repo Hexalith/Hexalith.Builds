@@ -272,8 +272,8 @@
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.6" />
     <!-- FrontComposer bunit transitive floor pulls the vulnerable 1.4.0; pin the GHSA-pgww-w46g-26qg fix. -->
-    <!-- bunit 2.15.2 implements AngleSharp 1.10 BeforeToggle; keep the latest 1.10 patch with that release. -->
-    <PackageVersion Include="AngleSharp" Version="1.10.5" />
+    <!-- bunit 2.15.2 uses the AngleSharp BeforeToggle API, which remains available in 1.11. -->
+    <PackageVersion Include="AngleSharp" Version="1.11.0" />
     <!-- OAuth and ASP.NET Core packages align with the .NET 11 host. -->
     <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="11.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="11.0.0" />
@@ -466,7 +466,7 @@
     <PackageVersion Include="Moq" Version="4.21.0" />
     <PackageVersion Include="Moq.Contrib.HttpClient" Version="1.4.0" />
     <PackageVersion Include="NBomber" Version="6.7.1" />
-    <PackageVersion Include="NBomber.Http" Version="6.2.1" />
+    <PackageVersion Include="NBomber.Http" Version="7.0.0" />
     <!-- Maintained NetArchTest fork (same NetArchTest.Rules API); 1.4.5 brings Mono.Cecil 0.11.6 which parses net10.0 IL. -->
     <PackageVersion Include="NetArchTest.eNhancedEdition" Version="1.4.5" />
     <PackageVersion Include="NFalkorDB" Version="1.2.0" />
